@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="css/style.css">
+  <title>Login de Usuário - Souza Gás e Água</title>
+  <style>
+    /* Estilos existentes */
+    .form-buttons button,
+    .form-buttons a {
+      padding: 12px 25px;
+      font-size: 1.1em;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      text-decoration: none;
+      color: white;
+      transition: background-color 0.3s ease;
+      display: block;
+      /* Garante que ocupem a largura total */
+      width: 100%;
+      /* Garante que ocupem a largura total */
+      box-sizing: border-box;
+      /* Inclui padding e borda na largura total */
+    }
+
+    .form-buttons .edit-button {
+      background-color: var(--cor-principal);
+    }
+
+    .form-buttons .edit-button:hover {
+      background-color: var(--cor-secundaria);
+    }
+
+    /* Media Queries para Responsividade (mantido do seu original) */
+    @media (max-width: 480px) {
+      body {
+        display: flex;
+        flex-direction: column;
+        /* Stack elements vertically */
+        padding: 10px;
+        /* Adjust padding for smaller screens */
+      }
+
+      .card {
+        width: 100%;
+        /* Full width on smaller screens */
+        height: auto;
+        /* Or auto to center */
+        padding: 10px;
+        /* Restore original padding for larger screens */
+        margin: auto;
+      }
+
+      .footer {
+        display: none;
+      }
+
+      .form {
+        width: 100%;
+      }
+    }
+
+    /* Estilos Adicionais para Mensagens e Modal */
+    .message {
+      margin-top: 1rem;
+      padding: 0.75rem;
+      border-radius: 0.5rem;
+      font-size: 0.9rem;
+      text-align: left;
+    }
+
+    .message.error {
+      background-color: #fee2e2;
+      /* red-100 */
+      color: #ef4444;
+      /* red-500 */
+      border: 1px solid #fca5a5;
+      /* red-300 */
+    }
+
+    .message.success {
+      background-color: #dcfce7;
+      /* green-100 */
+      color: #22c55e;
+      /* green-500 */
+      border: 1px solid #86efac;
+      /* green-300 */
+    }
+
+    .modal {
+      display: none;
+      /* Hidden by default */
+      position: fixed;
+      /* Stay in place */
+      z-index: 1000;
+      /* Sit on top */
+      left: 0;
+      top: 0;
+      width: 100%;
+      /* Full width */
+      height: 100%;
+      /* Full height */
+      overflow: auto;
+      /* Enable scroll if needed */
+      background-color: rgba(0, 0, 0, 0.4);
+      /* Black w/ opacity */
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background-color: #fefefe;
+      margin: auto;
+      padding: 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+      width: 90%;
+      max-width: 400px;
+      text-align: center;
+      position: relative;
+    }
+
+    .close-button {
+      color: #aaa;
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .close-button:hover,
+    .close-button:focus {
+      color: black;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .loading-spinner {
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      border-left-color: var(--cor-principal);
+      /* Usando sua cor principal */
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-left: 10px;
+    }
+
+    /* Regra para garantir que o spinner esteja oculto por padrão */
+    .loading-spinner.hidden {
+      display: none !important; /* Garante que a visibilidade seja controlada pelo JavaScript */
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="background"></div>
+  <div class="card">
+    <img class="logo" src="imagens/logo.png" alt="Logo" />
+    <h2>Acesso ao Sistema</h2>
+
+    <form class="form" id="formularioLogin">
+      <label class="titulo-label" for="emailLogin">E-mail:</label>
+      <input type="email" name="email" id="emailLogin" placeholder="E-mail" required />
+
+      <label class="titulo-label" for="senhaLogin">Senha:</label>
+      <input type="password" name="senha" id="senhaLogin" placeholder="Senha" required />
+
+      <div id="mensagemLogin" class="message hidden"></div>
+      <div class="form-buttons">
+        <button type="submit" class="edit-button" id="acessarSistemaBtn">
+          Entrar
+          <span id="loginSpinner" class="loading-spinner hidden"></span>
+        </button>
+      </div>
+    </form>
+  </div>
+  <div class="footer">
+    <p>&copy; 2025 APsystem. Todos os direitos reservados.</p>
+  </div>
+
+  <!-- Modal para Alterar Senha (transferido para cá) -->
+  <div id="passwordChangeModal" class="modal flex">
+    <div class="modal-content">
+      <span class="close-button" onclick="closeModal()">&times;</span>
+      <h3 class="text-xl font-bold mb-4 text-gray-800">Alterar Senha</h3>
+      <p class="mb-4 text-gray-700">Sua senha é padrão ou precisa ser alterada. Por favor, defina uma nova senha segura.</p>
+      <form id="changePasswordForm" class="form">
+        <input type="password" id="newPassword" placeholder="Nova Senha" required>
+        <input type="password" id="confirmNewPassword" placeholder="Confirmar Nova Senha" required>
+        <div class="form-buttons">
+        <button type="submit" id="changePasswordButton"  class="edit-button">
+          Salvar Nova Senha
+          <span id="changePasswordSpinner" class="loading-spinner hidden"></span>
+        </button>
+        </div>
+        <div id="changePasswordMessage" class="message hidden"></div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Referências aos elementos do DOM
+    const formularioLogin = document.getElementById('formularioLogin');
+    const emailLoginInput = document.getElementById('emailLogin');
+    const senhaLoginInput = document.getElementById('senhaLogin');
+    const mensagemLoginDiv = document.getElementById('mensagemLogin');
+    const acessarSistemaBtn = document.getElementById('acessarSistemaBtn');
+    const loginSpinner = document.getElementById('loginSpinner');
+
+    const passwordChangeModal = document.getElementById('passwordChangeModal');
+    const newPasswordInput = document.getElementById('newPassword');
+    const confirmNewPasswordInput = document.getElementById('confirmNewPassword');
+    const changePasswordMessageDiv = document.getElementById('changePasswordMessage');
+    const changePasswordForm = document.getElementById('changePasswordForm');
+    const changePasswordButton = document.getElementById('changePasswordButton');
+    const changePasswordSpinner = document.getElementById('changePasswordSpinner');
+
+    let currentEmail = ''; // Para armazenar o email do usuário que precisa mudar a senha
+
+    // Função para exibir mensagens
+    function showMessage(element, msg, type) {
+      element.textContent = msg;
+      element.className = `message ${type}`;
+      element.classList.remove('hidden');
+    }
+
+    // Função para esconder mensagens
+    function hideMessage(element) {
+      element.classList.add('hidden');
+      element.textContent = '';
+    }
+
+    // Função para mostrar/esconder spinner
+    function toggleSpinner(button, spinner, show) {
+      if (show) {
+        spinner.classList.remove('hidden');
+        button.disabled = true;
+      } else {
+        spinner.classList.add('hidden');
+        button.disabled = false;
+      }
+    }
+
+    // Função para abrir o modal de alteração de senha
+    function openModal() {
+      passwordChangeModal.style.display = 'flex';
+      newPasswordInput.value = ''; // Limpa os campos ao abrir o modal
+      confirmNewPasswordInput.value = '';
+      hideMessage(changePasswordMessageDiv);
+    }
+
+    // Função para fechar o modal de alteração de senha
+    function closeModal() {
+      passwordChangeModal.style.display = 'none';
+    }
+
+    // Lógica de login
+    formularioLogin.addEventListener('submit', async function(event) {
+      event.preventDefault(); // Impede o envio padrão do formulário
+
+      const email = emailLoginInput.value;
+      const password = senhaLoginInput.value;
+      currentEmail = email; // Armazena o email para uso no modal
+
+      hideMessage(mensagemLoginDiv); // Esconde mensagens anteriores
+      toggleSpinner(acessarSistemaBtn, loginSpinner, true); // Mostra spinner
+
+      try {
+        const response = await fetch('login.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          if (data.needsPasswordChange) {
+            showMessage(mensagemLoginDiv, data.message, 'error');
+            openModal(); // Abre o modal para alteração de senha IMEDIATAMENTE
+            // O usuário permanecerá nesta página até que a senha seja alterada no modal.
+          } else {
+            showMessage(mensagemLoginDiv, data.message, 'success');
+            // Redireciona o usuário para o menu principal se a senha já estiver segura
+            window.location.href = data.redirectUrl; // data.redirectUrl deve ser 'menu.php'
+          }
+        } else {
+          showMessage(mensagemLoginDiv, data.message, 'error');
+        }
+      } catch (error) {
+        console.error('Erro ao fazer login:', error);
+        showMessage(mensagemLoginDiv, 'Ocorreu um erro ao tentar fazer login. Tente novamente.', 'error');
+      } finally {
+        toggleSpinner(acessarSistemaBtn, loginSpinner, false); // Esconde spinner
+      }
+    });
+
+    // Lógica de alteração de senha no modal
+    changePasswordForm.addEventListener('submit', async function(event) {
+      event.preventDefault(); // Impede o envio padrão do formulário
+
+      const newPassword = newPasswordInput.value;
+      const confirmNewPassword = confirmNewPasswordInput.value;
+
+      hideMessage(changePasswordMessageDiv); // Esconde mensagens anteriores
+
+      if (newPassword.length < 6) {
+        showMessage(changePasswordMessageDiv, 'A nova senha deve ter pelo menos 6 caracteres.', 'error');
+        return;
+      }
+
+      if (newPassword !== confirmNewPassword) {
+        showMessage(changePasswordMessageDiv, 'As senhas não coincidem.', 'error');
+        return;
+      }
+
+      toggleSpinner(changePasswordButton, changePasswordSpinner, true); // Mostra spinner
+
+      try {
+        const response = await fetch('change_password.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email: currentEmail, newPassword })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showMessage(changePasswordMessageDiv, data.message, 'success');
+          // Após a senha ser alterada com sucesso, redireciona para o menu
+          setTimeout(() => {
+            closeModal(); // Fecha o modal
+            window.location.href = 'menu.php'; // Redireciona para o menu
+          }, 1500); // Dá um tempo para o usuário ler a mensagem de sucesso
+        } else {
+          showMessage(changePasswordMessageDiv, data.message, 'error');
+        }
+      } catch (error) {
+        console.error('Erro ao alterar senha:', error);
+        showMessage(changePasswordMessageDiv, 'Ocorreu um erro ao tentar alterar a senha. Tente novamente.', 'error');
+      } finally {
+        toggleSpinner(changePasswordButton, changePasswordSpinner, false); // Esconde spinner
+      }
+    });
+
+    // Fecha o modal se o usuário clicar fora dele
+    window.onclick = function(event) {
+      if (event.target == passwordChangeModal) {
+        closeModal();
+      }
+    }
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,262 @@
+/* Estilos do Slider */
+.spring-slider-container {
+    width: 100%;
+    max-width: 800px;
+    margin: 20px auto;
+    position: relative;
+    padding: 0 50px; /* Isso adiciona um padding lateral, que é importante considerar */
+}
+
+
+.spring-slider {
+    position: relative;
+    overflow: hidden;
+}
+
+.slider-track {
+    display: flex;
+    transition: transform 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+    will-change: transform;
+    gap: 15px; /* Manter o gap */
+}
+
+.slider-item {
+    min-width: calc(100% - 40px); /* Garante que o item ocupe a largura completa do contêiner menos padding */
+    padding: 0 10px; /* Padding interno */
+    flex-shrink: 0;
+    box-sizing: border-box; /* IMPORTANTE: Inclui padding na largura total do item */
+}
+.product-card {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    transition: transform 0.3s;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+}
+
+.imagem-produto {
+    max-width: 150px;
+    max-height: 150px;
+    object-fit: contain;
+    margin-bottom: 15px;
+}
+
+.product-info {
+    margin-bottom: 15px;
+}
+
+.quantity-input-group {
+    display: flex;
+    align-items: center;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-top: 10px;
+    justify-content: center;
+}
+
+.quantity-input-group input {
+    width: 50px;
+    height: 30px;
+    text-align: center;
+    border: none;
+    outline: none;
+    -moz-appearance: textfield;
+}
+
+.quantity-input-group input::-webkit-outer-spin-button,
+.quantity-input-group input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.quantity-input-group button {
+    background-color: var(--cor-principal);
+    color: white;
+    background-color: #f0f0f0;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 30px;
+}
+
+.quantity-input-group button:hover {
+    background-color: #e0e0e0;
+    background-color: var(--cor-secundaria);
+    color: white;
+}
+
+.slider-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #ddd;
+    font-size: 18px;
+    cursor: pointer;
+    z-index: 2;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s;
+    color: var(--cor-principal);
+    display: flex;
+    align-items: center;
+    justify-content: center;;
+}
+
+.slider-btn:hover {
+    background: var(--cor-principal);
+    color: white;
+}
+
+.prev-btn {
+    left: 0px;
+}
+
+.next-btn {
+    right: 0px;
+}
+
+.slider-dots {
+    display: flex;
+    justify-content: center;
+    margin-top: 15px;
+}
+
+.dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #ccc;
+    margin: 0 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.dot.active {
+    background: var(--cor-principal);
+}
+
+#total-pedido {
+    margin-top: 20px;
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.payment-options {
+    margin-top: 20px;
+    text-align: center; /* Centraliza o cabeçalho h3 */
+
+    /* Adicione estas propriedades para flexbox */
+    display: flex;
+    flex-wrap: wrap; /* Faz os itens quebrarem para a próxima linha se não houver espaço */
+    justify-content: center; /* Centraliza os itens horizontalmente */
+    gap: 10px; /* Adiciona um pequeno espaço entre as labels */
+}
+.payment-options h3 {
+    margin-top: 0; /* Remove a margem superior para melhor alinhamento */
+    margin-bottom: 10px;
+    width: 100%; /* Garante que o título ocupe a largura total */
+}
+
+
+.payment-options label {
+    /* Mantenha suas propriedades existentes aqui */
+    margin: 0; /* Remove margens extras que podem atrapalhar o flexbox */
+    padding: 8px 15px; /* Adicione padding para as labels */
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    cursor: pointer;
+    background-color: #f0f0f0;
+    transition: background-color 0.2s, border-color 0.2s;
+    display: inline-flex; /* Usa inline-flex para alinhar o input e o texto */
+    align-items: center; /* Alinha o conteúdo verticalmente */
+    white-space: nowrap; /* Impede que o texto dentro da label quebre */
+}
+
+.payment-options label input[type="radio"] {
+    margin-right: 8px; /* Espaço entre o radio button e o texto */
+}
+
+.payment-options label:hover {
+    background-color: #e0e0e0;
+    border-color: var(--cor-principal);
+}
+
+.payment-options label input[type="radio"]:checked + span { /* Se você envolver o texto em um span */
+    color: var(--cor-principal);
+    font-weight: bold;
+}
+
+.payment-options label input[type="radio"]:checked {
+    accent-color: var(--cor-principal); /* Destaca o radio button selecionado */
+}
+
+/* Estilos para o campo de troco */
+#troco-field {
+    width: 100%; /* Ocupa a largura total para ficar abaixo das opções */
+    margin-top: 15px;
+    text-align: center; /* Centraliza o conteúdo do campo de troco */
+}
+
+#troco-field label, #troco-field input, #troco-field p {
+    display: block; /* Garante que cada elemento do troco fique em sua própria linha */
+    margin: 5px auto; /* Centraliza e adiciona margem vertical */
+    max-width: 250px; /* Limita a largura dos inputs para melhor visualização */
+}
+
+#troco-field input {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+#confirmarPedido {
+    display: block;
+    margin: 20px auto;
+    padding: 10px 20px;
+    background-color: var(--cor-principal);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+#confirmarPedido:hover {
+    background-color: var(--cor-secundaria);
+}
+
+/* Responsividade */
+@media (min-width: 600px) {
+    .slider-item {
+        min-width: calc(50% - 20px);
+    }
+}
+
+@media (min-width: 900px) {
+    .slider-item {
+        min-width: calc(33.33% - 27px);
+    }
+}
+
