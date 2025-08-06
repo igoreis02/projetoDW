@@ -7,17 +7,8 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "gerenciamento_manutencoes";
-
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-if ($conn->connect_error) {
-    echo json_encode(['success' => false, 'message' => "Falha na conexão: " . $conn->connect_error]);
-    exit();
-}
+// Inclui o arquivo de conexão com o banco de dados
+require_once 'conexao_bd.php';
 
 // Recebe os dados do corpo da requisição JSON
 $input = file_get_contents('php://input');

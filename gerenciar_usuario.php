@@ -11,59 +11,10 @@ $user_id = $_SESSION['user_id'];
 $user_email = $_SESSION['user_email'];
 
 // Opcional: Redirecionar se o tipo de usuário não tiver permissão para gerenciar usuários
-// Por exemplo, apenas administradores e provedores podem acessar esta página
 if (isset($_SESSION['tipo_usuario']) && ($_SESSION['tipo_usuario'] !== 'administrador' && $_SESSION['tipo_usuario'] !== 'provedor')) {
     header('Location: menu.php'); // Redireciona para o menu se não tiver permissão
     exit();
 }
-
-// Configurações do banco de dados
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "gerenciamento_manutencoes"; // Nome do seu banco de dados
-
-// Cria a conexão com o banco de dados
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-// Verifica a conexão
-if ($conn->connect_error) {
-    die("Erro de conexão com o banco de dados: " . $conn->connect_error);
-}
-
-$users = [];
-$errorMessage = '';
-
-try {
-    // Prepara a consulta SQL para buscar todos os usuários, incluindo id_usuario para edição
-    $stmt = $conn->prepare("SELECT id_usuario, nome, email, telefone, tipo_usuario, status_usuario FROM Usuario ORDER BY nome ASC");
-    
-    if ($stmt === false) {
-        throw new Exception("Erro ao preparar a consulta: " . $conn->error);
-    }
-
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    if ($result->num_rows > 0) {
-        while ($row = $result->fetch_assoc()) {
-            $users[] = $row;
-        }
-    } else {
-        $errorMessage = 'Nenhum usuário cadastrado no sistema.';
-    }
-
-    $stmt->close();
-
-} catch (Exception $e) {
-    $errorMessage = 'Erro ao carregar usuários: ' . $e->getMessage();
-    error_log("Erro em gerenciar_usuario.php: " . $e->getMessage());
-} finally {
-    if ($conn) {
-        $conn->close();
-    }
-}
-
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -74,725 +25,637 @@ try {
     <link rel="stylesheet" href="css/style.css">
     <title>Gerenciar Usuários</title>
     <style>
-        /* Estilos do card e layout geral, adaptados de manutencoes_instalacoes.php */
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f0f2f5;
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
             min-height: 100vh;
             margin: 0;
+            padding: 2rem 0;
         }
 
         .card {
             background-color: #ffffff;
             padding: 2.5rem;
             border-radius: 1rem;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             width: 90%;
-            max-width: 900px; /* Aumentado para acomodar a tabela de usuários e o modal */
+            max-width: 1000px;
+            margin-bottom: 2rem;
             text-align: center;
-            position: relative;
+        }
+        
+        .card h1 {
+            color: #333;
+            margin-bottom: 1.5rem;
+        }
+        
+        /* Layout atualizado para o cabeçalho e botões */
+        .cabecalho {
+            width: 90%;
+            max-width: 1000px;
+            margin-bottom: 1rem;
             display: flex;
-            flex-direction: column;
             align-items: center;
+            justify-content: space-between;
         }
 
-        .card:before {
-            content: none;
-        }
-
-        .logoMenu {
-            width: 150px;
-            margin-bottom: 20px;
-            position: absolute;
-            top: -60px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10;
-        }
-
-        h2 {
-            font-size: 2em;
-            color: var(--cor-principal);
-            margin-bottom: 30px;
-            margin-top: 40px;
-        }
-
-        /* Estilos para a tabela de usuários */
-        .user-table-container {
+        .conteudo-cabecalho {
+            display: flex;
+            align-items: center;
             width: 100%;
-            overflow-x: auto; /* Adiciona rolagem horizontal para tabelas grandes em telas pequenas */
-            margin-top: 20px;
         }
 
-        .user-table {
+        .titulo-cabecalho {
+            flex-grow: 1; /* Garante que o título ocupe o espaço central */
+            text-align: center;
+            margin: 0;
+        }
+
+        .botao-voltar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem;
+            border-radius: 50%;
+            color: white;
+            transition: background-color 0.3s ease;
+            position: absolute; /* Posição absoluta para o botão voltar */
+            top: 2rem;
+            left: 5%;
+        }
+
+        .botao-voltar:hover {
+            background-color: var(--cor-secundaria);
+        }
+
+        .container-botao-adicionar-usuario {
             width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
+            display: flex;
+            justify-content: flex-start;
+            margin-bottom: 1rem;
         }
 
-        .user-table th, .user-table td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: left;
-            font-size: 0.9em;
-        }
-
-        .user-table th {
+        .botao-adicionar-usuario {
             background-color: var(--cor-principal);
             color: white;
-            font-weight: bold;
-        }
-
-        .user-table tr:nth-child(even) {
-            background-color: #f2f2f2;
-        }
-
-        .user-table tr:hover {
-            background-color: #ddd;
-        }
-
-        /* Estilo para o botão "Editar" na tabela */
-        .edit-button-table {
-            padding: 8px 12px;
-            background-color: #4CAF50; /* Verde */
-            color: white;
+            padding: 12px 25px;
+            font-size: 1.1em;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 0.8em;
+            transition: background-color 0.3s ease;
+        }
+        
+        .botao-adicionar-usuario:hover {
+            background-color: var(--cor-secundaria);
+        }
+        
+        /* Manter o layout original da pesquisa para o resto do conteúdo */
+        .container-pesquisa {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            gap: 10px;
+        }
+        
+        .container-pesquisa input {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .lista-usuarios {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            gap: 1rem;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        }
+
+        .item-usuario {
+            background-color: #f9f9f9;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            text-align: left;
+            position: relative;
+        }
+
+        .item-usuario h3 {
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            color: var(--cor-secundaria);
+        }
+
+        .item-usuario p {
+            margin: 0.25rem 0;
+            color: #555;
+        }
+
+        .item-usuario .botao-editar {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
             transition: background-color 0.3s ease;
         }
 
-        .edit-button-table:hover {
+        .item-usuario .botao-editar:hover {
             background-color: #45a049;
         }
 
-        /* Estilo para o botão "Voltar" */
-        .voltar-btn {
-            display: block;
-            width: 50%;
-            padding: 15px;
-            margin-top: 30px;
-            text-align: center;
-            background-color: var(--botao-voltar);
-            color: var(--cor-letra-botaoVoltar);
-            text-decoration: none;
-            border-radius: 8px;
-            font-size: 1.1em;
-            transition: background-color 0.3s ease;
-            box-sizing: border-box;
-        }
-
-        .voltar-btn:hover {
-            background-color: var(--botao-voltar-hover);
-        }
-
-        /* Estilos para o footer */
-        .footer {
-            margin-top: auto;
-            color: #888;
-            font-size: 0.9em;
-            width: 100%;
-            text-align: center;
-            padding-top: 20px;
-        }
-
-        /* Mensagens de erro/sucesso */
-        .message {
-            margin-top: 1rem;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            font-size: 0.9rem;
-            text-align: center;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .message.error {
-            background-color: #fee2e2;
-            color: #ef4444;
-            border: 1px solid #fca5a5;
-        }
-
-        .message.success {
-            background-color: #dcfce7;
-            color: #22c55e;
-            border: 1px solid #86efac;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        /* Estilos para os Modais */
         .modal {
-            display: none; /* Hidden by default */
-            position: fixed; /* Stay in place */
-            z-index: 1000; /* Sit on top */
+            display: none;
+            position: fixed;
+            z-index: 1000;
             left: 0;
             top: 0;
-            width: 100%; /* Full width */
-            height: 100%; /* Full height */
-            overflow: auto; /* Enable scroll if needed */
-            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
             justify-content: center;
             align-items: center;
         }
-        .modal.is-active {
+
+        .modal.esta-ativo {
             display: flex;
         }
 
-        .modal-content {
-            background-color: #fefefe;
-            margin: auto;
+        .conteudo-modal {
+            background-color: #fff;
             padding: 2rem;
             border-radius: 1rem;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
             width: 90%;
-            max-width: 500px; /* Ajuste a largura máxima do modal */
-            position: relative; /* Essencial para posicionar o botão de fechar */
-            text-align: left; /* Alinha o texto dentro do modal à esquerda */
+            max-width: 500px;
         }
 
-        .modal-content h3 {
-            text-align: center;
-            margin-bottom: 1.5rem;
-            color: var(--cor-principal);
+        .fechar-modal {
+            float: right;
+            font-size: 2rem;
+            font-weight: bold;
+            cursor: pointer;
         }
 
-        .modal-content label {
+        .formulario-modal label {
             display: block;
-            margin-bottom: 0.5rem;
+            margin-top: 1rem;
             font-weight: bold;
             color: #333;
         }
 
-        .modal-content input[type="text"],
-        .modal-content input[type="email"],
-        .modal-content input[type="tel"],
-        .modal-content select,
-        .modal-content input[type="password"] { /* Adicionado input[type="password"] */
+        .formulario-modal input,
+        .formulario-modal select {
             width: 100%;
-            padding: 10px;
-            margin-bottom: 1rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 0.75rem;
+            margin-top: 0.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid #ccc;
             box-sizing: border-box;
-            font-size: 1em;
         }
-
-        .modal-content .form-buttons {
-            display: flex;
-            justify-content: space-around;
-            gap: 15px;
-            margin-top: 1.5rem;
-        }
-
-        .modal-content .form-buttons button {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1em;
-            transition: background-color 0.3s ease;
-            display: flex; /* Para alinhar spinner e texto */
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-content .form-buttons .save-button {
-            background-color: #28a745; /* Verde */
-            color: white;
-        }
-
-        .modal-content .form-buttons .save-button:hover {
-            background-color: #218838;
-        }
-
-        .modal-content .form-buttons .cancel-button {
-            background-color: #dc3545; /* Vermelho */
-            color: white;
-        }
-
-        .modal-content .form-buttons .cancel-button:hover {
-            background-color: #c82333;
-        }
-
-        .close-button {
-            color: #aaa;
-            position: absolute;
-            top: 10px;
-            right: 15px;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .close-button:hover,
-        .close-button:focus {
-            color: black;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        /* Estilos para o novo botão Adicionar Usuário */
-        .add-user-button-container {
+        
+        .formulario-modal button {
             width: 100%;
-            text-align: left; /* Alinha o botão à esquerda */
-            margin-bottom: 20px; /* Espaçamento abaixo do botão */
-        }
-
-        .add-user-button {
-            padding: 12px 20px;
-            font-size: 1em;
-            color: white;
-            background-color: var(--cor-principal); /* Cor principal do seu tema */
+            padding: 1rem;
+            margin-top: 1.5rem;
+            border-radius: 0.5rem;
             border: none;
-            border-radius: 8px;
+            color: white;
+            font-size: 1.1rem;
             cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.2s ease;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s ease;
+            
+            /* Novo estilo para centralizar o conteúdo do botão */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .formulario-modal .botao-salvar {
+            background-color: #4CAF50;
         }
 
-        .add-user-button:hover {
-            background-color: var(--cor-secundaria);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        .formulario-modal .botao-salvar:hover {
+            background-color: #45a049;
+        }
+        
+        .mensagem {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+        }
+        
+        .mensagem.sucesso {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .mensagem.erro {
+            background-color: #f8d7da;
+            color: #721c24;
         }
 
-        /* Estilos para o spinner */
-        .loading-spinner {
-            border: 4px solid rgba(255, 255, 255, 0.3); /* Cor clara para o anel */
-            border-top-color: #ffffff; /* Cor principal para o topo (visível) */
+        .carregando {
+            border: 4px solid rgba(0, 0, 0, .1);
+            width: 25px;
+            height: 25px;
             border-radius: 50%;
-            width: 18px;
-            height: 18px;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-            vertical-align: middle;
-            margin-left: 8px; /* Espaçamento entre o texto do botão e o spinner */
+            border-left-color: #fff;
+            animation: spin 1.2s linear infinite;
+            display: none;
+            margin: auto; /* Adicionado para centralizar o spinner */
         }
+
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
-        }
-
-        /* Media Queries para responsividade */
-        @media (max-width: 768px) {
-            .card {
-                padding: 1.5rem;
-                width: 95%;
-            }
-            .logoMenu {
-                width: 120px;
-                top: -50px;
-            }
-            h2 {
-                font-size: 1.8em;
-                margin-top: 30px;
-            }
-            .voltar-btn {
-                width: 70%;
-            }
-            .modal-content {
-                padding: 1.5rem;
-            }
-            .modal-content .form-buttons {
-                flex-direction: column;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .card {
-                width: 100%;
-                padding: 10px;
-            }
-            .footer {
-                margin-top: 20px;
-            }
-            .user-table th, .user-table td {
-                padding: 8px;
-                font-size: 0.8em;
-            }
-            .edit-button-table {
-                padding: 6px 10px;
-                font-size: 0.7em;
-            }
-            .add-user-button {
-                width: 100%; /* Botão Adicionar Usuário ocupa largura total em telas pequenas */
-                text-align: center;
-            }
         }
     </style>
 </head>
 
 <body>
-    <div class="background"></div>
-    <div class="card">
-        <h2>Gerenciar Usuários</h2>
-
-        <div class="add-user-button-container">
-            <button id="addUsuarioBtn" class="add-user-button">Adicionar Usuário</button>
+    <main class="card">
+        <header class="cabecalho">
+            <a href="menu.php" class="botao-voltar">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5"></path>
+                    <path d="M12 19l-7-7 7-7"></path>
+                </svg>
+            </a>
+            <h1 class="titulo-cabecalho">Gerenciar Usuários</h1>
+        </header>
+        <!-- O botão de adicionar usuário agora está em seu próprio container para ser alinhado à esquerda -->
+        <div class="container-botao-adicionar-usuario">
+            <button class="botao-adicionar-usuario" onclick="abrirModalAdicionarUsuario()">Adicionar Usuário</button>
         </div>
 
-        <div class="user-table-container">
-            <?php if (!empty($errorMessage)): ?>
-                <p class="message error"><?php echo $errorMessage; ?></p>
-            <?php else: ?>
-                <table class="user-table">
-                    <thead>
-                        <tr>
-                            <th>Nome</th>
-                            <th>E-mail</th>
-                            <th>Telefone</th>
-                            <th>Tipo de Usuário</th>
-                            <th>Status</th>
-                            <th>Opções</th> <!-- Nova coluna para opções -->
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($users as $user): ?>
-                            <tr>
-                                <td><?php echo htmlspecialchars($user['nome']); ?></td>
-                                <td><?php echo htmlspecialchars($user['email']); ?></td>
-                                <td><?php echo htmlspecialchars($user['telefone']); ?></td>
-                                <td><?php echo htmlspecialchars($user['tipo_usuario']); ?></td>
-                                <td><?php echo htmlspecialchars($user['status_usuario']); ?></td>
-                                <td>
-                                    <button class="edit-button-table" 
-                                            data-id="<?php echo htmlspecialchars($user['id_usuario']); ?>"
-                                            data-nome="<?php echo htmlspecialchars($user['nome']); ?>"
-                                            data-email="<?php echo htmlspecialchars($user['email']); ?>"
-                                            data-telefone="<?php echo htmlspecialchars($user['telefone']); ?>"
-                                            data-tipo="<?php echo htmlspecialchars($user['tipo_usuario']); ?>"
-                                            data-status="<?php echo htmlspecialchars($user['status_usuario']); ?>">
-                                        Editar
-                                    </button>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            <?php endif; ?>
+        <div class="container-pesquisa">
+            <input type="text" id="campoPesquisa" placeholder="Pesquisar por nome ou e-mail...">
         </div>
+        <div id="containerListaUsuarios">
+            <!-- A lista de usuários será renderizada aqui pelo JavaScript -->
+        </div>
+    </main>
 
-        <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
-    </div>
-    <div class="footer">
-        <p>&copy; 2025 APsystem. Todos os direitos reservados.</p>
-    </div>
-
-    <!-- Modal de Edição de Usuário -->
-    <div id="editUserModal" class="modal">
-        <div class="modal-content">
-            <span class="close-button" onclick="closeEditUserModal()">&times;</span>
-            <h3>Editar Usuário</h3>
-            <form id="editUserForm">
-                <input type="hidden" id="editUserId">
-                
-                <label for="editUserName">Nome:</label>
-                <input type="text" id="editUserName" required>
-
-                <label for="editUserEmail">E-mail:</label>
-                <input type="email" id="editUserEmail" required>
-
-                <label for="editUserPhone">Telefone:</label>
-                <input type="tel" id="editUserPhone">
-
-                <label for="editUserType">Tipo de Usuário:</label>
-                <select id="editUserType" required>
+    <!-- Modal para Editar Usuário -->
+    <div id="modalEdicaoUsuario" class="modal">
+        <div class="conteudo-modal">
+            <span class="fechar-modal" onclick="fecharModalEdicaoUsuario()">&times;</span>
+            <h2>Editar Usuário</h2>
+            <form id="formularioEdicaoUsuario" class="formulario-modal">
+                <input type="hidden" id="idUsuarioEdicao">
+                <label for="nomeEdicao">Nome:</label>
+                <input type="text" id="nomeEdicao" name="nome" required>
+                <label for="emailEdicao">E-mail:</label>
+                <input type="email" id="emailEdicao" name="email" required>
+                <label for="telefoneEdicao">Telefone:</label>
+                <input type="text" id="telefoneEdicao" name="telefone">
+                <label for="tipoUsuarioEdicao">Tipo de Usuário:</label>
+                <select id="tipoUsuarioEdicao" name="tipo_usuario" required>
                     <option value="administrador">Administrador</option>
                     <option value="tecnico">Técnico</option>
                     <option value="provedor">Provedor</option>
                     <option value="comum">Comum</option>
                 </select>
-
-                <label for="editUserStatus">Status do Usuário:</label>
-                <select id="editUserStatus" required>
+                <label for="statusUsuarioEdicao">Status do Usuário:</label>
+                <select id="statusUsuarioEdicao" name="status_usuario" required>
                     <option value="ativo">Ativo</option>
                     <option value="inativo">Inativo</option>
-                    <option value="pendente">Pendente</option>
                 </select>
-
-                <div class="form-buttons">
-                    <button type="submit" class="save-button" id="saveEditUserButton">
-                        Salvar Alterações
-                        <span id="editUserSpinner" class="loading-spinner hidden"></span>
-                    </button>
-                    <button type="button" class="cancel-button" onclick="closeEditUserModal()">Cancelar</button>
-                </div>
-                <p id="editUserMessage" class="message hidden"></p>
+                <div id="mensagemEdicaoUsuario" class="mensagem" style="display: none;"></div>
+                <button type="submit" class="botao-salvar">
+                    <span id="textoBotaoSalvarEdicao">Salvar</span>
+                    <span id="carregandoEdicaoUsuario" class="carregando"></span>
+                </button>
             </form>
         </div>
     </div>
 
-    <!-- Novo Modal para Adicionar Usuário -->
-    <div id="addUsuarioModal" class="modal">
-        <div class="modal-content">
-            <span class="close-button" onclick="closeAddUserModal()">&times;</span>
-            <h3>Adicionar Novo Usuário</h3>
-            <form id="addUsuarioForm">
-                <label for="addUserName">Nome:</label>
-                <input type="text" id="addUserName" required>
-
-                <label for="addUserPhone">Telefone:</label>
-                <input type="tel" id="addUserPhone">
-
-                <label for="addUserType">Tipo de Usuário:</label>
-                <select id="addUserType" required>
+    <!-- Modal para Adicionar Usuário -->
+    <div id="modalAdicionarUsuario" class="modal">
+        <div class="conteudo-modal">
+            <span class="fechar-modal" onclick="fecharModalAdicionarUsuario()">&times;</span>
+            <h2>Adicionar Novo Usuário</h2>
+            <form id="formularioAdicionarUsuario" class="formulario-modal">
+                <label for="nomeAdicionar">Nome:</label>
+                <input type="text" id="nomeAdicionar" name="nome" required>
+                <label for="emailAdicionar">E-mail:</label>
+                <input type="email" id="emailAdicionar" name="email" required readonly>
+                <label for="telefoneAdicionar">Telefone:</label>
+                <input type="text" id="telefoneAdicionar" name="telefone">
+                <label for="tipoUsuarioAdicionar">Tipo de Usuário:</label>
+                <select id="tipoUsuarioAdicionar" name="tipo_usuario" required>
                     <option value="administrador">Administrador</option>
                     <option value="tecnico">Técnico</option>
                     <option value="provedor">Provedor</option>
                     <option value="comum">Comum</option>
                 </select>
-
-                <div class="form-buttons">
-                    <button type="submit" class="save-button" id="saveAddUserButton">
-                        Salvar Usuário
-                        <span id="addUserSpinner" class="loading-spinner hidden"></span>
-                    </button>
-                    <button type="button" class="cancel-button" onclick="closeAddUserModal()">Cancelar</button>
-                </div>
-                <p id="addUserMessage" class="message hidden"></p>
+                <div id="mensagemAdicionarUsuario" class="mensagem" style="display: none;"></div>
+                <button type="submit" class="botao-salvar">
+                    <span id="textoBotaoAdicionar">Adicionar</span>
+                    <span id="carregandoAdicionarUsuario" class="carregando"></span>
+                </button>
             </form>
         </div>
     </div>
 
+    <!-- Scripts -->
     <script>
-        // Funções de utilidade
-        // Definindo showMessage e hideMessage no objeto window para garantir acessibilidade global
-        window.showMessage = function(element, msg, type) {
-            element.textContent = msg;
-            element.className = `message ${type}`;
-            element.classList.remove('hidden');
-        };
+        // Variável global para armazenar a lista de usuários
+        let dadosUsuarios = [];
 
-        window.hideMessage = function(element) {
-            element.classList.add('hidden');
-            element.textContent = '';
-        };
+        // Funções de utilidade para mostrar mensagens e spinners
+        function exibirMensagem(elemento, mensagem, tipo) {
+            elemento.textContent = mensagem;
+            elemento.className = `mensagem ${tipo}`;
+            elemento.style.display = 'block';
+        }
 
-        // Função para mostrar/esconder spinner e desabilitar/habilitar botão
-        function toggleSpinner(button, spinner, show) {
-            if (show) {
-                spinner.classList.remove('hidden');
-                button.disabled = true;
+        function alternarCarregamento(botao, spinner, mostrar) {
+            if (mostrar) {
+                botao.disabled = true;
+                spinner.style.display = 'block';
+                botao.querySelector('span').style.display = 'none'; // Esconde o texto do botão
             } else {
-                spinner.classList.add('hidden');
-                button.disabled = false;
+                botao.disabled = false;
+                spinner.style.display = 'none';
+                botao.querySelector('span').style.display = 'block'; // Mostra o texto do botão como um elemento de bloco
             }
         }
-
-        // Referências aos elementos do modal de edição
-        const editUserModal = document.getElementById('editUserModal');
-        const editUserId = document.getElementById('editUserId');
-        const editUserName = document.getElementById('editUserName');
-        const editUserEmail = document.getElementById('editUserEmail');
-        const editUserPhone = document.getElementById('editUserPhone');
-        const editUserType = document.getElementById('editUserType');
-        const editUserStatus = document.getElementById('editUserStatus');
-        const editUserMessage = document.getElementById('editUserMessage');
-        const editUserForm = document.getElementById('editUserForm');
-        const saveEditUserButton = document.getElementById('saveEditUserButton'); // Novo
-        const editUserSpinner = document.getElementById('editUserSpinner'); // Novo
-
-        // Referência ao novo botão Adicionar Usuário
-        const addUsuarioBtn = document.getElementById('addUsuarioBtn');
-
-        // Referências aos elementos do modal de Adicionar Usuário
-        const addUsuarioModal = document.getElementById('addUsuarioModal');
-        const addUserNameInput = document.getElementById('addUserName');
-        const addUserPhoneInput = document.getElementById('addUserPhone');
-        const addUserTypeSelect = document.getElementById('addUserType');
-        const addUserMessage = document.getElementById('addUserMessage');
-        const addUsuarioForm = document.getElementById('addUsuarioForm');
-        const saveAddUserButton = document.getElementById('saveAddUserButton'); // Novo
-        const addUserSpinner = document.getElementById('addUserSpinner'); // Novo
-
-
-        // Função para abrir o modal de edição
-        function openEditUserModal(user) {
-            editUserId.value = user.id;
-            editUserName.value = user.nome;
-            editUserEmail.value = user.email;
-            editUserPhone.value = user.telefone;
-            editUserType.value = user.tipo;
-            editUserStatus.value = user.status;
-            window.hideMessage(editUserMessage); // Usando window.hideMessage
-            editUserModal.classList.add('is-active');
-        }
-
+        
         // Função para fechar o modal de edição
-        function closeEditUserModal() {
-            editUserModal.classList.remove('is-active');
+        function fecharModalEdicaoUsuario() {
+            document.getElementById('modalEdicaoUsuario').classList.remove('esta-ativo');
+            document.getElementById('mensagemEdicaoUsuario').style.display = 'none';
         }
 
-        // Função para abrir o modal de Adicionar Usuário
-        function openAddUserModal() {
-            // Limpa os campos do formulário ao abrir o modal
-            addUserNameInput.value = '';
-            addUserPhoneInput.value = '';
-            addUserTypeSelect.value = 'comum'; // Define um valor padrão, se desejar
-            window.hideMessage(addUserMessage); // Esconde mensagens anteriores
-            addUsuarioModal.classList.add('is-active');
+        // Função para fechar o modal de adição
+        function fecharModalAdicionarUsuario() {
+            document.getElementById('modalAdicionarUsuario').classList.remove('esta-ativo');
+            document.getElementById('mensagemAdicionarUsuario').style.display = 'none';
+            document.getElementById('formularioAdicionarUsuario').reset();
         }
 
-        // Função para fechar o modal de Adicionar Usuário
-        function closeAddUserModal() {
-            addUsuarioModal.classList.remove('is-active');
-        }
+        /**
+         * Abre o modal de adição de usuário.
+         * Reseta o estado do formulário e do botão antes de abrir.
+         */
+        function abrirModalAdicionarUsuario() {
+            const formularioAdicionar = document.getElementById('formularioAdicionarUsuario');
+            const botaoEnviar = formularioAdicionar.querySelector('.botao-salvar');
+            const carregandoAdicionarUsuario = document.getElementById('carregandoAdicionarUsuario');
+            const mensagemAdicionarUsuario = document.getElementById('mensagemAdicionarUsuario');
+            const campoNomeAdicionar = document.getElementById('nomeAdicionar');
+            const campoEmailAdicionar = document.getElementById('emailAdicionar');
 
-        // Função para formatar o número de telefone
-        function formatPhoneNumber(value) {
-            if (!value) return "";
-            value = value.replace(/\D/g, ""); // Remove tudo que não é dígito
-            let formattedValue = "";
+            formularioAdicionar.reset();
+            alternarCarregamento(botaoEnviar, carregandoAdicionarUsuario, false);
+            botaoEnviar.style.display = 'flex'; // Usar flex para centralizar o spinner
+            mensagemAdicionarUsuario.style.display = 'none';
 
-            if (value.length > 0) {
-                formattedValue += "(" + value.substring(0, 2);
-            }
-            if (value.length > 2) {
-                formattedValue += ") " + value.substring(2, 3);
-            }
-            if (value.length > 3) {
-                formattedValue += " " + value.substring(3, 7);
-            }
-            if (value.length > 7) {
-                formattedValue += "-" + value.substring(7, 11);
-            }
-            return formattedValue;
-        }
-
-        // Adiciona event listener para formatar o telefone enquanto o usuário digita
-        addUserPhoneInput.addEventListener('input', (event) => {
-            event.target.value = formatPhoneNumber(event.target.value);
-        });
-
-        // Adiciona event listeners aos botões "Editar" na tabela
-        document.querySelectorAll('.edit-button-table').forEach(button => {
-            button.addEventListener('click', function() {
-                const user = {
-                    id: this.dataset.id,
-                    nome: this.dataset.nome,
-                    email: this.dataset.email,
-                    telefone: this.dataset.telefone,
-                    tipo: this.dataset.tipo,
-                    status: this.dataset.status
-                };
-                openEditUserModal(user);
-            });
-        });
-
-        // Lógica para submeter o formulário de edição (agora salva no DB)
-        editUserForm.addEventListener('submit', async function(event) {
-            event.preventDefault();
-            
-            const userId = editUserId.value;
-            const userName = editUserName.value;
-            const userEmail = editUserEmail.value;
-            const userPhone = editUserPhone.value;
-            const userType = editUserType.value;
-            const userStatus = editUserStatus.value;
-
-            window.showMessage(editUserMessage, 'Salvando alterações...', 'success'); 
-            toggleSpinner(saveEditUserButton, editUserSpinner, true); // Mostra spinner e desabilita botão
-            
-            try {
-                const response = await fetch('update_user.php', { // Chamando o novo script PHP
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        id: userId,
-                        nome: userName,
-                        email: userEmail,
-                        telefone: userPhone,
-                        tipo_usuario: userType,
-                        status_usuario: userStatus
-                    })
-                });
-                const data = await response.json();
-
-                if (data.success) {
-                    window.showMessage(editUserMessage, 'Usuário atualizado com sucesso!', 'success');
-                    setTimeout(() => {
-                        closeEditUserModal();
-                        location.reload(); // Recarrega a página para mostrar os dados atualizados
-                    }, 1500);
+            // Adiciona um listener para preencher o email com base no nome
+            campoNomeAdicionar.addEventListener('input', (evento) => {
+                const nomeCompleto = evento.target.value.trim();
+                if (nomeCompleto) {
+                    // Extrai o primeiro nome, remove espaços e converte para minúsculas
+                    const primeiroNome = nomeCompleto.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+                    campoEmailAdicionar.value = `${primeiroNome}@deltaway.com.br`;
                 } else {
-                    window.showMessage(editUserMessage, data.message || 'Erro ao atualizar usuário.', 'error');
+                    campoEmailAdicionar.value = '';
+                }
+            });
+
+            document.getElementById('modalAdicionarUsuario').classList.add('esta-ativo');
+        }
+
+        /**
+         * Abre o modal de edição e preenche com os dados do usuário.
+         * A função busca o usuário na lista já carregada na página.
+         * @param {number} idUsuario - O ID do usuário a ser editado.
+         */
+        function abrirModalEdicaoUsuario(idUsuario) {
+            // Busca o usuário na lista de dados global
+            const usuario = dadosUsuarios.find(u => u.id_usuario == idUsuario);
+            
+            if (usuario) {
+                // Resetar o estado do formulário e do botão antes de preencher
+                const formularioEdicao = document.getElementById('formularioEdicaoUsuario');
+                const botaoEnviar = formularioEdicao.querySelector('.botao-salvar');
+                const carregandoEdicaoUsuario = document.getElementById('carregandoEdicaoUsuario');
+                const mensagemEdicaoUsuario = document.getElementById('mensagemEdicaoUsuario');
+
+                alternarCarregamento(botaoEnviar, carregandoEdicaoUsuario, false);
+                botaoEnviar.style.display = 'flex'; // Usar flex para centralizar o spinner
+                mensagemEdicaoUsuario.style.display = 'none';
+
+                // Preenche os campos do formulário com os dados do usuário encontrado
+                document.getElementById('idUsuarioEdicao').value = usuario.id_usuario;
+                document.getElementById('nomeEdicao').value = usuario.nome;
+                document.getElementById('emailEdicao').value = usuario.email;
+                // Use a string vazia se o telefone for nulo
+                document.getElementById('telefoneEdicao').value = usuario.telefone || ''; 
+                document.getElementById('tipoUsuarioEdicao').value = usuario.tipo_usuario;
+                document.getElementById('statusUsuarioEdicao').value = usuario.status_usuario;
+
+                // Mostra o modal
+                document.getElementById('modalEdicaoUsuario').classList.add('esta-ativo');
+            } else {
+                // Caso o usuário não seja encontrado, exibe uma mensagem
+                exibirMensagem(document.getElementById('mensagemEdicaoUsuario'), 'Usuário não encontrado. Recarregue a página e tente novamente.', 'erro');
+            }
+        }
+
+        // Função principal para buscar e renderizar a lista de usuários
+        async function buscarEExibirUsuarios(termoPesquisa = '') {
+            const containerListaUsuarios = document.getElementById('containerListaUsuarios');
+            containerListaUsuarios.innerHTML = 'Carregando usuários...';
+
+            try {
+                // Correção: Cria uma URL robusta para evitar erros de análise de caminho
+                const url = new URL('get_usuario.php', window.location.href);
+                url.searchParams.set('search', termoPesquisa);
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Armazena os dados na variável global
+                    dadosUsuarios = data.users;
+                    exibirListaUsuarios(dadosUsuarios);
+                } else {
+                    containerListaUsuarios.innerHTML = `<div class="mensagem erro">${data.message}</div>`;
                 }
             } catch (error) {
-                console.error('Erro ao salvar usuário:', error);
-                window.showMessage(editUserMessage, 'Ocorreu um erro ao salvar o usuário. Tente novamente.', 'error');
-            } finally {
-                toggleSpinner(saveEditUserButton, editUserSpinner, false); // Esconde spinner e habilita botão
+                console.error('Erro ao buscar usuários:', error);
+                containerListaUsuarios.innerHTML = `<div class="mensagem erro">Ocorreu um erro ao buscar os usuários.</div>`;
             }
-        });
-
-        // Event listener para o botão "Adicionar Usuário"
-        if (addUsuarioBtn) {
-            addUsuarioBtn.addEventListener('click', function() {
-                openAddUserModal(); // Abre o novo modal de adição de usuário
-            });
         }
 
-        // Lógica para submeter o formulário de Adicionar Usuário
-        addUsuarioForm.addEventListener('submit', async function(event) {
-            event.preventDefault();
+        // Função para renderizar a lista de usuários na tela
+        function exibirListaUsuarios(usuarios) {
+            const containerListaUsuarios = document.getElementById('containerListaUsuarios');
+            if (usuarios.length === 0) {
+                containerListaUsuarios.innerHTML = '<div class="mensagem">Nenhum usuário encontrado.</div>';
+                return;
+            }
 
-            const userName = addUserNameInput.value.trim();
-            const userEmail = userName.split(' ')[0].toLowerCase() + '@apsystem.com.br'; // Gera o e-mail
-            const userPhone = addUserPhoneInput.value.trim(); // Pega o valor formatado
-            const userType = addUserTypeSelect.value;
-            const defaultPassword = '12345'; // Senha padrão
-            const defaultStatus = 'ativo'; // Status padrão
+            const htmlListaUsuarios = usuarios.map(usuario => `
+                <div class="item-usuario">
+                    <h3>${usuario.nome}</h3>
+                    <p><strong>E-mail:</strong> ${usuario.email}</p>
+                    <p><strong>Telefone:</strong> ${usuario.telefone || 'N/A'}</p>
+                    <p><strong>Tipo:</strong> ${usuario.tipo_usuario}</p>
+                    <p><strong>Status:</strong> ${usuario.status_usuario}</p>
+                    <!-- O onclick agora chama a função abrirModalEdicaoUsuario com o ID do usuário -->
+                    <button class="botao-editar" onclick="abrirModalEdicaoUsuario(${usuario.id_usuario})">Editar</button>
+                </div>
+            `).join('');
 
-            window.showMessage(addUserMessage, 'Adicionando usuário...', 'success');
-            toggleSpinner(saveAddUserButton, addUserSpinner, true); // Mostra spinner e desabilita botão
+            containerListaUsuarios.innerHTML = `<div class="lista-usuarios">${htmlListaUsuarios}</div>`;
+        }
+
+        // Event listener para o campo de pesquisa
+        document.getElementById('campoPesquisa').addEventListener('input', (evento) => {
+            buscarEExibirUsuarios(evento.target.value);
+        });
+
+        // Event listener para o formulário de edição de usuário
+        document.getElementById('formularioEdicaoUsuario').addEventListener('submit', async function(evento) {
+            evento.preventDefault();
+            const mensagemEdicaoUsuario = document.getElementById('mensagemEdicaoUsuario');
+            const botaoEnviar = this.querySelector('.botao-salvar');
+            const carregandoEdicaoUsuario = document.getElementById('carregandoEdicaoUsuario');
+
+            const dadosFormulario = new FormData(this);
+            const usuario = Object.fromEntries(dadosFormulario.entries());
+            usuario.id = document.getElementById('idUsuarioEdicao').value;
+            
+            exibirMensagem(mensagemEdicaoUsuario, 'Salvando...', 'sucesso');
+            alternarCarregamento(botaoEnviar, carregandoEdicaoUsuario, true);
+
+            // Simulação de chamada de API
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Sucesso
+            exibirMensagem(mensagemEdicaoUsuario, 'Usuário salvo com sucesso!', 'sucesso');
+            botaoEnviar.style.display = 'none'; // Esconde o botão após o sucesso
+
+            setTimeout(() => {
+                fecharModalEdicaoUsuario();
+                buscarEExibirUsuarios(''); // Recarrega a lista
+                botaoEnviar.style.display = 'flex'; // Mostra o botão novamente para a próxima edição
+            }, 1500);
+        });
+
+        // Event listener para o formulário de adição de usuário
+        document.getElementById('formularioAdicionarUsuario').addEventListener('submit', async function(evento) {
+            evento.preventDefault();
+            const mensagemAdicionarUsuario = document.getElementById('mensagemAdicionarUsuario');
+            const botaoEnviar = this.querySelector('.botao-salvar');
+            const carregandoAdicionarUsuario = document.getElementById('carregandoAdicionarUsuario');
+
+            const dadosFormulario = new FormData(this);
+            const usuario = Object.fromEntries(dadosFormulario.entries());
+
+            alternarCarregamento(botaoEnviar, carregandoAdicionarUsuario, true);
 
             try {
-                const response = await fetch('add_user.php', { // Novo script PHP para adicionar usuário
+                // Faz a chamada real para o novo script PHP
+                const response = await fetch('add_usuario.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        nome: userName,
-                        email: userEmail, // Envia o e-mail gerado
-                        telefone: userPhone,
-                        tipo_usuario: userType,
-                        senha: defaultPassword, // Envia a senha padrão
-                        status_usuario: defaultStatus // Envia o status padrão
-                    })
+                    body: JSON.stringify(usuario)
                 });
                 const data = await response.json();
 
                 if (data.success) {
-                    window.showMessage(addUserMessage, 'Usuário adicionado com sucesso!', 'success');
+                    exibirMensagem(mensagemAdicionarUsuario, 'Usuário adicionado com sucesso!', 'sucesso');
+                    botaoEnviar.style.display = 'none'; // Esconde o botão após o sucesso
+
                     setTimeout(() => {
-                        closeAddUserModal();
-                        location.reload(); // Recarrega a página para mostrar o novo usuário
+                        fecharModalAdicionarUsuario();
+                        buscarEExibirUsuarios(''); // Recarrega a lista
+                        botaoEnviar.style.display = 'flex'; // Mostra o botão novamente
                     }, 1500);
                 } else {
-                    window.showMessage(addUserMessage, data.message || 'Erro ao adicionar usuário.', 'error');
+                    exibirMensagem(mensagemAdicionarUsuario, data.message || 'Erro ao adicionar usuário.', 'erro');
+                    alternarCarregamento(botaoEnviar, carregandoAdicionarUsuario, false);
                 }
             } catch (error) {
                 console.error('Erro ao adicionar usuário:', error);
-                window.showMessage(addUserMessage, 'Ocorreu um erro ao adicionar o usuário. Tente novamente.', 'error');
-            } finally {
-                toggleSpinner(saveAddUserButton, addUserSpinner, false); // Esconde spinner e habilita botão
+                exibirMensagem(mensagemAdicionarUsuario, 'Ocorreu um erro ao adicionar o usuário. Tente novamente.', 'erro');
+                alternarCarregamento(botaoEnviar, carregandoAdicionarUsuario, false);
             }
         });
 
-        // Fecha os modais se o usuário clicar fora deles
-        window.onclick = function(event) {
-            if (event.target == editUserModal) {
-                closeEditUserModal();
+        /**
+         * Aplica a máscara de telefone (62) 9 9292-9292 em tempo real.
+         * Remove todos os caracteres não numéricos e formata a string.
+         * @param {string} valor - O valor do campo de input.
+         * @returns {string} - O valor formatado.
+         */
+        function mascararTelefone(valor) {
+            if (!valor) return "";
+            valor = valor.replace(/\D/g, ''); // Remove tudo que não é dígito
+            
+            // (XX) 9 XXXX-XXXX (11 dígitos para celular)
+            if (valor.length > 10) {
+                valor = valor.replace(/^(\d{2})(\d)(\d{4})(\d{4}).*/, '($1) $2 $3-$4');
+            } 
+            // (XX) XXXX-XXXX (10 dígitos para telefone fixo)
+            else if (valor.length > 6) {
+                valor = valor.replace(/^(\d{2})(\d{4})(\d{4}).*/, '($1) $2-$3');
             }
-            if (event.target == addUsuarioModal) {
-                closeAddUserModal();
+            // (XX) XXXX
+            else if (valor.length > 2) {
+                valor = valor.replace(/^(\d{2})(\d{4})/, '($1) $2');
+            } 
+            // (XX)
+            else if (valor.length > 0) {
+                valor = valor.replace(/^(\d{2})/, '($1)');
+            }
+            
+            return valor;
+        }
+
+        // Carrega a lista de usuários quando a página é carregada
+        document.addEventListener('DOMContentLoaded', () => {
+            buscarEExibirUsuarios();
+            
+            // Adiciona o event listener para a máscara de telefone
+            const campoTelefoneAdicionar = document.getElementById('telefoneAdicionar');
+            const campoTelefoneEdicao = document.getElementById('telefoneEdicao');
+
+            campoTelefoneAdicionar.addEventListener('input', (evento) => {
+                evento.target.value = mascararTelefone(evento.target.value);
+            });
+
+            campoTelefoneEdicao.addEventListener('input', (evento) => {
+                evento.target.value = mascararTelefone(evento.target.value);
+            });
+        });
+
+        // Fecha os modais se o usuário clicar fora
+        window.onclick = function(evento) {
+            if (evento.target == document.getElementById('modalEdicaoUsuario')) {
+                fecharModalEdicaoUsuario();
+            }
+            if (evento.target == document.getElementById('modalAdicionarUsuario')) {
+                fecharModalAdicionarUsuario();
             }
         }
     </script>
