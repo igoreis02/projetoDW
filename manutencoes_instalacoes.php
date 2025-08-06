@@ -473,7 +473,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
         <h2>Manutenções e Instalações</h2>
 
         <div class="page-buttons-container">
-            <button id="matrizManutencaoBtn" class="page-button">Matriz Manutenção</button>
+            <button id="matrizManutencaoBtn" class="page-button">Matriz Técnica</button>
             <button id="controleOcorrenciaBtn" class="page-button">Controle de Ocorrência</button>
             <button id="instalarEquipamentoBtn" class="page-button">Instalar equipamento</button>
         </div>
@@ -518,7 +518,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
                 <p id="equipmentErrorMessage" class="message error hidden"></p>
                 
                 <div id="problemDescriptionSection" class="problem-description-container">
-                    <label for="problemDescription">Informe o problema para reparo:</label>
+                    <label for="problemDescription">Descrição do problema:</label>
                     <textarea id="problemDescription" rows="4" placeholder="Descreva o problema aqui..."></textarea>
                     <span id="problemDescriptionErrorMessage" class="selection-error-message hidden"></span>
                 </div>
