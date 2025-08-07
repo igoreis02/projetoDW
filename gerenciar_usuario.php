@@ -533,33 +533,46 @@ if (isset($_SESSION['tipo_usuario']) && ($_SESSION['tipo_usuario'] !== 'administ
             buscarEExibirUsuarios(evento.target.value);
         });
 
-        // Event listener para o formulário de edição de usuário
         document.getElementById('formularioEdicaoUsuario').addEventListener('submit', async function(evento) {
-            evento.preventDefault();
-            const mensagemEdicaoUsuario = document.getElementById('mensagemEdicaoUsuario');
-            const botaoEnviar = this.querySelector('.botao-salvar');
-            const carregandoEdicaoUsuario = document.getElementById('carregandoEdicaoUsuario');
+    evento.preventDefault();
+    const mensagemEdicaoUsuario = document.getElementById('mensagemEdicaoUsuario');
+    const botaoEnviar = this.querySelector('.botao-salvar');
+    const carregandoEdicaoUsuario = document.getElementById('carregandoEdicaoUsuario');
 
-            const dadosFormulario = new FormData(this);
-            const usuario = Object.fromEntries(dadosFormulario.entries());
-            usuario.id = document.getElementById('idUsuarioEdicao').value;
-            
-            exibirMensagem(mensagemEdicaoUsuario, 'Salvando...', 'sucesso');
-            alternarCarregamento(botaoEnviar, carregandoEdicaoUsuario, true);
+    const dadosFormulario = new FormData(this);
+    const usuario = Object.fromEntries(dadosFormulario.entries());
+    usuario.id = document.getElementById('idUsuarioEdicao').value;
 
-            // Simulação de chamada de API
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // Sucesso
+    exibirMensagem(mensagemEdicaoUsuario, 'Salvando...', 'sucesso');
+    alternarCarregamento(botaoEnviar, carregandoEdicaoUsuario, true);
+
+    try {
+        const response = await fetch('update_usuario.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(usuario)
+        });
+        const data = await response.json();
+
+        if (data.success) {
             exibirMensagem(mensagemEdicaoUsuario, 'Usuário salvo com sucesso!', 'sucesso');
-            botaoEnviar.style.display = 'none'; // Esconde o botão após o sucesso
+            botaoEnviar.style.display = 'none';
 
             setTimeout(() => {
                 fecharModalEdicaoUsuario();
-                buscarEExibirUsuarios(''); // Recarrega a lista
-                botaoEnviar.style.display = 'flex'; // Mostra o botão novamente para a próxima edição
+                buscarEExibirUsuarios('');
+                botaoEnviar.style.display = 'flex';
             }, 1500);
-        });
+        } else {
+            exibirMensagem(mensagemEdicaoUsuario, data.message || 'Erro ao atualizar usuário.', 'erro');
+            alternarCarregamento(botaoEnviar, carregandoEdicaoUsuario, false);
+        }
+    } catch (error) {
+        console.error('Erro ao salvar usuário:', error);
+        exibirMensagem(mensagemEdicaoUsuario, 'Ocorreu um erro ao salvar o usuário. Tente novamente.', 'erro');
+        alternarCarregamento(botaoEnviar, carregandoEdicaoUsuario, false);
+    }
+});
 
         // Event listener para o formulário de adição de usuário
         document.getElementById('formularioAdicionarUsuario').addEventListener('submit', async function(evento) {
