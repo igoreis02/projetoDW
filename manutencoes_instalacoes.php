@@ -742,7 +742,6 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             cityErrorMessage.classList.add('hidden');
             cityButtonsContainer.innerHTML = '';
 
-            console.log('Abrindo modal: Carregando cidades...');
 
             try {
                 const response = await fetch('get_cidades.php');
@@ -1211,7 +1210,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
                         })
                     });
                     const addressData = await addressResponse.json();
-                    console.log('Resposta save_endereco.php:', addressData);
+                    
 
                     if (!addressData.success) {
                         toggleConfirmationButtons(false, 'Erro ao cadastrar endereço: ' + (addressData.message || 'Erro desconhecido.'), 'error');
