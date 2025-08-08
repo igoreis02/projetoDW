@@ -524,3 +524,160 @@
     text-align: center;
     font-weight: bold;
 }
+/* Estilo para o nome do equipamento */
+.equipamento-titulo {
+    font-size: 1.6rem;
+    font-weight: bold;
+    margin: 0 0 15px 0;
+    color: #333;
+    line-height: 1.2;
+}
+/* Estilo para a cidade */
+.equipamento-cidade {
+    margin: 0 0 15px 0;
+    font-size: 1.1rem;
+    color: #666;
+    font-weight: 500;
+}
+
+/* Container para data de execução */
+.data-execucao-container {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin: 15px 0;
+}
+
+/* Container para data de execução com dias */
+.data-execucao-linha {
+    margin: 15px 0;
+    font-size: 1rem;
+    color: #333;
+}
+
+.data-periodo {
+    color: #007bff;
+    font-weight: 600;
+}
+
+.dias-total {
+    color: #28a745;
+    font-weight: 600;
+    margin-left: 8px;
+}
+
+/* Caixa da data de execução */
+.data-execucao-caixa {
+    background-color: #e9ecef;
+    padding: 10px 15px;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+    flex-grow: 1;
+}
+
+.data-execucao-label {
+    font-weight: bold;
+    color: #495057;
+    margin-bottom: 3px;
+    display: block;
+    font-size: 0.9rem;
+}
+
+.data-execucao-periodo {
+    color: #007bff;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+/* Badge para quantidade de dias */
+.dias-reparo-badge {
+    background-color: #28a745;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    white-space: nowrap;
+    text-align: center;
+    min-width: 60px;
+}
+
+/* Informações da manutenção */
+.manutencao-info {
+    margin: 12px 0;
+    font-size: 1rem;
+    color: #333;
+    line-height: 1.4;
+}
+
+.manutencao-info-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+/* Estilo para ocorrência */
+.ocorrencia-info {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 6px;
+    padding: 10px;
+    margin: 12px 0;
+}
+
+/* Estilo para múltiplos veículos */
+.veiculos-info {
+    background-color: #d1ecf1;
+    border: 1px solid #bee5eb;
+    border-radius: 6px;
+    padding: 10px;
+    margin: 12px 0;
+}
+
+.veiculo-item {
+    display: inline-block;
+    background-color: #007bff;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    margin: 2px 4px 2px 0;
+    font-weight: 500;
+}
+
+/* Informações da manutenção - estilo padrão */
+.info-linha {
+    margin: 12px 0;
+    font-size: 1rem;
+    color: #333;
+    line-height: 1.4;
+}
+
+.info-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+/* Estilo específico para descrição do problema */
+.descricao-problema {
+    background-color: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 10px;
+    margin: 12px 0;
+    border-radius: 4px;
+}
+
+/* Estilo para veículos */
+.veiculos-lista {
+    margin: 12px 0;
+}
+
+.veiculo-item {
+    display: inline-block;
+    background-color: #007bff;
+    color: white;
+    padding: 4px 10px;
+    border-radius: 15px;
+    font-size: 0.9rem;
+    margin: 3px 5px 3px 0;
+    font-weight: 500;
+}

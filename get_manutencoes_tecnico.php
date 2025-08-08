@@ -24,8 +24,9 @@ if (empty($user_id)) {
 }
 
 $manutencoes = [];
-// A consulta agora busca manutenções que estão 'em andamento' e atribuídas ao técnico via manutencoes_tecnicos
-$sql = "SELECT
+
+// Primeiro, buscar as manutenções básicas
+$sql = "SELECT DISTINCT
             m.id_manutencao,
             m.inicio_reparo,
             e.nome_equip,
@@ -34,8 +35,11 @@ $sql = "SELECT
             m.tipo_manutencao,
             m.status_reparo,
             c.nome AS cidade_nome,
-            a.latitude,  -- Latitude do endereço do equipamento
-            a.longitude  -- Longitude do endereço do equipamento
+            a.latitude,
+            a.longitude,
+            a.logradouro,
+            mt.inicio_reparoTec,
+            mt.fim_reparoT
         FROM
             manutencoes m
         JOIN
@@ -45,7 +49,7 @@ $sql = "SELECT
         JOIN
             cidades c ON m.id_cidade = c.id_cidade
         LEFT JOIN
-            endereco a ON e.id_endereco = a.id_endereco -- Junta com a tabela de endereço
+            endereco a ON e.id_endereco = a.id_endereco
         WHERE
             mt.id_tecnico = ? AND m.status_reparo = 'em andamento'
         ORDER BY m.inicio_reparo DESC";
@@ -63,6 +67,26 @@ $result = $stmt->get_result();
 
 if ($result->num_rows > 0) {
     while($row = $result->fetch_assoc()) {
+        // Buscar todos os veículos para esta manutenção
+        $sql_veiculos = "SELECT DISTINCT v.nome, v.placa, v.modelo 
+                        FROM manutencoes_tecnicos mt 
+                        JOIN veiculos v ON mt.id_veiculo = v.id_veiculo 
+                        WHERE mt.id_manutencao = ? AND mt.id_tecnico = ?";
+        
+        $stmt_veiculos = $conn->prepare($sql_veiculos);
+        $stmt_veiculos->bind_param("ii", $row['id_manutencao'], $user_id);
+        $stmt_veiculos->execute();
+        $result_veiculos = $stmt_veiculos->get_result();
+        
+        $veiculos = [];
+        while($veiculo = $result_veiculos->fetch_assoc()) {
+            $veiculos[] = $veiculo['nome'] . ' - ' . $veiculo['placa'];
+        }
+        
+        // Adicionar informação dos veículos ao array da manutenção
+        $row['veiculos_info'] = implode(' | ', $veiculos); // Separar múltiplos veículos com |
+        
+        $stmt_veiculos->close();
         $manutencoes[] = $row;
     }
     echo json_encode(['success' => true, 'manutencoes' => $manutencoes]);
