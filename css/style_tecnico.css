@@ -880,3 +880,35 @@ body {
     box-sizing: border-box;
     margin-top: 5px;
 }
+
+/* Estilos para a barra de filtro de manutenções */
+.filtro-manutencoes {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.botao-filtro {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #f0f0f0;
+    color: var(--cor-titulo);
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+}
+
+.botao-filtro.ativo {
+    background-color: var(--cor-principal);
+    border-color: var(--cor-principal);
+    color: white;
+}
+
+.botao-filtro:hover:not(.ativo) {
+    background-color: #e9ecef;
+}

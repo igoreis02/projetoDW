@@ -24,6 +24,11 @@ $user_email = $_SESSION['user_email'];
     <div class="card">
         <h2>Minhas Manutenções</h2>
 
+        <div class="filtro-manutencoes">
+            <button id="btnCorretiva" class="botao-filtro">Corretiva</button>
+            <button id="btnInstalacao" class="botao-filtro">Instalação</button>
+        </div>
+
         <div id="listaManutencoes" class="lista-manutencoes">
             <p id="mensagemCarregamento">Carregando suas manutenções...</p>
             <p id="mensagemErro" class="mensagem erro oculto"></p>
@@ -31,6 +36,7 @@ $user_email = $_SESSION['user_email'];
 
         <a href="logout.php" class="voltar-btn">Sair</a>
     </div>
+    
     <div class="footer">
         <p>© 2025 APsystem. Todos os direitos reservados.</p>
     </div>
@@ -89,36 +95,31 @@ $user_email = $_SESSION['user_email'];
         </div>
     </div>
 </div>
+    
     <div id="devolucaoModal" class="modal">
-    <div class="conteudo-modal">
-        <span class="botao-fechar" onclick="fecharModalDevolucao()">×</span>
-        <h3>Devolução de Reparo</h3>
-        <div class="modal-detalhe-item">
-        <p class="modal-titulo-equipamento">
-            <span id="nomeEquipamentoDevolucaoModal"></span> - <span id="referenciaEquipamentoDevolucaoModal"></span>
-        </p>
-        
-        <p class="modal-ocorrencia-texto">
-            <strong class="rotulo-detalhe">Ocorrência:</strong> 
-            <span id="ocorrenciaReparoDevolucaoModal"></span>
-        </p>
+        <div class="conteudo-modal">
+            <span class="botao-fechar" onclick="fecharModalDevolucao()">×</span>
+            <h3>Devolução de Manutenção</h3>
+            <p class="modal-titulo-equipamento">
+                <span id="nomeEquipamentoDevolucaoModal"></span> - <span id="referenciaEquipamentoDevolucaoModal"></span>
+            </p>
+            <p class="modal-ocorrencia">Ocorrência: <span id="ocorrenciaReparoDevolucaoModal"></span></p>
+            
+            <div class="form-group">
+                <label for="textareaDevolucao">Motivo da Devolução:</label>
+                <textarea id="textareaDevolucao" rows="4" placeholder="Descreva o motivo da devolução"></textarea>
+            </div>
+            
+            <div id="mensagemDevolucao" class="mensagem oculto"></div>
+            <button id="botaoConfirmarDevolucao" class="botao-confirmar">Confirmar Devolução</button>
+            <div id="spinnerDevolucao" class="spinner oculto"></div>
         </div>
-        <label for="textareaDevolucao">Motivo da devolução:</label>
-        <textarea id="textareaDevolucao" rows="5" placeholder="Descreva o motivo da devolução..." required></textarea>
-
-        <button id="botaoConfirmarDevolucao">
-            Confirmar Devolução
-            <span id="spinnerDevolucao" class="spinner-carregamento oculto"></span>
-        </button>
-        <p id="mensagemDevolucao" class="mensagem oculto"></p>
     </div>
-</div>
 
     <script>
         const userId = <?php echo json_encode($user_id); ?>;
     </script>
     <script src="js/manutencao_tecnico.js"></script>
-</body>
 
-</html>
+</body>
 </html>
