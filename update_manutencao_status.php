@@ -4,7 +4,6 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
-// Configurações do banco de dados
 $servername = "localhost";
 $username = "root";
 $password = "";
@@ -23,7 +22,14 @@ $data = json_decode($input, true);
 $id_manutencao = $data['id_manutencao'] ?? null;
 $status_reparo = $data['status_reparo'] ?? null;
 $reparo_finalizado = $data['reparo_finalizado'] ?? null;
-$materiais_utilizados = $data['materiais_utilizados'] ?? null; // Novo campo
+$materiais_utilizados = $data['materiais_utilizados'] ?? null;
+$motivo_devolucao = $data['motivo_devolucao'] ?? null;
+
+// NOVOS: Recebe os dados de rompimento de lacre
+$rompimento_lacre = $data['rompimento_lacre'] ?? null;
+$numero_lacre = $data['numero_lacre'] ?? null;
+$info_rompimento = $data['info_rompimento'] ?? null;
+$data_rompimento = $data['data_rompimento'] ?? null;
 
 if (empty($id_manutencao) || empty($status_reparo)) {
     echo json_encode(['success' => false, 'message' => 'ID da manutenção e novo status são obrigatórios.']);
@@ -35,61 +41,27 @@ $types = "s";
 $params = [$status_reparo];
 
 if ($status_reparo === 'concluido') {
-    $sql .= ", fim_reparo = NOW(), reparo_finalizado = ?, materiais_utilizados = ?";
-    $types .= "ss"; 
-    $params[] = $reparo_finalizado; 
-    $params[] = $materiais_utilizados; // Adiciona os materiais aos parâmetros
-} else if ($status_reparo === 'pendente') {
-    $sql .= ", fim_reparo = NULL, reparo_finalizado = NULL, materiais_utilizados = NULL";
-}
+    $sql .= ", fim_reparo = NOW(), reparo_finalizado = ?, materiais_utilizados = ?, motivo_devolucao = NULL, tempo_reparo = TIMEDIFF(NOW(), inicio_reparo)";
+    $types .= "ss";
+    $params[] = $reparo_finalizado;
+    $params[] = $materiais_utilizados;
 
-$sql .= " WHERE id_manutencao = ?";
-$types .= "i";
-$params[] = $id_manutencao;
-
-// Lógica para calcular e salvar o tempo de reparo se o status for 'concluido'
-if ($status_reparo === 'concluido') {
-    // Primeiro, obtenha o inicio_reparo da manutenção
-    $stmt_get_inicio = $conn->prepare("SELECT inicio_reparo FROM manutencoes WHERE id_manutencao = ?");
-    if ($stmt_get_inicio === false) {
-        echo json_encode(['success' => false, 'message' => 'Erro ao preparar consulta de inicio_reparo: ' . $conn->error]);
-        exit();
-    }
-    $stmt_get_inicio->bind_param("i", $id_manutencao);
-    $stmt_get_inicio->execute();
-    $result_inicio = $stmt_get_inicio->get_result();
-    $row_inicio = $result_inicio->fetch_assoc();
-    $stmt_get_inicio->close();
-
-    $inicio_reparo_str = $row_inicio['inicio_reparo'] ?? null;
-    $tempo_reparo_calculado = null;
-
-    if ($inicio_reparo_str) {
-        $inicio_datetime = new DateTime($inicio_reparo_str);
-        $fim_datetime = new DateTime(); // Data e hora atuais
-        $interval = $inicio_datetime->diff($fim_datetime);
-
-        $parts = [];
-        if ($interval->y > 0) $parts[] = $interval->y . ' ano(s)';
-        if ($interval->m > 0) $parts[] = $interval->m . ' mês(es)';
-        if ($interval->d > 0) $parts[] = $interval->d . ' dia(s)';
-        if ($interval->h > 0) $parts[] = $interval->h . ' hora(s)';
-        if ($interval->i > 0) $parts[] = $interval->i . ' minuto(s)';
-        // Se a diferença for muito pequena, mostrar segundos
-        if ($interval->s > 0 && empty($parts)) $parts[] = $interval->s . ' segundo(s)';
-        
-        $tempo_reparo_calculado = empty($parts) ? 'Poucos segundos' : implode(', ', $parts);
+    // NOVO: Adiciona os campos de rompimento de lacre à query
+    if ($rompimento_lacre) {
+        $sql .= ", rompimento_lacre = ?, numero_lacre = ?, info_rompimento = ?, data_rompimento = ?";
+        $types .= "isss";
+        $params[] = $rompimento_lacre;
+        $params[] = $numero_lacre;
+        $params[] = $info_rompimento;
+        $params[] = $data_rompimento;
     } else {
-        $tempo_reparo_calculado = 'Não calculado (início não disponível)';
+        $sql .= ", rompimento_lacre = 0, numero_lacre = NULL, info_rompimento = NULL, data_rompimento = NULL";
     }
 
-    $sql .= ", fim_reparo = NOW(), reparo_finalizado = ?, tempo_reparo = ?";
-    $types .= "ss"; // Adiciona tipos para reparo_finalizado e tempo_reparo
-    $params[] = $reparo_finalizado; // Adiciona a descrição aos parâmetros
-    $params[] = $tempo_reparo_calculado; // Adiciona o tempo de reparo calculado
 } else if ($status_reparo === 'pendente') {
-    // Se o status for 'pendente' (devolvido), remove a data de fim_reparo, descrição e tempo de reparo
-    $sql .= ", fim_reparo = NULL, reparo_finalizado = NULL, tempo_reparo = NULL";
+    $sql .= ", fim_reparo = NULL, reparo_finalizado = NULL, materiais_utilizados = NULL, tempo_reparo = NULL, motivo_devolucao = ?, rompimento_lacre = NULL, numero_lacre = NULL, info_rompimento = NULL, data_rompimento = NULL";
+    $types .= "s";
+    $params[] = $motivo_devolucao;
 }
 
 $sql .= " WHERE id_manutencao = ?";
@@ -103,7 +75,6 @@ if ($stmt === false) {
     exit();
 }
 
-// O operador de desempacotamento (...) é usado para passar os elementos do array $params como argumentos individuais para bind_param
 $stmt->bind_param($types, ...$params);
 
 if ($stmt->execute()) {

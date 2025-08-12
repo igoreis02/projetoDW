@@ -1,93 +1,149 @@
-// Referências para elementos da DOM (adicionar o novo input)
+// Referências para elementos da DOM
 const listaManutencoes = document.getElementById('listaManutencoes');
 const mensagemCarregamento = document.getElementById('mensagemCarregamento');
 const mensagemErro = document.getElementById('mensagemErro');
 
+
 // Referências para o modal de conclusão de reparo
-const modalConcluirReparo = document.getElementById('modalConcluirReparo');
+const concluirReparoModal = document.getElementById('concluirReparoModal');
 const nomeEquipamentoModal = document.getElementById('nomeEquipamentoModal');
 const referenciaEquipamentoModal = document.getElementById('referenciaEquipamentoModal');
 const ocorrenciaReparoModal = document.getElementById('ocorrenciaReparoModal');
-const inputMateriaisUtilizados = document.getElementById('inputMateriaisUtilizados');
-const textareaReparoRealizado = document.getElementById('textareaReparoRealizado');
-const botaoConfirmarConcluirReparo = document.getElementById('botaoConfirmarConcluirReparo');
-const spinnerConcluirReparo = document.getElementById('spinnerConcluirReparo');
-const mensagemConcluirReparo = document.getElementById('mensagemConcluirReparo');
+const reparoRealizadoTextarea = document.getElementById('reparoRealizadoTextarea');
+const materiaisUtilizadosInput = document.getElementById('materiaisUtilizadosInput');
+const checkboxNenhumMaterial = document.getElementById('checkboxNenhumMaterial');
+const confirmConcluirReparoBtn = document.getElementById('confirmConcluirReparoBtn');
+const concluirReparoSpinner = document.getElementById('concluirReparoSpinner');
+const concluirReparoMessage = document.getElementById('concluirReparoMessage');
 
-let idManutencaoAtualParaConcluir = null;
+// NOVO: Referências para os botões de rompimento de lacre e campos
+const botaoSimRompimento = document.getElementById('botaoSimRompimento');
+const botaoNaoRompimento = document.getElementById('botaoNaoRompimento');
+const camposRompimentoLacre = document.getElementById('camposRompimentoLacre');
+const inputNumeroLacre = document.getElementById('inputNumeroLacre');
+const inputInfoRompimento = document.getElementById('inputInfoRompimento');
+const inputDataRompimento = document.getElementById('inputDataRompimento');
+
+// Referências para o modal de devolução
+const devolucaoModal = document.getElementById('devolucaoModal');
+const nomeEquipamentoDevolucaoModal = document.getElementById('nomeEquipamentoDevolucaoModal');
+const referenciaEquipamentoDevolucaoModal = document.getElementById('referenciaEquipamentoDevolucaoModal');
+const ocorrenciaReparoDevolucaoModal = document.getElementById('ocorrenciaReparoDevolucaoModal');
+const textareaDevolucao = document.getElementById('textareaDevolucao');
+const botaoConfirmarDevolucao = document.getElementById('botaoConfirmarDevolucao');
+const spinnerDevolucao = document.getElementById('spinnerDevolucao');
+const mensagemDevolucao = document.getElementById('mensagemDevolucao');
+
+let currentManutencaoId = null;
 
 // Funções de utilidade
-function mostrarMensagem(elemento, msg, tipo) {
-    elemento.textContent = msg;
-    elemento.className = `mensagem ${tipo}`;
-    elemento.classList.remove('oculto');
+function showMessage(element, msg, type) {
+    element.textContent = msg;
+    element.className = `mensagem ${type}`;
+    element.classList.remove('oculto');
 }
 
-function ocultarMensagem(elemento) {
-    elemento.classList.add('oculto');
-    elemento.textContent = '';
+function hideMessage(element) {
+    element.classList.add('oculto');
+    element.textContent = '';
 }
 
-function alternarSpinner(botao, spinner, mostrar) {
-    if (mostrar) {
+function toggleSpinner(button, spinner, show) {
+    if (show) {
         spinner.classList.remove('oculto');
-        botao.disabled = true;
+        button.disabled = true;
     } else {
         spinner.classList.add('oculto');
-        botao.disabled = false;
+        button.disabled = false;
     }
 }
 
-function calcularDiasEntreDatas(inicioReparoTec, fimReparoT) {
-    if (!inicioReparoTec || !fimReparoT) return 0;
-    
-    const inicio = new Date(inicioReparoTec);
-    const fim = new Date(fimReparoT);
-    
-    const diferencaTempo = fim - inicio;
-    const diferencaDias = Math.ceil(diferencaTempo / (1000 * 60 * 60 * 24));
-    
-    return diferencaDias >= 0 ? diferencaDias : 0;
+function calcularDiasEntreDatas(inicio, fim) {
+    if (!inicio || !fim) {
+        return 0;
+    }
+
+    // Cria as datas e zera o horário para garantir que a diferença seja de dias inteiros
+    const dataInicio = new Date(inicio);
+    dataInicio.setHours(0, 0, 0, 0);
+
+    const dataFim = new Date(fim);
+    dataFim.setHours(0, 0, 0, 0);
+
+    // Calcula a diferença em milissegundos
+    const diferencaTempo = dataFim.getTime() - dataInicio.getTime();
+
+    // Converte a diferença para dias e arredonda para evitar problemas com fuso horário
+    const umDiaEmMilissegundos = 1000 * 60 * 60 * 24;
+    const diferencaDias = Math.round(diferencaTempo / umDiaEmMilissegundos);
+
+    // Adiciona 1 ao resultado para ser inclusivo (contar o dia de início)
+    return diferencaDias + 1;
 }
 
-// Função para abrir o modal de conclusão de reparo
-function abrirModalConcluirReparo(manutencao) {
-    idManutencaoAtualParaConcluir = manutencao.id_manutencao;
-    textareaReparoRealizado.value = '';
-    inputMateriaisUtilizados.value = '';
-    inputMateriaisUtilizados.disabled = false;
+// Funções para os modais
+function openConcluirReparoModal(manutencao) {
+    currentManutencaoId = manutencao.id_manutencao;
+    reparoRealizadoTextarea.value = '';
+    materiaisUtilizadosInput.value = '';
+    materiaisUtilizadosInput.disabled = false;
     checkboxNenhumMaterial.checked = false;
-    ocultarMensagem(mensagemConcluirReparo);
+    hideMessage(concluirReparoMessage);
+
+    // Reseta o estado do rompimento de lacre
+    botaoNaoRompimento.classList.add('ativo');
+    botaoSimRompimento.classList.remove('ativo');
+    camposRompimentoLacre.classList.add('oculto');
+    inputNumeroLacre.value = '';
+    inputInfoRompimento.value = '';
+    inputDataRompimento.value = '';
 
     nomeEquipamentoModal.textContent = manutencao.nome_equip;
     referenciaEquipamentoModal.textContent = manutencao.referencia_equip;
     ocorrenciaReparoModal.textContent = manutencao.ocorrencia_reparo || 'N/A';
 
-    modalConcluirReparo.classList.add('ativo');
-    botaoConfirmarConcluirReparo.classList.remove('oculto');
-    alternarSpinner(botaoConfirmarConcluirReparo, spinnerConcluirReparo, false);
+    concluirReparoModal.classList.add('ativo');
+    confirmConcluirReparoBtn.classList.remove('oculto');
+    toggleSpinner(confirmConcluirReparoBtn, concluirReparoSpinner, false);
 }
 
-// Função para fechar o modal de conclusão de reparo
-function fecharModalConcluirReparo() {
-    modalConcluirReparo.classList.remove('ativo');
-    alternarSpinner(botaoConfirmarConcluirReparo, spinnerConcluirReparo, false);
-    botaoConfirmarConcluirReparo.classList.remove('oculto');
+function closeConcluirReparoModal() {
+    concluirReparoModal.classList.remove('ativo');
 }
 
-// ... (O restante da função carregarManutencoesTecnico é o mesmo) ...
-async function carregarManutencoesTecnico(userId) {
+function openDevolucaoModal(manutencao) {
+    currentManutencaoId = manutencao.id_manutencao;
+    textareaDevolucao.value = '';
+    hideMessage(mensagemDevolucao);
+
+    nomeEquipamentoDevolucaoModal.textContent = manutencao.nome_equip;
+    referenciaEquipamentoDevolucaoModal.textContent = manutencao.referencia_equip;
+    ocorrenciaReparoDevolucaoModal.textContent = manutencao.ocorrencia_reparo || 'N/A';
+
+    devolucaoModal.classList.add('ativo');
+    toggleSpinner(botaoConfirmarDevolucao, spinnerDevolucao, false);
+}
+
+function closeDevolucaoModal() {
+    devolucaoModal.classList.remove('ativo');
+}
+
+// Carregar manutenções
+async function loadManutencoesTecnico() {
     listaManutencoes.innerHTML = '';
     mensagemCarregamento.classList.remove('oculto');
-    ocultarMensagem(mensagemErro);
+    hideMessage(mensagemErro);
 
-    console.log(`Carregando manutenções para o técnico ID: ${userId}...`);
+    if (typeof userId === 'undefined' || userId === null) {
+        mensagemErro.textContent = 'Erro: ID do usuário não encontrado.';
+        mensagemErro.classList.remove('oculto');
+        mensagemCarregamento.classList.add('oculto');
+        return;
+    }
 
     try {
         const response = await fetch(`get_manutencoes_tecnico.php?user_id=${userId}`);
         const data = await response.json();
-
-        console.log('Resposta de get_manutencoes_tecnico.php:', data);
 
         mensagemCarregamento.classList.add('oculto');
 
@@ -95,69 +151,35 @@ async function carregarManutencoesTecnico(userId) {
             data.manutencoes.forEach(manutencao => {
                 const itemDiv = document.createElement('div');
                 itemDiv.classList.add('item-manutencao');
-                itemDiv.dataset.idManutencao = manutencao.id_manutencao;
 
                 let textoDataExecucao = 'Data não definida';
                 let diasParaReparo = 0;
                 
                 if (manutencao.inicio_reparoTec && manutencao.fim_reparoT) {
-                    const inicioDate = new Date(manutencao.inicio_reparoTec);
-                    const fimDate = new Date(manutencao.fim_reparoT);
-                    
-                    const inicioFormatado = inicioDate.toLocaleDateString('pt-BR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric'
-                    });
-                    
-                    const fimFormatado = fimDate.toLocaleDateString('pt-BR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric'
-                    });
-                    
+                    const inicioFormatado = new Date(manutencao.inicio_reparoTec).toLocaleDateString('pt-BR');
+                    const fimFormatado = new Date(manutencao.fim_reparoT).toLocaleDateString('pt-BR');
                     diasParaReparo = calcularDiasEntreDatas(manutencao.inicio_reparoTec, manutencao.fim_reparoT);
                     textoDataExecucao = `<span class="periodo-data">${inicioFormatado} até ${fimFormatado}</span>`;
                 }
-
                 let textoDias = diasParaReparo === 1 ? '1 dia' : `${diasParaReparo} dias`;
 
                 let htmlVeiculos = 'Nenhum veículo atribuído';
-                if (manutencao.veiculos_info && manutencao.veiculos_info.trim() !== '') {
+                if (manutencao.veiculos_info) {
                     const veiculos = manutencao.veiculos_info.split(' | ');
-                    const spansVeiculos = veiculos.map(veiculo => `<span class="item-veiculo">${veiculo.trim()}</span>`).join(' ');
+                    const spansVeiculos = veiculos.map(veiculo => `<span class="item-veiculo-modal">${veiculo.trim()}</span>`).join(' ');
                     htmlVeiculos = spansVeiculos;
                 }
 
-                let conteudo = `
+                itemDiv.innerHTML = `
                     <div>
-                        <h3 class="titulo-equipamento">
-                            ${manutencao.nome_equip} - ${manutencao.referencia_equip}
-                        </h3>
-                        
-                        <p class="linha-data-execucao">
-                            ${textoDataExecucao} <span class="total-dias">(${textoDias})</span>
-                        </p>
-                        
-                        <p class="linha-info">
-                            <span class="rotulo-info">Cidade:</span> ${manutencao.cidade_nome}
-                        </p>
-                        
-                        <div class="descricao-problema">
-                            <span class="rotulo-info">Descrição do problema:</span> ${manutencao.ocorrencia_reparo || 'Não informada'}
-                        </div>
-                        
-                        <p class="linha-info">
-                            <span class="rotulo-info">Endereço:</span> ${manutencao.logradouro || 'Não informado'}
-                        </p>
-                        
-                        <div class="lista-veiculos">
-                            <span class="rotulo-info">Veículo(s):</span> ${htmlVeiculos}
-                        </div>
+                        <h3 class="titulo-equipamento">${manutencao.nome_equip} - ${manutencao.referencia_equip}</h3>
+                        <p class="linha-info"><span class="rotulo-info"></span> ${manutencao.cidade_nome}</p>
+                        <div class="descricao-problema"><span class="rotulo-info">Descrição do problema:</span> ${manutencao.ocorrencia_reparo || 'Não informada'}</div>
+                        <p class="linha-data-execucao">${textoDataExecucao} <span class="total-dias">(${textoDias})</span></p>
+                        <p class="linha-info"><span class="rotulo-info">Endereço:</span> ${manutencao.logradouro || 'Não informado'}</p>
+                        <div class="lista-veiculos"><span class="rotulo-info">Veículo(s):</span> ${htmlVeiculos}</div>
                     </div>
                 `;
-
-                itemDiv.innerHTML = conteudo;
 
                 const divBotoes = document.createElement('div');
                 divBotoes.classList.add('botoes-item');
@@ -167,7 +189,7 @@ async function carregarManutencoesTecnico(userId) {
                     botaoLocalizar.classList.add('botao-localizar');
                     botaoLocalizar.textContent = 'Localizar no Mapa';
                     botaoLocalizar.addEventListener('click', () => {
-                        window.open(`http://maps.google.com/?q=${manutencao.latitude},${manutencao.longitude}`, '_blank');
+                        window.open(`https://www.google.com/maps/search/?api=1&query=${manutencao.latitude},${manutencao.longitude}`, '_blank');
                     });
                     divBotoes.appendChild(botaoLocalizar);
                 }
@@ -175,19 +197,13 @@ async function carregarManutencoesTecnico(userId) {
                 const botaoConcluir = document.createElement('button');
                 botaoConcluir.classList.add('botao-concluir');
                 botaoConcluir.textContent = 'Concluir Reparo';
-                botaoConcluir.addEventListener('click', () => {
-                    abrirModalConcluirReparo(manutencao);
-                });
+                botaoConcluir.addEventListener('click', () => openConcluirReparoModal(manutencao));
                 divBotoes.appendChild(botaoConcluir);
 
                 const botaoDevolver = document.createElement('button');
                 botaoDevolver.classList.add('botao-devolver');
                 botaoDevolver.textContent = 'Devolver Reparo';
-                botaoDevolver.addEventListener('click', () => {
-                    if (confirm('Tem certeza que deseja devolver este reparo? Ele voltará para a fila de atribuição.')) {
-                        atualizarStatusManutencao(manutencao.id_manutencao, 'pendente');
-                    }
-                });
+                botaoDevolver.addEventListener('click', () => openDevolucaoModal(manutencao));
                 divBotoes.appendChild(botaoDevolver);
 
                 itemDiv.appendChild(divBotoes);
@@ -205,94 +221,159 @@ async function carregarManutencoesTecnico(userId) {
     }
 }
 
-// Função para atualizar o status da manutenção
-async function atualizarStatusManutencao(idManutencao, novoStatus, descricaoReparo = null, materiaisUtilizados = null) {
-    ocultarMensagem(mensagemConcluirReparo);
-    alternarSpinner(botaoConfirmarConcluirReparo, spinnerConcluirReparo, true);
+// Lógica para os botões de rompimento de lacre
+botaoSimRompimento.addEventListener('click', () => {
+    botaoSimRompimento.classList.add('ativo');
+    botaoNaoRompimento.classList.remove('ativo');
+    camposRompimentoLacre.classList.remove('oculto');
+});
+
+botaoNaoRompimento.addEventListener('click', () => {
+    botaoNaoRompimento.classList.add('ativo');
+    botaoSimRompimento.classList.remove('ativo');
+    camposRompimentoLacre.classList.add('oculto');
+    // Limpa os campos quando "Não" é selecionado para evitar envio de dados incorretos
+    inputNumeroLacre.value = '';
+    inputInfoRompimento.value = '';
+    inputDataRompimento.value = '';
+});
+
+
+// Atualizar status
+async function atualizarStatusManutencao(idManutencao, novoStatus, descricaoReparo = null, materiaisUtilizados = null, motivoDevolucao = null, rompimentoLacre = null, numeroLacre = null, infoRompimento = null, dataRompimento = null) {
+    const isDevolucao = novoStatus === 'pendente';
+    const msgElemento = isDevolucao ? mensagemDevolucao : concluirReparoMessage;
+    const spinner = isDevolucao ? spinnerDevolucao : concluirReparoSpinner;
+    const botao = isDevolucao ? botaoConfirmarDevolucao : confirmConcluirReparoBtn;
+
+    hideMessage(msgElemento);
+    toggleSpinner(botao, spinner, true);
+
+    const body = {
+        id_manutencao: idManutencao,
+        status_reparo: novoStatus,
+        reparo_finalizado: descricaoReparo,
+        materiais_utilizados: materiaisUtilizados,
+        motivo_devolucao: motivoDevolucao,
+        // Novos campos de rompimento de lacre
+        rompimento_lacre: rompimentoLacre,
+        numero_lacre: numeroLacre,
+        info_rompimento: infoRompimento,
+        data_rompimento: dataRompimento
+    };
 
     try {
         const response = await fetch('update_manutencao_status.php', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                id_manutencao: idManutencao,
-                status_reparo: novoStatus,
-                reparo_finalizado: descricaoReparo,
-                materiais_utilizados: materiaisUtilizados // Novo campo
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
         });
         const data = await response.json();
 
         if (data.success) {
-            mostrarMensagem(mensagemConcluirReparo, `Status atualizado com sucesso!`, 'sucesso');
-            if (novoStatus === 'concluido') {
-                botaoConfirmarConcluirReparo.classList.add('oculto');
-            }
+            showMessage(msgElemento, `Status atualizado com sucesso!`, 'sucesso');
             setTimeout(() => {
-                fecharModalConcluirReparo();
-                carregarManutencoesTecnico(userId);
+                isDevolucao ? closeDevolucaoModal() : closeConcluirReparoModal();
+                loadManutencoesTecnico();
             }, 1500);
         } else {
-            mostrarMensagem(mensagemConcluirReparo, `Erro ao atualizar status: ${data.message}`, 'erro');
+            showMessage(msgElemento, `Erro ao atualizar status: ${data.message}`, 'erro');
         }
     } catch (error) {
         console.error('Erro ao atualizar status da manutenção:', error);
-        mostrarMensagem(mensagemConcluirReparo, 'Ocorreu um erro ao tentar atualizar o status da manutenção.', 'erro');
+        showMessage(msgElemento, 'Ocorreu um erro ao tentar atualizar o status da manutenção.', 'erro');
     } finally {
-        alternarSpinner(botaoConfirmarConcluirReparo, spinnerConcluirReparo, false);
+        toggleSpinner(botao, spinner, false);
     }
 }
 
-// Event listener para a checkbox
+// Event listener para a checkbox "Nenhum material"
 checkboxNenhumMaterial.addEventListener('change', () => {
     if (checkboxNenhumMaterial.checked) {
-        inputMateriaisUtilizados.value = 'Nenhum material utilizado';
-        inputMateriaisUtilizados.disabled = true;
+        materiaisUtilizadosInput.value = 'Nenhum material utilizado';
+        materiaisUtilizadosInput.disabled = true;
     } else {
-        inputMateriaisUtilizados.value = '';
-        inputMateriaisUtilizados.disabled = false;
+        materiaisUtilizadosInput.value = '';
+        materiaisUtilizadosInput.disabled = false;
     }
 });
-// Event listener para o botão de confirmação do reparo
-botaoConfirmarConcluirReparo.addEventListener('click', () => {
-    const descricaoReparo = textareaReparoRealizado.value.trim();
-    let materiaisUtilizados = inputMateriaisUtilizados.value.trim();
 
-    // Se a checkbox estiver marcada, garante que o valor é "Nenhum material utilizado"
+// Event listener para o botão de confirmação do reparo
+confirmConcluirReparoBtn.addEventListener('click', () => {
+    const reparoRealizado = reparoRealizadoTextarea.value.trim();
+    let materiaisUtilizados = materiaisUtilizadosInput.value.trim();
+
+    // Verificação dos campos de materiais
     if (checkboxNenhumMaterial.checked) {
         materiaisUtilizados = 'Nenhum material utilizado';
     } else if (materiaisUtilizados === '') {
-        // Se a checkbox não estiver marcada e o campo estiver vazio
-        mostrarMensagem(mensagemConcluirReparo, 'Por favor, informe os materiais utilizados ou marque a opção "Nenhum material utilizado".', 'erro');
+        showMessage(concluirReparoMessage, 'Por favor, informe os materiais utilizados ou marque "Nenhum material".', 'erro');
         return;
     }
 
-    if (descricaoReparo === '') {
-        mostrarMensagem(mensagemConcluirReparo, 'Por favor, descreva o reparo realizado.', 'erro');
+    if (reparoRealizado === '') {
+        showMessage(concluirReparoMessage, 'Por favor, descreva o reparo realizado.', 'erro');
         return;
     }
+
+    // Coleta e validação dos campos de rompimento de lacre
+    const rompimentoLacre = botaoSimRompimento.classList.contains('ativo');
+    let numeroLacre = null;
+    let infoRompimento = null;
+    let dataRompimento = null;
     
-    if (idManutencaoAtualParaConcluir) {
-        atualizarStatusManutencao(idManutencaoAtualParaConcluir, 'concluido', descricaoReparo, materiaisUtilizados);
+    if (rompimentoLacre) {
+        numeroLacre = inputNumeroLacre.value.trim();
+        infoRompimento = inputInfoRompimento.value.trim();
+        dataRompimento = inputDataRompimento.value;
+
+        if (!numeroLacre || !infoRompimento || !dataRompimento) {
+            showMessage(concluirReparoMessage, 'Por favor, preencha todos os campos do rompimento de lacre.', 'erro');
+            return;
+        }
+    }
+
+    if (currentManutencaoId) {
+        atualizarStatusManutencao(
+            currentManutencaoId,
+            'concluido',
+            reparoRealizado,
+            materiaisUtilizados,
+            null, // motivoDevolucao
+            rompimentoLacre ? 1 : 0,
+            numeroLacre,
+            infoRompimento,
+            dataRompimento
+        );
     } else {
-        mostrarMensagem(mensagemConcluirReparo, 'Erro: ID da manutenção não encontrado.', 'erro');
+        showMessage(concluirReparoMessage, 'Erro: ID da manutenção não encontrado.', 'erro');
     }
 });
 
+
+// Event listener para o botão de confirmação da devolução
+botaoConfirmarDevolucao.addEventListener('click', () => {
+    const motivoDevolucao = textareaDevolucao.value.trim();
+    if (motivoDevolucao === '') {
+        showMessage(mensagemDevolucao, 'Por favor, descreva o motivo da devolução.', 'erro');
+        return;
+    }
+    if (currentManutencaoId) {
+        atualizarStatusManutencao(currentManutencaoId, 'pendente', null, null, motivoDevolucao);
+    } else {
+        showMessage(mensagemDevolucao, 'Erro: ID da manutenção não encontrado.', 'erro');
+    }
+});
+
+// Fecha os modais se o usuário clicar fora deles
 window.onclick = function(event) {
-    if (event.target == modalConcluirReparo) {
-        fecharModalConcluirReparo();
+    if (event.target === concluirReparoModal) {
+        closeConcluirReparoModal();
+    }
+    if (event.target === devolucaoModal) {
+        closeDevolucaoModal();
     }
 }
 
 // Carrega as manutenções quando a página é carregada
-document.addEventListener('DOMContentLoaded', () => {
-    if (typeof userId !== 'undefined') {
-        carregarManutencoesTecnico(userId);
-    } else {
-        mensagemErro.textContent = 'Erro: ID do usuário não encontrado.';
-        mensagemErro.classList.remove('oculto');
-    }
-});
+document.addEventListener('DOMContentLoaded', loadManutencoesTecnico);

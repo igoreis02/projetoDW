@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,500;1,500&display=swap');
+
 :root {
     --font-family: "Montserrat", sans-serif;
     --cor-principal: #BFBFBF;
@@ -5,6 +7,7 @@
     --cor-terciaria: #404040;
     --cor-titulo: #404040;
     --cor-titulo-hover: #b9881f;
+    --cor-letra: #333333;
     --cor-fundo: #F2F2F2;
     --botao-voltar: #404040;
     --cor-letra-botaoVoltar: #F2F2F2;
@@ -23,6 +26,11 @@
 
 }
 
+body {
+    font-family: var(--font-family);
+    margin: 0;
+    padding: 0;
+}
 .background {
     position: fixed;
     top: -50vmin;
@@ -258,10 +266,67 @@
     cursor: pointer;
     transition: background-color 0.3s ease;
 }
-
 #botaoConfirmarConcluirReparo:hover {
     background-color: var(--botao-concluir-hover);
 }
+
+#botaoConfirmarDevolucao{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding: 15px;
+    background-color: var(--botao-devolver);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#botaoConfirmarDevolucao:hover {
+    background-color: var(--botao-devolver-hover);
+}
+
+/* Estilo para o container da checkbox e o checkbox */
+.rompimento-lacre-container {
+    display: flex;
+    align-items: center;
+    margin-top: 15px;
+    margin-bottom: 10px;
+}
+
+#checkboxRompimentoLacre {
+    margin-right: 8px;
+    cursor: pointer;
+}
+
+.rompimento-lacre-container .checkbox-label {
+    font-weight: normal;
+    color: #404040;
+    cursor: pointer;
+}
+
+/* Estilo para os campos que aparecem quando a checkbox é marcada */
+#camposRompimentoLacre {
+    transition: opacity 0.3s ease, max-height 0.3s ease;
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+}
+
+/* Quando a checkbox é ativada, a classe 'ativo' será adicionada */
+#camposRompimentoLacre.ativo {
+    max-height: 200px; /* Um valor alto o suficiente */
+    opacity: 1;
+}
+
+/* Classe para ocultar elementos, usada por padrão */
+.oculto {
+    display: none !important;
+}
+
 .lista-manutencoes {
     width: 100%;
 }
@@ -327,8 +392,8 @@
 
 .item-manutencao .item-veiculo {
     display: inline-block;
-    background-color: #007bff;
-    color: white;
+    background-color: var(--cor-secundaria);
+    color: var(--cor-letra-botao);
     padding: 4px 10px;
     border-radius: 15px;
     font-size: 0.9rem;
@@ -336,10 +401,29 @@
     font-weight: 500;
 }
 
+.item-veiculo-modal{
+    display: inline-block;
+    color: var(--cor-letra);
+    padding: 4px 10px;
+    border-radius: 15px;
+    font-size: 0.9rem;
+    margin: 3px 5px 3px 0;
+    font-weight: 500;
+}
 .botoes-item {
     display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
     justify-content: space-between;
     gap: 10px;
+    margin-top: 20px;
+}
+
+
+.container-botao-concluir {
+    display: flex;
+    justify-content: center;
+    align-items: center;
     margin-top: 20px;
 }
 
@@ -712,4 +796,87 @@
     font-weight: normal;
     color: #404040;
     cursor: pointer;
+}
+
+
+/* Estilos para o container dos inputs e checkbox */
+.input-com-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+#materiaisUtilizadosInput {
+    flex-grow: 1;
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: center;
+}
+
+#checkboxNenhumMaterial {
+    margin-right: 5px;
+}
+
+/* Estilos para os botões "Sim/Não" do rompimento de lacre */
+.rompimento-lacre-container {
+    margin-top: 15px;
+    margin-bottom: 10px;
+}
+
+.rotulo-pergunta {
+    font-weight: 600;
+    color: #404040;
+    margin-bottom: 5px;
+}
+
+.botoes-toggle {
+    display: flex;
+    gap: 10px;
+}
+
+.botao-toggle {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #f0f0f0;
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
+
+.botao-toggle.ativo {
+    background-color: var(--cor-principal);
+    color: white;
+    border-color: var(--cor-principal);
+}
+
+.botao-toggle:not(.ativo):hover {
+    background-color: #e9ecef;
+}
+
+/* Estilo para os campos que aparecem quando "Sim" é clicado */
+#camposRompimentoLacre {
+    transition: all 0.3s ease;
+    overflow: hidden;
+    max-height: 200px;
+    opacity: 1;
+    margin-top: 15px;
+}
+
+/* Classe para ocultar elementos, usada por padrão */
+.oculto {
+    display: none !important;
+}
+
+/* Garante que o input da data seja exibido corretamente */
+#inputDataRompimento {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+    margin-top: 5px;
 }
