@@ -71,17 +71,32 @@ $params[] = $id_manutencao;
 $stmt = $conn->prepare($sql);
 
 if ($stmt === false) {
-    echo json_encode(['success' => false, 'message' => 'Erro ao preparar a instrução SQL: ' . $conn->error]);
+    echo json_encode(['success' => false, 'message' => 'Erro ao preparar a instrução SQL principal: ' . $conn->error]);
     exit();
 }
 
 $stmt->bind_param($types, ...$params);
 
 if ($stmt->execute()) {
+    // === NOVA LÓGICA PARA ATUALIZAR O STATUS DE TODOS OS TÉCNICOS DA MANUTENÇÃO ===
+    $status_tecnico_novo = ($status_reparo === 'concluido') ? 'concluido' : 'devolvido';
+
+    $sql_update_tecnicos = "UPDATE manutencoes_tecnicos SET status_tecnico = ? WHERE id_manutencao = ?";
+    $stmt_tecnicos = $conn->prepare($sql_update_tecnicos);
+
+    if ($stmt_tecnicos === false) {
+        echo json_encode(['success' => false, 'message' => 'Erro ao preparar a instrução SQL para os técnicos: ' . $conn->error]);
+        exit();
+    }
+    
+    $stmt_tecnicos->bind_param("si", $status_tecnico_novo, $id_manutencao);
+    $stmt_tecnicos->execute();
+    $stmt_tecnicos->close();
+
     if ($stmt->affected_rows > 0) {
-        echo json_encode(['success' => true, 'message' => 'Status da manutenção atualizado com sucesso!']);
+        echo json_encode(['success' => true, 'message' => 'Status da manutenção e de todos os técnicos atualizados com sucesso!']);
     } else {
-        echo json_encode(['success' => false, 'message' => 'Nenhuma alteração foi feita ou manutenção não encontrada.']);
+        echo json_encode(['success' => true, 'message' => 'Status dos técnicos atualizado, mas nenhuma alteração foi feita na manutenção principal.']);
     }
 } else {
     echo json_encode(['success' => false, 'message' => 'Erro ao atualizar o status da manutenção: ' . $stmt->error]);

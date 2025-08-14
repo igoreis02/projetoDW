@@ -46,7 +46,7 @@ if (isset($_SESSION['tipo_usuario']) && $_SESSION['tipo_usuario'] === 'entregado
             align-items: center;
             justify-content: center;
             flex: 1; /* Faz com que cada botão ocupe o mesmo espaço */
-            background-color: #007bff;
+            background-color: #A6A6A6;
             color: white;
             padding: 20px;
             border-radius: 10px;

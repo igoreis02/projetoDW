@@ -23,9 +23,7 @@ $user_email = $_SESSION['user_email'];
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/stylle.css">
     <title>Atribuir Técnico</title>
-<style>
 
-</style>
 </head>
 
 <body>

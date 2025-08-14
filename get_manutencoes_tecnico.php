@@ -71,10 +71,10 @@ if ($result->num_rows > 0) {
         $sql_veiculos = "SELECT DISTINCT v.nome, v.placa, v.modelo 
                         FROM manutencoes_tecnicos mt 
                         JOIN veiculos v ON mt.id_veiculo = v.id_veiculo 
-                        WHERE mt.id_manutencao = ? AND mt.id_tecnico = ?";
+                        WHERE mt.id_manutencao = ?";
         
         $stmt_veiculos = $conn->prepare($sql_veiculos);
-        $stmt_veiculos->bind_param("ii", $row['id_manutencao'], $user_id);
+        $stmt_veiculos->bind_param("i", $row['id_manutencao']);
         $stmt_veiculos->execute();
         $result_veiculos = $stmt_veiculos->get_result();
         

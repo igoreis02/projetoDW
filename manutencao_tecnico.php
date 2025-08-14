@@ -43,7 +43,7 @@ $user_email = $_SESSION['user_email'];
 
 <div id="concluirReparoModal" class="modal">
     <div class="conteudo-modal">
-        <span class="botao-fechar" onclick="closeConcluirReparoModal()">×</span>
+        <span class="botao-fechar" onclick="fecharModalConcluirReparo()">×</span>
         <h3>Concluir Reparo</h3>
         <div class="modal-detalhe-item">
             <p class="modal-titulo-equipamento">

@@ -325,58 +325,61 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Event listener para o botão de confirmação do reparo
-    if (confirmConcluirReparoBtn) {
-        confirmConcluirReparoBtn.addEventListener('click', () => {
-            const reparoRealizado = reparoRealizadoTextarea ? reparoRealizadoTextarea.value.trim() : '';
-            let materiaisUtilizados = materiaisUtilizadosInput ? materiaisUtilizadosInput.value.trim() : '';
+if (confirmConcluirReparoBtn) {
+    confirmConcluirReparoBtn.addEventListener('click', () => {
+        const reparoRealizado = reparoRealizadoTextarea ? reparoRealizadoTextarea.value.trim() : '';
+        let materiaisUtilizados = materiaisUtilizadosInput ? materiaisUtilizadosInput.value.trim() : '';
 
-            // Verificação dos campos de materiais
-            if (checkboxNenhumMaterial && checkboxNenhumMaterial.checked) {
-                materiaisUtilizados = 'Nenhum material utilizado';
-            } else if (materiaisUtilizados === '') {
-                showMessage(concluirReparoMessage, 'Por favor, informe os materiais utilizados ou marque "Nenhum material".', 'erro');
-                return;
-            }
+        // Verificação dos campos de materiais
+        if (checkboxNenhumMaterial && checkboxNenhumMaterial.checked) {
+            materiaisUtilizados = 'Nenhum material utilizado';
+        } else if (materiaisUtilizados === '') {
+            showMessage(concluirReparoMessage, 'Por favor, informe os materiais utilizados ou marque "Nenhum material".', 'erro');
+            return;
+        }
 
-            if (reparoRealizado === '') {
-                showMessage(concluirReparoMessage, 'Por favor, descreva o reparo realizado.', 'erro');
-                return;
-            }
+        if (reparoRealizado === '') {
+            showMessage(concluirReparoMessage, 'Por favor, descreva o reparo realizado.', 'erro');
+            return;
+        }
 
-            // Coleta e validação dos campos de rompimento de lacre
-            const rompimentoLacre = botaoSimRompimento && botaoSimRompimento.classList.contains('ativo');
-            let numeroLacre = null;
-            let infoRompimento = null;
-            let dataRompimento = null;
+        // Coleta e validação dos campos de rompimento de lacre
+        const rompimentoLacre = botaoSimRompimento && botaoSimRompimento.classList.contains('ativo');
+        let numeroLacre = null;
+        let infoRompimento = null;
+        let dataRompimento = null;
+        
+        if (rompimentoLacre) {
+            numeroLacre = inputNumeroLacre ? inputNumeroLacre.value.trim() : null;
+            infoRompimento = inputInfoRompimento ? inputInfoRompimento.value.trim() : null;
             
-            if (rompimentoLacre) {
-                numeroLacre = inputNumeroLacre ? inputNumeroLacre.value.trim() : null;
-                infoRompimento = inputInfoRompimento ? inputInfoRompimento.value.trim() : null;
-                dataRompimento = inputDataRompimento ? inputDataRompimento.value : null;
-
-                if (!numeroLacre || !infoRompimento || !dataRompimento) {
-                    showMessage(concluirReparoMessage, 'Por favor, preencha todos os campos do rompimento de lacre.', 'erro');
-                    return;
-                }
+            // A data do rompimento é gerada automaticamente com a data atual
+            const hoje = new Date();
+            dataRompimento = hoje.toISOString().slice(0, 10);
+            
+            if (!numeroLacre || !infoRompimento) {
+                showMessage(concluirReparoMessage, 'Por favor, preencha o número do lacre e as informações de rompimento.', 'erro');
+                return;
             }
+        }
 
-            if (currentManutencaoId) {
-                atualizarStatusManutencao(
-                    currentManutencaoId,
-                    'concluido',
-                    reparoRealizado,
-                    materiaisUtilizados,
-                    null, // motivoDevolucao
-                    rompimentoLacre ? 1 : 0,
-                    numeroLacre,
-                    infoRompimento,
-                    dataRompimento
-                );
-            } else {
-                showMessage(concluirReparoMessage, 'Erro: ID da manutenção não encontrado.', 'erro');
-            }
-        });
-    }
+        if (currentManutencaoId) {
+            atualizarStatusManutencao(
+                currentManutencaoId,
+                'concluido',
+                reparoRealizado,
+                materiaisUtilizados,
+                null, // motivoDevolucao
+                rompimentoLacre ? 1 : 0,
+                numeroLacre,
+                infoRompimento,
+                dataRompimento
+            );
+        } else {
+            showMessage(concluirReparoMessage, 'Erro: ID da manutenção não encontrado.', 'erro');
+        }
+    });
+}
 
 
     // Event listener para o botão de confirmação da devolução

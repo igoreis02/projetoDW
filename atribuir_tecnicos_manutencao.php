@@ -15,8 +15,15 @@ if ($conn->connect_error) {
 
 $input = json_decode(file_get_contents('php://input'), true);
 
-if (empty($input['idsManutencao']) || empty($input['idsTecnicos']) || empty($input['idsVeiculos']) || empty($input['dataInicio']) || empty($input['dataFim'])) {
-    echo json_encode(['success' => false, 'message' => 'Dados incompletos.']);
+// Validação dos dados recebidos
+if (
+    !isset($input['idsManutencao']) || !is_array($input['idsManutencao']) || empty($input['idsManutencao']) ||
+    !isset($input['idsTecnicos']) || !is_array($input['idsTecnicos']) || empty($input['idsTecnicos']) ||
+    !isset($input['idsVeiculos']) || !is_array($input['idsVeiculos']) || empty($input['idsVeiculos']) ||
+    !isset($input['dataInicio']) || !isset($input['dataFim'])
+) {
+    echo json_encode(['success' => false, 'message' => 'Dados incompletos ou inválidos.']);
+    $conn->close();
     exit();
 }
 
@@ -25,71 +32,72 @@ $idsTecnicos = $input['idsTecnicos'];
 $idsVeiculos = $input['idsVeiculos'];
 $dataInicio = $input['dataInicio'];
 $dataFim = $input['dataFim'];
+$status_tecnico_pendente = 'pendente';
 
 $conn->begin_transaction();
 
 try {
-    // 1. Atualizar o status_reparo na tabela manutencoes para 'em andamento'
-    $status_em_andamento = 'em andamento';
-    $stmt_update_status = $conn->prepare("UPDATE manutencoes SET status_reparo = ? WHERE id_manutencao = ?");
-    if (!$stmt_update_status) {
+    // 1. Prepara a query para atualizar o status de cada manutenção principal
+    $stmt_update_manutencao = $conn->prepare("UPDATE manutencoes SET status_reparo = 'em andamento' WHERE id_manutencao = ?");
+    if (!$stmt_update_manutencao) {
         throw new Exception('Erro ao preparar a declaração de atualização de status: ' . $conn->error);
     }
-    $stmt_update_status->bind_param("si", $status_em_andamento, $id_manutencao_update);
 
-    foreach ($idsManutencao as $id_manutencao_update) {
-        $stmt_update_status->execute();
+    // 2. Prepara a query para deletar as atribuições antigas, para evitar duplicatas
+    $stmt_delete_atribuicoes = $conn->prepare("DELETE FROM manutencoes_tecnicos WHERE id_manutencao = ?");
+    if (!$stmt_delete_atribuicoes) {
+        throw new Exception('Erro ao preparar a declaração de exclusão: ' . $conn->error);
     }
-    $stmt_update_status->close();
-
-    // 2. Preparar as instruções para UPDATE e INSERT
-    $status_tecnico_pendente = 'pendente';
-    $stmt_update_atribuicao = $conn->prepare("UPDATE manutencoes_tecnicos SET id_tecnico = ?, id_veiculo = ?, inicio_reparoTec = ?, fim_reparoT = ?, status_tecnico = ? WHERE id_manutencao = ?");
-    $stmt_update_atribuicao->bind_param("iisssi", $id_tecnico_update, $id_veiculo_update, $dataInicio, $dataFim, $status_tecnico_pendente, $id_manutencao_update_atribuicao);
-
+    
+    // 3. Prepara uma única query para inserir as novas atribuições
     $stmt_insert_atribuicao = $conn->prepare("INSERT INTO manutencoes_tecnicos (id_manutencao, id_tecnico, id_veiculo, inicio_reparoTec, fim_reparoT, status_tecnico) VALUES (?, ?, ?, ?, ?, ?)");
     if (!$stmt_insert_atribuicao) {
         throw new Exception('Erro ao preparar a declaração de inserção: ' . $conn->error);
     }
-    $stmt_insert_atribuicao->bind_param("iiisss", $id_manutencao_insert, $id_tecnico_insert, $id_veiculo_insert, $dataInicio, $dataFim, $status_tecnico_pendente);
 
-    // 3. Realizar o UPSERT (UPDATE ou INSERT)
+    $veiculo_count = count($idsVeiculos);
+
+    // Itera sobre cada manutenção selecionada
     foreach ($idsManutencao as $id_manutencao) {
-        foreach ($idsTecnicos as $id_tecnico) {
-            foreach ($idsVeiculos as $id_veiculo) {
-                // Verificar se já existe um registro para a manutenção
-                $stmt_check = $conn->prepare("SELECT id_manutencao FROM manutencoes_tecnicos WHERE id_manutencao = ?");
-                $stmt_check->bind_param("i", $id_manutencao);
-                $stmt_check->execute();
-                $result_check = $stmt_check->get_result();
+        // Atualiza a manutenção principal com as datas
+        $stmt_update_manutencao->bind_param("i", $id_manutencao);
+        $stmt_update_manutencao->execute();
 
-                if ($result_check->num_rows > 0) {
-                    // Se o registro existe, fazemos um UPDATE
-                    $id_manutencao_update_atribuicao = $id_manutencao;
-                    $id_tecnico_update = $id_tecnico;
-                    $id_veiculo_update = $id_veiculo;
-                    $stmt_update_atribuicao->execute();
-                } else {
-                    // Se o registro não existe, fazemos um INSERT
-                    $id_manutencao_insert = $id_manutencao;
-                    $id_tecnico_insert = $id_tecnico;
-                    $id_veiculo_insert = $id_veiculo;
-                    $stmt_insert_atribuicao->execute();
-                }
-                $stmt_check->close();
-            }
+        // Deleta as atribuições antigas para evitar duplicatas e conflitos
+        $stmt_delete_atribuicoes->bind_param("i", $id_manutencao);
+        $stmt_delete_atribuicoes->execute();
+
+        // Insere as novas atribuições de técnicos e veículos
+        $i = 0; // contador para os veículos
+        foreach ($idsTecnicos as $id_tecnico) {
+            $id_veiculo = $idsVeiculos[$i % $veiculo_count]; // Atribui um veículo da lista de forma circular
+            
+            // Insere uma linha para cada combinação de técnico e veículo
+            $stmt_insert_atribuicao->bind_param("iiisss", $id_manutencao, $id_tecnico, $id_veiculo, $dataInicio, $dataFim, $status_tecnico_pendente);
+            $stmt_insert_atribuicao->execute();
+            
+            $i++;
         }
     }
 
-    $stmt_update_atribuicao->close();
-    $stmt_insert_atribuicao->close();
-
     $conn->commit();
-    echo json_encode(['success' => true, 'message' => 'Manutenção atribuída com sucesso.']);
+    echo json_encode(['success' => true, 'message' => 'Manutenção(ões) atribuída(s) com sucesso.']);
+
 } catch (Exception $e) {
     $conn->rollback();
-    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Erro ao atribuir a manutenção: ' . $e->getMessage()]);
 }
 
+// Fecha as declarações preparadas
+if (isset($stmt_update_manutencao)) {
+    $stmt_update_manutencao->close();
+}
+if (isset($stmt_delete_atribuicoes)) {
+    $stmt_delete_atribuicoes->close();
+}
+if (isset($stmt_insert_atribuicao)) {
+    $stmt_insert_atribuicao->close();
+}
 $conn->close();
 ?>
