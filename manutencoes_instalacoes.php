@@ -492,7 +492,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             // Isso evita que o usuário "burle" a redefinição acessando outras páginas.
             window.location.href = 'index.html'; // Ou 'login.html' se for o nome do seu arquivo de login
         });
-    </script>
+    </script>   
     <?php endif; ?>
 
     <div id="cadastroManutencaoModal" class="modal">

@@ -152,30 +152,37 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleSpinner(botaoConfirmarDevolucao, spinnerDevolucao, false);
     }
 
-    // Carregar manutenções
-    async function loadManutencoesTecnico() {
-        if (!listaManutencoes || !mensagemCarregamento || !mensagemErro || typeof userId === 'undefined' || userId === null) {
-            showMessage(mensagemErro, 'Erro de inicialização: elementos da página ou ID do usuário não encontrados.', 'erro');
-            return;
-        }
-        listaManutencoes.innerHTML = '';
-        mensagemCarregamento.classList.remove('oculto');
-        hideMessage(mensagemErro);
+    // Modificação na função de carregar para aplicar o filtro
+async function loadManutencoesTecnico() {
+    if (!listaManutencoes || !mensagemCarregamento || !mensagemErro || typeof userId === 'undefined' || userId === null) {
+        showMessage(mensagemErro, 'Erro de inicialização: elementos da página ou ID do usuário não encontrados.', 'erro');
+        return;
+    }
+    listaManutencoes.innerHTML = '';
+    mensagemCarregamento.classList.remove('oculto');
+    hideMessage(mensagemErro);
 
-        try {
-            const response = await fetch(`get_manutencoes_tecnico.php?user_id=${userId}`);
-            const data = await response.json();
+    try {
+        const response = await fetch(`get_manutencoes_tecnico.php?user_id=${userId}`);
+        const data = await response.json();
 
-            mensagemCarregamento.classList.add('oculto');
+        mensagemCarregamento.classList.add('oculto');
 
-            if (data.success && data.manutencoes.length > 0) {
-                data.manutencoes.forEach(manutencao => {
+        if (data.success && data.manutencoes.length > 0) {
+            // Filtrar as manutenções com base no tipo
+            const manutencoesFiltradas = data.manutencoes.filter(manutencao => {
+                // Seu banco de dados retorna 'corretiva' ou 'instalacao'? Se for diferente, ajuste aqui.
+                return manutencao.tipo_manutencao.toLowerCase() === filtroAtual;
+            });
+            
+            if (manutencoesFiltradas.length > 0) {
+                manutencoesFiltradas.forEach(manutencao => {
                     const itemDiv = document.createElement('div');
                     itemDiv.classList.add('item-manutencao');
-
+    
                     let textoDataExecucao = 'Data não definida';
                     let diasParaReparo = 0;
-
+                    
                     if (manutencao.inicio_reparoTec && manutencao.fim_reparoT) {
                         const inicioFormatado = new Date(manutencao.inicio_reparoTec).toLocaleDateString('pt-BR');
                         const fimFormatado = new Date(manutencao.fim_reparoT).toLocaleDateString('pt-BR');
@@ -183,14 +190,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         textoDataExecucao = `<span class="periodo-data">${inicioFormatado} até ${fimFormatado}</span>`;
                     }
                     let textoDias = diasParaReparo === 1 ? '1 dia' : `${diasParaReparo} dias`;
-
+    
                     let htmlVeiculos = 'Nenhum veículo atribuído';
                     if (manutencao.veiculos_info) {
                         const veiculos = manutencao.veiculos_info.split(' | ');
                         const spansVeiculos = veiculos.map(veiculo => `<span class="item-veiculo-modal">${veiculo.trim()}</span>`).join(' ');
                         htmlVeiculos = spansVeiculos;
                     }
-
+    
                     itemDiv.innerHTML = `
                         <div>
                             <h3 class="titulo-equipamento">${manutencao.nome_equip} - ${manutencao.referencia_equip}</h3>
@@ -201,44 +208,47 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="lista-veiculos"><span class="rotulo-info">Veículo(s):</span> ${htmlVeiculos}</div>
                         </div>
                     `;
-
+    
                     const divBotoes = document.createElement('div');
                     divBotoes.classList.add('botoes-item');
-
+    
                     if (manutencao.latitude && manutencao.longitude) {
                         const botaoLocalizar = document.createElement('button');
                         botaoLocalizar.classList.add('botao-localizar');
                         botaoLocalizar.textContent = 'Localizar no Mapa';
                         botaoLocalizar.addEventListener('click', () => {
-                            window.open(`https://www.google.com/maps/search/?api=1&query=${manutencao.latitude},${manutencao.longitude}`, '_blank');
+                            window.open(`http://maps.google.com/maps?q=${manutencao.latitude},${manutencao.longitude}`, '_blank');
                         });
                         divBotoes.appendChild(botaoLocalizar);
                     }
-
+    
                     const botaoConcluir = document.createElement('button');
                     botaoConcluir.classList.add('botao-concluir');
                     botaoConcluir.textContent = 'Concluir Reparo';
                     botaoConcluir.addEventListener('click', () => abrirModalConcluirReparo(manutencao));
                     divBotoes.appendChild(botaoConcluir);
-
+    
                     const botaoDevolver = document.createElement('button');
                     botaoDevolver.classList.add('botao-devolver');
                     botaoDevolver.textContent = 'Devolver Reparo';
                     botaoDevolver.addEventListener('click', () => abrirModalDevolucao(manutencao));
                     divBotoes.appendChild(botaoDevolver);
-
+    
                     itemDiv.appendChild(divBotoes);
                     listaManutencoes.appendChild(itemDiv);
                 });
             } else {
-                showMessage(mensagemErro, 'Nenhuma manutenção em andamento atribuída a você.', 'erro');
+                 showMessage(mensagemErro, `Nenhuma manutenção do tipo '${filtroAtual}' encontrada.`, 'erro');
             }
-        } catch (error) {
-            console.error('Erro ao carregar manutenções do técnico:', error);
-            mensagemCarregamento.classList.add('oculto');
-            showMessage(mensagemErro, 'Ocorreu um erro ao carregar suas manutenções. Tente novamente.', 'erro');
+        } else {
+            showMessage(mensagemErro, 'Nenhuma manutenção em andamento atribuída a você.', 'erro');
         }
+    } catch (error) {
+        console.error('Erro ao carregar manutenções do técnico:', error);
+        mensagemCarregamento.classList.add('oculto');
+        showMessage(mensagemErro, 'Ocorreu um erro ao carregar suas manutenções. Tente novamente.', 'erro');
     }
+}
 
     // Lógica para os botões de rompimento de lacre
     if (botaoSimRompimento) {
@@ -261,52 +271,58 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Atualizar status
-    async function atualizarStatusManutencao(idManutencao, novoStatus, descricaoReparo = null, materiaisUtilizados = null, motivoDevolucao = null, rompimentoLacre = null, numeroLacre = null, infoRompimento = null, dataRompimento = null) {
-        const isDevolucao = novoStatus === 'pendente';
-        const msgElemento = isDevolucao ? mensagemDevolucao : concluirReparoMessage;
-        const spinner = isDevolucao ? spinnerDevolucao : concluirReparoSpinner;
-        const botao = isDevolucao ? botaoConfirmarDevolucao : confirmConcluirReparoBtn;
+    async function atualizarStatusManutencao(idManutencao, novoStatus, reparoFinalizado = null, materiaisUtilizados = null, motivoDevolucao = null, rompimentoLacre = null, numeroLacre = null, infoRompimento = null, dataRompimento = null) {
+    const isDevolucao = novoStatus === 'pendente';
+    const msgElemento = isDevolucao ? mensagemDevolucao : concluirReparoMessage;
+    const spinner = isDevolucao ? spinnerDevolucao : concluirReparoSpinner;
+    const botao = isDevolucao ? botaoConfirmarDevolucao : confirmConcluirReparoBtn;
+    
+    // Mostra o spinner e desabilita o botão antes de iniciar a requisição
+    hideMessage(msgElemento);
+    toggleSpinner(botao, spinner, true);
 
-        hideMessage(msgElemento);
-        toggleSpinner(botao, spinner, true);
+    const body = {
+        id_manutencao: idManutencao,
+        status_reparo: novoStatus,
+        reparo_finalizado: reparoFinalizado,
+        materiais_utilizados: materiaisUtilizados,
+        motivo_devolucao: motivoDevolucao,
+        rompimento_lacre: rompimentoLacre,
+        numero_lacre: numeroLacre,
+        info_rompimento: infoRompimento,
+        data_rompimento: dataRompimento
+    };
 
-        const body = {
-            id_manutencao: idManutencao,
-            status_reparo: novoStatus,
-            reparo_finalizado: descricaoReparo,
-            materiais_utilizados: materiaisUtilizados,
-            motivo_devolucao: motivoDevolucao,
-            // Novos campos de rompimento de lacre
-            rompimento_lacre: rompimentoLacre,
-            numero_lacre: numeroLacre,
-            info_rompimento: infoRompimento,
-            data_rompimento: dataRompimento
-        };
+    try {
+        const response = await fetch('update_manutencao_status.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await response.json();
 
-        try {
-            const response = await fetch('update_manutencao_status.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            });
-            const data = await response.json();
+        if (data.success) {
+            // Se for sucesso, esconde o spinner, o botão e mostra a mensagem de sucesso
+            spinner.classList.add('oculto');
+            botao.classList.add('oculto');
+            showMessage(msgElemento, `Status atualizado com sucesso!`, 'sucesso');
 
-            if (data.success) {
-                showMessage(msgElemento, `Status atualizado com sucesso!`, 'sucesso');
-                setTimeout(() => {
-                    isDevolucao ? fecharModalDevolucao() : fecharModalConcluirReparo();
-                    loadManutencoesTecnico();
-                }, 1500);
-            } else {
-                showMessage(msgElemento, `Erro ao atualizar status: ${data.message}`, 'erro');
-            }
-        } catch (error) {
-            console.error('Erro ao atualizar status da manutenção:', error);
-            showMessage(msgElemento, 'Ocorreu um erro ao tentar atualizar o status da manutenção.', 'erro');
-        } finally {
+            setTimeout(() => {
+                isDevolucao ? fecharModalDevolucao() : fecharModalConcluirReparo();
+                loadManutencoesTecnico();
+            }, 1500);
+        } else {
+            // Em caso de erro do servidor, esconde o spinner e reabilita o botão
             toggleSpinner(botao, spinner, false);
+            showMessage(msgElemento, `Erro ao atualizar status: ${data.message}`, 'erro');
         }
+    } catch (error) {
+        // Em caso de erro na requisição, esconde o spinner e reabilita o botão
+        console.error('Erro ao atualizar status da manutenção:', error);
+        toggleSpinner(botao, spinner, false);
+        showMessage(msgElemento, 'Ocorreu um erro ao tentar atualizar o status da manutenção.', 'erro');
     }
+}
 
     // Event listener para a checkbox "Nenhum material"
     if (checkboxNenhumMaterial) {
@@ -382,7 +398,32 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+    // === LÓGICA DE FILTRAGEM ADICIONADA AQUI ===
+    function handleFiltroClick(tipo) {
+        filtroAtual = tipo;
 
+        // Remove a classe 'ativo' de todos os botões de filtro
+        btnCorretiva.classList.remove('ativo');
+        btnInstalacao.classList.remove('ativo');
+
+        // Adiciona a classe 'ativo' ao botão clicado
+        if (tipo === 'corretiva') {
+            btnCorretiva.classList.add('ativo');
+        } else if (tipo === 'instalacao') {
+            btnInstalacao.classList.add('ativo');
+        }
+
+        loadManutencoesTecnico();
+    }
+
+    if (btnCorretiva) {
+        btnCorretiva.addEventListener('click', () => handleFiltroClick('corretiva'));
+    }
+
+    if (btnInstalacao) {
+        btnInstalacao.addEventListener('click', () => handleFiltroClick('instalacao'));
+    }
+    // =============================================
 
     // Event listener para o botão de confirmação da devolução
     if (botaoConfirmarDevolucao) {
