@@ -79,8 +79,6 @@ $user_email = $_SESSION['user_email'];
             <label for="inputInfoRompimento">Qual lacre foi rompido? </label>
             <input type="text" id="inputInfoRompimento" placeholder="Ex: Metrológico, Não-metrológico">
         
-            <label for="inputDataRompimento">Data do rompimento:</label>
-            <input type="date" id="inputDataRompimento">
         </div>
 
         <label for="reparoRealizadoTextarea">Reparo Realizado:</label>
