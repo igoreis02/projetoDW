@@ -576,7 +576,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
     <div id="confirmationModal" class="modal">
         <div class="modal-content">
             <span class="close-button" onclick="closeConfirmationModal()">&times;</span>
-            <h3 class="text-xl font-bold mb-4 text-gray-800">Confirmação da Manutenção</h3>
+            <h3 class="text-xl font-bold mb-4 text-gray-800">Confirmação da Operação</h3>
             <div class="confirmation-details">
                 <p><strong>Cidade:</strong> <span id="confirmCityName"></span></p>
                 <p><strong>Equipamento:</strong> <span id="confirmEquipmentName"></span></p>
@@ -607,6 +607,76 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             <p id="confirmMessage" class="confirmation-message hidden"></p>
         </div>
     </div>
+    
+    <div id="cadastroOcorrenciaModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeCadastroManutencaoModal()">&times;</span>
+            <h3 class="text-xl font-bold mb-4 text-gray-800">Cadastrar Manutenção</h3>
+
+            <div id="ocorrencia-citySelectionSection">
+                <p class="mb-4 text-gray-700">Selecione a cidade para a nova manutenção:</p>
+                <div id="ocorrencia-cityButtonsContainer" class="city-buttons-container">
+                    <p id="loadingCitiesMessage">Carregando cidades...</p>
+                </div>
+                <p id="cityErrorMessage" class="message error hidden"></p>
+            </div>
+
+            <div id="ocorrencia-equipmentSelectionSection" class="equipment-selection-container">
+                <button class="back-button" onclick="goBackToCitySelection()">&larr;</button>
+                <p class="mb-4 text-gray-700">Selecione o equipamento:</p>
+                <input type="text" id="ocorrencia-equipmentSearchInput" placeholder="Digite o nome do equipamento para filtrar...">
+                <select id="ocorrencia-equipmentSelect" size="5">
+                    </select>
+                <p id="ocorrencia-loadingEquipmentMessage" class="hidden"></p>
+                <p id="ocorrencia-equipmentErrorMessage" class="message error hidden"></p>
+
+                <div id="ocorrencia-problemDescriptionSection" class="problem-description-container">
+                    <label for="ocorrencia-problemDescription">Descrição do problema:</label>
+                    <textarea id="ocorrencia-problemDescription" rows="4" placeholder="Descreva o problema aqui..."></textarea>
+                    <span id="ocorrencia-problemDescriptionErrorMessage" class="selection-error-message hidden"></span>
+                </div>
+
+                <span id="ocorrencia-equipmentSelectionErrorMessage" class="selection-error-message hidden"></span>
+
+                <button id="ocorrencia-confirmEquipmentSelection" class="page-button mt-4">Confirmar Seleção</button>
+            </div>
+        </div>
+    </div>
+    <div id="ocorrencia-confirmationModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeConfirmationModal()">&times;</span>
+            <h3 class="text-xl font-bold mb-4 text-gray-800">Confirmação da Manutenção</h3>
+            <div class="confirmation-details">
+                <p><strong>Cidade:</strong> <span id="ocorrencia-confirmCityName"></span></p>
+                <p><strong>Equipamento:</strong> <span id="ocorrencia-confirmEquipmentName"></span></p>
+                <p><strong>Problema:</strong> <span id="ocorrencia-confirmProblemDescription"></span></p>
+                <p><strong>Tipo de Manutenção:</strong> <span id="ocorrencia-confirmMaintenanceType"></span></p>
+                <p><strong>Status do Reparo:</strong> <span id="ocorrencia-confirmRepairStatus"></span></p>
+                <!-- Novos campos para confirmação de instalação -->
+                <div id="installConfirmationDetails" class="hidden">
+                    <h4 class="text-md font-bold mt-4 mb-2 text-gray-700">Detalhes da Instalação:</h4>
+                    <p><strong>Nome Equipamento:</strong> <span id="ocorrencia-confirmNewEquipmentName"></span></p>
+                    <p><strong>Referência Equipamento:</strong> <span id="ocorrencia-confirmNewEquipmentRef"></span></p>
+                    <p><strong>Logradouro:</strong> <span id="ocorrencia-confirmAddressLogradouro"></span></p>
+                    <p><strong>Número:</strong> <span id="ocorrencia-confirmAddressNumero"></span></p>
+                    <p><strong>Bairro:</strong> <span id="ocorrencia-confirmAddressBairro"></span></p>
+                    <p><strong>CEP:</strong> <span id="ocorrencia-confirmAddressCep"></span></p>
+                    <p><strong>Complemento:</strong> <span id="ocorrencia-confirmAddressComplemento"></span></p>
+                    <p><strong>Latitude:</strong> <span id="ocorrencia-confirmAddressLatitude"></span></p>
+                    <p><strong>Longitude:</strong> <span id="ocorrencia-confirmAddressLongitude"></span></p>
+                </div>
+            </div>
+            <div class="confirmation-buttons">
+                <button class="confirm-button" id="confirmSaveButton">
+                    Confirmar
+                    <span id="confirmSpinner" class="loading-spinner hidden"></span>
+                </button>
+                <button class="cancel-button" id="cancelSaveButton" onclick="cancelSaveManutencao()">Cancelar</button>
+            </div>
+            <p id="confirmMessage" class="confirmation-message hidden"></p>
+        </div>
+    </div>
+    
 
     <script>
         // Funções de utilidade
