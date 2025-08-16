@@ -1,6 +1,6 @@
 <?php
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *'); // Permite requisições de qualquer origem (para desenvolvimento)
+header('Access-Control-Allow-Origin: *');
 
 // Configurações do banco de dados
 $servername = "localhost";
@@ -18,7 +18,7 @@ if ($conn->connect_error) {
 }
 
 $city_id = $_GET['city_id'] ?? null;
-$flow_type = $_GET['flow_type'] ?? null; // 'maintenance' ou 'installation'
+$flow_type = $_GET['flow_type'] ?? null;
 
 if (empty($city_id) || empty($flow_type)) {
     echo json_encode(['success' => false, 'message' => 'Parâmetros city_id e flow_type são obrigatórios.']);
@@ -26,7 +26,7 @@ if (empty($city_id) || empty($flow_type)) {
 }
 
 $pending_items = [];
-// Query simplificada para buscar apenas itens pendentes, sem a necessidade de join com técnicos
+
 $sql = "SELECT
             m.id_manutencao,
             m.inicio_reparo,
@@ -35,6 +35,7 @@ $sql = "SELECT
             m.ocorrencia_reparo,
             m.tipo_manutencao,
             m.status_reparo,
+            m.motivo_devolucao,
             c.nome AS cidade_nome
         FROM
             manutencoes m

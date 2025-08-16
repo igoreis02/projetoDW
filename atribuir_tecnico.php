@@ -7,13 +7,6 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 $user_email = $_SESSION['user_email'];
 
-// Opcional: Redirecionar se o tipo de usuário não tiver permissão para esta página
-// Por exemplo, apenas administradores e provedores podem atribuir manutenções
-// if (isset($_SESSION['tipo_usuario']) && ($_SESSION['tipo_usuario'] !== 'administrador' && $_SESSION['tipo_usuario'] !== 'provedor')) {
-//     header('Location: menu.php');
-//     exit();
-// }
-
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -21,9 +14,18 @@ $user_email = $_SESSION['user_email'];
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="css/style_tecnico.css">
+    <link rel="stylesheet" href="css/style_atribuirTec.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <title>Atribuir Técnico</title>
+    <style>
+        .botao-manutencao-pendente {
+            height: auto; /* Permite que a altura se ajuste ao conteúdo */
+            padding: 10px 15px;
+            text-align: left;
+            line-height: 1.5; /* Melhora a legibilidade com múltiplas linhas */
+            white-space: pre-wrap; /* Essencial para que a quebra de linha '\n' funcione */
+        }
+    </style>
 </head>
 
 <body>
@@ -31,10 +33,10 @@ $user_email = $_SESSION['user_email'];
     <div class="card">
         <h2>Atribuir Técnico</h2>
         <div class="botao-pagina-container">
-            <button id="btnManutencoes" class="botao-pagina" onclick="abrirModalCidades('maintenance')">
+            <button id="btnManutencoes" class="botao-pagina">
                 <i class="fas fa-cogs"></i> Manutenções
             </button>
-            <button id="btnInstalacoes" class="botao-pagina" onclick="abrirModalCidades('installation')">
+            <button id="btnInstalacoes" class="botao-pagina">
                 <i class="fas fa-tools"></i> Instalações
             </button>
         </div>

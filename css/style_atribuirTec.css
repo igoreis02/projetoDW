@@ -1,0 +1,405 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,500;1,500&display=swap');
+
+:root {
+    --font-family: "Montserrat", sans-serif;
+    --cor-principal: #BFBFBF;
+    --cor-secundaria: #A6A6A6;
+    --cor-terciaria: #404040;
+    --cor-titulo: #404040;
+    --cor-titulo-hover: #b9881f;
+    --cor-letra: #333333;
+    --cor-fundo: #F2F2F2;
+    --botao-voltar: #404040;
+    --cor-letra-botaoVoltar: #F2F2F2;
+    --botao-voltar-hover: #737373;
+    --cor-fundo-input: #ededed;
+    --botao-label: #404040;
+    --cor-input: #404040;
+    --cor-placeholder: #737373;
+    --botao-concluir: #404040;
+    --cor-letra-botao: #F2F2F2;
+    --botao-concluir-hover: #737373;
+    --botao-devolver: #b9881f;
+    --botao-devolver-hover: #785814;
+    --botao-localizar: #007bff;
+    --botao-localizar-hover: #0056b3;
+
+}
+
+body {
+    font-family: var(--font-family);
+    margin: 0;
+    padding: 0;
+}
+.background {
+    position: fixed;
+    top: -50vmin;
+    left: -50vmin;
+    width: 100vmin;
+    height: 100vmin;
+    border-radius:
+        47% 53% 61% 39% / 45% 51% 49% 55%;
+    background: var(--cor-secundaria);
+}
+
+.background::after {
+    content: "";
+    position: inherit;
+    right: -50vmin;
+    bottom: -55vmin;
+    width: inherit;
+    height: inherit;
+    border-radius: inherit;
+    background: var(--cor-secundaria);
+}
+
+.card {
+    background-color: #ffffff;
+    padding: 2.5rem;
+    border-radius: 1rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    width: 90%;
+    max-width: 600px;
+    position: relative;
+    margin: 2rem auto;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.card>h2 {
+    font-size: 35px;
+    font-weight: 800;
+    margin: 20px 0 20px;
+    color: var(--cor-titulo);
+}
+
+.botao-pagina-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+    padding: 20px 0;
+}
+
+.botao-pagina {
+    padding: 25px;
+    font-size: 1.3em;
+    color: white;
+    background-color: var(--cor-principal);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    text-align: center;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.botao-pagina:hover {
+    background-color: var(--cor-secundaria);
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Estilo para os ícones dentro dos botões */
+.botao-pagina i {
+    margin-right: 15px;
+    font-size: 1.5em;
+}
+
+.voltar-btn {
+    display: block;
+    width: 50%;
+    padding: 15px;
+    margin-top: 30px;
+    text-align: center;
+    background-color: var(--botao-voltar);
+    color: var(--cor-letra-botaoVoltar);
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 1.1em;
+    transition: background-color 0.3s ease;
+    box-sizing: border-box;
+}
+
+.voltar-btn:hover {
+    background-color: var(--botao-voltar-hover);
+}
+
+/* Estilo do modal base */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+/* Estilo para quando o modal está ativo */
+.modal.is-active {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Estilo do conteúdo do modal */
+.modal-conteudo {
+    background-color: #fff;
+    padding: 2rem;
+    border-radius: 1rem;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 1000px; /* Largura padrão para modais de atribuição */
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: auto;
+    overflow-y: auto;
+}
+
+/* Estilo específico para o modal de cidades (mais estreito) */
+.cidade-modal-conteudo {
+    max-width: 400px;
+}
+
+/* Cabeçalho do modal */
+.modal-cabecalho {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    width: 100%;
+}
+
+.modal-cabecalho h2 {
+    margin: 0;
+    font-size: 1.5em;
+    text-align: center;
+}
+
+.fechar {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #aaa;
+    font-size: 2rem;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.fechar:hover {
+    color: #000;
+}
+
+.botao-voltar-icone {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: #aaa;
+    cursor: pointer;
+}
+
+.botao-voltar-icone:hover {
+    color: #000;
+}
+
+/* Lista de botões de cidades e manutenções */
+.grupo-lista {
+    list-style: none;
+    padding: 0;
+    margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    gap: 1rem;
+    width: 100%;
+}
+
+.botao-cidade, .botao-manutencao-pendente {
+    padding: 1rem;
+    font-size: 1.1em;
+    background-color: var(--cor-principal);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    width: 100%;
+    text-align: center;
+}
+
+.botao-cidade:hover {
+    background-color: var(--cor-secundaria);
+}
+
+/* Estilo modificado para os botões de manutenções pendentes */
+.botao-manutencao-pendente {
+    background-color: #f0f0f0;
+    color: #333;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    white-space: pre-wrap;
+    flex: 1 1 calc(50% - 0.5rem); /* Dois por linha com espaçamento */
+}
+
+.botao-manutencao-pendente:hover {
+    background-color: #e0e0e0;
+}
+
+.botao-manutencao-pendente.selecionado {
+    background-color: var(--cor-principal);
+    color: white;
+    border-color: var(--cor-principal);
+}
+
+.botao-manutencao-pendente.selecionado strong {
+    color: white;
+}
+
+.manutencoes-flex-container {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    gap: 1rem;
+    width: 100%;
+}
+
+#botaoAtribuirTecnico {
+    display: none;
+    width: 100%;
+    padding: 1rem;
+    font-size: 1.1em;
+    margin-top: 2rem;
+    background-color: var(--cor-principal);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#botaoAtribuirTecnico:hover {
+    background-color: var(--cor-secundaria);
+}
+
+.detalhe-manutencao-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    width: 100%;
+    
+}
+
+.detalhe-manutencao {
+    background-color: #f0f0f0;
+    padding: 1rem;
+    border-radius: 8px;
+    flex: 1 1 calc(50% - 0.5rem); /* Dois por linha com espaçamento */
+}
+
+.titulo-equipamento {
+    font-size: 1.2em;
+    margin-bottom: 0.5rem;
+}
+
+.descricao-problema {
+    font-style: italic;
+    color: #555;
+}
+
+.titulo-data, .titulo-tecnicos, .titulo-veiculos {
+    font-size: 1.2em;
+    margin-top: 1.5rem;
+}
+
+.data-container, .tecnicos-container, .veiculos-container {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.input-data {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.botao-tecnico, .botao-veiculo {
+    background-color: #ccc;
+    color: #333;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.25rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.botao-tecnico:hover, .botao-veiculo:hover {
+    background-color: #b0b0b0;
+}
+
+.botao-tecnico.selecionado-tecnico, .botao-veiculo.selecionado-veiculo {
+    background-color: var(--cor-principal);
+    color: white;
+}
+
+.botao-container {
+    margin-top: 1.5rem;
+    width: 100%;
+}
+
+.botao-selecionar-tecnicos {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1.1em;
+    background-color: var(--cor-principal);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.botao-selecionar-tecnicos:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.mensagem-erro, .mensagem-sucesso {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-radius: 8px;
+    font-weight: bold;
+}
+
+.mensagem-erro {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.mensagem-sucesso {
+    background-color: #d4edda;
+    color: #155724;
+}
