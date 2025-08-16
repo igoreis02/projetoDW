@@ -38,6 +38,8 @@ function calcularDiasEntreDatas(inicio, fim) {
     return diferencaDias + 1;
 }
 
+
+
 // Funções globais para fechar modais
 function fecharModalConcluirReparo() {
     document.getElementById('concluirReparoModal')?.classList.remove('ativo');
