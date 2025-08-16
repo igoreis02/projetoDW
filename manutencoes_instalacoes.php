@@ -30,6 +30,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <title>Manutenções e Instalações</title>
     <style>
         /* Estilos do card e layout geral */
@@ -111,6 +112,12 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             background-color: var(--cor-secundaria);
             transform: translateY(-5px);
             box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Estilo para os ícones dentro dos botões */
+        .page-button i {
+            margin-right: 15px;
+            font-size: 1.5em;
         }
 
         /* Estilo para o botão "Voltar" */
@@ -463,6 +470,10 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             .form {
                 width: 100%;
             }
+            .page-button i {
+                margin-right: 10px;
+                font-size: 1.2em;
+            }
         }
     </style>
 </head>
@@ -473,9 +484,15 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
         <h2>Manutenções e Instalações</h2>
 
         <div class="page-buttons-container">
-            <button id="matrizManutencaoBtn" class="page-button">Matriz Técnica</button>
-            <button id="controleOcorrenciaBtn" class="page-button">Controle de Ocorrência</button>
-            <button id="instalarEquipamentoBtn" class="page-button">Instalar equipamento</button>
+            <button id="matrizManutencaoBtn" class="page-button">
+                <i class="fas fa-cogs"></i> Matriz Técnica
+            </button>
+            <button id="controleOcorrenciaBtn" class="page-button">
+                <i class="fas fa-clipboard-list"></i> Controle de Ocorrência
+            </button>
+            <button id="instalarEquipamentoBtn" class="page-button">
+                <i class="fas fa-tools"></i> Instalar equipamento
+            </button>
         </div>
 
         <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
@@ -492,7 +509,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             // Isso evita que o usuário "burle" a redefinição acessando outras páginas.
             window.location.href = 'index.html'; // Ou 'login.html' se for o nome do seu arquivo de login
         });
-    </script>   
+    </script>
     <?php endif; ?>
 
     <div id="cadastroManutencaoModal" class="modal">
@@ -528,7 +545,6 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
                 <button id="confirmEquipmentSelection" class="page-button mt-4">Confirmar Seleção</button>
             </div>
 
-            <!-- Nova Seção para Cadastro de Equipamento e Endereço (para Instalação) -->
             <div id="installEquipmentAndAddressSection" class="install-equipment-section">
                 <button class="back-button" onclick="goBackToCitySelection()">&larr;</button>
                 <h4 class="text-lg font-bold mb-3 text-gray-800">Cadastrar Equipamento</h4>
@@ -576,14 +592,13 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
     <div id="confirmationModal" class="modal">
         <div class="modal-content">
             <span class="close-button" onclick="closeConfirmationModal()">&times;</span>
-            <h3 class="text-xl font-bold mb-4 text-gray-800">Confirmação da Operação</h3>
+            <h3 class="text-xl font-bold mb-4 text-gray-800">Confirmação da Manutenção</h3>
             <div class="confirmation-details">
                 <p><strong>Cidade:</strong> <span id="confirmCityName"></span></p>
                 <p><strong>Equipamento:</strong> <span id="confirmEquipmentName"></span></p>
                 <p><strong>Problema:</strong> <span id="confirmProblemDescription"></span></p>
                 <p><strong>Tipo de Manutenção:</strong> <span id="confirmMaintenanceType"></span></p>
                 <p><strong>Status do Reparo:</strong> <span id="confirmRepairStatus"></span></p>
-                <!-- Novos campos para confirmação de instalação -->
                 <div id="installConfirmationDetails" class="hidden">
                     <h4 class="text-md font-bold mt-4 mb-2 text-gray-700">Detalhes da Instalação:</h4>
                     <p><strong>Nome Equipamento:</strong> <span id="confirmNewEquipmentName"></span></p>
@@ -607,76 +622,6 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             <p id="confirmMessage" class="confirmation-message hidden"></p>
         </div>
     </div>
-    
-    <div id="cadastroOcorrenciaModal" class="modal">
-        <div class="modal-content">
-            <span class="close-button" onclick="closeCadastroManutencaoModal()">&times;</span>
-            <h3 class="text-xl font-bold mb-4 text-gray-800">Cadastrar Manutenção</h3>
-
-            <div id="ocorrencia-citySelectionSection">
-                <p class="mb-4 text-gray-700">Selecione a cidade para a nova manutenção:</p>
-                <div id="ocorrencia-cityButtonsContainer" class="city-buttons-container">
-                    <p id="loadingCitiesMessage">Carregando cidades...</p>
-                </div>
-                <p id="cityErrorMessage" class="message error hidden"></p>
-            </div>
-
-            <div id="ocorrencia-equipmentSelectionSection" class="equipment-selection-container">
-                <button class="back-button" onclick="goBackToCitySelection()">&larr;</button>
-                <p class="mb-4 text-gray-700">Selecione o equipamento:</p>
-                <input type="text" id="ocorrencia-equipmentSearchInput" placeholder="Digite o nome do equipamento para filtrar...">
-                <select id="ocorrencia-equipmentSelect" size="5">
-                    </select>
-                <p id="ocorrencia-loadingEquipmentMessage" class="hidden"></p>
-                <p id="ocorrencia-equipmentErrorMessage" class="message error hidden"></p>
-
-                <div id="ocorrencia-problemDescriptionSection" class="problem-description-container">
-                    <label for="ocorrencia-problemDescription">Descrição do problema:</label>
-                    <textarea id="ocorrencia-problemDescription" rows="4" placeholder="Descreva o problema aqui..."></textarea>
-                    <span id="ocorrencia-problemDescriptionErrorMessage" class="selection-error-message hidden"></span>
-                </div>
-
-                <span id="ocorrencia-equipmentSelectionErrorMessage" class="selection-error-message hidden"></span>
-
-                <button id="ocorrencia-confirmEquipmentSelection" class="page-button mt-4">Confirmar Seleção</button>
-            </div>
-        </div>
-    </div>
-    <div id="ocorrencia-confirmationModal" class="modal">
-        <div class="modal-content">
-            <span class="close-button" onclick="closeConfirmationModal()">&times;</span>
-            <h3 class="text-xl font-bold mb-4 text-gray-800">Confirmação da Manutenção</h3>
-            <div class="confirmation-details">
-                <p><strong>Cidade:</strong> <span id="ocorrencia-confirmCityName"></span></p>
-                <p><strong>Equipamento:</strong> <span id="ocorrencia-confirmEquipmentName"></span></p>
-                <p><strong>Problema:</strong> <span id="ocorrencia-confirmProblemDescription"></span></p>
-                <p><strong>Tipo de Manutenção:</strong> <span id="ocorrencia-confirmMaintenanceType"></span></p>
-                <p><strong>Status do Reparo:</strong> <span id="ocorrencia-confirmRepairStatus"></span></p>
-                <!-- Novos campos para confirmação de instalação -->
-                <div id="installConfirmationDetails" class="hidden">
-                    <h4 class="text-md font-bold mt-4 mb-2 text-gray-700">Detalhes da Instalação:</h4>
-                    <p><strong>Nome Equipamento:</strong> <span id="ocorrencia-confirmNewEquipmentName"></span></p>
-                    <p><strong>Referência Equipamento:</strong> <span id="ocorrencia-confirmNewEquipmentRef"></span></p>
-                    <p><strong>Logradouro:</strong> <span id="ocorrencia-confirmAddressLogradouro"></span></p>
-                    <p><strong>Número:</strong> <span id="ocorrencia-confirmAddressNumero"></span></p>
-                    <p><strong>Bairro:</strong> <span id="ocorrencia-confirmAddressBairro"></span></p>
-                    <p><strong>CEP:</strong> <span id="ocorrencia-confirmAddressCep"></span></p>
-                    <p><strong>Complemento:</strong> <span id="ocorrencia-confirmAddressComplemento"></span></p>
-                    <p><strong>Latitude:</strong> <span id="ocorrencia-confirmAddressLatitude"></span></p>
-                    <p><strong>Longitude:</strong> <span id="ocorrencia-confirmAddressLongitude"></span></p>
-                </div>
-            </div>
-            <div class="confirmation-buttons">
-                <button class="confirm-button" id="confirmSaveButton">
-                    Confirmar
-                    <span id="confirmSpinner" class="loading-spinner hidden"></span>
-                </button>
-                <button class="cancel-button" id="cancelSaveButton" onclick="cancelSaveManutencao()">Cancelar</button>
-            </div>
-            <p id="confirmMessage" class="confirmation-message hidden"></p>
-        </div>
-    </div>
-    
 
     <script>
         // Funções de utilidade
@@ -812,6 +757,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             cityErrorMessage.classList.add('hidden');
             cityButtonsContainer.innerHTML = '';
 
+            console.log('Abrindo modal: Carregando cidades...');
 
             try {
                 const response = await fetch('get_cidades.php');
@@ -1280,7 +1226,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
                         })
                     });
                     const addressData = await addressResponse.json();
-                    
+                    console.log('Resposta save_endereco.php:', addressData);
 
                     if (!addressData.success) {
                         toggleConfirmationButtons(false, 'Erro ao cadastrar endereço: ' + (addressData.message || 'Erro desconhecido.'), 'error');
