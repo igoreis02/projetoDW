@@ -25,7 +25,7 @@ function abrirModalCidades() {
         mensagemSucesso.style.display = 'none';
     }
 
-    modalCidades.style.display = 'block';
+    modalCidades.classList.add('is-active');
 
     modalTitulo.textContent = "Cidades Cadastradas";
     listaCidades.innerHTML = '';
@@ -54,12 +54,10 @@ function abrirModalCidades() {
             } else {
                 listaCidades.innerHTML = '<p>Nenhuma cidade encontrada.</p>';
             }
-            modalCidades.style.display = 'block';
         })
         .catch(error => {
             console.error('Erro ao carregar as cidades:', error);
             listaCidades.innerHTML = `<p class="erro">Erro ao carregar cidades.</p>`;
-            modalCidades.style.display = 'block';
         });
 }
 
@@ -356,12 +354,10 @@ function atribuirManutencaoCompleto() {
     // NOVO: Adiciona a validação para a data de início
     if (dataInicio) {
         const dataAtual = new Date();
-        const dataInicioObj = new Date(dataInicio + 'T00:00:00'); // Adiciona T00:00:00 para evitar problemas de fuso horário
+        const dataInicioObj = new Date(dataInicio + 'T00:00:00');
         
-        // Zera as horas, minutos, segundos e milissegundos da data atual para comparar apenas a data
         dataAtual.setHours(0, 0, 0, 0);
         
-        // A condição agora é 'menor que', permitindo que a data seja igual a hoje
         if (dataInicioObj < dataAtual) {
             camposFaltantes.push('A data de Início não pode ser anterior à data atual.');
         }
@@ -424,7 +420,7 @@ function atribuirManutencaoCompleto() {
 
 // Função para fechar o modal
 function fecharModalCidades() {
-    modalCidades.style.display = 'none';
+    modalCidades.classList.remove('is-active');
 }
 
 // Fechar o modal clicando fora dele

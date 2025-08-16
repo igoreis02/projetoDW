@@ -107,6 +107,12 @@ body {
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
 }
 
+/* Estilo para os ícones dentro dos botões */
+.botao-pagina i {
+    margin-right: 15px;
+    font-size: 1.5em;
+}
+
 .voltar-btn {
     display: block;
     width: 50%;
@@ -126,6 +132,7 @@ body {
     background-color: var(--botao-voltar-hover);
 }
 
+/* Estilo do modal base */
 .modal {
     display: none;
     position: fixed;
@@ -136,779 +143,263 @@ body {
     height: 100%;
     overflow: auto;
     background-color: rgba(0, 0, 0, 0.4);
-    padding-top: 60px;
 }
 
-.modal.ativo {
-    display: block;
+/* Estilo para quando o modal está ativo */
+.modal.is-active {
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-.conteudo-modal {
-    background-color: #ffffff;
-    margin: 5% auto;
-    padding: 30px;
-    border-radius: 10px;
+/* Estilo do conteúdo do modal */
+.modal-conteudo {
+    background-color: #fff;
+    padding: 2rem;
+    border-radius: 1rem;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
     width: 90%;
-    max-width: 500px;
+    max-width: 1000px; /* Largura padrão para modais de atribuição */
     position: relative;
-    animation: slide-in 0.3s ease-out;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: auto;
+    overflow-y: auto;
 }
 
-/* Novos estilos para o modal de conclusão de reparo */
-.modal-detalhe-item {
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 5px;
-    padding: 10px;
-    margin-bottom: 10px;
-    font-size: 1rem;
-    color: #212529;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+/* Estilo específico para o modal de cidades (mais estreito) */
+.cidade-modal-conteudo {
+    max-width: 400px;
 }
 
-.modal-detalhe-item strong {
-    color: #495057;
+/* Cabeçalho do modal */
+.modal-cabecalho {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    width: 100%;
 }
 
-.modal-detalhe-item span {
-    font-weight: 500;
+.modal-cabecalho h2 {
+    margin: 0;
+    font-size: 1.5em;
+    text-align: center;
 }
 
-/* Estilo para o título do equipamento */
-.modal-titulo-equipamento {
-    font-size: 1.2rem; /* Um pouco maior que o padrão */
-    font-weight: bold;
-    color: #333;
-    margin-bottom: 5px;
-}
-
-/* Estilo para a ocorrência */
-.modal-ocorrencia-texto {
-    font-size: 1rem; /* Um pouco menor que o título do equipamento */
-    font-weight: bold;
-    color: #495057;
-}
-@keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-@keyframes slide-in {
-    from { transform: translateY(-50px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-}
-
-.botao-fechar {
-    color: #aaa;
+.fechar {
     position: absolute;
-    top: 10px;
-    right: 20px;
-    font-size: 30px;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #aaa;
+    font-size: 2rem;
     font-weight: bold;
     cursor: pointer;
-    transition: color 0.2s;
 }
 
-.botao-fechar:hover,
-.botao-fechar:focus {
-    color: #555;
-    text-decoration: none;
-}
-.conteudo-modal h3 {
-    text-align: center;
-    font-size: 1.8rem;
-    color: var(--cor-titulo);
-    margin-bottom: 25px;
+.fechar:hover {
+    color: #000;
 }
 
-.conteudo-modal p {
-    margin-bottom: 10px;
-    font-size: 1rem;
-    line-height: 1.5;
+.botao-voltar-icone {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: #aaa;
+    cursor: pointer;
 }
 
-.conteudo-modal p strong {
-    color: #404040;
-    font-weight: 600;
+.botao-voltar-icone:hover {
+    color: #000;
 }
 
-.conteudo-modal label {
-    display: block;
-    margin-top: 15px;
-    margin-bottom: 5px;
-    font-weight: 600;
-    color: #404040;
-}
-.conteudo-modal textarea,
-.conteudo-modal input[type="text"] {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-family: var(--font-family);
-    font-size: 1rem;
-    box-sizing: border-box;
-    margin-bottom: 15px;
-}
-
-#botaoConfirmarConcluirReparo {
+/* Lista de botões de cidades e manutenções */
+.grupo-lista {
+    list-style: none;
+    padding: 0;
+    margin-top: 2rem;
     display: flex;
-    justify-content: center;
-    align-items: center;
+    flex-direction: column;
+    flex-wrap: wrap;
+    gap: 1rem;
     width: 100%;
-    padding: 15px;
-    background-color: var(--botao-concluir);
+}
+
+.botao-cidade, .botao-manutencao-pendente {
+    padding: 1rem;
+    font-size: 1.1em;
+    background-color: var(--cor-principal);
     color: white;
     border: none;
-    border-radius: 5px;
-    font-size: 1.1rem;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-#botaoConfirmarConcluirReparo:hover {
-    background-color: var(--botao-concluir-hover);
-}
-
-#botaoConfirmarDevolucao{
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    padding: 15px;
-    background-color: var(--botao-devolver);
-    color: white;
-    border: none;
-    border-radius: 5px;
-    font-size: 1.1rem;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-#botaoConfirmarDevolucao:hover {
-    background-color: var(--botao-devolver-hover);
-}
-
-/* Estilo para o container da checkbox e o checkbox */
-.rompimento-lacre-container {
-    display: flex;
-    align-items: center;
-    margin-top: 15px;
-    margin-bottom: 10px;
-}
-
-#checkboxRompimentoLacre {
-    margin-right: 8px;
-    cursor: pointer;
-}
-
-.rompimento-lacre-container .checkbox-label {
-    font-weight: normal;
-    color: #404040;
-    cursor: pointer;
-}
-
-/* Estilo para os campos que aparecem quando a checkbox é marcada */
-#camposRompimentoLacre {
-    transition: opacity 0.3s ease, max-height 0.3s ease;
-    overflow: hidden;
-    max-height: 0;
-    opacity: 0;
-}
-
-/* Quando a checkbox é ativada, a classe 'ativo' será adicionada */
-#camposRompimentoLacre.ativo {
-    max-height: 200px; /* Um valor alto o suficiente */
-    opacity: 1;
-}
-
-/* Classe para ocultar elementos, usada por padrão */
-.oculto {
-    display: none !important;
-}
-
-.lista-manutencoes {
-    width: 100%;
-}
-
-.item-manutencao {
-    background-color: #ffffff;
-    border: 1px solid #dee2e6;
     border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    text-align: left;
-}
-
-.item-manutencao .titulo-equipamento {
-    font-size: 1.6rem;
-    font-weight: bold;
-    margin: 0 0 15px 0;
-    color: #333;
-    line-height: 1.2;
-}
-
-.item-manutencao .descricao-problema {
-    background-color: #fff3cd;
-    border-left: 4px solid #ffc107;
-    padding: 10px;
-    margin: 12px 0;
-    border-radius: 4px;
-}
-
-.item-manutencao .linha-data-execucao {
-    margin: 15px 0;
-    font-size: 1rem;
-    color: #333;
-}
-
-.item-manutencao .periodo-data {
-    color: #007bff;
-    font-weight: 600;
-}
-
-.item-manutencao .total-dias {
-    color: #28a745;
-    font-weight: 600;
-    margin-left: 8px;
-}
-
-.item-manutencao .linha-info {
-    margin: 12px 0;
-    font-size: 1rem;
-    color: #333;
-    line-height: 1.4;
-}
-
-.item-manutencao .rotulo-info {
-    font-weight: 600;
-    color: #495057;
-}
-
-.item-manutencao .lista-veiculos {
-    margin: 12px 0;
-}
-
-.item-manutencao .item-veiculo {
-    display: inline-block;
-    background-color: var(--cor-secundaria);
-    color: var(--cor-letra-botao);
-    padding: 4px 10px;
-    border-radius: 15px;
-    font-size: 0.9rem;
-    margin: 3px 5px 3px 0;
-    font-weight: 500;
-}
-
-.item-veiculo-modal{
-    display: inline-block;
-    color: var(--cor-letra);
-    padding: 4px 10px;
-    border-radius: 15px;
-    font-size: 0.9rem;
-    margin: 3px 5px 3px 0;
-    font-weight: 500;
-}
-.botoes-item {
-    display: flex;
-    flex-direction: column;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 10px;
-    margin-top: 20px;
-}
-
-
-.container-botao-concluir {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-top: 20px;
-}
-
-.botao-localizar,
-.botao-concluir,
-.botao-devolver {
-    flex: 1;
-    padding: 10px;
-    border-radius: 5px;
-    border: none;
-    color: var(--cor-letra-botao);
-    font-size: 1rem;
     cursor: pointer;
     transition: background-color 0.3s ease;
-}
-
-.botao-localizar {
-    background-color: var(--botao-localizar);
-}
-
-.botao-localizar:hover {
-    background-color: var(--botao-localizar-hover);
-}
-
-.botao-concluir {
-    background-color: var(--botao-concluir);
-}
-
-.botao-concluir:hover {
-    background-color: var(--botao-concluir-hover);
-}
-
-.botao-devolver {
-    background-color: var(--botao-devolver);
-}
-
-.botao-devolver:hover {
-    background-color: var(--botao-devolver-hover);
-}
-
-.mensagem {
-    padding: 10px;
-    border-radius: 5px;
-    margin-top: 15px;
+    width: 100%;
     text-align: center;
-    font-weight: bold;
 }
 
-.mensagem.oculto {
-    display: none;
+.botao-cidade:hover {
+    background-color: var(--cor-secundaria);
 }
 
-.mensagem.erro {
-    color: #dc3545;
-    background-color: #f8d7da;
-    border: 1px solid #f5c6cb;
+/* Estilo modificado para os botões de manutenções pendentes */
+.botao-manutencao-pendente {
+    background-color: #f0f0f0;
+    color: #333;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    white-space: pre-wrap;
+    flex: 1 1 calc(50% - 0.5rem); /* Dois por linha com espaçamento */
 }
 
-.mensagem.sucesso {
-    color: #155724;
-    background-color: #d4edda;
-    border: 1px solid #c3e6cb;
+.botao-manutencao-pendente:hover {
+    background-color: #e0e0e0;
 }
 
-.spinner-carregamento {
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    border: 3px solid rgba(255, 255, 255, .3);
-    border-radius: 50%;
-    border-top-color: #fff;
-    animation: spinner-animation .6s linear infinite;
-    margin-left: 10px;
-}
-/* Esconder o spinner quando não está ativo */
-.spinner-carregamento.oculto {
-    display: none;
+.botao-manutencao-pendente.selecionado {
+    background-color: var(--cor-principal);
+    color: white;
+    border-color: var(--cor-principal);
 }
 
-@keyframes spinner-animation {
-    0% {
-        transform: rotate(0deg);
-    }
-    100% {
-        transform: rotate(360deg);
-    }
-}
-
-.rotulo-destaque {
-    font-weight: bold;
-    color: #495057;
-}
-
-/* Os estilos abaixo não foram alterados, pois não faziam parte das mudanças solicitadas */
-.detalhe-manutencao-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: center;
-    flex-direction: column;
+.botao-manutencao-pendente.selecionado strong {
+    color: white;
 }
 
 .manutencoes-flex-container {
     display: flex;
     flex-wrap: wrap;
-    justify-content: space-between;
+    flex-direction: row;
+    gap: 1rem;
     width: 100%;
-}
-
-.detalhe-manutencao {
-    box-sizing: border-box;
-    width: 48%;
-    margin-bottom: 10px;
-    padding: 10px;
-    background-color: #f8f9fa;
-    color: #212529;
-    border: 1px solid #dee2e6;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1rem;
-    text-align: left;
-    transition: background-color 0.3s, border-color 0.3s;
-}
-
-.titulo-data,
-.titulo-tecnicos,
-.titulo-veiculos {
-    width: 100%;
-    margin: 20px 0 10px 0;
-    text-align: center;
-    font-size: 1.2rem;
-    color: #343a40;
-}
-
-.grupo-lista {
-    list-style-type: none;
-    padding: 0;
-}
-
-.botao-cidade {
-    display: block;
-    width: 100%;
-    margin-bottom: 10px;
-    padding: 10px;
-    background-color: #0d6efd;
-    color: #fff;
-    border: 1px solid #0d6efd;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1rem;
-    transition: background-color 0.3s, border-color 0.3s;
-}
-
-.botao-cidade:hover {
-    background-color: #0b5ed7;
-    border-color: #0a58ca;
-}
-
-.item-lista {
-    padding: 10px 15px;
-    border: 1px solid #ddd;
-    margin-bottom: -1px;
-    background-color: #fff;
-    transition: background-color 0.2s;
-}
-
-.item-lista:first-child {
-    border-top-left-radius: 5px;
-    border-top-right-radius: 5px;
-}
-
-.item-lista:last-child {
-    border-bottom-left-radius: 5px;
-    border-bottom-right-radius: 5px;
-    margin-bottom: 0;
-}
-
-.item-lista:hover {
-    background-color: #f5f5f5;
-}
-
-.item-lista.erro {
-    color: #dc3545;
-}
-
-.botao-manutencao-pendente {
-    display: block;
-    width: 100%;
-    margin-bottom: 10px;
-    padding: 10px;
-    background-color: #f8f9fa;
-    color: #212529;
-    border: 1px solid #dee2e6;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1rem;
-    text-align: left;
-    white-space: pre-wrap;
-    transition: background-color 0.3s, border-color 0.3s;
-}
-
-.botao-manutencao-pendente:hover {
-    background-color: #e2e6ea;
-    border-color: #dae0e5;
-}
-
-.botao-manutencao-pendente.selecionado,
-.botao-manutencao-pendente.selecionado:hover {
-    background-color: #e2e6ea;
-    border-color: #dae0e5;
 }
 
 #botaoAtribuirTecnico {
     display: none;
     width: 100%;
-    margin-top: 20px;
-    padding: 10px;
-    background-color: #28a745;
+    padding: 1rem;
+    font-size: 1.1em;
+    margin-top: 2rem;
+    background-color: var(--cor-principal);
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: 8px;
     cursor: pointer;
-    font-size: 1rem;
-    transition: background-color 0.3s;
+    transition: background-color 0.3s ease;
 }
 
 #botaoAtribuirTecnico:hover {
-    background-color: #218838;
+    background-color: var(--cor-secundaria);
 }
 
 .detalhe-manutencao-container {
     display: flex;
     flex-wrap: wrap;
-    justify-content: space-between;
+    gap: 1rem;
+    width: 100%;
+    
 }
 
 .detalhe-manutencao {
-    box-sizing: border-box;
-    width: 48%;
-    margin-bottom: 10px;
-    padding: 10px;
-    background-color: #f8f9fa;
-    color: #212529;
-    border: 1px solid #dee2e6;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1rem;
-    text-align: left;
-    transition: background-color 0.3s, border-color 0.3s;
+    background-color: #f0f0f0;
+    padding: 1rem;
+    border-radius: 8px;
+    flex: 1 1 calc(50% - 0.5rem); /* Dois por linha com espaçamento */
 }
 
-.detalhe-manutencao .titulo-equipamento {
-    font-size: 1.1rem;
-    margin: 0 0 5px 0;
+.titulo-equipamento {
+    font-size: 1.2em;
+    margin-bottom: 0.5rem;
 }
 
-.detalhe-manutencao .descricao-problema {
-    font-size: 0.9rem;
-    color: #6c757d;
-    margin: 0;
+.descricao-problema {
+    font-style: italic;
+    color: #555;
 }
 
-.data-container {
+.titulo-data, .titulo-tecnicos, .titulo-veiculos {
+    font-size: 1.2em;
+    margin-top: 1.5rem;
+}
+
+.data-container, .tecnicos-container, .veiculos-container {
     display: flex;
-    justify-content: space-between;
-    gap: 15px;
-    margin-bottom: 20px;
-}
-
-.data-container>div {
-    flex: 1;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 .input-data {
-    display: block;
     width: 100%;
-    padding: 8px;
-    margin-top: 5px;
+    padding: 0.5rem;
     border: 1px solid #ccc;
-    border-radius: 5px;
-    font-size: 1rem;
-    box-sizing: border-box;
+    border-radius: 4px;
+}
+
+.botao-tecnico, .botao-veiculo {
+    background-color: #ccc;
+    color: #333;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.25rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.botao-tecnico:hover, .botao-veiculo:hover {
+    background-color: #b0b0b0;
+}
+
+.botao-tecnico.selecionado-tecnico, .botao-veiculo.selecionado-veiculo {
+    background-color: var(--cor-principal);
+    color: white;
 }
 
 .botao-container {
-    display: flex;
-    justify-content: center;
+    margin-top: 1.5rem;
     width: 100%;
 }
 
-.tecnicos-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-    justify-content: flex-start;
-    margin-bottom: 20px;
-}
-
-.botao-tecnico {
-    padding: 10px 15px;
-    background-color: #f8f9fa;
-    color: #212529;
-    border: 1px solid #dee2e6;
-    border-radius: 20px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: background-color 0.3s, border-color 0.3s;
-    box-sizing: border-box;
-    flex: 1 1 auto;
-    text-align: center;
-}
-
-.botao-tecnico:hover {
-    background-color: #e2e6ea;
-    border-color: #dae0e5;
-}
-
-.botao-tecnico.selecionado-tecnico {
-    background-color: #007bff;
-    color: #fff;
-    border-color: #007bff;
-}
-
-.veiculos-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-    justify-content: flex-start;
-    margin-bottom: 20px;
-}
-
-.botao-veiculo {
-    padding: 10px 15px;
-    background-color: #f8f9fa;
-    color: #212529;
-    border: 1px solid #dee2e6;
-    border-radius: 20px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: background-color 0.3s, border-color 0.3s;
-    box-sizing: border-box;
-    flex: 1 1 auto;
-    text-align: center;
-}
-
-.botao-veiculo:hover {
-    background-color: #e2e6ea;
-    border-color: #dae0e5;
-}
-
-.botao-veiculo.selecionado-veiculo {
-    background-color: #007bff;
-    color: #fff;
-    border-color: #007bff;
-}
-
-/* Estilo para a checkbox de materiais */
-.sem-materiais-container {
-    display: flex;
-    align-items: center;
-    margin-bottom: 15px;
-}
-
-#checkboxNenhumMaterial {
-    margin-right: 8px;
-    cursor: pointer;
-}
-
-.checkbox-label {
-    font-weight: normal;
-    color: #404040;
-    cursor: pointer;
-}
-
-
-/* Estilos para o container dos inputs e checkbox */
-.input-com-checkbox {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 15px;
-}
-
-#materiaisUtilizadosInput {
-    flex-grow: 1;
-}
-
-.checkbox-container {
-    display: flex;
-    align-items: center;
-}
-
-#checkboxNenhumMaterial {
-    margin-right: 5px;
-}
-
-/* Estilos para os botões "Sim/Não" do rompimento de lacre */
-.rompimento-lacre-container {
-    margin-top: 15px;
-    margin-bottom: 10px;
-}
-
-.rotulo-pergunta {
-    font-weight: 600;
-    color: #404040;
-    margin-bottom: 5px;
-}
-
-.botoes-toggle {
-    display: flex;
-    gap: 10px;
-}
-
-.botao-toggle {
-    flex: 1;
-    padding: 8px 12px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    background-color: #f0f0f0;
-    cursor: pointer;
-    transition: background-color 0.3s, color 0.3s, border-color 0.3s;
-}
-
-.botao-toggle.ativo {
+.botao-selecionar-tecnicos {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1.1em;
     background-color: var(--cor-principal);
     color: white;
-    border-color: var(--cor-principal);
-}
-
-.botao-toggle:not(.ativo):hover {
-    background-color: #e9ecef;
-}
-
-/* Estilo para os campos que aparecem quando "Sim" é clicado */
-#camposRompimentoLacre {
-    transition: all 0.3s ease;
-    overflow: hidden;
-    max-height: 200px;
-    opacity: 1;
-    margin-top: 15px;
-}
-
-/* Classe para ocultar elementos, usada por padrão */
-.oculto {
-    display: none !important;
-}
-
-/* Garante que o input da data seja exibido corretamente */
-#inputDataRompimento {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    box-sizing: border-box;
-    margin-top: 5px;
-}
-
-/* Estilos para a barra de filtro de manutenções */
-.filtro-manutencoes {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 20px;
-    width: 100%;
-}
-
-.botao-filtro {
-    flex: 1;
-    padding: 12px;
-    border: 1px solid #ccc;
+    border: none;
     border-radius: 8px;
-    background-color: #f0f0f0;
-    color: var(--cor-titulo);
-    font-size: 1.1rem;
-    font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+    transition: background-color 0.3s ease;
 }
 
-.botao-filtro.ativo {
-    background-color: var(--cor-principal);
-    border-color: var(--cor-principal);
-    color: white;
+.botao-selecionar-tecnicos:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
 }
 
-.botao-filtro:hover:not(.ativo) {
-    background-color: #e9ecef;
+.mensagem-erro, .mensagem-sucesso {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-radius: 8px;
+    font-weight: bold;
+}
+
+.mensagem-erro {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.mensagem-sucesso {
+    background-color: #d4edda;
+    color: #155724;
 }

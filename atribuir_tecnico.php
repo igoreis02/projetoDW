@@ -21,9 +21,9 @@ $user_email = $_SESSION['user_email'];
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="css/stylle.css">
+    <link rel="stylesheet" href="css/style_tecnico.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <title>Atribuir Técnico</title>
-
 </head>
 
 <body>
@@ -31,29 +31,31 @@ $user_email = $_SESSION['user_email'];
     <div class="card">
         <h2>Atribuir Técnico</h2>
         <div class="botao-pagina-container">
-            <button id="btnManutencoes" class="botao-pagina" onclick="abrirModalCidades()">Manutenções</button>
+            <button id="btnManutencoes" class="botao-pagina" onclick="abrirModalCidades('maintenance')">
+                <i class="fas fa-cogs"></i> Manutenções
+            </button>
+            <button id="btnInstalacoes" class="botao-pagina" onclick="abrirModalCidades('installation')">
+                <i class="fas fa-tools"></i> Instalações
+            </button>
         </div>
         <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
     </div>
 
     <div id="modalCidades" class="modal">
-    <div class="modal-conteudo">
-        <div class="modal-cabecalho">
-            <button id="botaoVoltar" class="botao-voltar-icone" style="display: none;">&larr;</button>
-            <span class="fechar" onclick="fecharModalCidades()">&times;</span>
-            <h2 id="modalTitulo"></h2>
-            
-        </div>
-        <ul id="listaCidades" class="grupo-lista">
+        <div class="modal-conteudo cidade-modal-conteudo">
+            <div class="modal-cabecalho">
+                <button id="botaoVoltar" class="botao-voltar-icone" style="display: none;">&larr;</button>
+                <span class="fechar" onclick="fecharModalCidades()">&times;</span>
+                <h2 id="modalTitulo"></h2>
+            </div>
+            <ul id="listaCidades" class="grupo-lista">
             </ul>
-        <button id="botaoAtribuirTecnico">Atribuir Técnico</button>
-        <div id="mensagem-erro" class="mensagem-erro" style="display: none;"></div>
-        <div id="mensagem-sucesso" class="mensagem-sucesso" style="display: none;"></div>
-
-
+            <button id="botaoAtribuirTecnico">Atribuir Técnico</button>
+            <div id="mensagem-erro" class="mensagem-erro" style="display: none;"></div>
+            <div id="mensagem-sucesso" class="mensagem-sucesso" style="display: none;"></div>
+        </div>
     </div>
-</div>
-
+    
     <script src="js/atribuir_tecnico.js"></script>
 </body>
 
