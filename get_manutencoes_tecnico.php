@@ -39,7 +39,13 @@ $sql = "SELECT DISTINCT
             a.longitude,
             a.logradouro,
             mt.inicio_reparoTec,
-            mt.fim_reparoT
+            mt.fim_reparoT,
+            -- CAMPOS DE INSTALAÇÃO ADICIONADOS AQUI --
+            m.inst_laco,
+            m.inst_base,
+            m.inst_infra,
+            m.inst_energia
+            -- FIM DOS CAMPOS ADICIONADOS --
         FROM
             manutencoes m
         JOIN

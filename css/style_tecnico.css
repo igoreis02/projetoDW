@@ -913,4 +913,21 @@ body {
     background-color: #e9ecef;
 }
 
+.instalacao-status-container {
+            border-top: 1px solid #eee;
+            border-bottom: 1px solid #eee;
+            padding: 10px 0;
+            margin: 10px 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* Cria um grid de 2 colunas */
+            gap: 8px; /* Espaçamento entre os itens */
+        }
 
+        .status-item {
+            font-size: 0.9em;
+            margin: 0;
+        }
+
+        .status-item .rotulo-info {
+            font-weight: bold;
+        }
