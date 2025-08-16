@@ -1,16 +1,11 @@
 <?php
-session_start(); // Inicia ou resume a sessão
-if (isset($_SESSION['user_id'])) {
-    $user_id = $_SESSION['user_id'];
-} else {
-    // Redireciona para a página de login
-    header("Location: index.html");
-    exit;
-}
+session_start();
+// Ativa a exibição de erros para depuração (REMOVER EM PRODUÇÃO)
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
-// Verifica se o usuário tem permissão de 'administrador'
-if (isset($_SESSION['tipo_usuario']) && $_SESSION['tipo_usuario'] !== 'administrador') {
-    header('Location: menu.php'); // Redireciona para o menu se não tiver permissão
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.html');
     exit();
 }
 
@@ -106,17 +101,19 @@ try {
 
 <!DOCTYPE html>
 <html lang="pt-br">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Informações de Equipamentos</title>
     <link rel="stylesheet" href="css/style.css">
     <style>
+        /* Estilos do card e layout geral, adaptados de gerenciar_usuario.php */
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f0f2f5;
             display: flex;
             flex-direction: column;
+            justify-content: flex-start;
             align-items: center;
             min-height: 100vh;
             margin: 0;
@@ -294,7 +291,6 @@ try {
         .edit-equipment-btn {
             background-color: #007bff; /* Azul */
             color: white;
-            padding: 8px 12px;
             border: none;
             border-radius: 5px;
             padding: 8px 12px;
@@ -306,11 +302,10 @@ try {
             background-color: #0056b3;
         }
 
-        /* Estilos do modal */
         .modal {
             display: none;
             position: fixed;
-            z-index: 100;
+            z-index: 1000;
             left: 0;
             top: 0;
             width: 100%;
@@ -427,7 +422,6 @@ try {
             vertical-align: middle;
             margin-left: 8px;
         }
-
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -882,7 +876,7 @@ try {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
-                const data = await response.json();
+                const result = await response.json();
 
                 if (result.success) {
                     window.showMessage(editEquipmentMessage, 'Equipamento atualizado com sucesso!', 'success');
@@ -904,5 +898,4 @@ try {
         });
     </script>
 </body>
-
 </html>

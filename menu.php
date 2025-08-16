@@ -38,12 +38,6 @@ if (isset($user_id)) {
     <link rel="stylesheet" href="css/style.css">
     <title>Menu</title>
     <style>
-        body, html {
-            height: 100%;
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f0f2f5;
-        }
 
         .card:before {
             content: none;
@@ -154,6 +148,7 @@ if (isset($user_id)) {
         }
         
         .sidebar-icons-left a {
+            position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -165,6 +160,10 @@ if (isset($user_id)) {
             width: 100%;
             transition: background-color 0.3s ease;
             box-sizing: border-box;
+        }
+        
+        .sidebar-icons-left.expanded a {
+            justify-content: flex-start; /* Alinha o conteúdo à esquerda quando expandida */
         }
         
         .sidebar-icons-left a:first-of-type {
@@ -194,10 +193,32 @@ if (isset($user_id)) {
             display: block;
         }
         
-        .menu-toggle-btn {
+        /* Estilos para a tooltip */
+        .sidebar-icons-left:not(.expanded) a::after {
+            content: attr(data-title);
             position: absolute;
+            left: 80px; /* Posição à direita do ícone */
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 5px;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .sidebar-icons-left:not(.expanded) a:hover::after {
+            opacity: 1;
+            visibility: visible;
+        }
+        /* Estilos para o botão de alternância do menu */
+        .menu-toggle-btn {
+            position: fixed; 
             top: 20px;
-            left: 20px;
+            left: 80px; /* Posicionamento depois da barra de navegação */
             width: 30px;
             height: 25px;
             display: flex;
@@ -208,7 +229,13 @@ if (isset($user_id)) {
             background: none;
             border: none;
             padding: 0;
+            transition: left 0.3s ease; /* Adiciona transição para a propriedade left */
         }
+        
+        .menu-toggle-btn.menu-shifted {
+            left: 260px; /* Nova posição para o botão quando o menu está aberto (250px do menu + 10px de margem) */
+        }
+        
 
         .menu-toggle-btn span {
             display: block;
@@ -272,37 +299,42 @@ if (isset($user_id)) {
     <div class="main-wrapper">
         <div id="sidebar-icons" class="sidebar-icons-left">
             <div id="user-info-container" class="sidebar-user-info">
-                <p><strong>Nome:</strong> <span id="user-name-display"></span></p>
+                <p><strong> <span id="user-name-display"></span></strong></p>
                 <p><strong>Email:</strong> <span id="user-email-display"></span></p>
                 <p><strong>Tipo:</strong> <span id="user-type-display"></span></p>
                 <button id="change-password-btn" class="btn-change-password">Alterar Senha</button>
             </div>
             
-            <a href="gerenciar_usuario.php">
-                <i class="fas fa-users-cog"></i>
+            <a href="gerenciar_usuario.php" data-title="Gerenciar Usuários">
+                <i class="fas fa-users-cog" ></i>
                 <span>Gerenciar Usuários</span>
             </a>
-            <a href="info_cidade.php">
-                <i class="fas fa-city"></i>
+            <a href="info_cidade.php" data-title="Gerenciar Cidades">
+                <i class="fas fa-city" ></i>
                 <span>Gerenciar Cidades</span>
             </a>
-            <a href="info_equipamentos.php">
-                <i class="fas fa-server"></i>
+            <a href="info_equipamentos.php" data-title="Informações dos Equipamentos">
+                <i class="fas fa-server" ></i>
                 <span>Informações dos Equipamentos</span>
             </a>
-            <a href="logout.php">
+            <a href="provedores.php" data-title="Provedores">
+                <i class="fas fa-network-wired"></i>
+                <span>Provedores</span>
+            </a>
+            <a href="logout.php" data-title="Sair">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Logout</span>
             </a>
         </div>
     
         <div class="content-container">
+            <button id="menu-toggle-btn" class="menu-toggle-btn">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
             <div class="card">
-                <button id="menu-toggle-btn" class="menu-toggle-btn">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </button>
+                
                 <h1 class="card-header">Menu Principal</h1>
                 <div class="menu-buttons-container">
                     <div class="menu-row">
@@ -352,6 +384,7 @@ if (isset($user_id)) {
             menuToggleBtn.addEventListener('click', function() {
                 sidebar.classList.toggle('expanded');
                 contentContainer.classList.toggle('sidebar-open');
+                menuToggleBtn.classList.toggle('menu-shifted'); // Adiciona/remove a classe para mover o botão
                 
                 if (sidebar.classList.contains('expanded')) {
                     userInfoContainer.style.display = 'block';
