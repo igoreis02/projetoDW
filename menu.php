@@ -1,7 +1,7 @@
 <?php
 session_start(); // Inicia ou resume a sessão
 if (!isset($_SESSION['user_id'])) {
-    header('Location: login.html');
+    header('Location: index.html');
     exit();
 }
 $user_id = $_SESSION['user_id'];
