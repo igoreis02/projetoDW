@@ -19,7 +19,8 @@ if ($conn->connect_error) {
 }
 
 $cidades = [];
-$sql = "SELECT id_cidade, nome FROM cidades ORDER BY nome ASC"; // Ordena por nome para melhor visualização
+// Adicionado `cod_cidade` e `sigla_cidade` à consulta SQL
+$sql = "SELECT id_cidade, nome, cod_cidade, sigla_cidade FROM cidades ORDER BY nome ASC"; 
 $result = $conn->query($sql);
 
 if ($result->num_rows > 0) {
