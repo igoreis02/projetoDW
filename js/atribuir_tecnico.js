@@ -6,39 +6,36 @@ const botaoVoltar = document.getElementById('botaoVoltar');
 const botaoAtribuirTecnico = document.getElementById('botaoAtribuirTecnico');
 let manutencoesPendentes = [];
 let isProcessing = false;
+let currentFlowType = ''; // Variável para armazenar o fluxo atual ('maintenance' ou 'installation')
 
 // Adiciona os eventos de clique
-botaoVoltar.addEventListener('click', abrirModalCidades);
+botaoVoltar.addEventListener('click', () => abrirModalCidades(currentFlowType));
 botaoAtribuirTecnico.addEventListener('click', atribuirTecnico);
 
-// Função para abrir o modal e buscar as cidades (estado inicial)
-function abrirModalCidades() {
-    // Referência aos elementos de mensagem
+// A função agora aceita o 'flow_type' como parâmetro
+function abrirModalCidades(flow_type) {
+    // Armazena o tipo de fluxo atual
+    currentFlowType = flow_type;
+
     const mensagemErro = document.getElementById('mensagem-erro');
     const mensagemSucesso = document.getElementById('mensagem-sucesso');
 
-    // Oculta ambas as mensagens ao iniciar, garantindo um estado limpo
-    if (mensagemErro) {
-        mensagemErro.style.display = 'none';
-    }
-    if (mensagemSucesso) {
-        mensagemSucesso.style.display = 'none';
-    }
+    if (mensagemErro) mensagemErro.style.display = 'none';
+    if (mensagemSucesso) mensagemSucesso.style.display = 'none';
 
     modalCidades.classList.add('is-active');
 
-    modalTitulo.textContent = "Cidades Cadastradas";
+    const titulo = flow_type === 'installation' ? 'Cidades com Instalações' : 'Cidades com Manutenções';
+    modalTitulo.textContent = titulo;
+
     listaCidades.innerHTML = '';
     botaoVoltar.style.display = 'none';
     botaoAtribuirTecnico.style.display = 'none';
 
-    fetch('get_cidades.php')
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Erro na requisição: ' + response.statusText);
-            }
-            return response.json();
-        })
+    // === MUDANÇA PRINCIPAL AQUI ===
+    // Alterado de 'get_cidades.php' para o novo script que filtra as cidades
+    fetch(`get_cidades_com_pendencias.php?flow_type=${flow_type}`)
+        .then(response => response.json())
         .then(data => {
             if (data.success && data.cidades && data.cidades.length > 0) {
                 data.cidades.forEach(cidade => {
@@ -47,12 +44,14 @@ function abrirModalCidades() {
                     botao.textContent = cidade.nome;
                     botao.setAttribute('data-id', cidade.id_cidade);
                     botao.addEventListener('click', () => {
-                        buscarManutencoesPendentes(cidade.id_cidade, cidade.nome);
+                        buscarItensPendentes(cidade.id_cidade, cidade.nome);
                     });
                     listaCidades.appendChild(botao);
                 });
             } else {
-                listaCidades.innerHTML = '<p>Nenhuma cidade encontrada.</p>';
+                // Mensagem caso nenhuma cidade tenha pendências
+                const tipo = currentFlowType === 'installation' ? 'instalações pendentes' : 'manutenções pendentes';
+                listaCidades.innerHTML = `<p>Nenhuma cidade com ${tipo} foi encontrada.</p>`;
             }
         })
         .catch(error => {
@@ -61,50 +60,44 @@ function abrirModalCidades() {
         });
 }
 
-// Função para buscar as manutenções pendentes
-function buscarManutencoesPendentes(id_cidade, nome_cidade) {
-    const flow_type = 'maintenance';
-    
-    fetch(`get_atribuicoes_pendentes.php?city_id=${id_cidade}&flow_type=${flow_type}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Erro na requisição: ' + response.statusText);
-            }
-            return response.json();
-        })
+// Busca os itens pendentes (manutenções ou instalações)
+function buscarItensPendentes(id_cidade, nome_cidade) {
+    fetch(`get_atribuicoes_pendentes.php?city_id=${id_cidade}&flow_type=${currentFlowType}`)
+        .then(response => response.json())
         .then(data => {
             manutencoesPendentes = data.items;
             if (data.success && manutencoesPendentes && manutencoesPendentes.length > 0) {
-                exibirManutencoes(manutencoesPendentes, nome_cidade);
+                exibirItens(manutencoesPendentes, nome_cidade);
             } else {
-                modalTitulo.textContent = `Manutenções Pendentes em ${nome_cidade}`;
-                listaCidades.innerHTML = `<p>Nenhuma manutenção pendente encontrada para esta cidade.</p>`;
+                const tipo = currentFlowType === 'installation' ? 'instalação pendente' : 'manutenção pendente';
+                modalTitulo.textContent = `Pendências em ${nome_cidade}`;
+                listaCidades.innerHTML = `<p>Nenhuma ${tipo} encontrada para esta cidade.</p>`;
                 botaoVoltar.style.display = 'block';
                 botaoAtribuirTecnico.style.display = 'none';
             }
         })
         .catch(error => {
-            console.error('Erro ao carregar manutenções:', error);
-            modalTitulo.textContent = `Erro em ${nome_cidade}`;
-            listaCidades.innerHTML = `<p class="erro">Erro ao carregar as manutenções.</p>`;
+            console.error('Erro ao carregar pendências:', error);
+            listaCidades.innerHTML = `<p class="erro">Erro ao carregar as pendências.</p>`;
             botaoVoltar.style.display = 'block';
-            botaoAtribuirTecnico.style.display = 'none';
         });
 }
 
-// Função para exibir as manutenções no modal e adicionar a lógica de seleção
-function exibirManutencoes(manutencoes, nome_cidade) {
-    modalTitulo.textContent = `Manutenções Pendentes em ${nome_cidade}`;
+// Exibe os itens no modal
+function exibirItens(itens, nome_cidade) {
+    const titulo = currentFlowType === 'installation' ? 'Instalações Pendentes' : 'Manutenções Pendentes';
+    modalTitulo.textContent = `${titulo} em ${nome_cidade}`;
+
     listaCidades.innerHTML = '';
     botaoVoltar.style.display = 'block';
     botaoAtribuirTecnico.style.display = 'none';
 
-    manutencoes.forEach(manutencao => {
+    itens.forEach(item => {
         const botao = document.createElement('button');
         botao.classList.add('botao-manutencao-pendente');
-        botao.setAttribute('data-id', manutencao.id_manutencao);
+        botao.setAttribute('data-id', item.id_manutencao);
 
-        const textoBotao = `${manutencao.nome_equip} - ${manutencao.referencia_equip}\nOcorrência: ${manutencao.ocorrencia_reparo}`;
+        const textoBotao = `${item.nome_equip} - ${item.referencia_equip}\nOcorrência: ${item.ocorrencia_reparo}`;
         botao.textContent = textoBotao;
         
         botao.addEventListener('click', () => {
@@ -116,22 +109,16 @@ function exibirManutencoes(manutencoes, nome_cidade) {
     });
 }
 
-// Função para verificar se há itens selecionados e mostrar/esconder o botão de atribuição
+// Verifica se há itens selecionados para mostrar o botão de atribuir
 function verificarSelecao() {
     const itensSelecionados = document.querySelectorAll('.botao-manutencao-pendente.selecionado');
-    if (itensSelecionados.length > 0) {
-        botaoAtribuirTecnico.style.display = 'block';
-    } else {
-        botaoAtribuirTecnico.style.display = 'none';
-    }
+    botaoAtribuirTecnico.style.display = itensSelecionados.length > 0 ? 'block' : 'none';
 }
 
-// Função para lidar com o clique no botão de atribuir técnico
+// Abre a tela de atribuição de técnico
 function atribuirTecnico() {
-     const mensagemErro = document.getElementById('mensagem-erro');
-    if (mensagemErro) {
-        mensagemErro.style.display = 'none'; // Oculta a mensagem de erro
-    }
+    const mensagemErro = document.getElementById('mensagem-erro');
+    if (mensagemErro) mensagemErro.style.display = 'none';
     if (isProcessing) return;
     isProcessing = true;
 
@@ -155,18 +142,7 @@ function atribuirTecnico() {
             const divItem = document.createElement('div');
             divItem.classList.add('detalhe-manutencao');
             divItem.setAttribute('data-id', manutencao.id_manutencao);
-
-            const tituloEquipamento = document.createElement('p');
-            tituloEquipamento.classList.add('titulo-equipamento');
-            tituloEquipamento.innerHTML = `<strong>${manutencao.referencia_equip} - ${manutencao.nome_equip}</strong>`;
-
-            const ocorrenciaReparo = document.createElement('p');
-            ocorrenciaReparo.classList.add('descricao-problema');
-            ocorrenciaReparo.textContent = `DESCRIÇÃO PROBLEMA: ${manutencao.ocorrencia_reparo}`;
-            
-            divItem.appendChild(tituloEquipamento);
-            divItem.appendChild(ocorrenciaReparo);
-            
+            divItem.innerHTML = `<p class="titulo-equipamento"><strong>${manutencao.referencia_equip} - ${manutencao.nome_equip}</strong></p><p class="descricao-problema">DESCRIÇÃO PROBLEMA: ${manutencao.ocorrencia_reparo}</p>`;
             manutencoesContainer.appendChild(divItem);
         });
 
@@ -177,31 +153,16 @@ function atribuirTecnico() {
 
         const dataContainer = document.createElement('div');
         dataContainer.classList.add('data-container');
-
-        const inicioDiv = document.createElement('div');
-        const labelInicio = document.createElement('label');
-        labelInicio.textContent = 'Data de Início:';
-        labelInicio.htmlFor = 'dataInicio';
-        const inputInicio = document.createElement('input');
-        inputInicio.type = 'date';
-        inputInicio.id = 'dataInicio';
-        inputInicio.classList.add('input-data');
-        inicioDiv.appendChild(labelInicio);
-        inicioDiv.appendChild(inputInicio);
-        dataContainer.appendChild(inicioDiv);
-
-        const fimDiv = document.createElement('div');
-        const labelFim = document.createElement('label');
-        labelFim.textContent = 'Data de Fim:';
-        labelFim.htmlFor = 'dataFim';
-        const inputFim = document.createElement('input');
-        inputFim.type = 'date';
-        inputFim.id = 'dataFim';
-        inputFim.classList.add('input-data');
-        fimDiv.appendChild(labelFim);
-        fimDiv.appendChild(inputFim);
-        dataContainer.appendChild(fimDiv);
-
+        dataContainer.innerHTML = `
+            <div>
+                <label for="dataInicio">Data de Início:</label>
+                <input type="date" id="dataInicio" class="input-data">
+            </div>
+            <div>
+                <label for="dataFim">Data de Fim:</label>
+                <input type="date" id="dataFim" class="input-data">
+            </div>
+        `;
         listaCidades.appendChild(dataContainer);
 
         const tituloTecnicos = document.createElement('h3');
@@ -214,12 +175,7 @@ function atribuirTecnico() {
         listaCidades.appendChild(tecnicosContainer);
 
         fetch('get_tecnicos.php')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Erro ao buscar técnicos: ' + response.statusText);
-                }
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
                 if (data.success && data.tecnicos && data.tecnicos.length > 0) {
                     data.tecnicos.forEach(tecnico => {
@@ -227,10 +183,7 @@ function atribuirTecnico() {
                         botaoTecnico.classList.add('botao-tecnico');
                         botaoTecnico.textContent = tecnico.nome;
                         botaoTecnico.setAttribute('data-id', tecnico.id_tecnico);
-                        
-                        botaoTecnico.addEventListener('click', () => {
-                            botaoTecnico.classList.toggle('selecionado-tecnico');
-                        });
+                        botaoTecnico.onclick = () => botaoTecnico.classList.toggle('selecionado-tecnico');
                         tecnicosContainer.appendChild(botaoTecnico);
                     });
                 } else {
@@ -252,12 +205,7 @@ function atribuirTecnico() {
         listaCidades.appendChild(veiculosContainer);
         
         fetch('get_veiculos.php')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Erro ao buscar veículos: ' + response.statusText);
-                }
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
                 if (data && data.length > 0) {
                     data.forEach(veiculo => {
@@ -265,10 +213,7 @@ function atribuirTecnico() {
                         botaoVeiculo.classList.add('botao-veiculo');
                         botaoVeiculo.innerHTML = `${veiculo.nome}<br>${veiculo.placa}`;
                         botaoVeiculo.setAttribute('data-id', veiculo.id_veiculo);
-                        
-                        botaoVeiculo.addEventListener('click', () => {
-                            botaoVeiculo.classList.toggle('selecionado-veiculo');
-                        });
+                        botaoVeiculo.onclick = () => botaoVeiculo.classList.toggle('selecionado-veiculo');
                         veiculosContainer.appendChild(botaoVeiculo);
                     });
                 } else {
@@ -282,26 +227,21 @@ function atribuirTecnico() {
         
         const botaoContainer = document.createElement('div');
         botaoContainer.classList.add('botao-container');
-
         const novoBotao = document.createElement('button');
         novoBotao.id = 'botaoAtribuirManutencao'; 
         novoBotao.classList.add('botao-selecionar-tecnicos');
-        novoBotao.textContent = 'Atribuir Manutenção';
-        
+        novoBotao.textContent = currentFlowType === 'installation' ? 'Atribuir Instalação' : 'Atribuir Manutenção';
         novoBotao.addEventListener('click', atribuirManutencaoCompleto);
-        
         botaoContainer.appendChild(novoBotao);
-        
         listaCidades.appendChild(botaoContainer);
-
     } else {
-        listaCidades.innerHTML = `<p>Nenhuma manutenção selecionada para atribuição.</p>`;
+        listaCidades.innerHTML = `<p>Nenhuma pendência selecionada para atribuição.</p>`;
     }
 
     isProcessing = false;
 }
 
-// --- FUNÇÃO CORRIGIDA: Envia os dados para o servidor e valida a data ---
+// Função final que envia os dados para o servidor
 function atribuirManutencaoCompleto() {
     const botaoAtribuir = document.getElementById('botaoAtribuirManutencao');
     const mensagemErro = document.getElementById('mensagem-erro');
@@ -318,112 +258,70 @@ function atribuirManutencaoCompleto() {
     botaoAtribuir.disabled = true;
     botaoAtribuir.textContent = 'Carregando...';
 
-    const idsManutencao = Array.from(document.querySelectorAll('.manutencoes-flex-container .detalhe-manutencao'))
-                               .map(item => parseInt(item.getAttribute('data-id'), 10))
-                               .filter(id => !isNaN(id) && id !== null);
-
+    const idsManutencao = Array.from(document.querySelectorAll('.manutencoes-flex-container .detalhe-manutencao')).map(item => parseInt(item.getAttribute('data-id'), 10));
     const dataInicio = document.getElementById('dataInicio').value;
     const dataFim = document.getElementById('dataFim').value;
-
-    const idsTecnicos = Array.from(document.querySelectorAll('.botao-tecnico.selecionado-tecnico'))
-                               .map(item => parseInt(item.getAttribute('data-id'), 10))
-                               .filter(id => !isNaN(id) && id !== null);
-
-    const idsVeiculos = Array.from(document.querySelectorAll('.botao-veiculo.selecionado-veiculo'))
-                               .map(item => parseInt(item.getAttribute('data-id'), 10))
-                               .filter(id => !isNaN(id) && id !== null);
+    const idsTecnicos = Array.from(document.querySelectorAll('.botao-tecnico.selecionado-tecnico')).map(item => parseInt(item.getAttribute('data-id'), 10));
+    const idsVeiculos = Array.from(document.querySelectorAll('.botao-veiculo.selecionado-veiculo')).map(item => parseInt(item.getAttribute('data-id'), 10));
     
     const camposFaltantes = [];
+    if (idsManutencao.length === 0) camposFaltantes.push('Manutenções');
+    if (!dataInicio) camposFaltantes.push('Data de Início');
+    if (!dataFim) camposFaltantes.push('Data de Fim');
+    if (idsTecnicos.length === 0) camposFaltantes.push('Técnicos');
+    if (idsVeiculos.length === 0) camposFaltantes.push('Veículos');
 
-    if (idsManutencao.length === 0) {
-        camposFaltantes.push('Manutenções');
-    }
-    if (!dataInicio) {
-        camposFaltantes.push('Data de Início');
-    }
-    if (!dataFim) {
-        camposFaltantes.push('Data de Fim');
-    }
-    if (idsTecnicos.length === 0) {
-        camposFaltantes.push('Técnicos');
-    }
-    if (idsVeiculos.length === 0) {
-        camposFaltantes.push('Veículos');
-    }
-
-    // NOVO: Adiciona a validação para a data de início
     if (dataInicio) {
         const dataAtual = new Date();
         const dataInicioObj = new Date(dataInicio + 'T00:00:00');
-        
         dataAtual.setHours(0, 0, 0, 0);
-        
         if (dataInicioObj < dataAtual) {
             camposFaltantes.push('A data de Início não pode ser anterior à data atual.');
         }
     }
 
-
     if (camposFaltantes.length > 0) {
         mensagemErro.textContent = `Por favor, selecione ou preencha o(s) seguinte(s) campo(s): ${camposFaltantes.join(', ')}.`;
         mensagemErro.style.display = 'block';
         botaoAtribuir.disabled = false;
-        botaoAtribuir.textContent = 'Atribuir Manutenção';
+        botaoAtribuir.textContent = currentFlowType === 'installation' ? 'Atribuir Instalação' : 'Atribuir Manutenção';
         return;
     }
 
-    const dataToSend = {
-        idsManutencao,
-        dataInicio,
-        dataFim,
-        idsTecnicos,
-        idsVeiculos
-    };
+    const dataToSend = { idsManutencao, dataInicio, dataFim, idsTecnicos, idsVeiculos };
 
     fetch('atribuir_tecnicos_manutencao.php', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dataToSend)
     })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Erro na resposta do servidor.');
-        }
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
         if (data.success) {
             botaoAtribuir.style.display = 'none';
-            mensagemSucesso.textContent = 'Técnico(s) atribuído(s) com sucesso!';
+            mensagemSucesso.textContent = 'Atribuição realizada com sucesso!';
             mensagemSucesso.style.display = 'block';
-
-            setTimeout(() => {
-                fecharModalCidades();
-                abrirModalCidades();
-            }, 3000);
+            setTimeout(fecharModalCidades, 3000);
         } else {
-            alert('Erro ao atribuir técnico: ' + data.message);
+            alert('Erro ao atribuir: ' + data.message);
             botaoAtribuir.disabled = false;
-            botaoAtribuir.textContent = 'Atribuir Manutenção';
+            botaoAtribuir.textContent = currentFlowType === 'installation' ? 'Atribuir Instalação' : 'Atribuir Manutenção';
         }
     })
     .catch(error => {
         console.error('Erro na requisição:', error);
         alert('Erro ao se comunicar com o servidor. Tente novamente.');
         botaoAtribuir.disabled = false;
-        botaoAtribuir.textContent = 'Atribuir Manutenção';
+        botaoAtribuir.textContent = currentFlowType === 'installation' ? 'Atribuir Instalação' : 'Atribuir Manutenção';
     });
 }
 
-
-// Função para fechar o modal
+// Fecha o modal
 function fecharModalCidades() {
     modalCidades.classList.remove('is-active');
 }
 
-// Fechar o modal clicando fora dele
+// Fecha o modal clicando fora
 window.onclick = function(event) {
     if (event.target === modalCidades) {
         fecharModalCidades();
