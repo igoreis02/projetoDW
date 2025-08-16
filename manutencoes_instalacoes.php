@@ -539,6 +539,12 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
                     <textarea id="problemDescription" rows="4" placeholder="Descreva o problema aqui..."></textarea>
                     <span id="problemDescriptionErrorMessage" class="selection-error-message hidden"></span>
                 </div>
+
+                <div id="repairDescriptionSection" class="problem-description-container hidden">
+                    <label for="repairDescription">Descrição do reparo:</label>
+                    <textarea id="repairDescription" rows="4" placeholder="Descreva o reparo realizado aqui..."></textarea>
+                    <span id="repairDescriptionErrorMessage" class="selection-error-message hidden"></span>
+                </div>
                 
                 <span id="equipmentSelectionErrorMessage" class="selection-error-message hidden"></span>
 
@@ -597,6 +603,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
                 <p><strong>Cidade:</strong> <span id="confirmCityName"></span></p>
                 <p><strong>Equipamento:</strong> <span id="confirmEquipmentName"></span></p>
                 <p><strong>Problema:</strong> <span id="confirmProblemDescription"></span></p>
+                <p id="confirmRepairDescriptionContainer" class="hidden"><strong>Reparo Realizado:</strong> <span id="confirmRepairDescription"></span></p>
                 <p><strong>Tipo de Manutenção:</strong> <span id="confirmMaintenanceType"></span></p>
                 <p><strong>Status do Reparo:</strong> <span id="confirmRepairStatus"></span></p>
                 <div id="installConfirmationDetails" class="hidden">
@@ -656,6 +663,11 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
         const problemDescriptionSection = document.getElementById('problemDescriptionSection');
         const problemDescriptionInput = document.getElementById('problemDescription');
 
+        // NOVAS REFERÊNCIAS PARA A SEÇÃO DE REPARO
+        const repairDescriptionSection = document.getElementById('repairDescriptionSection');
+        const repairDescriptionInput = document.getElementById('repairDescription');
+        const repairDescriptionErrorMessage = document.getElementById('repairDescriptionErrorMessage');
+
         // Novas referências para a seção de Instalação de Equipamento e Endereço
         const installEquipmentAndAddressSection = document.getElementById('installEquipmentAndAddressSection');
         const newEquipmentNameInput = document.getElementById('newEquipmentName');
@@ -683,6 +695,9 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
         const confirmCityNameSpan = document.getElementById('confirmCityName');
         const confirmEquipmentNameSpan = document.getElementById('confirmEquipmentName');
         const confirmProblemDescriptionSpan = document.getElementById('confirmProblemDescription');
+        // NOVA REFERÊNCIA PARA O CAMPO DE CONFIRMAÇÃO DO REPARO
+        const confirmRepairDescriptionContainer = document.getElementById('confirmRepairDescriptionContainer');
+        const confirmRepairDescriptionSpan = document.getElementById('confirmRepairDescription');
         const confirmMaintenanceTypeSpan = document.getElementById('confirmMaintenanceType');
         const confirmRepairStatusSpan = document.getElementById('confirmRepairStatus');
         const installConfirmationDetails = document.getElementById('installConfirmationDetails');
@@ -711,6 +726,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
         let selectedEquipmentId = null;
         let selectedEquipmentName = '';
         let selectedProblemDescription = '';
+        let selectedRepairDescription = ''; // NOVA VARIÁVEL
         let currentMaintenanceType = '';
         let currentRepairStatus = '';
         let currentFlow = '';
@@ -741,10 +757,12 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             equipmentSelectionSection.style.display = 'none';
             installEquipmentAndAddressSection.style.display = 'none';
             problemDescriptionSection.style.display = 'none';
+            repairDescriptionSection.classList.add('hidden'); // Garante que o campo de reparo comece oculto
 
             // Esconde todas as mensagens de erro ao abrir o modal
             equipmentSelectionErrorMessage.classList.add('hidden');
             problemDescriptionErrorMessage.classList.add('hidden');
+            repairDescriptionErrorMessage.classList.add('hidden');
             newEquipmentNameError.classList.add('hidden');
             newEquipmentReferenceError.classList.add('hidden');
             addressLogradouroError.classList.add('hidden');
@@ -797,11 +815,13 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             equipmentSelectionSection.style.display = 'none';
             installEquipmentAndAddressSection.style.display = 'none';
             problemDescriptionSection.style.display = 'none';
+            repairDescriptionSection.classList.add('hidden');
 
             // Limpa campos e esconde mensagens de erro
             equipmentSearchInput.value = '';
             equipmentSelect.innerHTML = '';
             problemDescriptionInput.value = '';
+            repairDescriptionInput.value = '';
             newEquipmentNameInput.value = '';
             newEquipmentReferenceInput.value = '';
             addressLogradouroInput.value = '';
@@ -816,6 +836,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             hideMessage(equipmentErrorMessage);
             equipmentSelectionErrorMessage.classList.add('hidden');
             problemDescriptionErrorMessage.classList.add('hidden');
+            repairDescriptionErrorMessage.classList.add('hidden');
             newEquipmentNameError.classList.add('hidden');
             newEquipmentReferenceError.classList.add('hidden');
             addressLogradouroError.classList.add('hidden');
@@ -828,6 +849,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             selectedEquipmentId = null;
             selectedEquipmentName = '';
             selectedProblemDescription = '';
+            selectedRepairDescription = '';
             currentMaintenanceType = '';
             currentRepairStatus = '';
             currentFlow = '';
@@ -858,9 +880,12 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             if (currentFlow === 'maintenance') {
                 equipmentSelectionSection.style.display = 'flex';
                 problemDescriptionSection.style.display = 'none';
+                repairDescriptionSection.classList.add('hidden');
                 problemDescriptionInput.value = '';
+                repairDescriptionInput.value = '';
                 equipmentSelectionErrorMessage.classList.add('hidden');
                 problemDescriptionErrorMessage.classList.add('hidden');
+                repairDescriptionErrorMessage.classList.add('hidden');
                 loadEquipamentos(selectedCityId);
             } else if (currentFlow === 'installation') {
                 installEquipmentAndAddressSection.style.display = 'flex';
@@ -892,6 +917,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             hideMessage(equipmentErrorMessage);
             equipmentSelectionErrorMessage.classList.add('hidden');
             problemDescriptionErrorMessage.classList.add('hidden');
+            repairDescriptionErrorMessage.classList.add('hidden');
 
             console.log('Carregando equipamentos para cidade ID:', cityId, 'Termo de busca:', searchTerm);
 
@@ -939,12 +965,18 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
                 problemDescriptionInput.focus();
                 equipmentSelectionErrorMessage.classList.add('hidden');
                 problemDescriptionErrorMessage.classList.add('hidden');
+                repairDescriptionErrorMessage.classList.add('hidden');
+                repairDescriptionSection.classList.add('hidden');
+                repairDescriptionInput.value = '';
             } else {
                 problemDescriptionSection.style.display = 'none';
                 problemDescriptionInput.value = '';
                 selectedEquipmentId = null;
                 selectedEquipmentName = '';
                 problemDescriptionErrorMessage.classList.add('hidden');
+                repairDescriptionSection.classList.add('hidden');
+                repairDescriptionInput.value = '';
+                repairDescriptionErrorMessage.classList.add('hidden');
             }
         });
 
@@ -952,10 +984,24 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
         equipmentSelect.addEventListener('focus', () => {
             problemDescriptionSection.style.display = 'none';
             problemDescriptionInput.value = '';
+            repairDescriptionSection.classList.add('hidden');
+            repairDescriptionInput.value = '';
             equipmentSelect.selectedIndex = -1;
             equipmentSelectionErrorMessage.classList.add('hidden');
             problemDescriptionErrorMessage.classList.add('hidden');
+            repairDescriptionErrorMessage.classList.add('hidden');
         });
+
+        // NOVO EVENT LISTENER PARA EXIBIR A CAIXA DE REPARO
+        problemDescriptionInput.addEventListener('input', () => {
+            if (currentMaintenanceType === 'preditiva' && problemDescriptionInput.value.trim() !== '') {
+                repairDescriptionSection.classList.remove('hidden');
+                repairDescriptionSection.style.display = 'flex';
+            } else {
+                repairDescriptionSection.classList.add('hidden');
+            }
+        });
+
 
         // Função para voltar para a seleção de cidades
         function goBackToCitySelection() {
@@ -963,9 +1009,11 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             equipmentSelectionSection.style.display = 'none';
             installEquipmentAndAddressSection.style.display = 'none';
             problemDescriptionSection.style.display = 'none';
+            repairDescriptionSection.classList.add('hidden');
             equipmentSearchInput.value = '';
             equipmentSelect.innerHTML = '';
             problemDescriptionInput.value = '';
+            repairDescriptionInput.value = '';
             newEquipmentNameInput.value = '';
             newEquipmentReferenceInput.value = '';
             addressLogradouroInput.value = '';
@@ -981,6 +1029,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             hideMessage(equipmentErrorMessage);
             equipmentSelectionErrorMessage.classList.add('hidden');
             problemDescriptionErrorMessage.classList.add('hidden');
+            repairDescriptionErrorMessage.classList.add('hidden');
             newEquipmentNameError.classList.add('hidden');
             newEquipmentReferenceError.classList.add('hidden');
             addressLogradouroError.classList.add('hidden');
@@ -994,8 +1043,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             selectedEquipmentId = null;
             selectedEquipmentName = '';
             selectedProblemDescription = '';
-            // currentMaintenanceType e currentRepairStatus não são resetados aqui
-            // currentFlow não é resetado aqui
+            selectedRepairDescription = '';
             newlyCreatedEquipmentId = null;
             newlyCreatedAddressId = null;
 
@@ -1018,10 +1066,13 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
         equipmentSearchInput.addEventListener('input', () => {
             if (selectedCityId !== null && currentFlow === 'maintenance') {
                 problemDescriptionSection.style.display = 'none';
+                repairDescriptionSection.classList.add('hidden');
                 problemDescriptionInput.value = '';
+                repairDescriptionInput.value = '';
                 equipmentSelect.selectedIndex = -1;
                 equipmentSelectionErrorMessage.classList.add('hidden');
                 problemDescriptionErrorMessage.classList.add('hidden');
+                repairDescriptionErrorMessage.classList.add('hidden');
 
                 loadEquipamentos(selectedCityId, equipmentSearchInput.value);
             }
@@ -1031,9 +1082,11 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
         confirmEquipmentSelectionBtn.addEventListener('click', () => {
             const selectedOption = equipmentSelect.options[equipmentSelect.selectedIndex];
             selectedProblemDescription = problemDescriptionInput.value.trim();
+            selectedRepairDescription = repairDescriptionInput.value.trim();
 
             equipmentSelectionErrorMessage.classList.add('hidden');
             problemDescriptionErrorMessage.classList.add('hidden');
+            repairDescriptionErrorMessage.classList.add('hidden');
 
             if (!selectedOption) {
                 equipmentSelectionErrorMessage.textContent = 'Por favor, selecione um equipamento.';
@@ -1042,24 +1095,35 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             }
 
             if (selectedProblemDescription === '') {
-                problemDescriptionErrorMessage.textContent = 'Por favor, informe o problema para o reparo.';
+                problemDescriptionErrorMessage.textContent = 'Por favor, informe o problema.';
                 problemDescriptionErrorMessage.classList.remove('hidden');
                 problemDescriptionInput.focus();
                 return;
             }
 
-            // Preenche o modal de confirmação com os dados coletados e os parâmetros de manutenção
+            if (currentMaintenanceType === 'preditiva' && selectedRepairDescription === '') {
+                repairDescriptionErrorMessage.textContent = 'Por favor, informe a descrição do reparo.';
+                repairDescriptionErrorMessage.classList.remove('hidden');
+                repairDescriptionInput.focus();
+                return;
+            }
+
+            // Preenche o modal de confirmação
             confirmCityNameSpan.textContent = selectedCityName;
             confirmEquipmentNameSpan.textContent = selectedEquipmentName;
             confirmProblemDescriptionSpan.textContent = selectedProblemDescription;
             confirmMaintenanceTypeSpan.textContent = currentMaintenanceType.charAt(0).toUpperCase() + currentMaintenanceType.slice(1);
             confirmRepairStatusSpan.textContent = currentRepairStatus.charAt(0).toUpperCase() + currentRepairStatus.slice(1);
 
-            // Esconde os detalhes de instalação se for um fluxo de manutenção
             installConfirmationDetails.classList.add('hidden');
-            // Garante que o campo de problema esteja visível
             confirmProblemDescriptionSpan.closest('p').classList.remove('hidden');
 
+            if (currentMaintenanceType === 'preditiva') {
+                confirmRepairDescriptionSpan.textContent = selectedRepairDescription;
+                confirmRepairDescriptionContainer.classList.remove('hidden');
+            } else {
+                confirmRepairDescriptionContainer.classList.add('hidden');
+            }
 
             openConfirmationModal();
         });
@@ -1170,11 +1234,9 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
 
         function closeConfirmationModal() {
             confirmationModal.classList.remove('is-active');
-            // Garante que a seção de detalhes de instalação esteja oculta ao fechar o modal
             installConfirmationDetails.classList.add('hidden');
-            // Garante que o campo de problema esteja visível novamente para outros fluxos
             confirmProblemDescriptionSpan.closest('p').classList.remove('hidden');
-            // Garante que os botões estejam visíveis e habilitados para a próxima vez
+            confirmRepairDescriptionContainer.classList.add('hidden'); // Esconder o campo de reparo
             confirmSaveButton.classList.remove('hidden');
             cancelSaveButton.classList.remove('hidden');
             confirmSaveButton.disabled = false;
@@ -1290,13 +1352,21 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             } else {
                 // Lógica de salvamento para os fluxos de Matriz Manutenção e Controle de Ocorrência
                 console.log('Tentando salvar manutenção...');
-                console.log('Dados a serem enviados:', {
+                
+                const payload = {
                     city_id: selectedCityId,
                     equipment_id: selectedEquipmentId,
                     problem_description: selectedProblemDescription,
                     tipo_manutencao: currentMaintenanceType,
                     status_reparo: currentRepairStatus
-                });
+                };
+
+                // Adiciona o reparo finalizado se for do tipo 'preditiva' (Controle de Ocorrência)
+                if (currentMaintenanceType === 'preditiva') {
+                    payload.reparo_finalizado = selectedRepairDescription;
+                }
+                
+                console.log('Dados a serem enviados:', payload);
 
                 try {
                     const response = await fetch('save_manutencao.php', {
@@ -1304,13 +1374,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
                         headers: {
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({
-                            city_id: selectedCityId,
-                            equipment_id: selectedEquipmentId,
-                            problem_description: selectedProblemDescription,
-                            tipo_manutencao: currentMaintenanceType,
-                            status_reparo: currentRepairStatus
-                        })
+                        body: JSON.stringify(payload)
                     });
 
                     const data = await response.json();
