@@ -3,7 +3,6 @@ session_start();
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 
-// Configurações do banco de dados
 $servername = "localhost";
 $username = "root";
 $password = "";
@@ -12,7 +11,7 @@ $dbname = "gerenciamento_manutencoes";
 $conn = new mysqli($servername, $username, $password, $dbname);
 
 if ($conn->connect_error) {
-    echo json_encode(['success' => false, 'message' => 'Erro de conexão com o banco de dados: ' . $conn->connect_error]);
+    echo json_encode(['success' => false, 'message' => 'Erro de conexão: ' . $conn->connect_error]);
     exit();
 }
 
@@ -25,43 +24,23 @@ if (empty($user_id)) {
 
 $manutencoes = [];
 
-// Primeiro, buscar as manutenções básicas
 $sql = "SELECT DISTINCT
-            m.id_manutencao,
-            m.inicio_reparo,
-            e.nome_equip,
-            e.referencia_equip,
-            m.ocorrencia_reparo,
-            m.tipo_manutencao,
-            m.status_reparo,
-            c.nome AS cidade_nome,
-            a.latitude,
-            a.longitude,
-            a.logradouro,
-            mt.inicio_reparoTec,
-            mt.fim_reparoT,
-            -- CAMPOS DE INSTALAÇÃO ADICIONADOS AQUI --
-            m.inst_laco,
-            m.inst_base,
-            m.inst_infra,
-            m.inst_energia
-            -- FIM DOS CAMPOS ADICIONADOS --
-        FROM
-            manutencoes m
-        JOIN
-            manutencoes_tecnicos mt ON m.id_manutencao = mt.id_manutencao
-        JOIN
-            equipamentos e ON m.id_equipamento = e.id_equipamento
-        JOIN
-            cidades c ON m.id_cidade = c.id_cidade
-        LEFT JOIN
-            endereco a ON e.id_endereco = a.id_endereco
-        WHERE
-            mt.id_tecnico = ? AND m.status_reparo = 'em andamento'
+            m.id_manutencao, m.inicio_reparo, e.nome_equip, e.referencia_equip,
+            m.ocorrencia_reparo, m.tipo_manutencao, m.status_reparo,
+            c.nome AS cidade_nome, a.latitude, a.longitude, a.logradouro,
+            mt.inicio_reparoTec, mt.fim_reparoT,
+            m.inst_laco, m.inst_base, m.inst_infra, m.inst_energia,
+            -- DATAS DE INSTALAÇÃO ADICIONADAS AQUI --
+            m.dt_laco, m.dt_base, m.data_infra, m.dt_energia
+        FROM manutencoes m
+        JOIN manutencoes_tecnicos mt ON m.id_manutencao = mt.id_manutencao
+        JOIN equipamentos e ON m.id_equipamento = e.id_equipamento
+        JOIN cidades c ON m.id_cidade = c.id_cidade
+        LEFT JOIN endereco a ON e.id_endereco = a.id_endereco
+        WHERE mt.id_tecnico = ? AND m.status_reparo = 'em andamento'
         ORDER BY m.inicio_reparo DESC";
 
 $stmt = $conn->prepare($sql);
-
 if ($stmt === false) {
     echo json_encode(['success' => false, 'message' => 'Erro ao preparar a consulta: ' . $conn->error]);
     exit();
@@ -73,11 +52,9 @@ $result = $stmt->get_result();
 
 if ($result->num_rows > 0) {
     while($row = $result->fetch_assoc()) {
-        // Buscar todos os veículos para esta manutenção
-        $sql_veiculos = "SELECT DISTINCT v.nome, v.placa, v.modelo 
-                        FROM manutencoes_tecnicos mt 
-                        JOIN veiculos v ON mt.id_veiculo = v.id_veiculo 
-                        WHERE mt.id_manutencao = ?";
+        $sql_veiculos = "SELECT DISTINCT v.nome, v.placa FROM manutencoes_tecnicos mt 
+                         JOIN veiculos v ON mt.id_veiculo = v.id_veiculo 
+                         WHERE mt.id_manutencao = ?";
         
         $stmt_veiculos = $conn->prepare($sql_veiculos);
         $stmt_veiculos->bind_param("i", $row['id_manutencao']);
@@ -89,9 +66,7 @@ if ($result->num_rows > 0) {
             $veiculos[] = $veiculo['nome'] . ' - ' . $veiculo['placa'];
         }
         
-        // Adicionar informação dos veículos ao array da manutenção
-        $row['veiculos_info'] = implode(' | ', $veiculos); // Separar múltiplos veículos com |
-        
+        $row['veiculos_info'] = implode(' | ', $veiculos);
         $stmt_veiculos->close();
         $manutencoes[] = $row;
     }
