@@ -310,9 +310,9 @@ if (isset($user_id)) {
                             <i class="fas fa-tools"></i>
                             <span>Manutenções/Instalações</span>
                         </a>
-                        <a href="#" class="menu-button" id="atribuirManutencao">
+                        <a href="#" class="menu-button" id="atribuirTecnico">
                             <i class="fas fa-clipboard-list"></i>
-                            <span>Atribuir Manutenção</span>
+                            <span>Atribuir Técnico</span>
                         </a>
                     </div>
                     <div class="menu-row">
@@ -387,9 +387,9 @@ if (isset($user_id)) {
                 });
             }
 
-            const manutencaoPendentesButton = document.getElementById('manutencaoPendentes');
-            if (manutencaoPendentesButton) {
-                manutencaoPendentesButton.addEventListener('click', function() {
+            const atribuirTecnicoButton = document.getElementById('atribuirTecnico');
+            if (atribuirTecnicoButton) {
+                atribuirTecnicoButton.addEventListener('click', function() {
                     window.location.href = 'atribuir_tecnico.php';
                 });
             }
