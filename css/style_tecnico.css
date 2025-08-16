@@ -30,6 +30,9 @@ body {
     font-family: var(--font-family);
     margin: 0;
     padding: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
 }
 .background {
     position: fixed;
@@ -66,6 +69,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
+    flex-grow: 1;
 }
 
 .card>h2 {
@@ -995,4 +999,11 @@ body {
 .item-manutencao.vencendo-hoje {
     background-color: #ffeedd; /* Laranja claro */
     border-left: 5px solid #ff9800; /* Borda laranja para destaque */
+}
+
+#listaManutencoes {
+    width: 100%;      /* Garante que o container ocupe toda a largura do card */
+    flex-grow: 1;     /* Permite que a lista cresça e ocupe o espaço vertical disponível */
+    overflow-y: auto; /* Adiciona uma barra de rolagem APENAS se o conteúdo for maior que o espaço */
+    min-height: 150px;  /* Define uma altura mínima para evitar que a área fique muito pequena */
 }

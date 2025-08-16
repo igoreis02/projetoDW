@@ -349,7 +349,8 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             font-size: 0.9em;
             margin-top: -10px; /* Ajusta o espaçamento */
             margin-bottom: 10px;
-            text-align: left;
+            text-align: center; /* Centralizado */
+            width: 100%;
         }
 
         /* Classe para esconder elementos via JS */
@@ -483,14 +484,17 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
                     <span id="problemDescriptionErrorMessage" class="selection-error-message hidden"></span>
                 </div>
 
-                <div id="repairDescriptionSection" class="problem-description-container hidden">
+                <div id="repairDescriptionSection" class="problem-description-container">
                     <label for="repairDescription">Descrição do reparo:</label>
                     <textarea id="repairDescription" rows="4" placeholder="Descreva o reparo realizado aqui..."></textarea>
                     <span id="repairDescriptionErrorMessage" class="selection-error-message hidden"></span>
                 </div>
                 
                 <span id="equipmentSelectionErrorMessage" class="selection-error-message hidden"></span>
-                <button id="confirmEquipmentSelection" class="page-button mt-4">Confirmar Seleção</button>
+                <button id="confirmEquipmentSelection" class="page-button" style="margin-top: 1rem;">
+                    Confirmar Seleção
+                    <span id="selectionSpinner" class="loading-spinner hidden"></span>
+                </button>
             </div>
 
             <div id="installEquipmentAndAddressSection" class="install-equipment-section">
@@ -610,6 +614,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
         const repairDescriptionInput = document.getElementById('repairDescription');
         const repairDescriptionErrorMessage = document.getElementById('repairDescriptionErrorMessage');
         const equipmentSelectionErrorMessage = document.getElementById('equipmentSelectionErrorMessage');
+        const selectionSpinner = document.getElementById('selectionSpinner');
 
         // Referências para Instalação
         const installEquipmentAndAddressSection = document.getElementById('installEquipmentAndAddressSection');
@@ -639,6 +644,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
         const cancelSaveButton = document.getElementById('cancelSaveButton');
         const confirmSpinner = document.getElementById('confirmSpinner');
         const confirmMessage = document.getElementById('confirmMessage');
+        const confirmationButtonsDiv = confirmationModal.querySelector('.confirmation-buttons');
 
         // Detalhes da confirmação
         const maintenanceConfirmationDetails = document.getElementById('maintenanceConfirmationDetails');
@@ -663,33 +669,28 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
         let currentMaintenanceType = '';
         let currentRepairStatus = '';
         let currentFlow = '';
-        let tempInstallationData = {}; // Objeto para guardar dados da instalação
+        let tempInstallationData = {};
 
         // --- SEÇÃO DE FUNÇÕES ---
 
-        // Função para abrir o modal principal e carregar as cidades
         async function openMaintenanceModal(type, status, flow) {
             currentMaintenanceType = type;
             currentRepairStatus = status;
             currentFlow = flow;
-
             document.getElementById('modalTitle').textContent = flow === 'installation' ? 'Cadastrar Instalação' : 'Cadastrar Manutenção';
-
             cadastroManutencaoModal.classList.add('is-active');
             citySelectionSection.style.display = 'block';
             equipmentSelectionSection.style.display = 'none';
             installEquipmentAndAddressSection.style.display = 'none';
-            
             loadingCitiesMessage.classList.remove('hidden');
             cityErrorMessage.classList.add('hidden');
-            cityButtonsContainer.innerHTML = '<p id="loadingCitiesMessage">Carregando cidades...</p>'; // Garante que a mensagem apareça
+            cityButtonsContainer.innerHTML = '<p id="loadingCitiesMessage">Carregando cidades...</p>';
 
             try {
                 const response = await fetch('get_cidades.php');
                 const data = await response.json();
-
                 if (data.success && data.cidades.length > 0) {
-                    cityButtonsContainer.innerHTML = ''; // Limpa a mensagem de carregamento
+                    cityButtonsContainer.innerHTML = '';
                     data.cidades.forEach(city => {
                         const button = document.createElement('button');
                         button.classList.add('city-button');
@@ -706,49 +707,160 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             }
         }
 
-        // Função para fechar e resetar todos os modais e formulários
+        // --- FUNÇÃO MODIFICADA PARA CORRIGIR O BUG ---
         function closeCadastroManutencaoModal() {
             cadastroManutencaoModal.classList.remove('is-active');
             confirmationModal.classList.remove('is-active');
-            // Resetar formulário de instalação
+            
+            // Limpa todos os formulários
             installEquipmentAndAddressSection.querySelectorAll('input, select, textarea').forEach(el => el.value = '');
             quantitySection.classList.add('hidden');
-            // Resetar formulário de manutenção
             equipmentSelectionSection.querySelectorAll('input, select, textarea').forEach(el => el.value = '');
-            repairDescriptionSection.classList.add('hidden');
-            // Resetar variáveis de estado
+            
+            // Esconde seções
+            repairDescriptionSection.style.display = 'none';
+            problemDescriptionSection.style.display = 'none';
+            
+            // Reseta variáveis de estado
             selectedCityId = null; selectedCityName = ''; currentFlow = ''; tempInstallationData = {};
+            
+            // Reseta mensagens
+            confirmMessage.classList.add('hidden');
+            confirmMessage.textContent = '';
+            
+            // Reseta o estado dos botões de confirmação para a próxima operação
+            confirmationButtonsDiv.style.display = 'flex';
+            confirmSaveButton.disabled = false;
+            cancelSaveButton.disabled = false;
         }
 
-        // Lida com a seleção da cidade
         function handleCitySelection(cityId, cityName) {
             selectedCityId = cityId;
             selectedCityName = cityName;
             citySelectionSection.style.display = 'none';
-
             if (currentFlow === 'installation') {
                 installEquipmentAndAddressSection.style.display = 'flex';
             } else {
                 equipmentSelectionSection.style.display = 'flex';
                 problemDescriptionSection.style.display = 'none';
+                repairDescriptionSection.style.display = 'none';
                 loadEquipamentos(selectedCityId);
             }
         }
         
-        // Carrega equipamentos (fluxo de manutenção)
         async function loadEquipamentos(cityId, searchTerm = '') {
-            // Sua lógica de carregar equipamentos aqui (mantida do seu código original)
+            equipmentSelect.innerHTML = '';
+            loadingEquipmentMessage.classList.remove('hidden');
+            loadingEquipmentMessage.textContent = 'Carregando equipamentos...';
+            equipmentErrorMessage.classList.add('hidden');
+            problemDescriptionSection.style.display = 'none';
+            try {
+                const url = `get_equipamentos.php?city_id=${cityId}&search_term=${encodeURIComponent(searchTerm)}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                loadingEquipmentMessage.classList.add('hidden');
+                if (data.success && data.equipamentos.length > 0) {
+                    data.equipamentos.forEach(equip => {
+                        const option = document.createElement('option');
+                        option.value = equip.id_equipamento;
+                        option.textContent = `${equip.nome_equip} - ${equip.referencia_equip}`;
+                        equipmentSelect.appendChild(option);
+                    });
+                } else {
+                    equipmentErrorMessage.textContent = data.message || 'Nenhum equipamento encontrado.';
+                    equipmentErrorMessage.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Erro ao carregar equipamentos:', error);
+                loadingEquipmentMessage.classList.add('hidden');
+                equipmentErrorMessage.textContent = 'Erro de conexão ao buscar equipamentos.';
+                equipmentErrorMessage.classList.remove('hidden');
+            }
         }
-
-        // Volta para a seleção de cidade
+        
         function goBackToCitySelection() {
             citySelectionSection.style.display = 'block';
             equipmentSelectionSection.style.display = 'none';
             installEquipmentAndAddressSection.style.display = 'none';
-            // Limpar formulários e resetar variáveis
         }
 
-        // Mostra/esconde o campo de quantidade de faixas
+        equipmentSearchInput.addEventListener('keyup', () => {
+            if (selectedCityId) {
+                const searchTerm = equipmentSearchInput.value.trim();
+                loadEquipamentos(selectedCityId, searchTerm);
+            }
+        });
+        
+        equipmentSelect.addEventListener('change', () => {
+            problemDescriptionSection.style.display = 'flex';
+            repairDescriptionSection.style.display = 'none';
+            problemDescriptionInput.value = '';
+            repairDescriptionInput.value = '';
+        });
+
+        problemDescriptionInput.addEventListener('input', () => {
+            if (currentMaintenanceType === 'preditiva' && problemDescriptionInput.value.trim() !== '') {
+                repairDescriptionSection.style.display = 'flex';
+            } else {
+                repairDescriptionSection.style.display = 'none';
+            }
+        });
+
+        confirmEquipmentSelectionBtn.addEventListener('click', () => {
+            confirmEquipmentSelectionBtn.disabled = true;
+            selectionSpinner.classList.remove('hidden');
+            equipmentSelectionErrorMessage.classList.add('hidden'); 
+
+            setTimeout(() => {
+                const equipId = equipmentSelect.value;
+                const problemDesc = problemDescriptionInput.value.trim();
+                const repairDesc = repairDescriptionInput.value.trim();
+                let errorMessage = '';
+
+                if (!equipId) {
+                    errorMessage = 'Por favor, selecione um equipamento.';
+                } else if (!problemDesc) {
+                    errorMessage = 'Por favor, descreva o problema.';
+                } else if (currentMaintenanceType === 'preditiva' && !repairDesc) {
+                    errorMessage = 'Por favor, descreva o reparo realizado.';
+                }
+
+                if (errorMessage) {
+                    equipmentSelectionErrorMessage.textContent = errorMessage;
+                    equipmentSelectionErrorMessage.classList.remove('hidden');
+                    confirmEquipmentSelectionBtn.disabled = false;
+                    selectionSpinner.classList.add('hidden');
+                    return; 
+                }
+
+                selectedEquipmentId = equipId;
+                selectedEquipmentName = equipmentSelect.options[equipmentSelect.selectedIndex].text;
+                selectedProblemDescription = problemDesc;
+                selectedRepairDescription = repairDesc;
+
+                confirmCityNameSpan.textContent = selectedCityName;
+                confirmEquipmentNameSpan.textContent = selectedEquipmentName;
+                confirmProblemDescriptionSpan.textContent = selectedProblemDescription;
+                confirmMaintenanceTypeSpan.textContent = currentMaintenanceType.charAt(0).toUpperCase() + currentMaintenanceType.slice(1);
+                confirmRepairStatusSpan.textContent = currentRepairStatus.charAt(0).toUpperCase() + currentRepairStatus.slice(1);
+                
+                if (selectedRepairDescription) {
+                    confirmRepairDescriptionSpan.textContent = selectedRepairDescription;
+                    confirmRepairDescriptionContainer.classList.remove('hidden');
+                } else {
+                     confirmRepairDescriptionContainer.classList.add('hidden');
+                }
+                
+                maintenanceConfirmationDetails.classList.remove('hidden');
+                installConfirmationDetails.classList.add('hidden');
+                confirmationModal.classList.add('is-active');
+
+                confirmEquipmentSelectionBtn.disabled = false;
+                selectionSpinner.classList.add('hidden');
+
+            }, 200);
+        });
+
         newEquipmentType.addEventListener('change', () => {
             const typesWithOptions = ['RADAR FIXO', 'EDUCATIVO', 'LOMBADA'];
             if (typesWithOptions.includes(newEquipmentType.value)) {
@@ -759,7 +871,6 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             }
         });
 
-        // Valida e prepara dados da instalação para confirmação
         confirmInstallEquipmentBtn.addEventListener('click', () => {
             if (newEquipmentType.value === "" || newEquipmentNameInput.value.trim() === "" || newEquipmentReferenceInput.value.trim() === "" || addressLogradouroInput.value.trim() === "" || addressBairroInput.value.trim() === "" || addressCepInput.value.trim() === "") {
                 alert("Por favor, preencha todos os campos obrigatórios.");
@@ -797,15 +908,16 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             confirmationModal.classList.add('is-active');
         });
 
-        // Lógica de SALVAR no banco de dados
         confirmSaveButton.addEventListener('click', async function() {
-            // Desabilitar botões e mostrar spinner...
             confirmSpinner.classList.remove('hidden');
             confirmSaveButton.disabled = true;
             cancelSaveButton.disabled = true;
+            confirmMessage.classList.add('hidden');
 
-            if (currentFlow === 'installation') {
-                try {
+            try {
+                let finalMessage = '';
+
+                if (currentFlow === 'installation') {
                     const addressResponse = await fetch('save_endereco.php', {
                         method: 'POST', headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -837,21 +949,44 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
                     });
                     const maintenanceData = await maintenanceResponse.json();
                     if (!maintenanceData.success) throw new Error('Falha ao registrar operação: ' + maintenanceData.message);
-
-                    confirmMessage.textContent = 'Instalação registrada com sucesso!';
-                    confirmMessage.className = 'confirmation-message success';
-                    setTimeout(closeCadastroManutencaoModal, 2000);
-
-                } catch (error) {
-                    confirmMessage.textContent = error.message;
-                    confirmMessage.className = 'confirmation-message error';
-                } finally {
-                    confirmSpinner.classList.add('hidden');
-                    confirmSaveButton.disabled = false;
-                    cancelSaveButton.disabled = false;
+                    finalMessage = 'Instalação registrada com sucesso!';
+                
+                } else {
+                    const response = await fetch('save_manutencao.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            city_id: selectedCityId,
+                            equipment_id: selectedEquipmentId,
+                            problem_description: selectedProblemDescription,
+                            reparo_finalizado: selectedRepairDescription,
+                            tipo_manutencao: currentMaintenanceType,
+                            status_reparo: currentRepairStatus
+                        })
+                    });
+                    const data = await response.json();
+                    if (!data.success) throw new Error(data.message || 'Ocorreu um erro desconhecido.');
+                    finalMessage = 'Operação de manutenção registrada com sucesso!';
                 }
-            } else {
-                // Sua lógica de salvar manutenção aqui (mantida do seu código original)
+
+                confirmMessage.textContent = finalMessage;
+                confirmMessage.className = 'confirmation-message success';
+                confirmMessage.classList.remove('hidden');
+                confirmSpinner.classList.add('hidden');
+                confirmationButtonsDiv.style.display = 'none'; 
+
+                setTimeout(() => {
+                    closeCadastroManutencaoModal();
+                }, 2000);
+
+            } catch (error) {
+                confirmMessage.textContent = error.message;
+                confirmMessage.className = 'confirmation-message error';
+                confirmMessage.classList.remove('hidden');
+
+                confirmSpinner.classList.add('hidden');
+                confirmSaveButton.disabled = false;
+                cancelSaveButton.disabled = false;
             }
         });
 
@@ -859,7 +994,10 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             confirmationModal.classList.remove('is-active');
         }
 
-        // Adiciona os event listeners aos botões principais
+        function closeConfirmationModal() {
+            confirmationModal.classList.remove('is-active');
+        }
+
         if (matrizManutencaoBtn) {
             matrizManutencaoBtn.addEventListener('click', () => openMaintenanceModal('corretiva', 'pendente', 'maintenance'));
         }
