@@ -45,9 +45,10 @@ try {
 
     // 2. Atualizar a tabela `equipamentos`
     // Adicionada a coluna id_provedor
-    $stmt_equipamento = $conn->prepare("UPDATE equipamentos SET tipo_equip = ?, nome_equip = ?, referencia_equip = ?, status = ?, id_cidade = ?, id_provedor = ? WHERE id_equipamento = ?");
+    $stmt_equipamento = $conn->prepare("UPDATE equipamentos SET tipo_equip = ?, nome_equip = ?, referencia_equip = ?, status = ?, qtd_faixa = ?, id_cidade = ?, id_provedor = ? WHERE id_equipamento = ?");
     $referencia_equip = $data['referencia_equip'] ?? null;
-    $stmt_equipamento->bind_param("ssssiii", $data['tipo_equip'], $data['nome_equip'], $referencia_equip, $data['status'], $data['id_cidade'], $data['id_provedor'], $data['id_equipamento']);
+    $data['qtd_faixa'] = $data['qtd_faixa'] ?? null; // Garantir que qtd_faixa esteja definido
+    $stmt_equipamento->bind_param("ssssiiii", $data['tipo_equip'], $data['nome_equip'], $referencia_equip, $data['status'], $data['qtd_faixa'], $data['id_cidade'], $data['id_provedor'], $data['id_equipamento']);
     $stmt_equipamento->execute();
     $stmt_equipamento->close();
 

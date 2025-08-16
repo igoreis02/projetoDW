@@ -546,6 +546,7 @@ try {
                     <option value="RADAR FIXO">RADAR FIXO</option>
                     <option value="DOME">DOME</option>
                     <option value="EDUCATIVO">EDUCATIVO</option>
+                    <option value="LOMBADA">LÔMBADA</option>
                 </select>
 
                 <label for="equipmentName">Nome:</label>
@@ -622,6 +623,7 @@ try {
                     <option value="RADAR FIXO">RADAR FIXO</option>
                     <option value="DOME">DOME</option>
                     <option value="EDUCATIVO">EDUCATIVO</option>
+                    <option value="LOMBADA">LÔMBADA</option>
                 </select>
 
                 <label for="editEquipmentName">Nome:</label>
@@ -761,7 +763,7 @@ try {
             function toggleQtdFaixaField(selectElement, containerElement) {
                 const selectedType = selectElement.value;
                 // Campo de faixas visível somente para RADAR FIXO e Educativo
-                if (selectedType === 'RADAR FIXO' || selectedType === 'Educativo') {
+                if (selectedType === 'RADAR FIXO' || selectedType === 'EDUCATIVO' || selectedType === 'LOMBADA') {
                     containerElement.classList.remove('hidden');
                 } else {
                     containerElement.classList.add('hidden');
@@ -832,7 +834,7 @@ try {
                         return 2;
                     case 'DOME':
                         return 3;
-                    case 'Educativo':
+                    case 'EDUCATIVO':
                         return 4;
                     default:
                         return 99; // Coloca tipos desconhecidos no final
@@ -896,7 +898,7 @@ try {
                         const statusClass = `status-${(equip.status || '').toLowerCase()}`;
                         const statusDisplay = (equip.status || 'N/A').charAt(0).toUpperCase() + (equip.status || 'N/A').slice(1);
                         const qtdFaixaDisplay = equip.qtd_faixa ? `<p><strong>Qtd. Faixa:</strong> ${equip.qtd_faixa}</p>` : '';
-                        const enderecoDisplay = `<strong>Bairro:</strong> ${equip.bairro || 'N/A'} - <strong>Endereço:</strong> ${equip.logradouro || 'N/A'}`;
+                        const enderecoDisplay = `<strong>Endereço:</strong> ${equip.logradouro || 'N/A'} - ${equip.bairro || 'N/A'}`;
 
                         return `
                             <div class="item-equipamento">
@@ -904,9 +906,9 @@ try {
                                 <p><strong>Tipo:</strong> ${equip.tipo_equip || 'N/A'}</p>
                                 <p><strong>Referência:</strong> ${equip.referencia_equip || 'N/A'}</p>
                                 ${qtdFaixaDisplay}
-                                <p><strong>Provedor:</strong> ${equip.nome_prov || 'N/A'}</p>
-                                <p><strong>Cidade:</strong> ${equip.cidade || 'N/A'}</p>
                                 <p>${enderecoDisplay}</p>
+                                <p><strong>Cidade:</strong> ${equip.cidade || 'N/A'}</p>
+                                <p><strong>Provedor:</strong> ${equip.nome_prov || 'N/A'}</p>
                                 <p><strong>Status:</strong> <span class="status-cell ${statusClass}">${statusDisplay}</span></p>
                                 <button class="botao-editar" data-equipment-id="${equip.id_equipamento}">Editar</button>
                             </div>
