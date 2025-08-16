@@ -1,6 +1,6 @@
 <?php
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *'); // Permite requisições de qualquer origem (para desenvolvimento)
+header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With');
 
@@ -8,7 +8,7 @@ header('Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers
 $servername = "localhost";
 $username = "root";
 $password = "";
-$dbname = "gerenciamento_manutencoes"; // Nome do seu banco de dados
+$dbname = "gerenciamento_manutencoes";
 
 // Cria a conexão com o banco de dados
 $conn = new mysqli($servername, $username, $password, $dbname);
@@ -27,15 +27,22 @@ $nome_equip = $data['nome_equip'] ?? null;
 $referencia_equip = $data['referencia_equip'] ?? null;
 $id_cidade = $data['id_cidade'] ?? null;
 $id_endereco = $data['id_endereco'] ?? null;
+$tipo_equip = $data['tipo_equip'] ?? null; // NOVO CAMPO
+$qtd_faixa = $data['qtd_faixa'] ?? null;   // NOVO CAMPO
 
 // Validação básica
-if (empty($nome_equip) || empty($referencia_equip) || empty($id_cidade) || empty($id_endereco)) {
+if (empty($nome_equip) || empty($referencia_equip) || empty($id_cidade) || empty($id_endereco) || empty($tipo_equip)) {
     echo json_encode(['success' => false, 'message' => 'Dados de equipamento incompletos.']);
     exit();
 }
 
+// Se a quantidade de faixas não for enviada (tipos que não a exigem), define como NULL
+if (empty($qtd_faixa)) {
+    $qtd_faixa = null;
+}
+
 // Prepara a instrução SQL para inserção
-$sql = "INSERT INTO equipamentos (nome_equip, referencia_equip, id_cidade, id_endereco) VALUES (?, ?, ?, ?)";
+$sql = "INSERT INTO equipamentos (nome_equip, referencia_equip, id_cidade, id_endereco, tipo_equip, qtd_faixa) VALUES (?, ?, ?, ?, ?, ?)";
 $stmt = $conn->prepare($sql);
 
 if ($stmt === false) {
@@ -44,8 +51,8 @@ if ($stmt === false) {
 }
 
 // Vincula os parâmetros
-// 'ssii' -> s (string) para nome_equip, referencia_equip; i (integer) para id_cidade, id_endereco
-$stmt->bind_param("ssii", $nome_equip, $referencia_equip, $id_cidade, $id_endereco);
+// 'ssiisi' -> s(string), s(string), i(integer), i(integer), s(string), i(integer)
+$stmt->bind_param("ssiisi", $nome_equip, $referencia_equip, $id_cidade, $id_endereco, $tipo_equip, $qtd_faixa);
 
 // Executa a instrução
 if ($stmt->execute()) {
