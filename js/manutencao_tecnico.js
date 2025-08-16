@@ -182,6 +182,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     manutencoesFiltradas.forEach(manutencao => {
                         const itemDiv = document.createElement('div');
                         itemDiv.classList.add('item-manutencao');
+
+                        if (manutencao.fim_reparoT) {
+                            const hoje = new Date();
+                            hoje.setHours(0, 0, 0, 0); // Zera o horário para comparar apenas a data
+
+                            const dataFim = new Date(manutencao.fim_reparoT);
+                            dataFim.setHours(0, 0, 0, 0); // Zera o horário para comparar apenas a data
+
+                            if (hoje.getTime() === dataFim.getTime()) {
+                                // Se a data de hoje for igual à data final do reparo
+                                itemDiv.classList.add('vencendo-hoje'); // Adiciona a classe para fundo laranja claro
+                            } else if (hoje > dataFim) {
+                                // Se a data de hoje for maior que a data final do reparo
+                                itemDiv.classList.add('vencido'); // Adiciona a classe para fundo vermelho claro
+                            }
+                        }
                         
                         let textoDataExecucao = 'Data não definida';
                         let diasParaReparo = 0;

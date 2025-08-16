@@ -984,3 +984,15 @@ body {
 .botoes-confirmacao-parcial .botao-cancelar:hover {
     background-color: #c82333;
 }
+
+/* Estilo para manutenção vencida (data atual > data fim do reparo) */
+.item-manutencao.vencido {
+    background-color: #ffdddd; /* Vermelho claro */
+    border-left: 5px solid #f44336; /* Borda vermelha para destaque */
+}
+
+/* Estilo para manutenção que vence hoje (data atual == data fim do reparo) */
+.item-manutencao.vencendo-hoje {
+    background-color: #ffeedd; /* Laranja claro */
+    border-left: 5px solid #ff9800; /* Borda laranja para destaque */
+}
