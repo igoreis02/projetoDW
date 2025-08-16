@@ -18,7 +18,8 @@ $data = json_decode($input, true);
 if (
     !isset($data['tipo_equip']) || !isset($data['nome_equip']) ||
     !isset($data['status']) || !isset($data['id_cidade']) ||
-    !isset($data['logradouro']) || !isset($data['bairro'])
+    !isset($data['logradouro']) || !isset($data['bairro']) ||
+    !isset($data['id_provedor'])
 ) {
     echo json_encode(['success' => false, 'message' => 'Dados incompletos.']);
     exit();
@@ -28,21 +29,20 @@ $conn->begin_transaction();
 
 try {
     // 1. Inserir na tabela `endereco`
-    $stmt_endereco = $conn->prepare("INSERT INTO endereco (logradouro, numero, bairro, cep, complemento, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    $numero = $data['numero'] ?? null;
+    $stmt_endereco = $conn->prepare("INSERT INTO endereco (logradouro, bairro, cep, latitude, longitude) VALUES (?, ?, ?, ?, ?)");
     $cep = $data['cep'] ?? null;
-    $complemento = $data['complemento'] ?? null;
     $latitude = $data['latitude'] ?? null;
     $longitude = $data['longitude'] ?? null;
-    $stmt_endereco->bind_param("sssssdd", $data['logradouro'], $numero, $data['bairro'], $cep, $complemento, $latitude, $longitude);
+    $stmt_endereco->bind_param("sssdd", $data['logradouro'], $data['bairro'], $cep, $latitude, $longitude);
     $stmt_endereco->execute();
     $id_endereco = $conn->insert_id;
     $stmt_endereco->close();
 
     // 2. Inserir na tabela `equipamentos`
-    $stmt_equipamento = $conn->prepare("INSERT INTO equipamentos (tipo_equip, nome_equip, referencia_equip, status, id_cidade, id_endereco) VALUES (?, ?, ?, ?, ?, ?)");
+    // Adicionada a coluna id_provedor
+    $stmt_equipamento = $conn->prepare("INSERT INTO equipamentos (tipo_equip, nome_equip, referencia_equip, status, id_cidade, id_endereco, id_provedor) VALUES (?, ?, ?, ?, ?, ?, ?)");
     $referencia_equip = $data['referencia_equip'] ?? null;
-    $stmt_equipamento->bind_param("ssssii", $data['tipo_equip'], $data['nome_equip'], $referencia_equip, $data['status'], $data['id_cidade'], $id_endereco);
+    $stmt_equipamento->bind_param("ssssiii", $data['tipo_equip'], $data['nome_equip'], $referencia_equip, $data['status'], $data['id_cidade'], $id_endereco, $data['id_provedor']);
     $stmt_equipamento->execute();
     $stmt_equipamento->close();
 

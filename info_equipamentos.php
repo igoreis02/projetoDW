@@ -5,7 +5,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 if (!isset($_SESSION['user_id'])) {
-    header('Location: login.html');
+    header('Location: index.html');
     exit();
 }
 
@@ -23,58 +23,9 @@ if ($conn->connect_error) {
     die("Falha na conexão com o banco de dados: " . $conn->connect_error);
 }
 
-$equipamentos_por_cidade = [];
-$errorMessage = '';
 $cities = []; // Array para armazenar as cidades
 
 try {
-    // Consulta SQL para obter os equipamentos com informações de cidade e endereço, incluindo o status.
-    // Selecionando id_equipamento, id_endereco e id_cidade para uso no modal de edição
-    $sql_equipamentos = "SELECT
-                e.id_equipamento,
-                e.id_cidade,
-                e.id_endereco,
-                c.nome AS cidade,
-                e.tipo_equip,
-                e.nome_equip,
-                e.referencia_equip,
-                en.logradouro,
-                en.numero,
-                en.bairro,
-                en.cep,
-                en.latitude,
-                en.longitude,
-                e.status
-            FROM equipamentos AS e
-            JOIN cidades AS c ON e.id_cidade = c.id_cidade
-            LEFT JOIN endereco AS en ON e.id_endereco = en.id_endereco
-            ORDER BY
-                CASE
-                    WHEN e.tipo_equip = 'RADAR' THEN 0
-                    ELSE 1
-                END,
-                c.nome,
-                e.tipo_equip,
-                e.nome_equip";
-
-    $result_equipamentos = $conn->query($sql_equipamentos);
-
-    if ($result_equipamentos === false) {
-        throw new Exception("Erro ao executar a consulta de equipamentos: " . $conn->error);
-    }
-
-    if ($result_equipamentos->num_rows > 0) {
-        while ($row = $result_equipamentos->fetch_assoc()) {
-            $cidade = $row['cidade'];
-            if (!isset($equipamentos_por_cidade[$cidade])) {
-                $equipamentos_por_cidade[$cidade] = [];
-            }
-            $equipamentos_por_cidade[$cidade][] = $row;
-        }
-    } else {
-        $errorMessage = 'Nenhum equipamento cadastrado no sistema.';
-    }
-
     // Consulta SQL para obter as cidades para os dropdowns
     $sql_cidades = "SELECT id_cidade, nome FROM cidades ORDER BY nome ASC";
     $result_cidades = $conn->query($sql_cidades);
@@ -90,7 +41,6 @@ try {
     }
 
 } catch (Exception $e) {
-    $errorMessage = 'Erro ao carregar dados: ' . $e->getMessage();
     error_log("Erro em info_equipamentos.php: " . $e->getMessage());
 } finally {
     if ($conn) {
@@ -101,90 +51,227 @@ try {
 
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Informações de Equipamentos</title>
     <link rel="stylesheet" href="css/style.css">
+    <title>Gerenciar Equipamentos</title>
     <style>
-        /* Estilos do card e layout geral, adaptados de gerenciar_usuario.php */
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f0f2f5;
             display: flex;
             flex-direction: column;
-            justify-content: flex-start;
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
+            padding: 2rem 0;
         }
 
         .card {
             background-color: #ffffff;
             padding: 2.5rem;
             border-radius: 1rem;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             width: 90%;
-            max-width: 1200px;
+            max-width: 1000px;
+            margin-bottom: 2rem;
             text-align: center;
-            position: relative;
+        }
+
+        .card h1 {
+            color: #333;
+            margin-bottom: 1.5rem;
+        }
+
+        .cabecalho {
+            width: 90%;
+            max-width: 1000px;
+            margin-bottom: 1rem;
             display: flex;
-            flex-direction: column;
             align-items: center;
-            margin-top: 50px;
+            justify-content: space-between;
         }
 
-        .card:before {
-            content: none;
-        }
-
-        h2 {
-            font-size: 2em;
-            color: var(--cor-principal);
-            margin-bottom: 30px;
-            margin-top: 0;
-        }
-
-        /* Estilos para a tabela de equipamentos */
-        .equipment-table-container {
+        .conteudo-cabecalho {
+            display: flex;
+            align-items: center;
             width: 100%;
-            overflow-x: auto;
-            margin-top: 20px;
         }
 
-        .equipment-table {
+        .titulo-cabecalho {
+            flex-grow: 1;
+            text-align: center;
+            margin: 0;
+        }
+
+        .botao-voltar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem;
+            border-radius: 50%;
+            color: white;
+            transition: background-color 0.3s ease;
+            position: absolute;
+            top: 2rem;
+            left: 5%;
+        }
+
+        .botao-voltar:hover {
+            background-color: var(--cor-secundaria);
+        }
+
+        .container-botao-adicionar-equipamento {
             width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
+            display: flex;
+            justify-content: flex-start;
+            margin-bottom: 1rem;
         }
 
-        .equipment-table th, .equipment-table td {
-            border: 1px solid #ddd;
+        .botao-adicionar-equipamento {
+            background-color: var(--cor-principal);
+            color: white;
+            padding: 12px 25px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .botao-adicionar-equipamento:hover {
+            background-color: var(--cor-secundaria);
+        }
+
+        .container-pesquisa {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            gap: 10px;
+        }
+
+        .container-pesquisa input {
             padding: 10px;
-            text-align: left;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .city-buttons-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 1.5rem;
+        }
+
+        .city-button {
+            background-color: #e2e8f0;
+            color: #4a5568;
+            padding: 8px 16px;
+            border: 1px solid #cbd5e0;
+            border-radius: 9999px; /* rounded-full */
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
             font-size: 0.9em;
         }
 
-        .equipment-table th {
-            background-color: #ffffff;
-            color: #000000;
-            font-weight: bold;
-            border-bottom: 2px solid var(--cor-principal);
+        .city-button:hover {
+            background-color: #cbd5e0;
         }
 
-        .equipment-table td {
-            color: #000000;
-            font-weight: normal;
+        .city-button.active {
+            background-color: var(--cor-principal);
+            color: white;
+            border-color: var(--cor-principal);
+        }
+        
+        .main-loading-state {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 15px;
+            color: #555;
+            padding: 40px 0;
+        }
+        
+        .main-loading-spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--cor-principal);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
         }
 
-        .equipment-table tr:nth-child(even) {
-            background-color: #f2f2f2;
+        .equipment-list-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            width: 100%;
         }
 
-        .equipment-table tr:hover {
-            background-color: #ddd;
+        .city-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            text-align: left;
+        }
+        
+        .city-section h3 {
+            margin: 0;
+            color: var(--cor-secundaria);
+        }
+        
+        .equipment-grid {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        }
+
+        .item-equipamento {
+            background-color: #f9f9f9;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            text-align: left;
+            position: relative;
+        }
+
+        .item-equipamento h3 {
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            color: var(--cor-secundaria);
+        }
+
+        .item-equipamento p {
+            margin: 0.25rem 0;
+            color: #555;
+        }
+
+        .item-equipamento .botao-editar {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .item-equipamento .botao-editar:hover {
+            background-color: #0056b3;
         }
 
         .status-cell {
@@ -209,25 +296,6 @@ try {
             color: #f97316;
         }
 
-        .voltar-btn {
-            display: block;
-            width: 50%;
-            padding: 15px;
-            margin-top: 30px;
-            text-align: center;
-            background-color: var(--botao-voltar);
-            color: var(--cor-letra-botaoVoltar);
-            text-decoration: none;
-            border-radius: 8px;
-            font-size: 1.1em;
-            transition: background-color 0.3s ease;
-            box-sizing: border-box;
-        }
-
-        .voltar-btn:hover {
-            background-color: var(--botao-voltar-hover);
-        }
-
         .message {
             margin-top: 1rem;
             padding: 0.75rem;
@@ -248,58 +316,6 @@ try {
             background-color: #dcfce7;
             color: #22c55e;
             border: 1px solid #86efac;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        .footer {
-            margin-top: auto;
-            color: #888;
-            font-size: 0.9em;
-            width: 100%;
-            text-align: center;
-            padding-top: 20px;
-        }
-
-        .add-equipment-button-container {
-            width: 100%;
-            text-align: left;
-            margin-bottom: 20px;
-        }
-
-        .add-equipment-button {
-            padding: 12px 20px;
-            font-size: 1em;
-            color: white;
-            background-color: var(--cor-principal);
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.2s ease;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .add-equipment-button:hover {
-            background-color: var(--cor-secundaria);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        /* Estilo do botão de edição */
-        .edit-equipment-btn {
-            background-color: #007bff; /* Azul */
-            color: white;
-            border: none;
-            border-radius: 5px;
-            padding: 8px 12px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
-        .edit-equipment-btn:hover {
-            background-color: #0056b3;
         }
 
         .modal {
@@ -329,7 +345,7 @@ try {
             max-width: 600px;
             position: relative;
             text-align: left;
-            margin-top: 10%;
+            margin-top: 5%;
         }
 
         .modal-content h3 {
@@ -404,6 +420,7 @@ try {
             font-weight: bold;
             cursor: pointer;
         }
+
         .close-button:hover,
         .close-button:focus {
             color: black;
@@ -418,13 +435,36 @@ try {
             width: 18px;
             height: 18px;
             animation: spin 1s linear infinite;
-            display: inline-block;
+            display: none;
             vertical-align: middle;
             margin-left: 8px;
         }
+
+        .loading-spinner.is-active {
+            display: inline-block;
+        }
+
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .footer {
+            margin-top: auto;
+            color: #888;
+            font-size: 0.9em;
+            width: 100%;
+            text-align: center;
+            padding-top: 20px;
         }
 
         @media (max-width: 768px) {
@@ -432,139 +472,68 @@ try {
                 padding: 1.5rem;
                 width: 95%;
             }
-            h2 {
-                font-size: 1.8em;
+
+            .titulo-cabecalho {
+                font-size: 1.5rem;
             }
-            .voltar-btn {
-                width: 70%;
+
+            .botao-voltar {
+                position: static;
+                margin-right: 1rem;
             }
-            .add-equipment-button {
-                width: 100%;
-                text-align: center;
+
+            .container-botao-adicionar-equipamento {
+                justify-content: center;
             }
+
             .modal-content {
                 padding: 1.5rem;
             }
+
             .modal-content .form-buttons {
                 flex-direction: column;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .card {
-                width: 100%;
-                padding: 10px;
-            }
-            .footer {
-                margin-top: 20px;
-            }
-            .equipment-table th, .equipment-table td {
-                padding: 8px;
-                font-size: 0.8em;
             }
         }
     </style>
 </head>
 
 <body>
-    <div class="background"></div>
-    <div class="card">
-        <h2>Informações de Equipamentos</h2>
-
-        <div class="add-equipment-button-container">
-            <button id="addEquipmentBtn" class="add-equipment-button">Adicionar Equipamento</button>
+    <main class="card">
+        <header class="cabecalho">
+            <a href="menu.php" class="botao-voltar">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5"></path>
+                    <path d="M12 19l-7-7 7-7"></path>
+                </svg>
+            </a>
+            <h1 class="titulo-cabecalho">Gerenciar Equipamentos</h1>
+        </header>
+        <div class="container-botao-adicionar-equipamento">
+            <button class="botao-adicionar-equipamento" id="addEquipmentBtn">Adicionar Equipamento</button>
         </div>
-
-        <div class="equipment-table-container">
-            <?php if (!empty($errorMessage)): ?>
-                <p class="message error"><?php echo $errorMessage; ?></p>
-            <?php elseif (empty($equipamentos_por_cidade)): ?>
-                <p class="message">Nenhum equipamento cadastrado no sistema.</p>
-            <?php else: ?>
-                <?php foreach ($equipamentos_por_cidade as $cidade => $equipamentos): ?>
-                    <h3><?php echo htmlspecialchars($cidade); ?></h3>
-                    <table class="equipment-table">
-                        <thead>
-                            <tr>
-                                <th>Tipo</th>
-                                <th>Nome</th>
-                                <th>Referência</th>
-                                <th>Logradouro</th>
-                                <th>Bairro</th>
-                                <th>Status</th>
-                                <th>Opções</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($equipamentos as $equipamento): ?>
-                                <?php
-                                    $status = $equipamento['status'] ?? 'N/A';
-                                    $status_display = ucfirst($status);
-                                    $status_class = '';
-                                    switch (strtolower($status)) {
-                                        case 'ativo':
-                                            $status_class = 'status-ativo';
-                                            break;
-                                        case 'inativo':
-                                            $status_class = 'status-inativo';
-                                            break;
-                                        case 'remanejado':
-                                            $status_class = 'status-remanejado';
-                                            break;
-                                        default:
-                                            $status_class = '';
-                                            break;
-                                    }
-                                    // Prepara os dados do equipamento para o JSON, tratando valores NULL
-                                    $equipmentJson = json_encode([
-                                        'id_equipamento' => $equipamento['id_equipamento'] ?? '',
-                                        'id_endereco' => $equipamento['id_endereco'] ?? '',
-                                        'tipo_equip' => $equipamento['tipo_equip'] ?? '',
-                                        'nome_equip' => $equipamento['nome_equip'] ?? '',
-                                        'referencia_equip' => $equipamento['referencia_equip'] ?? '',
-                                        'status' => $equipamento['status'] ?? '',
-                                        'id_cidade' => $equipamento['id_cidade'] ?? '',
-                                        'logradouro' => $equipamento['logradouro'] ?? '',
-                                        'numero' => $equipamento['numero'] ?? '',
-                                        'bairro' => $equipamento['bairro'] ?? '',
-                                        'cep' => $equipamento['cep'] ?? '',
-                                        'latitude' => $equipamento['latitude'] ?? '',
-                                        'longitude' => $equipamento['longitude'] ?? ''
-                                    ]);
-                                ?>
-                                <tr>
-                                    <td><?php echo htmlspecialchars($equipamento['tipo_equip'] ?? 'N/A'); ?></td>
-                                    <td><?php echo htmlspecialchars($equipamento['nome_equip'] ?? 'N/A'); ?></td>
-                                    <td><?php echo htmlspecialchars($equipamento['referencia_equip'] ?? 'N/A'); ?></td>
-                                    <td><?php echo htmlspecialchars($equipamento['logradouro'] ?? 'N/A'); ?></td>
-                                    <td><?php echo htmlspecialchars($equipamento['bairro'] ?? 'N/A'); ?></td>
-                                    <td>
-                                        <?php if ($status !== 'N/A'): ?>
-                                            <span class="status-cell <?php echo htmlspecialchars($status_class); ?>">
-                                                <?php echo htmlspecialchars($status_display); ?>
-                                            </span>
-                                        <?php else: ?>
-                                            <?php echo htmlspecialchars($status_display); ?>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <button class="edit-equipment-btn" data-equipment-json='<?php echo htmlspecialchars($equipmentJson, ENT_QUOTES, 'UTF-8'); ?>'>Editar</button>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                <?php endforeach; ?>
-            <?php endif; ?>
+        <div class="container-pesquisa">
+            <input type="text" id="campoPesquisa" placeholder="Pesquisar por nome ou cidade...">
         </div>
-
-        <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
-    </div>
+        <div id="cityButtonsContainer" class="city-buttons-container">
+            <button class="city-button active" data-city="all">Mostrar Todos</button>
+            <?php foreach ($cities as $city): ?>
+                <button class="city-button" data-city="<?php echo htmlspecialchars($city['nome']); ?>">
+                    <?php echo htmlspecialchars($city['nome']); ?>
+                </button>
+            <?php endforeach; ?>
+        </div>
+        <div id="mainLoadingState" class="main-loading-state">
+            <div class="main-loading-spinner"></div>
+            <span>Carregando dados...</span>
+        </div>
+        <div id="containerListaEquipamentos" class="equipment-list-container">
+            </div>
+    </main>
     <div class="footer">
         <p>&copy; 2025 APsystem. Todos os direitos reservados.</p>
     </div>
 
-    <!-- Modal para Adicionar Equipamento -->
     <div id="addEquipmentModal" class="modal">
         <div class="modal-content">
             <span class="close-button" id="closeAddEquipmentModal">&times;</span>
@@ -573,8 +542,10 @@ try {
                 <label for="equipmentType">Tipo de Equipamento:</label>
                 <select id="equipmentType" name="tipo_equip" required>
                     <option value="">Selecione o Tipo</option>
-                    <option value="DOME">DOME</option>
+                    <option value="CCO">CCO</option>
                     <option value="RADAR FIXO">RADAR FIXO</option>
+                    <option value="DOME">DOME</option>
+                    <option value="EDUCATIVO">EDUCATIVO</option>
                 </select>
 
                 <label for="equipmentName">Nome:</label>
@@ -585,10 +556,15 @@ try {
 
                 <label for="equipmentStatus">Status:</label>
                 <select id="equipmentStatus" name="status" required>
-                    <option value="ativo">Ativo</option>
+                    <option value="ativo" selected>Ativo</option>
                     <option value="inativo">Inativo</option>
                     <option value="remanejado">Remanejado</option>
                 </select>
+
+                <div id="add-qtd-faixa-container" class="hidden">
+                    <label for="equipmentQtdFaixa">Quantidade de Faixas:</label>
+                    <input type="number" id="equipmentQtdFaixa" name="qtd_faixa">
+                </div>
 
                 <label for="equipmentCity">Cidade:</label>
                 <select id="equipmentCity" name="id_cidade" required>
@@ -603,11 +579,13 @@ try {
                 <label for="equipmentLogradouro">Logradouro:</label>
                 <input type="text" id="equipmentLogradouro" name="logradouro" required>
 
-                <label for="equipmentNumero">Número (Opcional):</label>
-                <input type="text" id="equipmentNumero" name="numero">
-
                 <label for="equipmentBairro">Bairro:</label>
                 <input type="text" id="equipmentBairro" name="bairro" required>
+
+                <label for="equipmentProvider">Provedor:</label>
+                <select id="equipmentProvider" name="id_provedor" required>
+                    <option value="">Carregando provedores...</option>
+                </select>
 
                 <label for="equipmentCep">CEP:</label>
                 <input type="text" id="equipmentCep" name="cep">
@@ -621,7 +599,7 @@ try {
                 <div class="form-buttons" id="add-form-buttons">
                     <button type="submit" class="save-button" id="saveAddEquipmentButton">
                         Salvar Equipamento
-                        <span id="addEquipmentSpinner" class="loading-spinner hidden"></span>
+                        <span id="addEquipmentSpinner" class="loading-spinner"></span>
                     </button>
                     <button type="button" class="cancel-button" id="cancelAddEquipmentButton">Cancelar</button>
                 </div>
@@ -630,7 +608,6 @@ try {
         </div>
     </div>
 
-    <!-- Modal para Editar Equipamento -->
     <div id="editEquipmentModal" class="modal">
         <div class="modal-content">
             <span class="close-button" id="closeEditEquipmentModal">&times;</span>
@@ -641,8 +618,10 @@ try {
 
                 <label for="editEquipmentType">Tipo de Equipamento:</label>
                 <select id="editEquipmentType" name="tipo_equip" required>
-                    <option value="DOME">DOME</option>
+                    <option value="CCO">CCO</option>
                     <option value="RADAR FIXO">RADAR FIXO</option>
+                    <option value="DOME">DOME</option>
+                    <option value="EDUCATIVO">EDUCATIVO</option>
                 </select>
 
                 <label for="editEquipmentName">Nome:</label>
@@ -658,6 +637,11 @@ try {
                     <option value="remanejado">Remanejado</option>
                 </select>
 
+                <div id="edit-qtd-faixa-container" class="hidden">
+                    <label for="editEquipmentQtdFaixa">Quantidade de Faixas:</label>
+                    <input type="number" id="editEquipmentQtdFaixa" name="qtd_faixa">
+                </div>
+
                 <label for="editEquipmentCity">Cidade:</label>
                 <select id="editEquipmentCity" name="id_cidade" required>
                     <?php foreach ($cities as $city): ?>
@@ -670,11 +654,13 @@ try {
                 <label for="editEquipmentLogradouro">Logradouro:</label>
                 <input type="text" id="editEquipmentLogradouro" name="logradouro" required>
 
-                <label for="editEquipmentNumero">Número (Opcional):</label>
-                <input type="text" id="editEquipmentNumero" name="numero">
-
                 <label for="editEquipmentBairro">Bairro:</label>
                 <input type="text" id="editEquipmentBairro" name="bairro" required>
+
+                <label for="editEquipmentProvider">Provedor:</label>
+                <select id="editEquipmentProvider" name="id_provedor" required>
+                    <option value="">Carregando provedores...</option>
+                </select>
 
                 <label for="editEquipmentCep">CEP:</label>
                 <input type="text" id="editEquipmentCep" name="cep">
@@ -688,7 +674,7 @@ try {
                 <div class="form-buttons" id="edit-form-buttons">
                     <button type="submit" class="save-button" id="saveEditEquipmentButton">
                         Salvar Alterações
-                        <span id="editEquipmentSpinner" class="loading-spinner hidden"></span>
+                        <span id="editEquipmentSpinner" class="loading-spinner"></span>
                     </button>
                     <button type="button" class="cancel-button" id="cancelEditEquipmentButton">Cancelar</button>
                 </div>
@@ -699,203 +685,437 @@ try {
 
 
     <script>
-        window.showMessage = function(element, msg, type) {
-            element.textContent = msg;
-            element.className = `message ${type}`;
-            element.classList.remove('hidden');
-        };
+        document.addEventListener('DOMContentLoaded', () => {
 
-        window.hideMessage = function(element) {
-            element.classList.add('hidden');
-            element.textContent = '';
-        };
+            // Declaração das variáveis no escopo correto
+            const addEquipmentBtn = document.getElementById('addEquipmentBtn');
+            const addEquipmentModal = document.getElementById('addEquipmentModal');
+            const closeAddEquipmentModal = document.getElementById('closeAddEquipmentModal');
+            const cancelAddEquipmentButton = document.getElementById('cancelAddEquipmentButton');
+            const addEquipmentForm = document.getElementById('addEquipmentForm');
+            const addEquipmentMessage = document.getElementById('addEquipmentMessage');
+            const addQtdFaixaContainer = document.getElementById('add-qtd-faixa-container');
+            const addFormButtonsContainer = document.getElementById('add-form-buttons');
 
-        function toggleLoadingState(spinnerId, saveButtonId, cancelButtonId, show) {
-            const saveButton = document.getElementById(saveButtonId);
-            const cancelButton = document.getElementById(cancelButtonId);
-            const spinner = document.getElementById(spinnerId);
+            const editEquipmentModal = document.getElementById('editEquipmentModal');
+            const closeEditEquipmentModal = document.getElementById('closeEditEquipmentModal');
+            const cancelEditEquipmentButton = document.getElementById('cancelEditEquipmentButton');
+            const editEquipmentForm = document.getElementById('editEquipmentForm');
+            const editEquipmentMessage = document.getElementById('editEquipmentMessage');
+            const editQtdFaixaContainer = document.getElementById('edit-qtd-faixa-container');
+            const editFormButtonsContainer = document.getElementById('edit-form-buttons');
+            const equipmentListContainer = document.getElementById('containerListaEquipamentos');
+            const mainLoadingState = document.getElementById('mainLoadingState');
+            const campoPesquisa = document.getElementById('campoPesquisa');
+            const cityButtonsContainer = document.getElementById('cityButtonsContainer');
 
-            if (show) {
-                spinner.classList.remove('hidden');
-                saveButton.disabled = true;
-                cancelButton.disabled = true;
-            } else {
-                spinner.classList.add('hidden');
-                saveButton.disabled = false;
-                cancelButton.disabled = false;
-            }
-        }
 
-        // Referências para o modal de Adicionar Equipamento
-        const addEquipmentBtn = document.getElementById('addEquipmentBtn');
-        const addEquipmentModal = document.getElementById('addEquipmentModal');
-        const closeAddEquipmentModal = document.getElementById('closeAddEquipmentModal');
-        const cancelAddEquipmentButton = document.getElementById('cancelAddEquipmentButton');
-        const addEquipmentForm = document.getElementById('addEquipmentForm');
-        const addEquipmentMessage = document.getElementById('addEquipmentMessage');
-        const addFormButtonsContainer = document.getElementById('add-form-buttons');
+            let allEquipmentData = [];
+            let currentFilteredData = [];
+            let activeCityFilter = 'all';
 
-        // Referências para o modal de Editar Equipamento
-        const editEquipmentModal = document.getElementById('editEquipmentModal');
-        const closeEditEquipmentModal = document.getElementById('closeEditEquipmentModal');
-        const cancelEditEquipmentButton = document.getElementById('cancelEditEquipmentButton');
-        const editEquipmentForm = document.getElementById('editEquipmentForm');
-        const editEquipmentMessage = document.getElementById('editEquipmentMessage');
-        const equipmentTable = document.querySelector('.equipment-table-container');
 
-        const modalButtonsContainer = document.getElementById('edit-form-buttons');
+            window.showMessage = function(element, msg, type) {
+                element.textContent = msg;
+                element.className = `message ${type}`;
+                element.classList.remove('hidden');
+            };
 
-        // Função para abrir o modal de Adicionar Equipamento
-        function openAddEquipmentModal() {
-            addEquipmentForm.reset();
-            window.hideMessage(addEquipmentMessage);
-            addFormButtonsContainer.style.display = 'flex';
-            toggleLoadingState('addEquipmentSpinner', 'saveAddEquipmentButton', 'cancelAddEquipmentButton', false);
-            addEquipmentModal.classList.add('is-active');
-        }
+            window.hideMessage = function(element) {
+                element.classList.add('hidden');
+                element.textContent = '';
+            };
 
-        // Função para fechar o modal de Adicionar Equipamento
-        function closeAddEquipmentModalFunc() {
-            addEquipmentModal.classList.remove('is-active');
-        }
+            function toggleLoadingState(spinnerId, saveButtonId, cancelButtonId, show) {
+                const saveButton = document.getElementById(saveButtonId);
+                const cancelButton = document.getElementById(cancelButtonId);
+                const spinner = document.getElementById(spinnerId);
 
-        // Função para abrir o modal de Editar Equipamento
-        function openEditEquipmentModal(equipmentData) {
-            // Preenche o formulário do modal com os dados do equipamento
-            document.getElementById('editEquipmentId').value = equipmentData.id_equipamento;
-            document.getElementById('editEnderecoId').value = equipmentData.id_endereco;
-            document.getElementById('editEquipmentType').value = equipmentData.tipo_equip;
-            document.getElementById('editEquipmentName').value = equipmentData.nome_equip;
-            document.getElementById('editEquipmentReference').value = equipmentData.referencia_equip;
-            document.getElementById('editEquipmentStatus').value = equipmentData.status;
-            document.getElementById('editEquipmentCity').value = equipmentData.id_cidade;
-            document.getElementById('editEquipmentLogradouro').value = equipmentData.logradouro;
-            document.getElementById('editEquipmentNumero').value = equipmentData.numero;
-            document.getElementById('editEquipmentBairro').value = equipmentData.bairro;
-            document.getElementById('editEquipmentCep').value = equipmentData.cep;
-            document.getElementById('editEquipmentLatitude').value = equipmentData.latitude;
-            document.getElementById('editEquipmentLongitude').value = equipmentData.longitude;
+                if (saveButton) {
+                    if (show) {
+                        saveButton.disabled = true;
+                        saveButton.textContent = 'Salvando...';
+                    } else {
+                        saveButton.disabled = false;
+                        if (saveButtonId === 'saveAddEquipmentButton') {
+                            saveButton.textContent = 'Salvar Equipamento';
+                        } else if (saveButtonId === 'saveEditEquipmentButton') {
+                            saveButton.textContent = 'Salvar Alterações';
+                        }
+                    }
+                }
 
-            window.hideMessage(editEquipmentMessage);
-            toggleLoadingState('editEquipmentSpinner', 'saveEditEquipmentButton', 'cancelEditEquipmentButton', false);
-            editEquipmentModal.classList.add('is-active');
-        }
+                if (cancelButton) {
+                    cancelButton.disabled = show;
+                }
 
-        // Função para fechar o modal de Editar Equipamento
-        function closeEditEquipmentModalFunc() {
-            editEquipmentModal.classList.remove('is-active');
-        }
-
-        // Event listeners para os botões e modais
-        addEquipmentBtn.addEventListener('click', openAddEquipmentModal);
-
-        closeAddEquipmentModal.onclick = closeAddEquipmentModalFunc;
-        cancelAddEquipmentButton.onclick = closeAddEquipmentModalFunc;
-
-        closeEditEquipmentModal.onclick = closeEditEquipmentModalFunc;
-        cancelEditEquipmentButton.onclick = closeEditEquipmentModalFunc;
-
-        window.onclick = function(event) {
-            if (event.target == addEquipmentModal) {
-                closeAddEquipmentModalFunc();
-            }
-            if (event.target == editEquipmentModal) {
-                closeEditEquipmentModalFunc();
-            }
-        }
-
-        // Event listener para os botões "Editar" da tabela usando delegação de eventos
-        equipmentTable.addEventListener('click', function(event) {
-            if (event.target.classList.contains('edit-equipment-btn')) {
-                const equipmentData = JSON.parse(event.target.dataset.equipmentJson);
-                openEditEquipmentModal(equipmentData);
-            }
-        });
-
-        // Lógica para submeter o formulário de Adicionar Equipamento
-        addEquipmentForm.addEventListener('submit', async function(event) {
-            event.preventDefault();
-            window.showMessage(addEquipmentMessage, 'Adicionando equipamento...', 'success');
-            toggleLoadingState('addEquipmentSpinner', 'saveAddEquipmentButton', 'cancelAddEquipmentButton', true);
-
-            const formData = new FormData(addEquipmentForm);
-            const data = {};
-            for (let [key, value] of formData.entries()) {
-                if (key === 'latitude' || key === 'longitude') {
-                    data[key] = value ? parseFloat(value) : null;
-                } else {
-                    data[key] = value;
+                if (spinner) {
+                    if (show) {
+                        spinner.classList.add('is-active');
+                    } else {
+                        spinner.classList.remove('is-active');
+                    }
                 }
             }
 
-            try {
-                const response = await fetch('add_equipment.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                const result = await response.json();
-
-                if (result.success) {
-                    addFormButtonsContainer.style.display = 'none';
-                    window.showMessage(addEquipmentMessage, 'Equipamento adicionado com sucesso!', 'success');
-                    setTimeout(() => {
-                        closeAddEquipmentModalFunc();
-                        location.reload();
-                    }, 1500);
+            function toggleQtdFaixaField(selectElement, containerElement) {
+                const selectedType = selectElement.value;
+                // Campo de faixas visível somente para RADAR FIXO e Educativo
+                if (selectedType === 'RADAR FIXO' || selectedType === 'Educativo') {
+                    containerElement.classList.remove('hidden');
                 } else {
-                    window.showMessage(addEquipmentMessage, result.message || 'Erro ao adicionar equipamento.', 'error');
-                    toggleLoadingState('addEquipmentSpinner', 'saveAddEquipmentButton', 'cancelAddEquipmentButton', false);
+                    containerElement.classList.add('hidden');
+                    containerElement.querySelector('input').value = null;
                 }
-            } catch (error) {
-                console.error('Erro ao adicionar equipamento:', error);
-                window.showMessage(addEquipmentMessage, 'Ocorreu um erro ao adicionar o equipamento. Tente novamente.', 'error');
-                toggleLoadingState('addEquipmentSpinner', 'saveAddEquipmentButton', 'cancelAddEquipmentButton', false);
             }
-        });
 
-        // Lógica para submeter o formulário de Editar Equipamento
-        editEquipmentForm.addEventListener('submit', async function(event) {
-            event.preventDefault();
-            window.showMessage(editEquipmentMessage, 'Salvando alterações...', 'success');
-            toggleLoadingState('editEquipmentSpinner', 'saveEditEquipmentButton', 'cancelEditEquipmentButton', true);
 
-            const formData = new FormData(editEquipmentForm);
-            const data = {};
-            for (let [key, value] of formData.entries()) {
-                if (key === 'latitude' || key === 'longitude') {
-                    data[key] = value ? parseFloat(value) : null;
-                } else {
-                    data[key] = value;
+            async function fetchProvidersForSelect() {
+                const selectProvider = document.getElementById('equipmentProvider');
+                const editSelectProvider = document.getElementById('editEquipmentProvider');
+
+                const loadingOption = '<option value="">Carregando provedores...</option>';
+                selectProvider.innerHTML = loadingOption;
+                editSelectProvider.innerHTML = loadingOption;
+
+                try {
+                    const response = await fetch('get_provedores_select.php');
+                    const data = await response.json();
+
+                    if (data.success) {
+                        const defaultOption = '<option value="">Selecione o Provedor</option>';
+                        const providerOptions = data.provedores.map(p => `<option value="${p.id_provedor}">${p.nome_prov}</option>`).join('');
+                        selectProvider.innerHTML = defaultOption + providerOptions;
+                        editSelectProvider.innerHTML = defaultOption + providerOptions;
+                    } else {
+                        selectProvider.innerHTML = '<option value="">Erro ao carregar provedores</option>';
+                        editSelectProvider.innerHTML = '<option value="">Erro ao carregar provedores</option>';
+                    }
+                } catch (error) {
+                    console.error('Erro ao buscar provedores:', error);
+                    selectProvider.innerHTML = '<option value="">Erro ao carregar provedores</option>';
+                    editSelectProvider.innerHTML = '<option value="">Erro ao carregar provedores</option>';
+                }
+            }
+
+
+            async function fetchAndRenderEquipments() {
+                // Mostra o spinner de carregamento principal
+                mainLoadingState.style.display = 'flex';
+                equipmentListContainer.innerHTML = '';
+
+                try {
+                    const response = await fetch('get_equipamento-dados.php');
+                    const data = await response.json();
+
+                    if (data.success) {
+                        allEquipmentData = data.equipamentos;
+                        applyFilters();
+                    } else {
+                        equipmentListContainer.innerHTML = `<p class="message error">${data.message}</p>`;
+                    }
+                } catch (error) {
+                    console.error('Erro ao buscar equipamentos:', error);
+                    equipmentListContainer.innerHTML = `<p class="message error">Ocorreu um erro ao buscar os equipamentos. Tente novamente.</p>`;
+                } finally {
+                    // Esconde o spinner de carregamento principal
+                    mainLoadingState.style.display = 'none';
                 }
             }
             
-            try {
-                const response = await fetch('update_equipment.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                const result = await response.json();
+            // Função para obter a ordem de exibição dos tipos de equipamento
+            function getEquipmentTypeOrder(type) {
+                switch (type) {
+                    case 'CCO':
+                        return 1;
+                    case 'RADAR FIXO':
+                        return 2;
+                    case 'DOME':
+                        return 3;
+                    case 'Educativo':
+                        return 4;
+                    default:
+                        return 99; // Coloca tipos desconhecidos no final
+                }
+            }
 
-                if (result.success) {
-                    window.showMessage(editEquipmentMessage, 'Equipamento atualizado com sucesso!', 'success');
-                    // Aguarda um pouco antes de fechar o modal e recarregar a página
-                    modalButtonsContainer.style.display = 'none';
-                    setTimeout(() => {
-                        closeEditEquipmentModalFunc();
-                        location.reload();
-                    }, 1500);
-                } else {
-                    window.showMessage(editEquipmentMessage, result.message || 'Erro ao atualizar equipamento.', 'error');
+            function applyFilters() {
+                let filteredData = [...allEquipmentData];
+                const searchTerm = campoPesquisa.value.toLowerCase();
+
+                if (activeCityFilter !== 'all') {
+                    filteredData = filteredData.filter(equip => equip.cidade.toLowerCase() === activeCityFilter.toLowerCase());
+                }
+
+                if (searchTerm) {
+                     filteredData = filteredData.filter(equip =>
+                        (equip.nome_equip && equip.nome_equip.toLowerCase().includes(searchTerm)) ||
+                        (equip.referencia_equip && equip.referencia_equip.toLowerCase().includes(searchTerm)) ||
+                        (equip.logradouro && equip.logradouro.toLowerCase().includes(searchTerm))
+                    );
+                }
+
+                // Aplica a nova ordem de exibição
+                filteredData.sort((a, b) => getEquipmentTypeOrder(a.tipo_equip) - getEquipmentTypeOrder(b.tipo_equip));
+                
+                currentFilteredData = filteredData;
+                renderEquipmentList(currentFilteredData);
+            }
+
+            function renderEquipmentList(equipments) {
+                const container = document.getElementById('containerListaEquipamentos');
+                container.innerHTML = '';
+
+                if (equipments.length === 0) {
+                    container.innerHTML = '<p class="message">Nenhum equipamento encontrado.</p>';
+                    return;
+                }
+
+                const equipmentsByCity = equipments.reduce((acc, equip) => {
+                    const city = equip.cidade;
+                    if (!acc[city]) {
+                        acc[city] = [];
+                    }
+                    acc[city].push(equip);
+                    return acc;
+                }, {});
+
+                for (const city in equipmentsByCity) {
+                    const citySection = document.createElement('div');
+                    citySection.classList.add('city-section');
+
+                    const cityTitle = document.createElement('h3');
+                    cityTitle.textContent = city;
+                    citySection.appendChild(cityTitle);
+
+                    const equipmentGrid = document.createElement('div');
+                    equipmentGrid.classList.add('equipment-grid');
+                    citySection.appendChild(equipmentGrid);
+
+                    const htmlContent = equipmentsByCity[city].map(equip => {
+                        const statusClass = `status-${(equip.status || '').toLowerCase()}`;
+                        const statusDisplay = (equip.status || 'N/A').charAt(0).toUpperCase() + (equip.status || 'N/A').slice(1);
+                        const qtdFaixaDisplay = equip.qtd_faixa ? `<p><strong>Qtd. Faixa:</strong> ${equip.qtd_faixa}</p>` : '';
+                        const enderecoDisplay = `<strong>Bairro:</strong> ${equip.bairro || 'N/A'} - <strong>Endereço:</strong> ${equip.logradouro || 'N/A'}`;
+
+                        return `
+                            <div class="item-equipamento">
+                                <h3>${equip.nome_equip || 'N/A'}</h3>
+                                <p><strong>Tipo:</strong> ${equip.tipo_equip || 'N/A'}</p>
+                                <p><strong>Referência:</strong> ${equip.referencia_equip || 'N/A'}</p>
+                                ${qtdFaixaDisplay}
+                                <p><strong>Provedor:</strong> ${equip.nome_prov || 'N/A'}</p>
+                                <p><strong>Cidade:</strong> ${equip.cidade || 'N/A'}</p>
+                                <p>${enderecoDisplay}</p>
+                                <p><strong>Status:</strong> <span class="status-cell ${statusClass}">${statusDisplay}</span></p>
+                                <button class="botao-editar" data-equipment-id="${equip.id_equipamento}">Editar</button>
+                            </div>
+                        `;
+                    }).join('');
+
+                    equipmentGrid.innerHTML = htmlContent;
+                    container.appendChild(citySection);
+                }
+            }
+
+            function findEquipmentById(id) {
+                return allEquipmentData.find(equip => equip.id_equipamento == id);
+            }
+
+            function openAddEquipmentModal() {
+                addEquipmentForm.reset();
+                window.hideMessage(addEquipmentMessage);
+                toggleLoadingState('addEquipmentSpinner', 'saveAddEquipmentButton', 'cancelAddEquipmentButton', false);
+                addQtdFaixaContainer.classList.add('hidden'); // Oculta o campo ao abrir o modal
+                addEquipmentModal.classList.add('is-active');
+                addFormButtonsContainer.style.display = 'flex'; // Garante que os botões estão visíveis
+            }
+
+            function closeAddEquipmentModalFunc() {
+                addEquipmentModal.classList.remove('is-active');
+            }
+
+            function openEditEquipmentModal(equipmentData) {
+                if (!equipmentData) {
+                    window.showMessage(editEquipmentMessage, 'Dados do equipamento não encontrados.', 'error');
+                    return;
+                }
+
+                document.getElementById('editEquipmentId').value = equipmentData.id_equipamento;
+                document.getElementById('editEnderecoId').value = equipmentData.id_endereco;
+                document.getElementById('editEquipmentType').value = equipmentData.tipo_equip;
+                document.getElementById('editEquipmentName').value = equipmentData.nome_equip;
+                document.getElementById('editEquipmentReference').value = equipmentData.referencia_equip;
+                document.getElementById('editEquipmentStatus').value = equipmentData.status;
+                document.getElementById('editEquipmentQtdFaixa').value = equipmentData.qtd_faixa;
+                document.getElementById('editEquipmentProvider').value = equipmentData.id_provedor;
+                document.getElementById('editEquipmentCity').value = equipmentData.id_cidade;
+                document.getElementById('editEquipmentLogradouro').value = equipmentData.logradouro;
+                document.getElementById('editEquipmentBairro').value = equipmentData.bairro;
+                document.getElementById('editEquipmentCep').value = equipmentData.cep;
+                document.getElementById('editEquipmentLatitude').value = equipmentData.latitude;
+                document.getElementById('editEquipmentLongitude').value = equipmentData.longitude;
+
+                // Lógica para mostrar/esconder campo qtd_faixa
+                toggleQtdFaixaField(document.getElementById('editEquipmentType'), editQtdFaixaContainer);
+
+                window.hideMessage(editEquipmentMessage);
+                toggleLoadingState('editEquipmentSpinner', 'saveEditEquipmentButton', 'cancelEditEquipmentButton', false);
+                editEquipmentModal.classList.add('is-active');
+                editFormButtonsContainer.style.display = 'flex'; // Garante que os botões estão visíveis
+            }
+
+            function closeEditEquipmentModalFunc() {
+                editEquipmentModal.classList.remove('is-active');
+            }
+
+            // Event Listeners
+            addEquipmentBtn.addEventListener('click', openAddEquipmentModal);
+            closeAddEquipmentModal.addEventListener('click', closeAddEquipmentModalFunc);
+            cancelAddEquipmentButton.addEventListener('click', closeAddEquipmentModalFunc);
+            closeEditEquipmentModal.addEventListener('click', closeEditEquipmentModalFunc);
+            cancelEditEquipmentButton.addEventListener('click', closeEditEquipmentModalFunc);
+            
+            // Listener para o campo de pesquisa
+            campoPesquisa.addEventListener('input', () => {
+                applyFilters();
+            });
+
+            // Listener para os botões de cidade
+            cityButtonsContainer.addEventListener('click', (event) => {
+                const target = event.target;
+                if (target.classList.contains('city-button')) {
+                    // Remove a classe 'active' de todos os botões
+                    document.querySelectorAll('.city-button').forEach(btn => btn.classList.remove('active'));
+                    // Adiciona a classe 'active' ao botão clicado
+                    target.classList.add('active');
+
+                    activeCityFilter = target.dataset.city;
+                    applyFilters();
+                }
+            });
+
+            // Listener para mostrar/esconder campo de qtd_faixa no modal de Adicionar
+            document.getElementById('equipmentType').addEventListener('change', (e) => {
+                toggleQtdFaixaField(e.target, addQtdFaixaContainer);
+            });
+
+            // Listener para mostrar/esconder campo de qtd_faixa no modal de Editar
+            document.getElementById('editEquipmentType').addEventListener('change', (e) => {
+                toggleQtdFaixaField(e.target, editQtdFaixaContainer);
+            });
+
+            equipmentListContainer.addEventListener('click', function(event) {
+                if (event.target.classList.contains('botao-editar')) {
+                    const equipmentId = event.target.dataset.equipmentId;
+                    const equipmentData = findEquipmentById(equipmentId);
+                    openEditEquipmentModal(equipmentData);
+                }
+            });
+
+            window.onclick = function(event) {
+                if (event.target === addEquipmentModal) {
+                    closeAddEquipmentModalFunc();
+                }
+                if (event.target === editEquipmentModal) {
+                    closeEditEquipmentModalFunc();
+                }
+            }
+
+            addEquipmentForm.addEventListener('submit', async function(event) {
+                event.preventDefault();
+                window.showMessage(addEquipmentMessage, 'Adicionando equipamento...', 'success');
+                toggleLoadingState('addEquipmentSpinner', 'saveAddEquipmentButton', 'cancelAddEquipmentButton', true);
+
+                const formData = new FormData(addEquipmentForm);
+                const data = {};
+                for (let [key, value] of formData.entries()) {
+                    if (key === 'latitude' || key === 'longitude') {
+                        data[key] = value ? parseFloat(value) : null;
+                    } else {
+                        data[key] = value;
+                    }
+                }
+
+                try {
+                    const response = await fetch('add_equipment.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // Comportamento de sucesso: esconde botões e mostra mensagem
+                        addFormButtonsContainer.style.display = 'none';
+                        window.showMessage(addEquipmentMessage, 'Equipamento adicionado com sucesso!', 'success');
+                        setTimeout(() => {
+                            closeAddEquipmentModalFunc();
+                            fetchAndRenderEquipments();
+                        }, 1500);
+                    } else {
+                        window.showMessage(addEquipmentMessage, result.message || 'Erro ao adicionar equipamento.', 'error');
+                    }
+                } catch (error) {
+                    console.error('Erro ao adicionar equipamento:', error);
+                    window.showMessage(addEquipmentMessage, 'Ocorreu um erro ao adicionar o equipamento. Tente novamente.', 'error');
+                } finally {
+                    // Comportamento de falha: re-habilita botões
+                    toggleLoadingState('addEquipmentSpinner', 'saveAddEquipmentButton', 'cancelAddEquipmentButton', false);
+                }
+            });
+
+            editEquipmentForm.addEventListener('submit', async function(event) {
+                event.preventDefault();
+                window.showMessage(editEquipmentMessage, 'Salvando alterações...', 'success');
+                toggleLoadingState('editEquipmentSpinner', 'saveEditEquipmentButton', 'cancelEditEquipmentButton', true);
+
+                const formData = new FormData(editEquipmentForm);
+                const data = {};
+                for (let [key, value] of formData.entries()) {
+                    if (key === 'latitude' || key === 'longitude') {
+                        data[key] = value ? parseFloat(value) : null;
+                    } else {
+                        data[key] = value;
+                    }
+                }
+
+                try {
+                    const response = await fetch('update_equipment.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // Comportamento de sucesso: esconde botões e mostra mensagem
+                        editFormButtonsContainer.style.display = 'none';
+                        window.showMessage(editEquipmentMessage, 'Equipamento atualizado com sucesso!', 'success');
+                        setTimeout(() => {
+                            closeEditEquipmentModalFunc();
+                            fetchAndRenderEquipments();
+                        }, 1500);
+                    } else {
+                        window.showMessage(editEquipmentMessage, result.message || 'Erro ao atualizar equipamento.', 'error');
+                    }
+                } catch (error) {
+                    console.error('Erro ao atualizar equipamento:', error);
+                    window.showMessage(editEquipmentMessage, 'Ocorreu um erro ao atualizar o equipamento. Tente novamente.', 'error');
+                } finally {
+                    // Comportamento de falha: re-habilita botões
                     toggleLoadingState('editEquipmentSpinner', 'saveEditEquipmentButton', 'cancelEditEquipmentButton', false);
                 }
-            } catch (error) {
-                console.error('Erro ao atualizar equipamento:', error);
-                window.showMessage(editEquipmentMessage, 'Ocorreu um erro ao atualizar o equipamento. Tente novamente.', 'error');
-                toggleLoadingState('editEquipmentSpinner', 'saveEditEquipmentButton', 'cancelEditEquipmentButton', false);
-            }
+            });
+
+            fetchProvidersForSelect();
+            fetchAndRenderEquipments();
         });
     </script>
 </body>
+
 </html>
