@@ -420,6 +420,13 @@ if (isset($user_id)) {
                 });
             }
 
+            const manutencaoPendentesButton = document.getElementById('manutencaoPendentes');
+            if (manutencaoPendentesButton) {
+                manutencaoPendentesButton.addEventListener('click', function() {
+                    window.location.href = 'manutencao_pendente.php';
+                });
+            }
+
             const atribuirTecnicoButton = document.getElementById('atribuirTecnico');
             if (atribuirTecnicoButton) {
                 atribuirTecnicoButton.addEventListener('click', function() {

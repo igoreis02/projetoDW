@@ -10,7 +10,7 @@ if (!isset($_SESSION['user_id'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ocorrências em Andamento</title>
+    <title>Ocorrências Pendentes</title>
     <link rel="stylesheet" href="css/style.css">
     <style>
         /* Estilos Gerais */
@@ -269,7 +269,7 @@ if (!isset($_SESSION['user_id'])) {
     <div class="card">
         <div class="header-container">
             <a href="menu.php" class="back-btn-icon" title="Voltar ao Menu">&larr;</a>
-            <h2>Ocorrências em Andamento</h2>
+            <h2>Ocorrências Pendentes</h2>
             <a href="menu.php" class="close-btn" title="Voltar ao Menu">&times;</a>
         </div>
 
@@ -303,7 +303,8 @@ if (!isset($_SESSION['user_id'])) {
             // Função para buscar os dados da API
             async function fetchData() {
                 try {
-                    const response = await fetch('get_ocorrencias_em_andamento.php');
+                    // Chama a nova API para ocorrências pendentes
+                    const response = await fetch('get_manutencoes_pendentes.php');
                     const result = await response.json();
 
                     loadingMessage.classList.add('hidden');
@@ -358,7 +359,7 @@ if (!isset($_SESSION['user_id'])) {
                         ocorrenciasContainer.appendChild(cityGroup);
                     }
                 } else {
-                    ocorrenciasContainer.innerHTML = `<p>Nenhuma ocorrência em andamento encontrada.</p>`;
+                    ocorrenciasContainer.innerHTML = `<p>Nenhuma ocorrência pendente encontrada.</p>`;
                 }
                 
                 addFilterListeners();
@@ -370,7 +371,6 @@ if (!isset($_SESSION['user_id'])) {
                 const tempoReparo = calculateRepairTime(item.inicio_periodo_reparo, item.fim_periodo_reparo);
                 const tipoOcorrencia = item.tipo_manutencao === 'instalação' ? 'Instalação' : item.tipo_manutencao.charAt(0).toUpperCase() + item.tipo_manutencao.slice(1);
                 
-                // Lógica para o status dinâmico
                 const statusClass = item.status_reparo === 'pendente' ? 'status-pendente' : 'status-em-andamento';
                 const statusText = item.status_reparo.charAt(0).toUpperCase() + item.status_reparo.slice(1);
                 const statusHTML = `<span class="status-tag ${statusClass}">${statusText}</span>`;

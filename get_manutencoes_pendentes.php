@@ -4,18 +4,7 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *'); 
 
 // --- Configurações do Banco de Dados ---
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "gerenciamento_manutencoes";
-
-// --- Conexão com o Banco de Dados ---
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-if ($conn->connect_error) {
-    echo json_encode(['success' => false, 'message' => 'Erro de conexão com o banco de dados: ' . $conn->connect_error]);
-    exit();
-}
+require_once 'conexao_bd.php';
 
 // --- Variáveis para armazenar os dados ---
 $ocorrencias_por_cidade = [];
@@ -23,8 +12,7 @@ $cidades_com_ocorrencias = [];
 $response_data = [];
 
 try {
-    // --- Consulta SQL para buscar TODAS as ocorrências em andamento ---
-    // Esta é a mesma consulta abrangente do seu arquivo de frontend.
+    // --- Consulta SQL para buscar TODAS as ocorrências PENDENTES ---
     $sql = "SELECT
                 m.id_manutencao,
                 m.tipo_manutencao,
@@ -48,7 +36,7 @@ try {
             LEFT JOIN endereco AS en ON e.id_endereco = en.id_endereco
             LEFT JOIN manutencoes_tecnicos AS mt ON m.id_manutencao = mt.id_manutencao
             LEFT JOIN usuario AS u ON mt.id_tecnico = u.id_usuario
-            WHERE m.status_reparo = 'em andamento'
+            WHERE m.status_reparo = 'pendente' -- A única alteração é aqui, para buscar apenas pendentes
             GROUP BY m.id_manutencao
             ORDER BY c.nome, m.inicio_reparo DESC";
 
@@ -81,7 +69,7 @@ try {
         echo json_encode(['success' => true, 'data' => $response_data]);
 
     } else {
-        echo json_encode(['success' => false, 'message' => 'Nenhuma ocorrência em andamento encontrada.']);
+        echo json_encode(['success' => false, 'message' => 'Nenhuma ocorrência pendente encontrada.']);
     }
 
 } catch (Exception $e) {
