@@ -100,6 +100,7 @@ if (!isset($_SESSION['user_id'])) {
             flex-wrap: wrap;
             justify-content: center;
             gap: 0.8rem;
+            min-height: 38px; /* Para evitar saltos de layout */
         }
         .filter-btn {
             padding: 8px 18px;
@@ -214,17 +215,6 @@ if (!isset($_SESSION['user_id'])) {
             background-color: #fffbeb;
             color: #f59e0b;
         }
-
-        .ocorrencia-tag{
-            padding: 2px 8px;
-            border-radius: 15px;
-            font-weight: 600;
-            font-size: 0.9em;
-        }
-        .ocorrencia-em-andamento {
-            background-color: #f0f9ff;
-            color: #f59e0b;
-        }
         .status-pendente {
             background-color: #eff6ff;
             color: #3b82f6;
@@ -236,6 +226,51 @@ if (!isset($_SESSION['user_id'])) {
         .status-value.aguardando {
             color: #ef4444;
             font-weight: 600;
+        }
+
+        /* Ações do Item (Botões Editar/Cancelar) */
+        .item-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e5e7eb;
+            width: 100%;
+        }
+
+        .item-btn {
+            padding: 6px 12px;
+            font-size: 0.9em;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .edit-btn {
+            background-color: #3b82f6; /* Azul */
+            color: white;
+        }
+        .edit-btn:hover {
+            background-color: #2563eb;
+        }
+
+        .status-btn {
+            background-color: #22c55e; /* Verde */
+            color: white;
+        }
+        .status-btn:hover {
+            background-color: #16a34a;
+        }
+
+        .cancel-btn {
+            background-color: #ef4444; /* Vermelho */
+            color: white;
+        }
+        .cancel-btn:hover {
+            background-color: #dc2626;
         }
 
         /* Botão Voltar */
@@ -310,6 +345,7 @@ if (!isset($_SESSION['user_id'])) {
 
             let activeType = 'manutencao';
             let activeCity = 'todos';
+            let allData = null; // Para armazenar todos os dados da API
 
             // Função para buscar os dados da API
             async function fetchData() {
@@ -320,7 +356,10 @@ if (!isset($_SESSION['user_id'])) {
                     loadingMessage.classList.add('hidden');
 
                     if (result.success) {
-                        renderContent(result.data);
+                        allData = result.data; // Armazena os dados globalmente
+                        renderAllOcorrencias(allData); // Renderiza todos os itens no DOM
+                        updateCityFilters(); // Cria os filtros de cidade iniciais
+                        updateDisplay(); // Mostra a visualização correta
                     } else {
                         ocorrenciasContainer.innerHTML = `<p>${result.message || 'Nenhuma ocorrência encontrada.'}</p>`;
                     }
@@ -331,23 +370,9 @@ if (!isset($_SESSION['user_id'])) {
                 }
             }
 
-            // Função para renderizar os botões e as ocorrências
-            function renderContent(data) {
-                const { cidades, ocorrencias } = data;
-
-                // Renderiza os botões de filtro
-                filterContainer.innerHTML = '<button class="filter-btn active" data-city="todos">Todos</button>';
-                if (cidades && cidades.length > 0) {
-                    cidades.forEach(cidade => {
-                        const button = document.createElement('button');
-                        button.className = 'filter-btn';
-                        button.dataset.city = cidade;
-                        button.textContent = cidade;
-                        filterContainer.appendChild(button);
-                    });
-                }
-
-                // Renderiza as ocorrências
+            // Renderiza todos os grupos de cidades e ocorrências no DOM
+            function renderAllOcorrencias(data) {
+                const { ocorrencias } = data;
                 ocorrenciasContainer.innerHTML = '';
                 if (ocorrencias && Object.keys(ocorrencias).length > 0) {
                     for (const cidade in ocorrencias) {
@@ -371,9 +396,48 @@ if (!isset($_SESSION['user_id'])) {
                 } else {
                     ocorrenciasContainer.innerHTML = `<p>Nenhuma ocorrência em andamento encontrada.</p>`;
                 }
+            }
+            
+            // Atualiza os botões de filtro de cidade com base no tipo ativo
+            function updateCityFilters() {
+                filterContainer.innerHTML = ''; 
+                const citiesWithContent = new Set();
+
+                document.querySelectorAll('.ocorrencia-item').forEach(item => {
+                    const itemType = item.dataset.type;
+                    let typeMatch = false;
+
+                    if (activeType === 'manutencao') {
+                        if (['corretiva', 'preventiva', 'preditiva'].includes(itemType)) {
+                            typeMatch = true;
+                        }
+                    } else if (activeType === 'instalação') {
+                        if (itemType === 'instalação') {
+                            typeMatch = true;
+                        }
+                    }
+
+                    if (typeMatch) {
+                        const city = item.closest('.city-group').dataset.city;
+                        citiesWithContent.add(city);
+                    }
+                });
+
+                const allButton = document.createElement('button');
+                allButton.className = 'filter-btn active';
+                allButton.dataset.city = 'todos';
+                allButton.textContent = 'Todos';
+                filterContainer.appendChild(allButton);
+
+                Array.from(citiesWithContent).sort().forEach(cidade => {
+                    const button = document.createElement('button');
+                    button.className = 'filter-btn';
+                    button.dataset.city = cidade;
+                    button.textContent = cidade;
+                    filterContainer.appendChild(button);
+                });
                 
                 addFilterListeners();
-                updateDisplay();
             }
 
             // Função para criar o HTML de um item de ocorrência
@@ -381,7 +445,6 @@ if (!isset($_SESSION['user_id'])) {
                 const tempoReparo = calculateRepairTime(item.inicio_periodo_reparo, item.fim_periodo_reparo);
                 const tipoOcorrencia = item.tipo_manutencao === 'instalação' ? 'Instalação' : item.tipo_manutencao.charAt(0).toUpperCase() + item.tipo_manutencao.slice(1);
                 
-                // Lógica para o status dinâmico
                 const statusClass = item.status_reparo === 'pendente' ? 'status-pendente' : 'status-em-andamento';
                 const statusText = item.status_reparo.charAt(0).toUpperCase() + item.status_reparo.slice(1);
                 const statusHTML = `<span class="status-tag ${statusClass}">${statusText}</span>`;
@@ -389,8 +452,9 @@ if (!isset($_SESSION['user_id'])) {
                 let detailsHTML = '';
                 if (item.tipo_manutencao !== 'instalação') {
                     detailsHTML = `
-                        <div class="detail-item"><strong>Ocorrência</strong> <span class="ocorrencia-tag status-em-andamento">${item.ocorrencia_reparo || ''}</span></div>
+                        <div class="detail-item"><strong>Ocorrência</strong> <span>${item.ocorrencia_reparo || ''}</span></div>
                         <div class="detail-item"><strong>Técnico(s)</strong> <span>${item.tecnicos_nomes || 'Não atribuído'}</span></div>
+                        <div class="detail-item"><strong>Veículo(s)</strong> <span>${item.veiculos_nomes || 'Nenhum'}</span></div>
                         <div class="detail-item"><strong>Início Ocorrência</strong> <span>${new Date(item.inicio_reparo).toLocaleString('pt-BR')}</span></div>
                         <div class="detail-item"><strong>Status</strong> ${statusHTML}</div>
                         <div class="detail-item"><strong>Local</strong> <span>${item.local_completo || ''}</span></div>
@@ -410,10 +474,20 @@ if (!isset($_SESSION['user_id'])) {
                         <div class="detail-item"><strong>Local</strong> <span>${item.local_completo || ''}</span></div>
                         <div class="detail-item"><strong>Início Ocorrência</strong> <span>${new Date(item.inicio_reparo).toLocaleString('pt-BR')}</span></div>
                         <div class="detail-item"><strong>Técnico(s)</strong> <span>${item.tecnicos_nomes || 'Não atribuído'}</span></div>
+                        <div class="detail-item"><strong>Veículo(s)</strong> <span>${item.veiculos_nomes || 'Nenhum'}</span></div>
                         <div class="detail-item"><strong>Tempo Instalação</strong> <span>${tempoReparo}</span></div>
                         <div class="detail-item"><strong>Status</strong> ${statusHTML}</div>
                     `;
                 }
+
+                // Adiciona os botões de ação
+                const actionsHTML = `
+                    <div class="item-actions">
+                        <button class="item-btn edit-btn" onclick="editOcorrencia(${item.id_manutencao})">Editar</button>
+                        <button class="item-btn status-btn" onclick="changeStatus(${item.id_manutencao})">Status</button>
+                        <button class="item-btn cancel-btn" onclick="cancelOcorrencia(${item.id_manutencao})">Cancelar</button>
+                    </div>
+                `;
 
                 return `
                     <div class="ocorrencia-item" data-type="${item.tipo_manutencao}">
@@ -423,6 +497,7 @@ if (!isset($_SESSION['user_id'])) {
                         <div class="ocorrencia-details">
                             ${detailsHTML}
                         </div>
+                        ${actionsHTML}
                     </div>
                 `;
             }
@@ -485,7 +560,10 @@ if (!isset($_SESSION['user_id'])) {
                     actionButtons.forEach(btn => btn.classList.remove('active'));
                     button.classList.add('active');
                     activeType = button.dataset.type;
-                    updateDisplay();
+                    activeCity = 'todos'; 
+                    
+                    updateCityFilters(); 
+                    updateDisplay(); 
                 });
             });
 
@@ -499,6 +577,22 @@ if (!isset($_SESSION['user_id'])) {
                         updateDisplay();
                     });
                 });
+            }
+
+            // Funções placeholder para os botões de ação
+            window.editOcorrencia = function(id) {
+                console.log('Editar ocorrência ID:', id);
+                // Ex: window.location.href = `editar_ocorrencia.php?id=${id}`;
+            }
+            
+            window.changeStatus = function(id) {
+                console.log('Alterar status da ocorrência ID:', id);
+                // Lógica para abrir um modal de alteração de status ou similar
+            }
+
+            window.cancelOcorrencia = function(id) {
+                console.log('Cancelar ocorrência ID:', id);
+                // Ex: if (confirm('Tem a certeza?')) { /* ...chamar API... */ }
             }
 
             // Inicia o carregamento dos dados

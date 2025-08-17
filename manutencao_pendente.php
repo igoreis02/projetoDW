@@ -100,6 +100,7 @@ if (!isset($_SESSION['user_id'])) {
             flex-wrap: wrap;
             justify-content: center;
             gap: 0.8rem;
+            min-height: 38px; /* Para evitar saltos de layout */
         }
         .filter-btn {
             padding: 8px 18px;
@@ -160,17 +161,6 @@ if (!isset($_SESSION['user_id'])) {
         .ocorrencia-item:hover {
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             transform: translateY(-3px);
-        }
-
-        .ocorrencia-tag{
-            padding: 2px 8px;
-            border-radius: 15px;
-            font-weight: 600;
-            font-size: 0.9em;
-        }
-        .ocorrencia-pendente {
-            background-color: #f0f9ff;
-            color: #f59e0b;
         }
         
         /* Layout do Cabeçalho do Item */
@@ -310,18 +300,21 @@ if (!isset($_SESSION['user_id'])) {
 
             let activeType = 'manutencao';
             let activeCity = 'todos';
+            let allData = null; // Para armazenar todos os dados da API
 
             // Função para buscar os dados da API
             async function fetchData() {
                 try {
-                    // Chama a nova API para ocorrências pendentes
-                    const response = await fetch('get_manutencoes_pendentes.php');
+                    const response = await fetch('get_ocorrencias_pendentes.php');
                     const result = await response.json();
 
                     loadingMessage.classList.add('hidden');
 
                     if (result.success) {
-                        renderContent(result.data);
+                        allData = result.data; // Armazena os dados globalmente
+                        renderAllOcorrencias(allData); // Renderiza todos os itens no DOM (inicialmente podem ficar escondidos)
+                        updateCityFilters(); // Cria os filtros de cidade iniciais
+                        updateDisplay(); // Mostra a visualização correta
                     } else {
                         ocorrenciasContainer.innerHTML = `<p>${result.message || 'Nenhuma ocorrência encontrada.'}</p>`;
                     }
@@ -332,23 +325,9 @@ if (!isset($_SESSION['user_id'])) {
                 }
             }
 
-            // Função para renderizar os botões e as ocorrências
-            function renderContent(data) {
-                const { cidades, ocorrencias } = data;
-
-                // Renderiza os botões de filtro
-                filterContainer.innerHTML = '<button class="filter-btn active" data-city="todos">Todos</button>';
-                if (cidades && cidades.length > 0) {
-                    cidades.forEach(cidade => {
-                        const button = document.createElement('button');
-                        button.className = 'filter-btn';
-                        button.dataset.city = cidade;
-                        button.textContent = cidade;
-                        filterContainer.appendChild(button);
-                    });
-                }
-
-                // Renderiza as ocorrências
+            // Renderiza todos os grupos de cidades e ocorrências no DOM
+            function renderAllOcorrencias(data) {
+                const { ocorrencias } = data;
                 ocorrenciasContainer.innerHTML = '';
                 if (ocorrencias && Object.keys(ocorrencias).length > 0) {
                     for (const cidade in ocorrencias) {
@@ -372,9 +351,51 @@ if (!isset($_SESSION['user_id'])) {
                 } else {
                     ocorrenciasContainer.innerHTML = `<p>Nenhuma ocorrência pendente encontrada.</p>`;
                 }
+            }
+            
+            // **NOVA FUNÇÃO**: Atualiza os botões de filtro de cidade com base no tipo ativo
+            function updateCityFilters() {
+                filterContainer.innerHTML = ''; // Limpa os filtros existentes
+                const citiesWithContent = new Set();
+
+                // Itera sobre todos os itens de ocorrência no DOM para encontrar cidades relevantes
+                document.querySelectorAll('.ocorrencia-item').forEach(item => {
+                    const itemType = item.dataset.type;
+                    let typeMatch = false;
+
+                    if (activeType === 'manutencao') {
+                        if (['corretiva', 'preventiva', 'preditiva'].includes(itemType)) {
+                            typeMatch = true;
+                        }
+                    } else if (activeType === 'instalação') {
+                        if (itemType === 'instalação') {
+                            typeMatch = true;
+                        }
+                    }
+
+                    if (typeMatch) {
+                        const city = item.closest('.city-group').dataset.city;
+                        citiesWithContent.add(city);
+                    }
+                });
+
+                // Cria e adiciona o botão "Todos"
+                const allButton = document.createElement('button');
+                allButton.className = 'filter-btn active'; // "Todos" é ativo por defeito
+                allButton.dataset.city = 'todos';
+                allButton.textContent = 'Todos';
+                filterContainer.appendChild(allButton);
+
+                // Cria e adiciona botões para cada cidade relevante
+                Array.from(citiesWithContent).sort().forEach(cidade => {
+                    const button = document.createElement('button');
+                    button.className = 'filter-btn';
+                    button.dataset.city = cidade;
+                    button.textContent = cidade;
+                    filterContainer.appendChild(button);
+                });
                 
-                addFilterListeners();
-                updateDisplay();
+                addFilterListeners(); // Re-associa os eventos aos novos botões
             }
 
             // Função para criar o HTML de um item de ocorrência
@@ -389,7 +410,7 @@ if (!isset($_SESSION['user_id'])) {
                 let detailsHTML = '';
                 if (item.tipo_manutencao !== 'instalação') {
                     detailsHTML = `
-                        <div class="detail-item"><strong>Ocorrência</strong> <span class="ocorrencia-tag ocorrencia-pendente">${item.ocorrencia_reparo || ''}</span></div>
+                        <div class="detail-item"><strong>Ocorrência</strong> <span>${item.ocorrencia_reparo || ''}</span></div>
                         <div class="detail-item"><strong>Técnico(s)</strong> <span>${item.tecnicos_nomes || 'Não atribuído'}</span></div>
                         <div class="detail-item"><strong>Início Ocorrência</strong> <span>${new Date(item.inicio_reparo).toLocaleString('pt-BR')}</span></div>
                         <div class="detail-item"><strong>Status</strong> ${statusHTML}</div>
@@ -485,7 +506,10 @@ if (!isset($_SESSION['user_id'])) {
                     actionButtons.forEach(btn => btn.classList.remove('active'));
                     button.classList.add('active');
                     activeType = button.dataset.type;
-                    updateDisplay();
+                    activeCity = 'todos'; // Reseta o filtro da cidade
+                    
+                    updateCityFilters(); // Atualiza os filtros de cidade disponíveis
+                    updateDisplay(); // Atualiza os itens exibidos
                 });
             });
 
