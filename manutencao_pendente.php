@@ -161,6 +161,17 @@ if (!isset($_SESSION['user_id'])) {
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             transform: translateY(-3px);
         }
+
+        .ocorrencia-tag{
+            padding: 2px 8px;
+            border-radius: 15px;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+        .ocorrencia-pendente {
+            background-color: #f0f9ff;
+            color: #f59e0b;
+        }
         
         /* Layout do Cabeçalho do Item */
         .ocorrencia-header {
@@ -378,7 +389,7 @@ if (!isset($_SESSION['user_id'])) {
                 let detailsHTML = '';
                 if (item.tipo_manutencao !== 'instalação') {
                     detailsHTML = `
-                        <div class="detail-item"><strong>Ocorrência</strong> <span>${item.ocorrencia_reparo || ''}</span></div>
+                        <div class="detail-item"><strong>Ocorrência</strong> <span class="ocorrencia-tag ocorrencia-pendente">${item.ocorrencia_reparo || ''}</span></div>
                         <div class="detail-item"><strong>Técnico(s)</strong> <span>${item.tecnicos_nomes || 'Não atribuído'}</span></div>
                         <div class="detail-item"><strong>Início Ocorrência</strong> <span>${new Date(item.inicio_reparo).toLocaleString('pt-BR')}</span></div>
                         <div class="detail-item"><strong>Status</strong> ${statusHTML}</div>
