@@ -4,18 +4,7 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *'); 
 
 // --- Configurações do Banco de Dados ---
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "gerenciamento_manutencoes";
-
-// --- Conexão com o Banco de Dados ---
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-if ($conn->connect_error) {
-    echo json_encode(['success' => false, 'message' => 'Erro de conexão com o banco de dados: ' . $conn->connect_error]);
-    exit();
-}
+require_once 'conexao_bd.php';
 
 // --- Variáveis para armazenar os dados ---
 $ocorrencias_por_cidade = [];
