@@ -177,6 +177,16 @@ if (!isset($_SESSION['user_id'])) {
             margin: 0;
         }
         
+        .ocorrencia-tag{
+            padding: 2px 8px;
+            border-radius: 15px;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+        .ocorrencia-em-andamento {
+            background-color: #f0f9ff;
+            color: #f59e0b;
+        }
         /* Layout dos Detalhes do Item */
         .ocorrencia-details {
             display: flex;
@@ -186,6 +196,7 @@ if (!isset($_SESSION['user_id'])) {
             flex-grow: 1;
             width: 100%;
         }
+    
         .detail-item {
             font-size: 0.95em;
             color: #374151;
@@ -612,7 +623,7 @@ if (!isset($_SESSION['user_id'])) {
                 let detailsHTML = '';
                 if (item.tipo_manutencao !== 'instalação') {
                     detailsHTML = `
-                        <div class="detail-item"><strong>Ocorrência</strong> <span>${item.ocorrencia_reparo || ''}</span></div>
+                        <div class="detail-item"><strong>Ocorrência</strong> <span class="ocorrencia-tag status-em-andamento">${item.ocorrencia_reparo || ''}</span></div>
                         <div class="detail-item"><strong>Técnico(s)</strong> <span>${item.tecnicos_nomes || 'Não atribuído'}</span></div>
                         <div class="detail-item"><strong>Veículo(s)</strong> <span>${item.veiculos_nomes || 'Nenhum'}</span></div>
                         <div class="detail-item"><strong>Início Ocorrência</strong> <span>${new Date(item.inicio_reparo).toLocaleString('pt-BR')}</span></div>
