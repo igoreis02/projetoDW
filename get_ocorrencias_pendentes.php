@@ -4,7 +4,18 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *'); 
 
 // --- Configurações do Banco de Dados ---
-require_once 'conexao_bd.php';
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "gerenciamento_manutencoes";
+
+// --- Conexão com o Banco de Dados ---
+$conn = new mysqli($servername, $username, $password, $dbname);
+
+if ($conn->connect_error) {
+    echo json_encode(['success' => false, 'message' => 'Erro de conexão com o banco de dados: ' . $conn->connect_error]);
+    exit();
+}
 
 // --- Variáveis para armazenar os dados ---
 $ocorrencias_por_cidade = [];
@@ -12,31 +23,29 @@ $cidades_com_ocorrencias = [];
 $response_data = [];
 
 try {
-    // --- Consulta SQL para buscar TODAS as ocorrências PENDENTES ---
+    // --- Consulta SQL atualizada para incluir os novos campos ---
     $sql = "SELECT
                 m.id_manutencao,
                 m.tipo_manutencao,
                 m.ocorrencia_reparo,
                 m.inicio_reparo,
                 m.status_reparo,
+                m.motivo_devolucao,
+                m.observacao_instalacao,
                 m.inst_laco, m.dt_laco,
                 m.inst_base, m.dt_base,
                 m.inst_infra, m.data_infra,
                 m.inst_energia, m.dt_energia,
+                m.inst_prov, m.data_provedor,
                 e.nome_equip,
                 e.referencia_equip,
                 c.nome AS cidade,
-                CONCAT(en.logradouro, ', ', en.bairro) AS local_completo,
-                GROUP_CONCAT(DISTINCT u.nome SEPARATOR ', ') AS tecnicos_nomes,
-                MIN(mt.inicio_reparoTec) AS inicio_periodo_reparo,
-                MAX(mt.fim_reparoT) AS fim_periodo_reparo
+                CONCAT(en.logradouro, ', ', en.bairro) AS local_completo
             FROM manutencoes AS m
             JOIN equipamentos AS e ON m.id_equipamento = e.id_equipamento
             JOIN cidades AS c ON m.id_cidade = c.id_cidade
             LEFT JOIN endereco AS en ON e.id_endereco = en.id_endereco
-            LEFT JOIN manutencoes_tecnicos AS mt ON m.id_manutencao = mt.id_manutencao
-            LEFT JOIN usuario AS u ON mt.id_tecnico = u.id_usuario
-            WHERE m.status_reparo = 'pendente' -- A única alteração é aqui, para buscar apenas pendentes
+            WHERE m.status_reparo = 'pendente' 
             GROUP BY m.id_manutencao
             ORDER BY c.nome, m.inicio_reparo DESC";
 
@@ -49,20 +58,17 @@ try {
     if ($result->num_rows > 0) {
         while ($row = $result->fetch_assoc()) {
             $cidade = $row['cidade'];
-            // Agrupa as ocorrências por cidade
             if (!isset($ocorrencias_por_cidade[$cidade])) {
                 $ocorrencias_por_cidade[$cidade] = [];
             }
             $ocorrencias_por_cidade[$cidade][] = $row;
             
-            // Cria uma lista de cidades para os botões de filtro
             if (!in_array($cidade, $cidades_com_ocorrencias)) {
                 $cidades_com_ocorrencias[] = $cidade;
             }
         }
         sort($cidades_com_ocorrencias);
         
-        // Prepara a resposta final
         $response_data['ocorrencias'] = $ocorrencias_por_cidade;
         $response_data['cidades'] = $cidades_com_ocorrencias;
         

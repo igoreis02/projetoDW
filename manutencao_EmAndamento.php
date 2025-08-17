@@ -294,6 +294,129 @@ if (!isset($_SESSION['user_id'])) {
 
         .hidden { display: none !important; }
 
+        /* Estilos para Modais */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.6);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.is-active {
+            display: flex;
+        }
+        .modal-content {
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 600px;
+            text-align: left;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.5em;
+            color: #111827;
+        }
+        .modal-close {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #9ca3af;
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+        .modal-body {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .form-group label {
+            font-weight: 600;
+            color: #374151;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+        .date-inputs {
+            display: flex;
+            gap: 1rem;
+        }
+        .date-inputs .form-group {
+            flex: 1;
+        }
+        .choice-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .choice-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 20px;
+            cursor: pointer;
+            background-color: #f9fafb;
+            transition: all 0.2s;
+        }
+        .choice-btn.selected {
+            background-color: var(--cor-principal);
+            color: white;
+            border-color: var(--cor-principal);
+        }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e5e7eb;
+        }
+        .modal-btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background-color: #4f46e5;
+            color: white;
+        }
+        .btn-secondary {
+            background-color: #e5e7eb;
+            color: #374151;
+        }
+        .confirmation-modal .modal-body {
+            text-align: center;
+            font-size: 1.1em;
+        }
+
         /* Responsividade */
         @media (max-width: 1200px) {
             .city-ocorrencias-grid {
@@ -324,20 +447,76 @@ if (!isset($_SESSION['user_id'])) {
             <button id="btnInstalacoes" class="action-btn" data-type="instalação">Instalações</button>
         </div>
 
-        <div id="filterContainer" class="filter-container">
-            <!-- Botões de filtro de cidade serão inseridos aqui pelo JavaScript -->
-        </div>
+        <div id="filterContainer" class="filter-container"></div>
 
         <div id="ocorrenciasContainer" class="ocorrencias-container">
-            <!-- Grupos de cidades e ocorrências serão inseridos aqui pelo JavaScript -->
             <p id="loadingMessage">A carregar ocorrências...</p>
         </div>
 
         <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
     </div>
 
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Editar Ocorrência</h3>
+                <button class="modal-close" onclick="closeModal('editModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h4 id="editModalEquipName" style="font-size: 1.2em; text-align: center;"></h4>
+                <div class="form-group">
+                    <label for="editOcorrenciaReparo">Ocorrência</label>
+                    <textarea id="editOcorrenciaReparo" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Selecione a data para execução</label>
+                    <div class="date-inputs">
+                        <div class="form-group">
+                            <label for="editInicioReparo">Início Reparo</label>
+                            <input type="date" id="editInicioReparo">
+                        </div>
+                        <div class="form-group">
+                            <label for="editFimReparo">Fim Reparo</label>
+                            <input type="date" id="editFimReparo">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Técnicos</label>
+                    <div id="editTecnicosContainer" class="choice-buttons"></div>
+                </div>
+                <div class="form-group">
+                    <label>Veículos</label>
+                    <div id="editVeiculosContainer" class="choice-buttons"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn btn-secondary" onclick="closeModal('editModal')">Fechar</button>
+                <button class="modal-btn btn-primary" onclick="saveEdit()">Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirmationModal" class="modal confirmation-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="confirmationModalTitle"></h3>
+                <button class="modal-close" onclick="closeModal('confirmationModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmationModalText"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn btn-secondary" onclick="closeModal('confirmationModal')">Não</button>
+                <button id="confirmActionButton" class="modal-btn btn-primary">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // ... (código existente de seleção de elementos e variáveis)
             const actionButtons = document.querySelectorAll('.action-btn');
             const filterContainer = document.getElementById('filterContainer');
             const ocorrenciasContainer = document.getElementById('ocorrenciasContainer');
@@ -345,21 +524,19 @@ if (!isset($_SESSION['user_id'])) {
 
             let activeType = 'manutencao';
             let activeCity = 'todos';
-            let allData = null; // Para armazenar todos os dados da API
+            let allData = null; 
+            let currentEditingId = null;
 
-            // Função para buscar os dados da API
             async function fetchData() {
                 try {
                     const response = await fetch('get_ocorrencias_em_andamento.php');
                     const result = await response.json();
-
                     loadingMessage.classList.add('hidden');
-
                     if (result.success) {
-                        allData = result.data; // Armazena os dados globalmente
-                        renderAllOcorrencias(allData); // Renderiza todos os itens no DOM
-                        updateCityFilters(); // Cria os filtros de cidade iniciais
-                        updateDisplay(); // Mostra a visualização correta
+                        allData = result.data;
+                        renderAllOcorrencias(allData);
+                        updateCityFilters();
+                        updateDisplay();
                     } else {
                         ocorrenciasContainer.innerHTML = `<p>${result.message || 'Nenhuma ocorrência encontrada.'}</p>`;
                     }
@@ -370,7 +547,6 @@ if (!isset($_SESSION['user_id'])) {
                 }
             }
 
-            // Renderiza todos os grupos de cidades e ocorrências no DOM
             function renderAllOcorrencias(data) {
                 const { ocorrencias } = data;
                 ocorrenciasContainer.innerHTML = '';
@@ -379,12 +555,10 @@ if (!isset($_SESSION['user_id'])) {
                         const cityGroup = document.createElement('div');
                         cityGroup.className = 'city-group';
                         cityGroup.dataset.city = cidade;
-
                         let cityGridHTML = '';
                         ocorrencias[cidade].forEach(item => {
                             cityGridHTML += createOcorrenciaHTML(item);
                         });
-
                         cityGroup.innerHTML = `
                             <h2 class="city-group-title">${cidade}</h2>
                             <div class="city-ocorrencias-grid">
@@ -398,37 +572,27 @@ if (!isset($_SESSION['user_id'])) {
                 }
             }
             
-            // Atualiza os botões de filtro de cidade com base no tipo ativo
             function updateCityFilters() {
                 filterContainer.innerHTML = ''; 
                 const citiesWithContent = new Set();
-
                 document.querySelectorAll('.ocorrencia-item').forEach(item => {
                     const itemType = item.dataset.type;
                     let typeMatch = false;
-
                     if (activeType === 'manutencao') {
-                        if (['corretiva', 'preventiva', 'preditiva'].includes(itemType)) {
-                            typeMatch = true;
-                        }
+                        if (['corretiva', 'preventiva', 'preditiva'].includes(itemType)) typeMatch = true;
                     } else if (activeType === 'instalação') {
-                        if (itemType === 'instalação') {
-                            typeMatch = true;
-                        }
+                        if (itemType === 'instalação') typeMatch = true;
                     }
-
                     if (typeMatch) {
                         const city = item.closest('.city-group').dataset.city;
                         citiesWithContent.add(city);
                     }
                 });
-
                 const allButton = document.createElement('button');
                 allButton.className = 'filter-btn active';
                 allButton.dataset.city = 'todos';
                 allButton.textContent = 'Todos';
                 filterContainer.appendChild(allButton);
-
                 Array.from(citiesWithContent).sort().forEach(cidade => {
                     const button = document.createElement('button');
                     button.className = 'filter-btn';
@@ -436,19 +600,15 @@ if (!isset($_SESSION['user_id'])) {
                     button.textContent = cidade;
                     filterContainer.appendChild(button);
                 });
-                
                 addFilterListeners();
             }
 
-            // Função para criar o HTML de um item de ocorrência
             function createOcorrenciaHTML(item) {
                 const tempoReparo = calculateRepairTime(item.inicio_periodo_reparo, item.fim_periodo_reparo);
                 const tipoOcorrencia = item.tipo_manutencao === 'instalação' ? 'Instalação' : item.tipo_manutencao.charAt(0).toUpperCase() + item.tipo_manutencao.slice(1);
-                
                 const statusClass = item.status_reparo === 'pendente' ? 'status-pendente' : 'status-em-andamento';
                 const statusText = item.status_reparo.charAt(0).toUpperCase() + item.status_reparo.slice(1);
                 const statusHTML = `<span class="status-tag ${statusClass}">${statusText}</span>`;
-
                 let detailsHTML = '';
                 if (item.tipo_manutencao !== 'instalação') {
                     detailsHTML = `
@@ -479,18 +639,15 @@ if (!isset($_SESSION['user_id'])) {
                         <div class="detail-item"><strong>Status</strong> ${statusHTML}</div>
                     `;
                 }
-
-                // Adiciona os botões de ação
                 const actionsHTML = `
                     <div class="item-actions">
-                        <button class="item-btn edit-btn" onclick="editOcorrencia(${item.id_manutencao})">Editar</button>
-                        <button class="item-btn status-btn" onclick="changeStatus(${item.id_manutencao})">Status</button>
-                        <button class="item-btn cancel-btn" onclick="cancelOcorrencia(${item.id_manutencao})">Cancelar</button>
+                        <button class="item-btn edit-btn" onclick="openEditModal(${item.id_manutencao})">Editar</button>
+                        <button class="item-btn status-btn" onclick="openConfirmationModal(${item.id_manutencao}, 'pendente')">Status</button>
+                        <button class="item-btn cancel-btn" onclick="openConfirmationModal(${item.id_manutencao}, 'cancelado')">Cancelar</button>
                     </div>
                 `;
-
                 return `
-                    <div class="ocorrencia-item" data-type="${item.tipo_manutencao}">
+                    <div class="ocorrencia-item" data-type="${item.tipo_manutencao}" data-id="${item.id_manutencao}">
                         <div class="ocorrencia-header">
                             <h3>${item.nome_equip} - ${item.referencia_equip}</h3>
                         </div>
@@ -507,6 +664,11 @@ if (!isset($_SESSION['user_id'])) {
                 const date = new Date(dateString);
                 return new Date(date.getTime() + date.getTimezoneOffset() * 60000).toLocaleDateString('pt-BR');
             }
+            
+            function formatDateForInput(dateString) {
+                if (!dateString) return '';
+                return new Date(dateString).toISOString().split('T')[0];
+            }
 
             function calculateRepairTime(startDate, endDate) {
                 if (!startDate || !endDate) return "N/A";
@@ -522,24 +684,16 @@ if (!isset($_SESSION['user_id'])) {
                 cityGroups.forEach(group => {
                     const groupCity = group.dataset.city;
                     let hasVisibleItemsInGroup = false;
-
                     const cityMatch = activeCity === 'todos' || groupCity === activeCity;
-
                     if (cityMatch) {
                         group.querySelectorAll('.ocorrencia-item').forEach(item => {
                             const itemType = item.dataset.type;
                             let typeMatch = false;
-
                             if (activeType === 'manutencao') {
-                                if (['corretiva', 'preventiva', 'preditiva'].includes(itemType)) {
-                                    typeMatch = true;
-                                }
+                                if (['corretiva', 'preventiva', 'preditiva'].includes(itemType)) typeMatch = true;
                             } else if (activeType === 'instalação') {
-                                if (itemType === 'instalação') {
-                                    typeMatch = true;
-                                }
+                                if (itemType === 'instalação') typeMatch = true;
                             }
-
                             if (typeMatch) {
                                 item.classList.remove('hidden');
                                 hasVisibleItemsInGroup = true;
@@ -547,7 +701,6 @@ if (!isset($_SESSION['user_id'])) {
                                 item.classList.add('hidden');
                             }
                         });
-
                         group.classList.toggle('hidden', !hasVisibleItemsInGroup);
                     } else {
                         group.classList.add('hidden');
@@ -561,7 +714,6 @@ if (!isset($_SESSION['user_id'])) {
                     button.classList.add('active');
                     activeType = button.dataset.type;
                     activeCity = 'todos'; 
-                    
                     updateCityFilters(); 
                     updateDisplay(); 
                 });
@@ -579,22 +731,138 @@ if (!isset($_SESSION['user_id'])) {
                 });
             }
 
-            // Funções placeholder para os botões de ação
-            window.editOcorrencia = function(id) {
-                console.log('Editar ocorrência ID:', id);
-                // Ex: window.location.href = `editar_ocorrencia.php?id=${id}`;
+            // --- Lógica dos Modais ---
+            window.openModal = function(modalId) { document.getElementById(modalId).classList.add('is-active'); }
+            window.closeModal = function(modalId) { document.getElementById(modalId).classList.remove('is-active'); }
+
+            function findOcorrenciaById(id) {
+                for (const cidade in allData.ocorrencias) {
+                    const found = allData.ocorrencias[cidade].find(item => item.id_manutencao == id);
+                    if (found) return found;
+                }
+                return null;
+            }
+
+            window.openEditModal = async function(id) {
+                currentEditingId = id;
+                const item = findOcorrenciaById(id);
+                if (!item) return;
+
+                document.getElementById('editModalEquipName').textContent = `${item.nome_equip} - ${item.referencia_equip}`;
+                document.getElementById('editOcorrenciaReparo').value = item.ocorrencia_reparo;
+                document.getElementById('editInicioReparo').value = formatDateForInput(item.inicio_periodo_reparo);
+                document.getElementById('editFimReparo').value = formatDateForInput(item.fim_periodo_reparo);
+                
+                const tecnicosContainer = document.getElementById('editTecnicosContainer');
+                const veiculosContainer = document.getElementById('editVeiculosContainer');
+                tecnicosContainer.innerHTML = 'A carregar...';
+                veiculosContainer.innerHTML = 'A carregar...';
+                
+                openModal('editModal');
+
+                const [tecnicosRes, veiculosRes] = await Promise.all([fetch('get_tecnicos.php'), fetch('get_veiculos.php')]);
+                const tecnicosData = await tecnicosRes.json();
+                const veiculosData = await veiculosRes.json();
+                
+                const selectedTecnicos = item.tecnicos_nomes ? item.tecnicos_nomes.split(', ') : [];
+                tecnicosContainer.innerHTML = '';
+                if (tecnicosData.success) {
+                    tecnicosData.tecnicos.forEach(tec => {
+                        const btn = document.createElement('button');
+                        btn.className = 'choice-btn';
+                        btn.dataset.id = tec.id_tecnico;
+                        btn.textContent = tec.nome;
+                        if (selectedTecnicos.includes(tec.nome)) btn.classList.add('selected');
+                        btn.onclick = () => btn.classList.toggle('selected');
+                        tecnicosContainer.appendChild(btn);
+                    });
+                }
+
+                const selectedVeiculos = item.veiculos_nomes ? item.veiculos_nomes.split(', ').map(v => v.split(' (')[0]) : [];
+                veiculosContainer.innerHTML = '';
+                if (veiculosData.length > 0) {
+                    veiculosData.forEach(vec => {
+                        const btn = document.createElement('button');
+                        btn.className = 'choice-btn';
+                        btn.dataset.id = vec.id_veiculo;
+                        btn.textContent = `${vec.nome} (${vec.placa})`;
+                        if (selectedVeiculos.includes(vec.nome)) btn.classList.add('selected');
+                        btn.onclick = () => btn.classList.toggle('selected');
+                        veiculosContainer.appendChild(btn);
+                    });
+                }
+            }
+
+            window.saveEdit = async function() {
+                const selectedTecnicos = Array.from(document.querySelectorAll('#editTecnicosContainer .choice-btn.selected')).map(btn => btn.dataset.id);
+                const selectedVeiculos = Array.from(document.querySelectorAll('#editVeiculosContainer .choice-btn.selected')).map(btn => btn.dataset.id);
+
+                const dataToSend = {
+                    action: 'edit',
+                    id_manutencao: currentEditingId,
+                    ocorrencia_reparo: document.getElementById('editOcorrenciaReparo').value,
+                    inicio_reparo: document.getElementById('editInicioReparo').value,
+                    fim_reparo: document.getElementById('editFimReparo').value,
+                    tecnicos: selectedTecnicos,
+                    veiculos: selectedVeiculos
+                };
+
+                try {
+                    const response = await fetch('update_ocorrencia.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(dataToSend)
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        closeModal('editModal');
+                        fetchData(); // Recarrega os dados para mostrar as alterações
+                    } else {
+                        alert('Erro ao salvar: ' + result.message);
+                    }
+                } catch (error) {
+                    alert('Erro de comunicação com o servidor.');
+                }
+            }
+
+            window.openConfirmationModal = function(id, status) {
+                const title = status === 'pendente' ? 'Voltar para Pendente' : 'Cancelar Ocorrência';
+                const text = status === 'pendente' ? 'Tem a certeza de que deseja voltar esta ocorrência para o estado "Pendente"?' : 'Tem a certeza de que deseja cancelar esta ocorrência? Esta ação não pode ser desfeita.';
+                
+                document.getElementById('confirmationModalTitle').textContent = title;
+                document.getElementById('confirmationModalText').textContent = text;
+                
+                const confirmBtn = document.getElementById('confirmActionButton');
+                confirmBtn.onclick = () => executeStatusChange(id, status);
+
+                openModal('confirmationModal');
+            }
+
+            async function executeStatusChange(id, status) {
+                const dataToSend = {
+                    action: 'update_status',
+                    id_manutencao: id,
+                    status: status
+                };
+
+                try {
+                    const response = await fetch('update_ocorrencia.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(dataToSend)
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        closeModal('confirmationModal');
+                        fetchData(); // Recarrega os dados
+                    } else {
+                        alert('Erro ao alterar o status: ' + result.message);
+                    }
+                } catch (error) {
+                    alert('Erro de comunicação com o servidor.');
+                }
             }
             
-            window.changeStatus = function(id) {
-                console.log('Alterar status da ocorrência ID:', id);
-                // Lógica para abrir um modal de alteração de status ou similar
-            }
-
-            window.cancelOcorrencia = function(id) {
-                console.log('Cancelar ocorrência ID:', id);
-                // Ex: if (confirm('Tem a certeza?')) { /* ...chamar API... */ }
-            }
-
             // Inicia o carregamento dos dados
             fetchData();
         });

@@ -52,7 +52,7 @@ try {
         
         echo json_encode(['success' => true, 'message' => 'Status atualizado com sucesso para ' . $new_status]);
 
-    } elseif ($action === 'edit') {
+    } elseif ($action === 'edit' || $action === 'assign') { // Agora trata 'assign' também
         $ocorrencia = $input['ocorrencia_reparo'] ?? '';
         $inicio_reparo = $input['inicio_reparo'] ?? null;
         $fim_reparo = $input['fim_reparo'] ?? null;
@@ -60,14 +60,21 @@ try {
         $veiculos = $input['veiculos'] ?? [];
 
         // 1. Atualiza a tabela principal de manutenções
-        $stmt = $conn->prepare("UPDATE manutencoes SET ocorrencia_reparo = ? WHERE id_manutencao = ?");
-        $stmt->bind_param('si', $ocorrencia, $id_manutencao);
+        if ($action === 'assign') {
+            // Se for uma atribuição, muda o status para 'em andamento'
+            $stmt = $conn->prepare("UPDATE manutencoes SET ocorrencia_reparo = ?, status_reparo = 'em andamento' WHERE id_manutencao = ?");
+            $stmt->bind_param('si', $ocorrencia, $id_manutencao);
+        } else {
+            // Se for uma edição normal, apenas atualiza a ocorrência
+            $stmt = $conn->prepare("UPDATE manutencoes SET ocorrencia_reparo = ? WHERE id_manutencao = ?");
+            $stmt->bind_param('si', $ocorrencia, $id_manutencao);
+        }
         if (!$stmt->execute()) {
             throw new Exception('Falha ao atualizar a ocorrência.');
         }
         $stmt->close();
 
-        // 2. Apaga as associações antigas de técnicos e veículos para esta manutenção
+        // 2. Apaga as associações antigas de técnicos e veículos
         $stmt = $conn->prepare("DELETE FROM manutencoes_tecnicos WHERE id_manutencao = ?");
         $stmt->bind_param('i', $id_manutencao);
         if (!$stmt->execute()) {
@@ -79,19 +86,23 @@ try {
         if (!empty($tecnicos)) {
             $stmt = $conn->prepare("INSERT INTO manutencoes_tecnicos (id_manutencao, id_tecnico, id_veiculo, inicio_reparoTec, fim_reparoT) VALUES (?, ?, ?, ?, ?)");
             
-            // Assume que o primeiro veículo selecionado se aplica a todos os técnicos, ou ajusta a lógica conforme necessário
-            $id_veiculo_principal = !empty($veiculos) ? $veiculos[0] : null;
-
+            $veiculos_count = count($veiculos);
+            $i = 0;
             foreach ($tecnicos as $id_tecnico) {
-                $stmt->bind_param('iiiss', $id_manutencao, $id_tecnico, $id_veiculo_principal, $inicio_reparo, $fim_reparo);
+                // Associa um veículo a cada técnico, fazendo um ciclo na lista de veículos se necessário
+                $id_veiculo_associado = $veiculos_count > 0 ? $veiculos[$i % $veiculos_count] : null;
+                
+                $stmt->bind_param('iiiss', $id_manutencao, $id_tecnico, $id_veiculo_associado, $inicio_reparo, $fim_reparo);
                 if (!$stmt->execute()) {
                     throw new Exception('Falha ao inserir novo técnico/veículo.');
                 }
+                $i++;
             }
             $stmt->close();
         }
         
-        echo json_encode(['success' => true, 'message' => 'Ocorrência atualizada com sucesso.']);
+        $message = $action === 'assign' ? 'Ocorrência atribuída com sucesso.' : 'Ocorrência atualizada com sucesso.';
+        echo json_encode(['success' => true, 'message' => $message]);
     } else {
         throw new Exception('Ação desconhecida.');
     }
