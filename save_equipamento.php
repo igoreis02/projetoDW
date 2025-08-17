@@ -29,8 +29,9 @@ if (empty($qtd_faixa)) {
     $qtd_faixa = null;
 }
 
+$status = 'instalacao'; // Define o status padrão como 'instalacao'
 // Prepara a instrução SQL para inserção
-$sql = "INSERT INTO equipamentos (nome_equip, referencia_equip, id_cidade, id_endereco, tipo_equip, qtd_faixa) VALUES (?, ?, ?, ?, ?, ?)";
+$sql = "INSERT INTO equipamentos (nome_equip, referencia_equip, id_cidade, id_endereco, tipo_equip, qtd_faixa, status) VALUES (?, ?, ?, ?, ?, ?, ?)";
 $stmt = $conn->prepare($sql);
 
 if ($stmt === false) {
@@ -39,8 +40,8 @@ if ($stmt === false) {
 }
 
 // Vincula os parâmetros
-// 'ssiisi' -> s(string), s(string), i(integer), i(integer), s(string), i(integer)
-$stmt->bind_param("ssiisi", $nome_equip, $referencia_equip, $id_cidade, $id_endereco, $tipo_equip, $qtd_faixa);
+// 'ssiisi' -> s(string), s(string), i(integer), i(integer), s(string), i(integer), s(string)
+$stmt->bind_param("ssiisis", $nome_equip, $referencia_equip, $id_cidade, $id_endereco, $tipo_equip, $qtd_faixa, $status);
 
 // Executa a instrução
 if ($stmt->execute()) {

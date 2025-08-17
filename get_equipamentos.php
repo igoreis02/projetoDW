@@ -10,7 +10,7 @@ $city_id = $_GET['city_id'] ?? ''; // Agora esperamos o ID da cidade
 $search_term = $_GET['search_term'] ?? '';
 
 $equipamentos = [];
-$sql = "SELECT id_equipamento, nome_equip, referencia_equip FROM equipamentos WHERE 1=1";
+$sql = "SELECT id_equipamento, nome_equip, referencia_equip FROM equipamentos WHERE status = 'ativo'";
 $params = [];
 $types = "";
 
