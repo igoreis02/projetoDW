@@ -435,6 +435,9 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             <button id="matrizManutencaoBtn" class="page-button">
                 <i class="fas fa-cogs"></i> Matriz Técnica
             </button>
+            <button id="matrizSemaforicaBtn" class="page-button">
+                <i class="fas fa-traffic-light"></i> Matriz Semafórica
+            </button>
             <button id="controleOcorrenciaBtn" class="page-button">
                 <i class="fas fa-clipboard-list"></i> Controle de Ocorrência
             </button>
