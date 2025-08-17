@@ -18,13 +18,7 @@ $user_email = $_SESSION['user_email'];
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <title>Atribuir Técnico</title>
     <style>
-        .botao-manutencao-pendente {
-            height: auto; /* Permite que a altura se ajuste ao conteúdo */
-            padding: 10px 15px;
-            text-align: left;
-            line-height: 1.5; /* Melhora a legibilidade com múltiplas linhas */
-            white-space: pre-wrap; /* Essencial para que a quebra de linha '\n' funcione */
-        }
+       
     </style>
 </head>
 

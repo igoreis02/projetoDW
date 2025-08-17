@@ -31,6 +31,7 @@ body {
     margin: 0;
     padding: 0;
 }
+
 .background {
     position: fixed;
     top: -50vmin;
@@ -159,7 +160,8 @@ body {
     border-radius: 1rem;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
     width: 90%;
-    max-width: 1000px; /* Largura padrão para modais de atribuição */
+    max-width: 1000px;
+    /* Largura padrão para modais de atribuição */
     position: relative;
     display: flex;
     flex-direction: column;
@@ -231,7 +233,8 @@ body {
     width: 100%;
 }
 
-.botao-cidade, .botao-manutencao-pendente {
+.botao-cidade,
+.botao-manutencao-pendente {
     padding: 1rem;
     font-size: 1.1em;
     background-color: var(--cor-principal);
@@ -259,7 +262,8 @@ body {
     cursor: pointer;
     transition: background-color 0.2s;
     white-space: pre-wrap;
-    flex: 1 1 calc(50% - 0.5rem); /* Dois por linha com espaçamento */
+    flex: 1 1 calc(50% - 0.5rem);
+    /* Dois por linha com espaçamento */
 }
 
 .botao-manutencao-pendente:hover {
@@ -307,14 +311,15 @@ body {
     flex-wrap: wrap;
     gap: 1rem;
     width: 100%;
-    
+
 }
 
 .detalhe-manutencao {
     background-color: #f0f0f0;
     padding: 1rem;
     border-radius: 8px;
-    flex: 1 1 calc(50% - 0.5rem); /* Dois por linha com espaçamento */
+    flex: 1 1 calc(50% - 0.5rem);
+    /* Dois por linha com espaçamento */
 }
 
 .titulo-equipamento {
@@ -327,12 +332,16 @@ body {
     color: #555;
 }
 
-.titulo-data, .titulo-tecnicos, .titulo-veiculos {
+.titulo-data,
+.titulo-tecnicos,
+.titulo-veiculos {
     font-size: 1.2em;
     margin-top: 1.5rem;
 }
 
-.data-container, .tecnicos-container, .veiculos-container {
+.data-container,
+.tecnicos-container,
+.veiculos-container {
     display: flex;
     gap: 1rem;
     flex-wrap: wrap;
@@ -346,7 +355,8 @@ body {
     border-radius: 4px;
 }
 
-.botao-tecnico, .botao-veiculo {
+.botao-tecnico,
+.botao-veiculo {
     background-color: #ccc;
     color: #333;
     border: none;
@@ -356,11 +366,13 @@ body {
     transition: background-color 0.2s;
 }
 
-.botao-tecnico:hover, .botao-veiculo:hover {
+.botao-tecnico:hover,
+.botao-veiculo:hover {
     background-color: #b0b0b0;
 }
 
-.botao-tecnico.selecionado-tecnico, .botao-veiculo.selecionado-veiculo {
+.botao-tecnico.selecionado-tecnico,
+.botao-veiculo.selecionado-veiculo {
     background-color: var(--cor-principal);
     color: white;
 }
@@ -387,7 +399,8 @@ body {
     cursor: not-allowed;
 }
 
-.mensagem-erro, .mensagem-sucesso {
+.mensagem-erro,
+.mensagem-sucesso {
     margin-top: 1rem;
     padding: 1rem;
     border-radius: 8px;
@@ -402,4 +415,15 @@ body {
 .mensagem-sucesso {
     background-color: #d4edda;
     color: #155724;
+}
+
+.botao-manutencao-pendente {
+    height: auto;
+    /* Permite que a altura se ajuste ao conteúdo */
+    padding: 10px 15px;
+    text-align: left;
+    line-height: 1.5;
+    /* Melhora a legibilidade com múltiplas linhas */
+    white-space: pre-wrap;
+    /* Essencial para que a quebra de linha '\n' funcione */
 }

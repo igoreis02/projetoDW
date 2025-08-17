@@ -1,115 +1,315 @@
 <?php
-session_start(); // Inicia ou resume a sessão
+session_start();
 if (!isset($_SESSION['user_id'])) {
-    header('Location: index.html'); // Redireciona para index.html se user_id não estiver na sessão
+    header('Location: login.html');
     exit();
 }
-$user_id = $_SESSION['user_id'];
-$user_email = $_SESSION['user_email'];
 
-// Opcional: Redirecionar se o tipo de usuário não tiver permissão para esta página
-// Exemplo: if (isset($_SESSION['tipo_usuario']) && $_SESSION['tipo_usuario'] !== 'tecnico') {
-//             header('Location: menu.php');
-//             exit();
-//         }
+// --- Configurações do Banco de Dados ---
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "gerenciamento_manutencoes";
 
+// --- Conexão com o Banco de Dados ---
+$conn = new mysqli($servername, $username, $password, $dbname);
+if ($conn->connect_error) {
+    die("Falha na conexão: " . $conn->connect_error);
+}
+
+// --- Variáveis para armazenar os dados ---
+$ocorrencias_por_cidade = [];
+$cidades_com_ocorrencias = [];
+$errorMessage = '';
+
+try {
+    // --- Consulta SQL para buscar ocorrências em andamento (Manutenções e Instalações) ---
+    $sql = "SELECT
+                m.id_manutencao,
+                m.tipo_manutencao,
+                m.ocorrencia_reparo,
+                m.inicio_reparo,
+                m.status_reparo,
+                m.inst_laco, m.dt_laco,
+                m.inst_base, m.dt_base,
+                m.inst_infra, m.data_infra,
+                m.inst_energia, m.dt_energia,
+                e.nome_equip,
+                e.referencia_equip,
+                c.nome AS cidade,
+                CONCAT(en.logradouro, ', ', en.bairro) AS local_completo,
+                GROUP_CONCAT(DISTINCT u.nome SEPARATOR ', ') AS tecnicos_nomes,
+                MIN(mt.inicio_reparoTec) AS inicio_periodo_reparo,
+                MAX(mt.fim_reparoT) AS fim_periodo_reparo
+            FROM manutencoes AS m
+            JOIN equipamentos AS e ON m.id_equipamento = e.id_equipamento
+            JOIN cidades AS c ON m.id_cidade = c.id_cidade
+            LEFT JOIN endereco AS en ON e.id_endereco = en.id_endereco
+            LEFT JOIN manutencoes_tecnicos AS mt ON m.id_manutencao = mt.id_manutencao
+            LEFT JOIN usuario AS u ON mt.id_tecnico = u.id_usuario -- Assumindo que a tabela de técnicos é 'usuarios'
+            WHERE m.status_reparo = 'em andamento'
+            GROUP BY m.id_manutencao
+            ORDER BY c.nome, m.inicio_reparo DESC";
+
+    $result = $conn->query($sql);
+
+    if ($result === false) {
+        throw new Exception("Erro na consulta SQL: " . $conn->error);
+    }
+
+    if ($result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+            $cidade = $row['cidade'];
+            // Agrupa as ocorrências por cidade
+            if (!isset($ocorrencias_por_cidade[$cidade])) {
+                $ocorrencias_por_cidade[$cidade] = [];
+            }
+            $ocorrencias_por_cidade[$cidade][] = $row;
+            
+            // Cria uma lista de cidades para os botões de filtro
+            if (!in_array($cidade, $cidades_com_ocorrencias)) {
+                $cidades_com_ocorrencias[] = $cidade;
+            }
+        }
+        sort($cidades_com_ocorrencias);
+    } else {
+        $errorMessage = 'Nenhuma ocorrência em andamento encontrada.';
+    }
+
+} catch (Exception $e) {
+    $errorMessage = 'Erro ao carregar dados: ' . $e->getMessage();
+    error_log("Erro em manutencao_emAndamento.php: " . $e->getMessage());
+} finally {
+    $conn->close();
+}
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ocorrências em Andamento</title>
     <link rel="stylesheet" href="css/style.css">
-    <title>Manutenção em Andamento</title>
     <style>
-        /* Estilos do card e layout geral, consistentes com as outras páginas */
+        /* Estilos Gerais */
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f0f2f5;
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
             min-height: 100vh;
             margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
         }
 
+        /* Card Principal */
         .card {
             background-color: #ffffff;
             padding: 2.5rem;
             border-radius: 1rem;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            width: 90%;
-            max-width: 600px;
+            width: 95%;
+            max-width: 1200px;
             text-align: center;
             position: relative;
+        }
+
+        /* Título e Botões de Navegação */
+        .header-container {
             display: flex;
-            flex-direction: column;
+            justify-content: center;
             align-items: center;
+            position: relative;
+            margin-bottom: 2rem;
         }
-
-        .card:before {
-            content: none; /* Remove o pseudo-elemento ::before do card */
-        }
-
-        .logoMenu {
-            width: 150px;
-            margin-bottom: 20px;
-            position: absolute;
-            top: -60px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10;
-        }
-
-        h2 {
-            font-size: 2em;
+        .header-container h2 {
+            font-size: 2.2em;
             color: var(--cor-principal);
-            margin-bottom: 30px;
-            margin-top: 40px;
+            margin: 0;
         }
+        .close-btn, .back-btn-icon {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 2em;
+            font-weight: bold;
+            color: #aaa;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        .close-btn { right: 0; }
+        .back-btn-icon { left: 0; }
+        .close-btn:hover, .back-btn-icon:hover { color: #333; }
 
-        /* Contêiner para os botões da página */
-        .page-buttons-container {
+        /* Botões de Ação (Manutenção/Instalação) */
+        .action-buttons {
             display: flex;
-            flex-direction: column; /* Empilha os botões verticalmente */
-            gap: 20px; /* Espaçamento entre os botões */
-            width: 100%;
-            padding: 20px 0;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
         }
-
-        /* Estilo para os botões da página */
-        .page-button {
-            padding: 25px;
-            font-size: 1.3em;
-            color: white;
-            background-color: var(--cor-principal);
-            border: none;
+        .action-btn {
+            padding: 12px 25px;
+            font-size: 1.1em;
+            font-weight: 600;
+            color: var(--cor-principal);
+            background-color: #eef2ff;
+            border: 2px solid transparent;
             border-radius: 8px;
             cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.2s ease;
-            text-align: center;
-            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        .action-btn:hover {
+            background-color: #e0e7ff;
+        }
+        .action-btn.active {
+            background-color: var(--cor-principal);
+            color: white;
+        }
+
+        /* Filtros de Cidade */
+        .filter-container {
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
             display: flex;
-            align-items: center;
+            flex-wrap: wrap;
             justify-content: center;
-            box-sizing: border-box;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            gap: 0.8rem;
+        }
+        .filter-btn {
+            padding: 8px 18px;
+            font-size: 0.9em;
+            color: #4b5563;
+            background-color: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .filter-btn:hover {
+            background-color: #e5e7eb;
+        }
+        .filter-btn.active {
+            background-color: #6366f1;
+            color: white;
+            border-color: #6366f1;
         }
 
-        .page-button:hover {
-            background-color: var(--cor-secundaria);
-            transform: translateY(-5px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        /* NOVO: Container de Grupos de Cidade */
+        .ocorrencias-container {
+            width: 100%;
+        }
+        .city-group {
+            margin-bottom: 2.5rem;
+        }
+        .city-group-title {
+            font-size: 1.8em;
+            color: #374151;
+            text-align: left;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--cor-principal);
+        }
+        .city-ocorrencias-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
         }
 
-        /* Estilo para o botão "Voltar" */
-        .voltar-btn {
+        /* Item de Ocorrência Individual */
+        .ocorrencia-item {
+            background-color: #ffffff; /* Fundo branco para destaque */
+            border: 1px solid #e5e7eb;
+            border-left: 5px solid var(--cor-principal);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06); /* Sombra para destaque */
+            transition: box-shadow 0.3s, transform 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .ocorrencia-item[data-type="instalação"] {
+            border-left-color: #f97316; /* Laranja para instalações */
+        }
+        .ocorrencia-item:hover {
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transform: translateY(-3px);
+        }
+        
+        /* Layout do Cabeçalho do Item */
+        .ocorrencia-header {
+            text-align: left;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px dashed #d1d5db;
+        }
+        .ocorrencia-header h3 {
+            font-size: 1.3em;
+            color: #111827;
+            margin: 0;
+        }
+        .ocorrencia-header .cidade {
+            font-size: 1.1em;
+            font-weight: 500;
+            color: #4b5563;
+            margin: 0.25rem 0 0 0;
+        }
+        
+        /* Layout dos Detalhes do Item */
+        .ocorrencia-details {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.8rem;
+            flex-grow: 1;
+        }
+        .detail-item {
+            font-size: 0.95em;
+            color: #374151;
+            line-height: 1.5;
+
+        }
+        .detail-item strong {
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .detail-item strong::after {
+            content: ": ";
+        }
+        .detail-item span {
+            word-break: break-word;
+        }
+        .detail-item.stacked strong {
             display: block;
-            width: 50%;
-            padding: 15px;
-            margin-top: 30px;
+        }
+        .status-em-andamento {
+            background-color: #fffbeb;
+            color: #f59e0b;
+            padding: 2px 8px;
+            border-radius: 15px;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+        .status-value.instalado {
+            color: #16a34a;
+            font-weight: 600;
+        }
+        .status-value.aguardando {
+            color: #ef4444;
+            font-weight: 600;
+        }
+
+        /* Botão Voltar */
+        .voltar-btn {
+            display: inline-block;
+            width: auto;
+            min-width: 200px;
+            padding: 15px 30px;
+            margin-top: 3rem;
             text-align: center;
             background-color: var(--botao-voltar);
             color: var(--cor-letra-botaoVoltar);
@@ -117,468 +317,243 @@ $user_email = $_SESSION['user_email'];
             border-radius: 8px;
             font-size: 1.1em;
             transition: background-color 0.3s ease;
-            box-sizing: border-box;
         }
-
         .voltar-btn:hover {
             background-color: var(--botao-voltar-hover);
         }
 
-        /* Estilos para o footer */
-        .footer {
-            margin-top: auto;
-            color: #888;
-            font-size: 0.9em;
-            width: 100%;
-            text-align: center;
-            padding-top: 20px;
-        }
+        .hidden { display: none !important; }
 
-        /* Estilos para a seção de seleção de cidades */
-        .city-selection-section {
-            display: none; /* Escondido por padrão */
-            flex-direction: column;
-            gap: 15px;
-            margin-top: 20px;
-            width: 100%;
+        /* Responsividade */
+        @media (max-width: 992px) {
+            .city-ocorrencias-grid {
+                grid-template-columns: 1fr; /* Uma coluna para tablets e abaixo */
+            }
         }
-
-        .city-buttons-container {
-            display: flex;
-            flex-direction: column;
-            gap: 10px; /* Espaçamento entre os botões de cidade */
-            max-height: 300px; /* Altura máxima para rolagem */
-            overflow-y: auto; /* Adiciona rolagem se muitas cidades */
-            padding-right: 10px; /* Espaço para a barra de rolagem */
-        }
-
-        .city-button {
-            padding: 12px 20px;
-            font-size: 1.1em;
-            color: white;
-            background-color: var(--cor-principal);
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .city-button:hover {
-            background-color: var(--cor-secundaria);
-        }
-
-        /* Estilo para o botão de voltar dentro das seções */
-        .back-button {
-            color: #aaa;
-            position: absolute;
-            top: 10px;
-            left: 15px;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-            background: none;
-            border: none;
-            padding: 0;
-            line-height: 1;
-        }
-        .back-button:hover,
-        .back-button:focus {
-            color: black;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        /* Mensagens de erro/carregamento */
-        .message {
-            margin-top: 1rem;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            font-size: 0.9rem;
-            text-align: center;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .message.error {
-            background-color: #fee2e2;
-            color: #ef4444;
-            border: 1px solid #fca5a5;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        /* Estilos para o Modal de Ocorrências */
-        .modal {
-            display: none; /* Hidden by default */
-            position: fixed; /* Stay in place */
-            z-index: 1000; /* Sit on top */
-            left: 0;
-            top: 0;
-            width: 100%; /* Full width */
-            height: 100%; /* Full height */
-            overflow: auto; /* Enable scroll if needed */
-            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
-            justify-content: center;
-            align-items: center;
-        }
-        .modal.is-active {
-            display: flex;
-        }
-
-        .modal-content {
-            background-color: #fefefe;
-            margin: auto;
-            padding: 2rem;
-            border-radius: 1rem;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            width: 90%;
-            max-width: 700px; /* Aumentado para melhor visualização das ocorrências */
-            position: relative;
-            text-align: center;
-        }
-
-        .modal-content h3 {
-            text-align: center;
-            margin-bottom: 1rem;
-            color: var(--cor-principal);
-        }
-
-        .modal-content .close-button {
-            position: absolute;
-            top: 10px;
-            right: 15px;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-            color: #aaa;
-        }
-        .modal-content .close-button:hover {
-            color: black;
-        }
-
-        .ocorrencia-item {
-            background-color: #f9f9f9;
-            border: 1px solid #ddd;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            text-align: left;
-        }
-
-        .ocorrencia-item p {
-            margin-bottom: 0.5rem;
-            font-size: 0.95em;
-            color: #333;
-        }
-
-        .ocorrencia-item strong {
-            color: var(--cor-principal);
-        }
-        /* Novo estilo para os labels destacados */
-        .ocorrencia-item strong.highlight-label {
-            color: var(--cor-terciaria);
-        }
-
-
-        /* Media Queries para responsividade */
         @media (max-width: 768px) {
-            .card {
-                padding: 1.5rem;
-                width: 95%;
-            }
-            .logoMenu {
-                width: 120px;
-                top: -50px;
-            }
-            h2 {
-                font-size: 1.8em;
-                margin-top: 30px;
-            }
-            .page-button {
-                padding: 20px;
-                font-size: 1.1em;
-            }
-            .voltar-btn {
-                width: 70%;
-            }
-            .modal-content {
-                padding: 1.5rem;
-                max-width: 95%; /* Ocupa mais espaço em telas menores */
-            }
-        }
-
-        @media (max-width: 480px) {
-            body {
-                padding: 10px;
-            }
-            .card {
-                width: 100%;
-                height: auto;
-                padding: 10px;
-                margin: auto;
-            }
-            .ocorrencia-item {
-                padding: 0.8rem;
-                font-size: 0.9em;
-            }
+            .card { padding: 1.5rem; }
+            .header-container h2 { font-size: 1.8em; }
+            .action-buttons, .filter-container { flex-direction: column; }
         }
     </style>
 </head>
-
 <body>
     <div class="background"></div>
     <div class="card">
-        <img class="logoMenu" src="imagens/logo.png" alt="Logo" />
-        <h2 id="mainTitle">Manutenção/Instalação em Andamento</h2>
-
-        <div id="initialButtonsSection" class="page-buttons-container">
-            <button id="manutencoesBtn" class="page-button">Manutenções</button>
-            <button id="instalacoesBtn" class="page-button">Instalações</button>
+        <div class="header-container">
+            <a href="menu.php" class="back-btn-icon" title="Voltar ao Menu">&larr;</a>
+            <h2>Ocorrências em Andamento</h2>
+            <a href="menu.php" class="close-btn" title="Voltar ao Menu">&times;</a>
         </div>
 
-        <div id="citySelectionSection" class="city-selection-section">
-            <button class="back-button" onclick="goBackToInitialSelection()">&larr;</button>
-            <h3 class="text-xl font-bold mb-4 text-gray-800">Selecione a Cidade</h3>
-            <p class="mb-4 text-gray-700">Selecione a cidade para ver as ocorrências:</p>
-            <div id="cityButtonsContainer" class="city-buttons-container">
-                <p id="loadingCitiesMessage">Carregando cidades...</p>
-            </div>
-            <p id="cityErrorMessage" class="message error hidden"></p>
+        <div class="action-buttons">
+            <button id="btnManutencoes" class="action-btn active" data-type="manutencao">Manutenções</button>
+            <button id="btnInstalacoes" class="action-btn" data-type="instalação">Instalações</button>
+        </div>
+
+        <?php if (!empty($cidades_com_ocorrencias)): ?>
+        <div class="filter-container">
+            <button class="filter-btn active" data-city="todos">Todos</button>
+            <?php foreach ($cidades_com_ocorrencias as $cidade): ?>
+                <button class="filter-btn" data-city="<?php echo htmlspecialchars($cidade); ?>"><?php echo htmlspecialchars($cidade); ?></button>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+
+        <div class="ocorrencias-container">
+            <?php if (!empty($errorMessage)): ?>
+                <p><?php echo $errorMessage; ?></p>
+            <?php else: ?>
+                <?php foreach ($ocorrencias_por_cidade as $cidade => $ocorrencias_na_cidade): ?>
+                    <div class="city-group" data-city="<?php echo htmlspecialchars($cidade); ?>">
+                        <h2 class="city-group-title"><?php echo htmlspecialchars($cidade); ?></h2>
+                        <div class="city-ocorrencias-grid">
+                            <?php foreach ($ocorrencias_na_cidade as $item): ?>
+                                <?php
+                                    // --- Lógica para calcular o tempo de reparo/instalação ---
+                                    $tempoReparo = "N/A";
+                                    if (!empty($item['inicio_periodo_reparo']) && !empty($item['fim_periodo_reparo'])) {
+                                        $inicio = new DateTime($item['inicio_periodo_reparo']);
+                                        $fim = new DateTime($item['fim_periodo_reparo']);
+                                        $diff = $inicio->diff($fim);
+                                        $tempoReparo = $inicio->format('d/m/Y') . ' até ' . $fim->format('d/m/Y') . ' (' . ($diff->days + 1) . ' dia(s))';
+                                    }
+                                    $tipoOcorrencia = $item['tipo_manutencao'];
+                                    // Acentuação para exibição
+                                    if ($tipoOcorrencia == 'instalação') $tipoOcorrencia = 'Instalação';
+                                ?>
+                                <div class="ocorrencia-item" data-type="<?php echo htmlspecialchars($item['tipo_manutencao']); ?>">
+                                    <div class="ocorrencia-header">
+                                        <h3><?php echo htmlspecialchars($item['nome_equip'] . ' - ' . $item['referencia_equip']); ?></h3>
+                                        <!-- A cidade já está no título do grupo, então podemos omitir aqui se quisermos -->
+                                    </div>
+
+                                    <div class="ocorrencia-details">
+                                        <?php if ($item['tipo_manutencao'] != 'instalação'): ?>
+                                            <!-- Layout de Manutenção -->
+                                            <div class="detail-item">
+                                                <strong>Ocorrência</strong> <span><?php echo htmlspecialchars($item['ocorrencia_reparo']); ?></span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <strong>Técnico(s)</strong> <span><?php echo htmlspecialchars($item['tecnicos_nomes'] ?: 'Não atribuído'); ?></span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <strong>Início Ocorrência</strong> <span><?php echo htmlspecialchars(date('d/m/Y H:i', strtotime($item['inicio_reparo']))); ?></span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <strong>Status</strong> <span class="status-em-andamento">Em andamento</span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <strong>Local</strong> <span><?php echo htmlspecialchars($item['local_completo']); ?></span>
+                                            </div>
+                                            
+                                            <div class="detail-item">
+                                                <strong>Tempo Reparo</strong> <span><?php echo htmlspecialchars($tempoReparo); ?></span>
+                                            </div>
+                                        <?php else: ?>
+                                            <!-- Layout de Instalação -->
+                                            <div class="detail-item stacked">
+                                                <strong>Tipo</strong>
+                                                <span><?php echo htmlspecialchars(ucfirst($tipoOcorrencia)); ?></span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <strong>Laço</strong>
+                                                <span>
+                                                    <?php if ($item['inst_laco']): ?>
+                                                        <span class="status-value instalado">Instalado <?php echo date('d/m/Y', strtotime($item['dt_laco'])); ?></span>
+                                                    <?php else: ?>
+                                                        <span class="status-value aguardando">Aguardando instalação</span>
+                                                    <?php endif; ?>
+                                                </span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <strong>Base</strong>
+                                                <span>
+                                                    <?php if ($item['inst_base']): ?>
+                                                        <span class="status-value instalado">Instalado <?php echo date('d/m/Y', strtotime($item['dt_base'])); ?></span>
+                                                    <?php else: ?>
+                                                        <span class="status-value aguardando">Aguardando instalação</span>
+                                                    <?php endif; ?>
+                                                </span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <strong>Infra</strong>
+                                                <span>
+                                                    <?php if ($item['inst_infra']): ?>
+                                                        <span class="status-value instalado">Instalado <?php echo date('d/m/Y', strtotime($item['data_infra'])); ?></span>
+                                                    <?php else: ?>
+                                                        <span class="status-value aguardando">Aguardando instalação</span>
+                                                    <?php endif; ?>
+                                                </span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <strong>Energia</strong>
+                                                <span>
+                                                    <?php if ($item['inst_energia']): ?>
+                                                        <span class="status-value instalado">Instalado <?php echo date('d/m/Y', strtotime($item['dt_energia'])); ?></span>
+                                                    <?php else: ?>
+                                                        <span class="status-value aguardando">Aguardando instalação</span>
+                                                    <?php endif; ?>
+                                                </span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <strong>Local</strong> <span><?php echo htmlspecialchars($item['local_completo']); ?></span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <strong>Início Ocorrência</strong> <span><?php echo htmlspecialchars(date('d/m/Y H:i', strtotime($item['inicio_reparo']))); ?></span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <strong>Técnico(s)</strong> <span><?php echo htmlspecialchars($item['tecnicos_nomes'] ?: 'Não atribuído'); ?></span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <strong>Tempo Instalação</strong> <span><?php echo htmlspecialchars($tempoReparo); ?></span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <strong>Status</strong> <span class="status-em-andamento">Em andamento</span>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </div>
 
         <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
     </div>
-    <div class="footer">
-        <p>&copy; 2025 APsystem. Todos os direitos reservados.</p>
-    </div>
-
-    <!-- Modal de Ocorrências em Andamento -->
-    <div id="ocorrenciasModal" class="modal">
-        <div class="modal-content">
-            <span class="close-button" onclick="closeOcorrenciasModal()">&times;</span>
-            <h3 id="ocorrenciasModalTitle"></h3>
-            <div id="ocorrenciasList">
-                <p id="loadingOcorrenciasMessage">Carregando ocorrências...</p>
-                <p id="ocorrenciasErrorMessage" class="message error hidden"></p>
-            </div>
-        </div>
-    </div>
 
     <script>
-        // Referências aos elementos do DOM
-        const mainTitle = document.getElementById('mainTitle'); // Nova referência para o H2
-        const initialButtonsSection = document.getElementById('initialButtonsSection');
-        const manutencoesBtn = document.getElementById('manutencoesBtn');
-        const instalacoesBtn = document.getElementById('instalacoesBtn');
+        document.addEventListener('DOMContentLoaded', function () {
+            const actionButtons = document.querySelectorAll('.action-btn');
+            const filterButtons = document.querySelectorAll('.filter-btn');
+            const cityGroups = document.querySelectorAll('.city-group');
 
-        const citySelectionSection = document.getElementById('citySelectionSection');
-        const cityButtonsContainer = document.getElementById('cityButtonsContainer');
-        const loadingCitiesMessage = document.getElementById('loadingCitiesMessage');
-        const cityErrorMessage = document.getElementById('cityErrorMessage');
+            let activeType = 'manutencao';
+            let activeCity = 'todos';
 
-        const ocorrenciasModal = document.getElementById('ocorrenciasModal');
-        const ocorrenciasModalTitle = document.getElementById('ocorrenciasModalTitle');
-        const ocorrenciasList = document.getElementById('ocorrenciasList');
-        const loadingOcorrenciasMessage = document.getElementById('loadingOcorrenciasMessage');
-        const ocorrenciasErrorMessage = document.getElementById('ocorrenciasErrorMessage');
+            function updateDisplay() {
+                cityGroups.forEach(group => {
+                    const groupCity = group.dataset.city;
+                    let hasVisibleItemsInGroup = false;
 
-        let currentFlowType = ''; // 'maintenance' ou 'installation'
+                    const cityMatch = activeCity === 'todos' || groupCity === activeCity;
 
-        // Funções de utilidade
-        function showMessage(element, msg) {
-            element.textContent = msg;
-            element.classList.remove('hidden');
-        }
+                    if (cityMatch) {
+                        group.querySelectorAll('.ocorrencia-item').forEach(item => {
+                            const itemType = item.dataset.type;
+                            let typeMatch = false;
 
-        function hideMessage(element) {
-            element.classList.add('hidden');
-            element.textContent = '';
-        }
+                            if (activeType === 'manutencao') {
+                                if (['corretiva', 'preventiva', 'preditiva'].includes(itemType)) {
+                                    typeMatch = true;
+                                }
+                            } else if (activeType === 'instalação') {
+                                if (itemType === 'instalação') {
+                                    typeMatch = true;
+                                }
+                            }
 
-        // Função para carregar e exibir os botões das cidades
-        async function loadCities() {
-            cityButtonsContainer.innerHTML = ''; // Limpa botões anteriores
-            loadingCitiesMessage.classList.remove('hidden');
-            hideMessage(cityErrorMessage);
-
-            console.log('Carregando cidades...');
-
-            try {
-                const response = await fetch('get_cidades.php');
-                const data = await response.json();
-
-                console.log('Resposta de get_cidades.php:', data);
-
-                loadingCitiesMessage.classList.add('hidden');
-
-                if (data.success && data.cidades.length > 0) {
-                    data.cidades.forEach(city => {
-                        const button = document.createElement('button');
-                        button.classList.add('city-button');
-                        button.textContent = city.nome;
-                        button.dataset.cityId = city.id_cidade;
-                        button.dataset.cityName = city.nome;
-                        button.addEventListener('click', () => openOcorrenciasModal(city.id_cidade, city.nome, currentFlowType));
-                        cityButtonsContainer.appendChild(button);
-                    });
-                } else {
-                    cityErrorMessage.textContent = data.message || 'Nenhuma cidade encontrada.';
-                    cityErrorMessage.classList.remove('hidden');
-                }
-            } catch (error) {
-                console.error('Erro ao carregar cidades:', error);
-                loadingCitiesMessage.classList.add('hidden');
-                cityErrorMessage.textContent = 'Erro ao carregar cidades. Tente novamente.';
-                cityErrorMessage.classList.remove('hidden');
-            }
-        }
-
-        // Função para calcular o tempo em andamento
-        function calculateTimeInProgress(startDateString) {
-            if (!startDateString) return 'N/A';
-
-            const startDate = new Date(startDateString);
-            const now = new Date();
-
-            const diffMs = now - startDate; // Diferença em milissegundos
-
-            const diffSeconds = Math.floor(diffMs / 1000);
-            const diffMinutes = Math.floor(diffSeconds / 60);
-            const diffHours = Math.floor(diffMinutes / 60);
-            const diffDays = Math.floor(diffHours / 24);
-
-            let result = [];
-            if (diffDays > 0) {
-                result.push(`${diffDays} dia(s)`);
-            }
-            const remainingHours = diffHours % 24;
-            if (remainingHours > 0) {
-                result.push(`${remainingHours} hora(s)`);
-            }
-            const remainingMinutes = diffMinutes % 60;
-            if (remainingMinutes > 0 && diffDays === 0) { // Mostra minutos se for menos de um dia
-                result.push(`${remainingMinutes} minuto(s)`);
-            } else if (diffMinutes === 0 && diffDays === 0 && remainingHours === 0) {
-                result.push('poucos segundos');
-            }
-
-            return result.length > 0 ? result.join(', ') : 'N/A';
-        }
-
-        // Função para abrir o modal de ocorrências e carregar os dados
-        async function openOcorrenciasModal(cityId, cityName, flowType) {
-            ocorrenciasModal.classList.add('is-active');
-            ocorrenciasModalTitle.textContent = `Ocorrências em Andamento - ${cityName}`;
-            ocorrenciasList.innerHTML = ''; // Limpa conteúdo anterior
-            loadingOcorrenciasMessage.classList.remove('hidden');
-            hideMessage(ocorrenciasErrorMessage);
-
-            console.log(`Carregando ocorrências para cidade ${cityName} (ID: ${cityId}) e fluxo ${flowType}...`);
-
-            try {
-                const url = `get_ocorrencias_em_andamento.php?city_id=${cityId}&flow_type=${flowType}`;
-                const response = await fetch(url);
-                const data = await response.json();
-
-                console.log('Resposta de get_ocorrencias_em_andamento.php:', data);
-
-                loadingOcorrenciasMessage.classList.add('hidden');
-
-                if (data.success && data.ocorrencias.length > 0) {
-                    data.ocorrencias.forEach(ocorrencia => {
-                        const ocorrenciaItem = document.createElement('div');
-                        ocorrenciaItem.classList.add('ocorrencia-item');
-
-                        // Formata a data de solicitação
-                        const solicitacaoDate = new Date(ocorrencia.inicio_reparo);
-                        const formattedDate = solicitacaoDate.toLocaleDateString('pt-BR', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
+                            if (typeMatch) {
+                                item.classList.remove('hidden');
+                                hasVisibleItemsInGroup = true;
+                            } else {
+                                item.classList.add('hidden');
+                            }
                         });
 
-                        const tempoEmAndamento = calculateTimeInProgress(ocorrencia.inicio_reparo);
-
-                        // Alterado para aplicar a classe highlight-label aos campos desejados e remover Tipo/Status
-                        let content = `
-                            <p><strong class="highlight-label">Nome do Equipamento:</strong> ${ocorrencia.nome_equip}</p>
-                            <p><strong class="highlight-label">Ocorrência do Reparo:</strong> ${ocorrencia.ocorrencia_reparo || 'N/A'}</p>
-                            <p><strong class="highlight-label">Referência do Equipamento:</strong> ${ocorrencia.referencia_equip}</p>
-                            <p><strong class="highlight-label">Técnico(s) Responsável(is):</strong> ${ocorrencia.tecnicos_nomes || 'Não atribuído'}</p>
-                            <p><strong>Data da Solicitação:</strong> ${formattedDate}</p>
-                            <p><strong>Tempo em Andamento:</strong> ${tempoEmAndamento}</p>
-                        `;
-                        
-                        // Adicionar mais detalhes para instalações se necessário
-                        if (ocorrencia.tipo_manutencao === 'instalação') {
-                            // Você pode adicionar campos específicos de instalação aqui se tiver no DB
-                            // Ex: Endereço completo, Latitude/Longitude, etc.
-                            // Por enquanto, os campos já são genéricos o suficiente.
+                        if (hasVisibleItemsInGroup) {
+                            group.classList.remove('hidden');
+                        } else {
+                            group.classList.add('hidden');
                         }
-
-                        ocorrenciaItem.innerHTML = content;
-                        ocorrenciasList.appendChild(ocorrenciaItem);
-                    });
-                } else {
-                    ocorrenciasErrorMessage.textContent = data.message || 'Nenhuma ocorrência encontrada.';
-                    ocorrenciasErrorMessage.classList.remove('hidden');
-                }
-            } catch (error) {
-                console.error('Erro ao carregar ocorrências:', error);
-                loadingOcorrenciasMessage.classList.add('hidden');
-                ocorrenciasErrorMessage.textContent = 'Erro ao carregar ocorrências. Tente novamente.';
-                ocorrenciasErrorMessage.classList.remove('hidden');
+                    } else {
+                        group.classList.add('hidden');
+                    }
+                });
             }
-        }
 
-        // Função para fechar o modal de ocorrências
-        function closeOcorrenciasModal() {
-            ocorrenciasModal.classList.remove('is-active');
-        }
-
-        // Event listener para o botão "Manutenções"
-        if (manutencoesBtn) {
-            manutencoesBtn.addEventListener('click', function() {
-                initialButtonsSection.style.display = 'none';
-                citySelectionSection.style.display = 'flex';
-                mainTitle.textContent = 'Manutenção em Andamento'; // Altera o título para Manutenção
-                currentFlowType = 'maintenance';
-                loadCities();
+            actionButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    actionButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    activeType = button.dataset.type;
+                    updateDisplay();
+                });
             });
-        }
 
-        // Event listener para o botão "Instalações"
-        if (instalacoesBtn) {
-            instalacoesBtn.addEventListener('click', function() {
-                initialButtonsSection.style.display = 'none';
-                citySelectionSection.style.display = 'flex';
-                mainTitle.textContent = 'Instalação em Andamento'; // Altera o título para Instalação
-                currentFlowType = 'installation';
-                loadCities();
+            filterButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    filterButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    activeCity = button.dataset.city;
+                    updateDisplay();
+                });
             });
-        }
 
-        // Função para voltar à seleção inicial de botões
-        function goBackToInitialSelection() {
-            citySelectionSection.style.display = 'none';
-            initialButtonsSection.style.display = 'flex';
-            mainTitle.textContent = 'Manutenção/Instalação em Andamento'; // Volta o título original
-            currentFlowType = ''; // Reseta o tipo de fluxo
-        }
-
-        // Fecha o modal se o usuário clicar fora dele
-        window.onclick = function(event) {
-            if (event.target == ocorrenciasModal) {
-                closeOcorrenciasModal();
-            }
-        }
+            updateDisplay();
+        });
     </script>
 </body>
-
 </html>
