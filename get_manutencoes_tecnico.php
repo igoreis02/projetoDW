@@ -29,7 +29,7 @@ $sql = "SELECT DISTINCT
         JOIN cidades c ON m.id_cidade = c.id_cidade
         LEFT JOIN endereco a ON e.id_endereco = a.id_endereco
         WHERE mt.id_tecnico = ? AND m.status_reparo = 'em andamento'
-        ORDER BY m.inicio_reparo DESC";
+        ORDER BY c.nome DESC";
 
 $stmt = $conn->prepare($sql);
 if ($stmt === false) {
