@@ -234,6 +234,7 @@
     const changePasswordSpinner = document.getElementById('changePasswordSpinner');
 
     let currentEmail = ''; // Para armazenar o email do usuário que precisa mudar a senha
+    let currentUserType = ''; // Para armazenar o tipo de usuário após o login
 
     // Função para exibir mensagens
     function showMessage(element, msg, type) {
@@ -295,6 +296,8 @@
         const data = await response.json();
 
         if (data.success) {
+          currentUserType = data.userType; // Armazena o tipo de usuário retornado pelo login.php
+
           if (data.needsPasswordChange) {
             showMessage(mensagemLoginDiv, data.message, 'error');
             openModal(); // Abre o modal para alteração de senha IMEDIATAMENTE
@@ -352,7 +355,11 @@
           // Após a senha ser alterada com sucesso, redireciona para o menu
           setTimeout(() => {
             closeModal(); // Fecha o modal
-            window.location.href = 'menu.php'; // Redireciona para o menu
+            if (currentUserType === 'tecnico') {
+              window.location.href = 'manutencao_tecnico.php'; // Redireciona técnico
+            } else {
+              window.location.href = 'menu.php'; // Redireciona os outros usuários
+            }
           }, 1500); // Dá um tempo para o usuário ler a mensagem de sucesso
         } else {
           showMessage(changePasswordMessageDiv, data.message, 'error');
