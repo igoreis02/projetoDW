@@ -65,7 +65,7 @@ if ($is_installation) {
     $completed_count += ($current_status['inst_infra'] || $data_infra) ? 1 : 0;
     $completed_count += ($current_status['inst_energia'] || $dt_energia) ? 1 : 0;
     
-    $novo_status_geral = ($completed_count == 4) ? 'provedor' : 'pendente';
+    $novo_status_geral = ($completed_count == 4) ? 'pendente' : 'pendente';
     $updates[] = "status_reparo = ?";
     $params[] = $novo_status_geral;
     $types .= "s";

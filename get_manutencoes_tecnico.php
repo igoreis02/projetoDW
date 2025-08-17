@@ -27,6 +27,7 @@ $manutencoes = [];
 $sql = "SELECT DISTINCT
             m.id_manutencao, m.inicio_reparo, e.nome_equip, e.referencia_equip,
             m.ocorrencia_reparo, m.tipo_manutencao, m.status_reparo,
+            m.observacao_instalacao,
             c.nome AS cidade_nome, a.latitude, a.longitude, a.logradouro,
             mt.inicio_reparoTec, mt.fim_reparoT,
             m.inst_laco, m.inst_base, m.inst_infra, m.inst_energia,
