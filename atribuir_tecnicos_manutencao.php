@@ -1,17 +1,7 @@
 <?php
 header('Content-Type: application/json');
 
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "gerenciamento_manutencoes";
-
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-if ($conn->connect_error) {
-    echo json_encode(['success' => false, 'message' => 'Erro de conexão: ' . $conn->connect_error]);
-    exit();
-}
+require_once 'conexao_bd.php';
 
 $input = json_decode(file_get_contents('php://input'), true);
 

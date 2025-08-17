@@ -1,17 +1,7 @@
 <?php
 header('Content-Type: application/json');
 
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "gerenciamento_manutencoes";
-
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-if ($conn->connect_error) {
-    echo json_encode(['success' => false, 'message' => 'Erro de conexão: ' . $conn->connect_error]);
-    exit();
-}
+require_once 'conexao_bd.php';
 
 // A consulta SQL agora usa o nome da tabela 'usuario' (minúsculo) e o alias 'id_tecnico'
 $sql = "SELECT id_usuario AS id_tecnico, nome FROM usuario WHERE tipo_usuario = 'tecnico' ORDER BY nome ASC";

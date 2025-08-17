@@ -7,19 +7,7 @@ header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
 // Configurações do banco de dados
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "gerenciamento_manutencoes"; // Nome do seu banco de dados
-
-// Cria a conexão com o banco de dados
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-// Verifica a conexão
-if ($conn->connect_error) {
-    echo json_encode(['success' => false, 'message' => 'Erro de conexão com o banco de dados: ' . $conn->connect_error]);
-    exit();
-}
+require_once 'conexao_bd.php';
 
 // Obtém os dados JSON da requisição (enviados pelo JavaScript)
 $input = file_get_contents('php://input');
