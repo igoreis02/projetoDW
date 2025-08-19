@@ -4,32 +4,21 @@ require_once 'conexao_bd.php';
 
 $input = json_decode(file_get_contents('php://input'), true);
 
-if (!isset($input['nome_prov']) || !isset($input['cidade_prov'])) {
+// **ALTERADO: Validação para id_cidade**
+if (!isset($input['nome_prov']) || !isset($input['id_cidade'])) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Dados inválidos.']);
+    echo json_encode(['success' => false, 'message' => 'Dados inválidos. Nome e cidade são obrigatórios.']);
     exit();
 }
 
 $nome_prov = $input['nome_prov'];
-$cidade_prov = $input['cidade_prov'];
+$id_cidade = $input['id_cidade'];
 
 try {
-    // Verificar se o provedor já existe
-    $stmt = $conn->prepare("SELECT COUNT(*) FROM provedor WHERE nome_prov = ?");
-    $stmt->bind_param("s", $nome_prov);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $row = $result->fetch_array();
-    if ($row[0] > 0) {
-        http_response_code(409); // Conflict
-        echo json_encode(['success' => false, 'message' => 'Provedor com este nome já existe.']);
-        exit();
-    }
-    $stmt->close();
-
     // Inserir o novo provedor
-    $stmt = $conn->prepare("INSERT INTO provedor (nome_prov, cidade_prov) VALUES (?, ?)");
-    $stmt->bind_param("ss", $nome_prov, $cidade_prov);
+    // **ALTERADO: Query e bind_param**
+    $stmt = $conn->prepare("INSERT INTO provedor (nome_prov, id_cidade) VALUES (?, ?)");
+    $stmt->bind_param("si", $nome_prov, $id_cidade);
     $stmt->execute();
 
     if ($stmt->affected_rows > 0) {

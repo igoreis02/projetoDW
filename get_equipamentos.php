@@ -6,31 +6,34 @@ header('Access-Control-Allow-Origin: *'); // Permite requisições de qualquer o
 require_once 'conexao_bd.php';
 
 // Obtém os parâmetros da requisição
-$city_id = $_GET['city_id'] ?? ''; // Agora esperamos o ID da cidade
+$city_id = $_GET['city_id'] ?? ''; 
 $search_term = $_GET['search_term'] ?? '';
 
 $equipamentos = [];
-$sql = "SELECT id_equipamento, nome_equip, referencia_equip FROM equipamentos WHERE status = 'ativo'";
+// **ALTERADO: Adicionado id_provedor à consulta**
+$sql = "SELECT id_equipamento, nome_equip, referencia_equip, id_provedor FROM equipamentos WHERE status = 'ativo'";
 $params = [];
 $types = "";
 
 if (!empty($city_id)) {
-    $sql .= " AND id_cidade = ?"; // Filtra por id_cidade
-    $params[] = (int)$city_id; // Garante que seja um inteiro
-    $types .= "i"; // 'i' para inteiro
+    $sql .= " AND id_cidade = ?";
+    $params[] = (int)$city_id;
+    $types .= "i";
 }
 
-  $sql .= " AND (nome_equip LIKE ? OR referencia_equip LIKE ?)";
-        $params[] = "%" . $search_term . "%";
-        $params[] = "%" . $search_term . "%";
-        $types .= "ss"; // 's' para string
+if (!empty($search_term)) { // Corrigido para verificar se o search_term não está vazio
+    $sql .= " AND (nome_equip LIKE ? OR referencia_equip LIKE ?)";
+    $searchTermParam = "%" . $search_term . "%";
+    $params[] = $searchTermParam;
+    $params[] = $searchTermParam;
+    $types .= "ss";
+}
 
-$sql .= " ORDER BY nome_equip ASC"; // Mantém a ordenação por nome_equip
+$sql .= " ORDER BY nome_equip ASC";
 
 $stmt = $conn->prepare($sql);
 
 if (!empty($params)) {
-    // Usar call_user_func_array para bind_param com array dinâmico
     $stmt->bind_param($types, ...$params);
 }
 
@@ -43,7 +46,7 @@ if ($result->num_rows > 0) {
     }
     echo json_encode(['success' => true, 'equipamentos' => $equipamentos]);
 } else {
-    echo json_encode(['success' => false, 'message' => 'Nenhum equipamento encontrado para esta cidade ou termo de busca.']);
+    echo json_encode(['success' => false, 'message' => 'Nenhum equipamento encontrado.']);
 }
 
 $stmt->close();

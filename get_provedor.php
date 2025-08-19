@@ -3,11 +3,15 @@ header('Content-Type: application/json');
 require_once 'conexao_bd.php';
 
 $search = isset($_GET['search']) ? $_GET['search'] : '';
-$sql = "SELECT id_provedor, nome_prov, cidade_prov FROM provedor";
+// **ALTERADO: Query com JOIN para buscar o nome da cidade**
+$sql = "SELECT p.id_provedor, p.nome_prov, p.id_cidade, c.nome AS cidade_prov 
+        FROM provedor p
+        LEFT JOIN cidades c ON p.id_cidade = c.id_cidade";
 
 if (!empty($search)) {
     $search_param = "%" . $search . "%";
-    $sql .= " WHERE nome_prov LIKE ? OR cidade_prov LIKE ?";
+    // **ALTERADO: Busca por nome do provedor ou nome da cidade**
+    $sql .= " WHERE p.nome_prov LIKE ? OR c.nome LIKE ?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("ss", $search_param, $search_param);
 } else {

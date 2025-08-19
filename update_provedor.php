@@ -4,7 +4,8 @@ require_once 'conexao_bd.php';
 
 $input = json_decode(file_get_contents('php://input'), true);
 
-if (!isset($input['id_provedor']) || !isset($input['nome_prov']) || !isset($input['cidade_prov'])) {
+// **ALTERADO: Validação para id_cidade**
+if (!isset($input['id_provedor']) || !isset($input['nome_prov']) || !isset($input['id_cidade'])) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Dados inválidos.']);
     exit();
@@ -12,11 +13,12 @@ if (!isset($input['id_provedor']) || !isset($input['nome_prov']) || !isset($inpu
 
 $id_provedor = $input['id_provedor'];
 $nome_prov = $input['nome_prov'];
-$cidade_prov = $input['cidade_prov'];
+$id_cidade = $input['id_cidade'];
 
 try {
-    $stmt = $conn->prepare("UPDATE provedor SET nome_prov = ?, cidade_prov = ? WHERE id_provedor = ?");
-    $stmt->bind_param("ssi", $nome_prov, $cidade_prov, $id_provedor);
+    // **ALTERADO: Query e bind_param**
+    $stmt = $conn->prepare("UPDATE provedor SET nome_prov = ?, id_cidade = ? WHERE id_provedor = ?");
+    $stmt->bind_param("sii", $nome_prov, $id_cidade, $id_provedor);
     $stmt->execute();
 
     if ($stmt->affected_rows > 0) {

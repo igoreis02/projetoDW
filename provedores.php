@@ -1,10 +1,8 @@
 <?php
 session_start();
-if (isset($_SESSION['user_id'])) {
-    $user_id = $_SESSION['user_id'];
-} else {
-  header("Location: index.html");
-  exit;
+if (!isset($_SESSION['user_id'])) {
+    header("Location: index.html");
+    exit;
 }
 $user_id = $_SESSION['user_id'];
 $user_email = $_SESSION['user_email'];
@@ -13,6 +11,7 @@ if (isset($_SESSION['tipo_usuario']) && ($_SESSION['tipo_usuario'] !== 'administ
     header('Location: menu.php');
     exit();
 }
+// O bloco PHP que buscava as cidades foi removido daqui.
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -317,11 +316,15 @@ if (isset($_SESSION['tipo_usuario']) && ($_SESSION['tipo_usuario'] !== 'administ
             <span class="fechar-modal" onclick="fecharModalEdicaoProvedor()">&times;</span>
             <h2>Editar Provedor</h2>
             <form id="formularioEdicaoProvedor" class="formulario-modal">
-                <input type="hidden" id="idProvedorEdicao">
+                <input type="hidden" id="idProvedorEdicao" name="id_provedor">
                 <label for="nomeProvedorEdicao">Nome:</label>
                 <input type="text" id="nomeProvedorEdicao" name="nome_prov" required>
+                
                 <label for="cidadeProvedorEdicao">Cidade:</label>
-                <input type="text" id="cidadeProvedorEdicao" name="cidade_prov" required>
+                <select id="cidadeProvedorEdicao" name="id_cidade" required>
+                    <option value="">Carregando...</option>
+                </select>
+
                 <div id="mensagemEdicaoProvedor" class="mensagem" style="display: none;"></div>
                 <button type="submit" class="botao-salvar">
                     <span id="textoBotaoSalvarEdicao">Salvar</span>
@@ -338,10 +341,12 @@ if (isset($_SESSION['tipo_usuario']) && ($_SESSION['tipo_usuario'] !== 'administ
             <form id="formularioAdicionarProvedor" class="formulario-modal">
                 <label for="nomeProvedorAdicionar">Nome:</label>
                 <input type="text" id="nomeProvedorAdicionar" name="nome_prov" required>
+
                 <label for="cidadeProvedorAdicionar">Cidade:</label>
-                <select id="cidadeProvedorAdicionar" name="cidade_prov" required>
-                    <option value="">Carregando cidades...</option>
+                <select id="cidadeProvedorAdicionar" name="id_cidade" required>
+                    <option value="">Carregando...</option>
                 </select>
+
                 <div id="mensagemAdicionarProvedor" class="mensagem" style="display: none;"></div>
                 <button type="submit" class="botao-salvar">
                     <span id="textoBotaoAdicionar">Adicionar</span>
@@ -361,66 +366,66 @@ if (isset($_SESSION['tipo_usuario']) && ($_SESSION['tipo_usuario'] !== 'administ
         }
 
         function alternarCarregamento(botao, spinner, mostrar) {
+            const botaoTexto = botao.querySelector('span:not(.carregando)');
             if (mostrar) {
                 botao.disabled = true;
                 spinner.style.display = 'block';
-                botao.querySelector('span').style.display = 'none';
+                if (botaoTexto) botaoTexto.style.display = 'none';
             } else {
                 botao.disabled = false;
                 spinner.style.display = 'none';
-                botao.querySelector('span').style.display = 'block';
+                if (botaoTexto) botaoTexto.style.display = 'block';
             }
         }
         
         function fecharModalEdicaoProvedor() {
             document.getElementById('modalEdicaoProvedor').classList.remove('esta-ativo');
-            document.getElementById('mensagemEdicaoProvedor').style.display = 'none';
         }
 
         function fecharModalAdicionarProvedor() {
             document.getElementById('modalAdicionarProvedor').classList.remove('esta-ativo');
-            document.getElementById('mensagemAdicionarProvedor').style.display = 'none';
-            document.getElementById('formularioAdicionarProvedor').reset();
         }
 
-        async function buscarCidadesParaSelect() {
-            const selectCidades = document.getElementById('cidadeProvedorAdicionar');
-            selectCidades.innerHTML = '<option value="">Carregando cidades...</option>';
+        // **NOVO: Função para carregar cidades nos selects dos modais**
+        async function carregarCidadesNosModais() {
+            const selects = [
+                document.getElementById('cidadeProvedorAdicionar'),
+                document.getElementById('cidadeProvedorEdicao')
+            ];
 
             try {
                 const response = await fetch('get_cidades.php');
                 const data = await response.json();
                 
-                if (data.success) {
-                    selectCidades.innerHTML = '<option value="">Selecione a Cidade</option>';
-                    data.cidades.forEach(cidade => {
-                        const option = document.createElement('option');
-                        option.value = cidade.nome;
-                        option.textContent = cidade.nome;
-                        selectCidades.appendChild(option);
-                    });
-                } else {
-                    selectCidades.innerHTML = '<option value="">Erro ao carregar cidades</option>';
-                }
+                selects.forEach(select => {
+                    select.innerHTML = '<option value="">Selecione a Cidade</option>'; // Limpa e adiciona a opção padrão
+                    if (data.success) {
+                        data.cidades.forEach(cidade => {
+                            const option = document.createElement('option');
+                            option.value = cidade.id_cidade;
+                            option.textContent = cidade.nome;
+                            select.appendChild(option);
+                        });
+                    } else {
+                        select.innerHTML = '<option value="">Erro ao carregar cidades</option>';
+                    }
+                });
             } catch (error) {
                 console.error('Erro ao buscar cidades:', error);
-                selectCidades.innerHTML = '<option value="">Erro ao carregar cidades</option>';
+                selects.forEach(select => {
+                    select.innerHTML = '<option value="">Erro de conexão</option>';
+                });
             }
         }
 
         function abrirModalAdicionarProvedor() {
-            const formularioAdicionar = document.getElementById('formularioAdicionarProvedor');
-            const botaoEnviar = formularioAdicionar.querySelector('.botao-salvar');
-            const carregandoAdicionarProvedor = document.getElementById('carregandoAdicionarProvedor');
-            const mensagemAdicionarProvedor = document.getElementById('mensagemAdicionarProvedor');
-
-            formularioAdicionar.reset();
-            alternarCarregamento(botaoEnviar, carregandoAdicionarProvedor, false);
-            botaoEnviar.style.display = 'flex';
-            mensagemAdicionarProvedor.style.display = 'none';
-
-            buscarCidadesParaSelect(); // Chama a nova função para popular o select
-
+            const formulario = document.getElementById('formularioAdicionarProvedor');
+            formulario.reset();
+            document.getElementById('mensagemAdicionarProvedor').style.display = 'none';
+            const botao = formulario.querySelector('.botao-salvar');
+            const spinner = document.getElementById('carregandoAdicionarProvedor');
+            alternarCarregamento(botao, spinner, false);
+            botao.style.display = 'flex';
             document.getElementById('modalAdicionarProvedor').classList.add('esta-ativo');
         }
 
@@ -428,22 +433,20 @@ if (isset($_SESSION['tipo_usuario']) && ($_SESSION['tipo_usuario'] !== 'administ
             const provedor = dadosProvedores.find(p => p.id_provedor == idProvedor);
             
             if (provedor) {
-                const formularioEdicao = document.getElementById('formularioEdicaoProvedor');
-                const botaoEnviar = formularioEdicao.querySelector('.botao-salvar');
-                const carregandoEdicaoProvedor = document.getElementById('carregandoEdicaoProvedor');
-                const mensagemEdicaoProvedor = document.getElementById('mensagemEdicaoProvedor');
-
-                alternarCarregamento(botaoEnviar, carregandoEdicaoProvedor, false);
-                botaoEnviar.style.display = 'flex';
-                mensagemEdicaoProvedor.style.display = 'none';
-
                 document.getElementById('idProvedorEdicao').value = provedor.id_provedor;
                 document.getElementById('nomeProvedorEdicao').value = provedor.nome_prov;
-                document.getElementById('cidadeProvedorEdicao').value = provedor.cidade_prov || ''; 
+                document.getElementById('cidadeProvedorEdicao').value = provedor.id_cidade;
+
+                const formulario = document.getElementById('formularioEdicaoProvedor');
+                const botao = formulario.querySelector('.botao-salvar');
+                const spinner = document.getElementById('carregandoEdicaoProvedor');
+                alternarCarregamento(botao, spinner, false);
+                botao.style.display = 'flex';
+                document.getElementById('mensagemEdicaoProvedor').style.display = 'none';
 
                 document.getElementById('modalEdicaoProvedor').classList.add('esta-ativo');
             } else {
-                exibirMensagem(document.getElementById('mensagemEdicaoProvedor'), 'Provedor não encontrado. Recarregue a página e tente novamente.', 'erro');
+                alert('Provedor não encontrado.');
             }
         }
 
@@ -494,16 +497,15 @@ if (isset($_SESSION['tipo_usuario']) && ($_SESSION['tipo_usuario'] !== 'administ
 
         document.getElementById('formularioEdicaoProvedor').addEventListener('submit', async function(evento) {
             evento.preventDefault();
-            const mensagemEdicaoProvedor = document.getElementById('mensagemEdicaoProvedor');
-            const botaoEnviar = this.querySelector('.botao-salvar');
-            const carregandoEdicaoProvedor = document.getElementById('carregandoEdicaoProvedor');
+            const mensagem = document.getElementById('mensagemEdicaoProvedor');
+            const botao = this.querySelector('.botao-salvar');
+            const spinner = document.getElementById('carregandoEdicaoProvedor');
+
+            alternarCarregamento(botao, spinner, true);
 
             const dadosFormulario = new FormData(this);
             const provedor = Object.fromEntries(dadosFormulario.entries());
             provedor.id_provedor = document.getElementById('idProvedorEdicao').value;
-
-            exibirMensagem(mensagemEdicaoProvedor, 'Salvando...', 'sucesso');
-            alternarCarregamento(botaoEnviar, carregandoEdicaoProvedor, true);
 
             try {
                 const response = await fetch('update_provedor.php', {
@@ -514,36 +516,32 @@ if (isset($_SESSION['tipo_usuario']) && ($_SESSION['tipo_usuario'] !== 'administ
                 const data = await response.json();
 
                 if (data.success) {
-                    exibirMensagem(mensagemEdicaoProvedor, 'Provedor salvo com sucesso!', 'sucesso');
-                    botaoEnviar.style.display = 'none';
-
+                    exibirMensagem(mensagem, 'Provedor salvo com sucesso!', 'sucesso');
+                    botao.style.display = 'none';
                     setTimeout(() => {
                         fecharModalEdicaoProvedor();
                         buscarEExibirProvedores('');
-                        botaoEnviar.style.display = 'flex';
                     }, 1500);
                 } else {
-                    exibirMensagem(mensagemEdicaoProvedor, data.message || 'Erro ao atualizar provedor.', 'erro');
-                    alternarCarregamento(botaoEnviar, carregandoEdicaoProvedor, false);
+                    exibirMensagem(mensagem, data.message || 'Erro ao atualizar.', 'erro');
+                    alternarCarregamento(botao, spinner, false);
                 }
             } catch (error) {
-                console.error('Erro ao salvar provedor:', error);
-                exibirMensagem(mensagemEdicaoProvedor, 'Ocorreu um erro ao salvar o provedor. Tente novamente.', 'erro');
-                alternarCarregamento(botaoEnviar, carregandoEdicaoProvedor, false);
+                exibirMensagem(mensagem, 'Ocorreu um erro. Tente novamente.', 'erro');
+                alternarCarregamento(botao, spinner, false);
             }
         });
 
         document.getElementById('formularioAdicionarProvedor').addEventListener('submit', async function(evento) {
             evento.preventDefault();
-            const mensagemAdicionarProvedor = document.getElementById('mensagemAdicionarProvedor');
-            const botaoEnviar = this.querySelector('.botao-salvar');
-            const carregandoAdicionarProvedor = document.getElementById('carregandoAdicionarProvedor');
+            const mensagem = document.getElementById('mensagemAdicionarProvedor');
+            const botao = this.querySelector('.botao-salvar');
+            const spinner = document.getElementById('carregandoAdicionarProvedor');
+
+            alternarCarregamento(botao, spinner, true);
 
             const dadosFormulario = new FormData(this);
             const provedor = Object.fromEntries(dadosFormulario.entries());
-
-
-            alternarCarregamento(botaoEnviar, carregandoAdicionarProvedor, true);
 
             try {
                 const response = await fetch('add_provedor.php', {
@@ -554,27 +552,26 @@ if (isset($_SESSION['tipo_usuario']) && ($_SESSION['tipo_usuario'] !== 'administ
                 const data = await response.json();
 
                 if (data.success) {
-                    exibirMensagem(mensagemAdicionarProvedor, 'Provedor adicionado com sucesso!', 'sucesso');
-                    botaoEnviar.style.display = 'none';
-
+                    exibirMensagem(mensagem, 'Provedor adicionado com sucesso!', 'sucesso');
+                    botao.style.display = 'none';
                     setTimeout(() => {
                         fecharModalAdicionarProvedor();
                         buscarEExibirProvedores('');
-                        botaoEnviar.style.display = 'flex';
                     }, 1500);
                 } else {
-                    exibirMensagem(mensagemAdicionarProvedor, data.message || 'Erro ao adicionar provedor.', 'erro');
-                    alternarCarregamento(botaoEnviar, carregandoAdicionarProvedor, false);
+                    exibirMensagem(mensagem, data.message || 'Erro ao adicionar.', 'erro');
+                    alternarCarregamento(botao, spinner, false);
                 }
             } catch (error) {
-                console.error('Erro ao adicionar provedor:', error);
-                exibirMensagem(mensagemAdicionarProvedor, 'Ocorreu um erro ao adicionar o provedor. Tente novamente.', 'erro');
-                alternarCarregamento(botaoEnviar, carregandoAdicionarProvedor, false);
+                exibirMensagem(mensagem, 'Ocorreu um erro. Tente novamente.', 'erro');
+                alternarCarregamento(botao, spinner, false);
             }
         });
 
         document.addEventListener('DOMContentLoaded', () => {
             buscarEExibirProvedores();
+            // **NOVO: Carrega as cidades assim que a página estiver pronta**
+            carregarCidadesNosModais();
         });
 
         window.onclick = function(evento) {
@@ -587,5 +584,4 @@ if (isset($_SESSION['tipo_usuario']) && ($_SESSION['tipo_usuario'] !== 'administ
         }
     </script>
 </body>
-
 </html>

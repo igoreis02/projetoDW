@@ -486,6 +486,7 @@ try {
 </head>
 
 <body>
+    <div class="background"></div>
     <main class="card">
         <header class="cabecalho">
             <a href="menu.php" class="botao-voltar">
