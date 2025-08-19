@@ -39,21 +39,48 @@ try {
     $stmt_endereco->close();
 
     // 2. Inserir na tabela `equipamentos`
-    // Adicionada a coluna id_provedor
-    $stmt_equipamento = $conn->prepare("INSERT INTO equipamentos (tipo_equip, nome_equip, referencia_equip, status, qtd_faixa, id_cidade, id_endereco, id_provedor) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    $referencia_equip = $data['referencia_equip'] ?? null;
-    $data['qtd_faixa'] = $data['qtd_faixa'] ?? null; // Garantir que qtd_faixa esteja definido
+    // CORREÇÃO: Adicionado o oitavo '?' para corresponder às 8 colunas
+    $stmt_equipamento = $conn->prepare("INSERT INTO equipamentos (tipo_equip, nome_equip, referencia_equip, status, qtd_faixa, id_cidade, id_endereco, id_provedor) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
     
-    $stmt_equipamento->bind_param("ssssiiii", $data['tipo_equip'], $data['nome_equip'], $referencia_equip, $data['status'], $data['qtd_faixa'], $data['id_cidade'], $id_endereco, $data['id_provedor']);
+    $referencia_equip = $data['referencia_equip'] ?? null;
+    // Garante que qtd_faixa seja null se não for enviado, para evitar problemas com o bind_param
+    $qtd_faixa = !empty($data['qtd_faixa']) ? (int)$data['qtd_faixa'] : null;
+    $id_provedor = (int)$data['id_provedor'];
+    $id_cidade = (int)$data['id_cidade'];
+    
+    // O bind_param precisa da quantidade correta de tipos e variáveis
+    $stmt_equipamento->bind_param("ssssiiii", 
+        $data['tipo_equip'], 
+        $data['nome_equip'], 
+        $referencia_equip, 
+        $data['status'], 
+        $qtd_faixa, 
+        $id_cidade, 
+        $id_endereco, 
+        $id_provedor
+    );
     $stmt_equipamento->execute();
     $stmt_equipamento->close();
 
     $conn->commit();
     echo json_encode(['success' => true, 'message' => 'Equipamento adicionado com sucesso!']);
+
 } catch (mysqli_sql_exception $e) {
     $conn->rollback();
-    error_log("Erro ao adicionar equipamento: " . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'Erro no banco de dados. Tente novamente.']);
+    // Verifica se o erro é de entrada duplicada (código 1062)
+    if ($e->getCode() == 1062) {
+        // Verifica se a duplicata foi na chave 'referencia_equip'
+        if (strpos($e->getMessage(), 'referencia_equip') !== false) {
+            echo json_encode(['success' => false, 'message' => 'Erro: A Referência informada já está em uso por outro equipamento.']);
+        } else {
+            // Caso seja outra chave única no futuro
+            echo json_encode(['success' => false, 'message' => 'Erro: Já existe um registro com um dos valores informados.']);
+        }
+    } else {
+        // Para todos os outros erros de banco de dados
+        error_log("Erro ao adicionar equipamento: " . $e->getMessage()); 
+        echo json_encode(['success' => false, 'message' => 'Erro no banco de dados. Tente novamente.']);
+    }
 }
 
 $conn->close();

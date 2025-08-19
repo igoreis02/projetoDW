@@ -576,6 +576,11 @@ if (!isset($_SESSION['user_id'])) {
                 const statusHTML = `<span class="status-tag status-pendente">Pendente</span>`;
                 let detailsHTML = '';
 
+                let atribuidoPorHTML = '';
+                if (item.atribuido_por) {
+                    atribuidoPorHTML = `<div class="detail-item"><strong>Atribuído por</strong> <span>${item.atribuido_por}</span></div>`;
+                }
+
                 if (item.tipo_manutencao === 'instalação') {
                     const lacoStatus = item.inst_laco == 1 ? `<span class="status-value instalado">Instalado ${formatDate(item.dt_laco)}</span>` : `<span class="status-value aguardando">Aguardando instalação</span>`;
                     const baseStatus = item.inst_base == 1 ? `<span class="status-value instalado">Instalado ${formatDate(item.dt_base)}</span>` : `<span class="status-value aguardando">Aguardando instalação</span>`;
@@ -596,8 +601,10 @@ if (!isset($_SESSION['user_id'])) {
                     `;
                 } else {
                      detailsHTML = `
+                     
                         <div class="detail-item"><strong>Ocorrência</strong> <span>${item.ocorrencia_reparo || 'Não especificada'}</span></div>
                         <div class="detail-item"><strong>Início Ocorrência</strong> <span>${new Date(item.inicio_reparo).toLocaleString('pt-BR')}</span></div>
+                        ${atribuidoPorHTML}
                         <div class="detail-item"><strong>Status</strong> ${statusHTML}</div>
                         <div class="detail-item"><strong>Local</strong> <span>${item.local_completo || ''}</span></div>
                         ${item.motivo_devolucao ? `<div class="detail-item"><strong>Devolvida</strong> <span>${item.motivo_devolucao}</span></div>` : ''}

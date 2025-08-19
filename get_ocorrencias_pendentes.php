@@ -29,11 +29,13 @@ try {
                 e.nome_equip,
                 e.referencia_equip,
                 c.nome AS cidade,
-                CONCAT(en.logradouro, ', ', en.bairro) AS local_completo
+                CONCAT(en.logradouro, ', ', en.bairro) AS local_completo,
+                SUBSTRING_INDEX(u.nome, ' ', 1) AS atribuido_por
             FROM manutencoes AS m
             JOIN equipamentos AS e ON m.id_equipamento = e.id_equipamento
             JOIN cidades AS c ON m.id_cidade = c.id_cidade
             LEFT JOIN endereco AS en ON e.id_endereco = en.id_endereco
+            LEFT JOIN usuario AS u ON m.id_usuario = u.id_usuario
             WHERE m.status_reparo = 'pendente' 
             GROUP BY m.id_manutencao
             ORDER BY c.nome, m.inicio_reparo DESC";
