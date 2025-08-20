@@ -1,0 +1,14 @@
+# Ativa o motor de reescrita de URL
+RewriteEngine On
+
+# Remove a barra final se houver (ex: /veiculos/ vira /veiculos)
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)/$ /$1 [L,R=301]
+
+# Recondiciona a URL para adicionar .php internamente
+# 1. Verifica se o que foi pedido não é um arquivo existente
+RewriteCond %{REQUEST_FILENAME} !-f
+# 2. Verifica se o que foi pedido não é um diretório existente
+RewriteCond %{REQUEST_FILENAME} !-d
+# 3. Pega a URL sem .php e a reescreve internamente para o arquivo .php correspondente
+RewriteRule ^([^\.]+)$ $1.php [NC,L]

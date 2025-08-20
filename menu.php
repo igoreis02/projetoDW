@@ -305,27 +305,27 @@ if (isset($user_id)) {
                 <button id="change-password-btn" class="btn-change-password">Alterar Senha</button>
             </div>
             
-            <a href="usuarios.php" data-title="Gerenciar Usuários">
+            <a href="usuarios" data-title="Gerenciar Usuários">
                 <i class="fas fa-users-cog" ></i>
                 <span>Gerenciar Usuários</span>
             </a>
-            <a href="cidades.php" data-title="Gerenciar Cidades">
+            <a href="cidades" data-title="Gerenciar Cidades">
                 <i class="fas fa-city" ></i>
                 <span>Gerenciar Cidades</span>
             </a>
-            <a href="equipamentos.php" data-title="Informações dos Equipamentos">
+            <a href="equipamentos" data-title="Informações dos Equipamentos">
                 <i class="fas fa-server" ></i>
                 <span>Informações dos Equipamentos</span>
             </a>
-            <a href="veiculos.php" data-title="Veículos">
+            <a href="veiculos" data-title="Veículos">
                 <i class="fas fa-car"></i>
                 <span>Veículos</span>
             </a>
-            <a href="provedores.php" data-title="Provedores">
+            <a href="provedores" data-title="Provedores">
                 <i class="fas fa-network-wired"></i>
                 <span>Provedores</span>
             </a>
-            <a href="logout.php" data-title="Sair">
+            <a href="logout" data-title="Sair">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Logout</span>
             </a>
