@@ -122,7 +122,7 @@
             const data = Object.fromEntries(formData.entries());
 
             try {
-                const response = await fetch('add_veiculo.php', {
+                const response = await fetch('API/add_veiculo.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
