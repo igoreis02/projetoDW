@@ -52,7 +52,7 @@ try {
         
         echo json_encode(['success' => true, 'message' => 'Status atualizado com sucesso para ' . $new_status]);
 
-    }elseif ($action === 'concluir_provedor') { // <-- ADICIONE ESTE BLOCO
+    } elseif ($action === 'concluir_provedor') { 
         $reparo_finalizado = $input['reparo_finalizado'] ?? null;
         if (empty($reparo_finalizado)) {
             throw new Exception('A descrição do reparo finalizado é obrigatória.');
@@ -71,25 +71,22 @@ try {
         
         echo json_encode(['success' => true, 'message' => 'Ocorrência do provedor concluída com sucesso.']);
 
-    } elseif ($action === 'edit' || $action === 'assign') { // Agora trata 'assign' também
-        $ocorrencia = $input['ocorrencia_reparo'] ?? '';
+    } elseif ($action === 'concluir_reparo') {
+        $reparo_finalizado = $input['reparo_finalizado'] ?? null;
         $inicio_reparo = $input['inicio_reparo'] ?? null;
         $fim_reparo = $input['fim_reparo'] ?? null;
         $tecnicos = $input['tecnicos'] ?? [];
         $veiculos = $input['veiculos'] ?? [];
 
-        // 1. Atualiza a tabela principal de manutenções
-        if ($action === 'assign') {
-            // Se for uma atribuição, muda o status para 'em andamento'
-            $stmt = $conn->prepare("UPDATE manutencoes SET ocorrencia_reparo = ?, status_reparo = 'em andamento' WHERE id_manutencao = ?");
-            $stmt->bind_param('si', $ocorrencia, $id_manutencao);
-        } else {
-            // Se for uma edição normal, apenas atualiza a ocorrência
-            $stmt = $conn->prepare("UPDATE manutencoes SET ocorrencia_reparo = ? WHERE id_manutencao = ?");
-            $stmt->bind_param('si', $ocorrencia, $id_manutencao);
+        if (empty($reparo_finalizado) || empty($inicio_reparo) || empty($fim_reparo) || empty($tecnicos) || empty($veiculos)) {
+            throw new Exception('Todos os campos são obrigatórios para concluir o reparo.');
         }
+
+        // 1. Atualiza a tabela principal de manutenções
+        $stmt = $conn->prepare("UPDATE manutencoes SET status_reparo = 'concluido', fim_reparo = NOW(), reparo_finalizado = ? WHERE id_manutencao = ?");
+        $stmt->bind_param('si', $reparo_finalizado, $id_manutencao);
         if (!$stmt->execute()) {
-            throw new Exception('Falha ao atualizar a ocorrência.');
+            throw new Exception('Falha ao concluir a manutenção principal.');
         }
         $stmt->close();
 
@@ -101,14 +98,57 @@ try {
         }
         $stmt->close();
 
-        // 3. Insere as novas associações de técnicos e veículos
+        // 3. Insere as novas associações (já concluídas)
+        $stmt = $conn->prepare("INSERT INTO manutencoes_tecnicos (id_manutencao, id_tecnico, id_veiculo, inicio_reparoTec, fim_reparoT, status_tecnico) VALUES (?, ?, ?, ?, ?, 'concluido')");
+        
+        $veiculos_count = count($veiculos);
+        $i = 0;
+        foreach ($tecnicos as $id_tecnico) {
+            $id_veiculo_associado = $veiculos_count > 0 ? $veiculos[$i % $veiculos_count] : null;
+            
+            $stmt->bind_param('iiiss', $id_manutencao, $id_tecnico, $id_veiculo_associado, $inicio_reparo, $fim_reparo);
+            if (!$stmt->execute()) {
+                throw new Exception('Falha ao inserir novo técnico/veículo para a conclusão.');
+            }
+            $i++;
+        }
+        $stmt->close();
+
+        echo json_encode(['success' => true, 'message' => 'Reparo concluído e registrado com sucesso.']);
+
+
+    } elseif ($action === 'edit' || $action === 'assign') {
+        $ocorrencia = $input['ocorrencia_reparo'] ?? '';
+        $inicio_reparo = $input['inicio_reparo'] ?? null;
+        $fim_reparo = $input['fim_reparo'] ?? null;
+        $tecnicos = $input['tecnicos'] ?? [];
+        $veiculos = $input['veiculos'] ?? [];
+
+        if ($action === 'assign') {
+            $stmt = $conn->prepare("UPDATE manutencoes SET ocorrencia_reparo = ?, status_reparo = 'em andamento' WHERE id_manutencao = ?");
+            $stmt->bind_param('si', $ocorrencia, $id_manutencao);
+        } else {
+            $stmt = $conn->prepare("UPDATE manutencoes SET ocorrencia_reparo = ? WHERE id_manutencao = ?");
+            $stmt->bind_param('si', $ocorrencia, $id_manutencao);
+        }
+        if (!$stmt->execute()) {
+            throw new Exception('Falha ao atualizar a ocorrência.');
+        }
+        $stmt->close();
+
+        $stmt = $conn->prepare("DELETE FROM manutencoes_tecnicos WHERE id_manutencao = ?");
+        $stmt->bind_param('i', $id_manutencao);
+        if (!$stmt->execute()) {
+            throw new Exception('Falha ao limpar técnicos e veículos antigos.');
+        }
+        $stmt->close();
+
         if (!empty($tecnicos)) {
             $stmt = $conn->prepare("INSERT INTO manutencoes_tecnicos (id_manutencao, id_tecnico, id_veiculo, inicio_reparoTec, fim_reparoT) VALUES (?, ?, ?, ?, ?)");
             
             $veiculos_count = count($veiculos);
             $i = 0;
             foreach ($tecnicos as $id_tecnico) {
-                // Associa um veículo a cada técnico, fazendo um ciclo na lista de veículos se necessário
                 $id_veiculo_associado = $veiculos_count > 0 ? $veiculos[$i % $veiculos_count] : null;
                 
                 $stmt->bind_param('iiiss', $id_manutencao, $id_tecnico, $id_veiculo_associado, $inicio_reparo, $fim_reparo);

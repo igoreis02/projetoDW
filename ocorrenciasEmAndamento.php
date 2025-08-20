@@ -260,20 +260,20 @@ if (!isset($_SESSION['user_id'])) {
             transition: all 0.2s ease;
         }
 
-        .edit-btn {
-            background-color: #3b82f6; /* Azul */
-            color: white;
-        }
-        .edit-btn:hover {
-            background-color: #2563eb;
-        }
-
-        .status-btn {
+        .concluir-btn {
             background-color: #22c55e; /* Verde */
             color: white;
         }
-        .status-btn:hover {
+        .concluir-btn:hover {
             background-color: #16a34a;
+        }
+
+        .status-btn {
+            background-color: #3b82f6; /* Azul */
+            color: white;
+        }
+        .status-btn:hover {
+            background-color: #2563eb;
         }
 
         .cancel-btn {
@@ -366,13 +366,18 @@ if (!isset($_SESSION['user_id'])) {
             font-weight: 600;
             color: #374151;
         }
-        .form-group input, .form-group textarea {
+        .form-group input, .form-group textarea, .form-group p {
             width: 100%;
             padding: 0.75rem;
             border: 1px solid #d1d5db;
             border-radius: 0.5rem;
             font-size: 1em;
             box-sizing: border-box;
+            margin:0;
+        }
+         .form-group p {
+            background-color: #f3f4f6;
+            min-height: 44px;
         }
         .date-inputs {
             display: flex;
@@ -467,46 +472,51 @@ if (!isset($_SESSION['user_id'])) {
         <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
     </div>
 
-    <div id="editModal" class="modal">
+    <div id="concluirModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Editar Ocorrência</h3>
-                <button class="modal-close" onclick="closeModal('editModal')">&times;</button>
+                <h3>Concluir Reparo</h3>
+                <button class="modal-close" onclick="closeModal('concluirModal')">&times;</button>
             </div>
             <div class="modal-body">
-                <h4 id="editModalEquipName" style="font-size: 1.2em; text-align: center;"></h4>
+                 <h4 id="concluirModalEquipName" style="font-size: 1.2em; text-align: center;"></h4>
                 <div class="form-group">
-                    <label for="editOcorrenciaReparo">Ocorrência</label>
-                    <textarea id="editOcorrenciaReparo" rows="3"></textarea>
+                    <label>Ocorrência</label>
+                    <p id="concluirOcorrenciaText"></p>
                 </div>
                 <div class="form-group">
-                    <label>Selecione a data para execução</label>
+                    <label>Datas de Execução</label>
                     <div class="date-inputs">
                         <div class="form-group">
-                            <label for="editInicioReparo">Início Reparo</label>
-                            <input type="date" id="editInicioReparo">
+                            <label for="concluirInicioReparo">Início</label>
+                            <input type="date" id="concluirInicioReparo">
                         </div>
                         <div class="form-group">
-                            <label for="editFimReparo">Fim Reparo</label>
-                            <input type="date" id="editFimReparo">
+                            <label for="concluirFimReparo">Fim</label>
+                            <input type="date" id="concluirFimReparo">
                         </div>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Técnicos</label>
-                    <div id="editTecnicosContainer" class="choice-buttons"></div>
+                    <label>Técnicos Envolvidos</label>
+                    <div id="concluirTecnicosContainer" class="choice-buttons"></div>
                 </div>
                 <div class="form-group">
-                    <label>Veículos</label>
-                    <div id="editVeiculosContainer" class="choice-buttons"></div>
+                    <label>Veículos Utilizados</label>
+                    <div id="concluirVeiculosContainer" class="choice-buttons"></div>
+                </div>
+                 <div class="form-group">
+                    <label for="reparoFinalizado">Descrição do Reparo Realizado</label>
+                    <textarea id="reparoFinalizado" rows="3" placeholder="Descreva o que foi feito..."></textarea>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="modal-btn btn-secondary" onclick="closeModal('editModal')">Fechar</button>
-                <button class="modal-btn btn-primary" onclick="saveEdit()">Salvar Alterações</button>
+                <button class="modal-btn btn-secondary" onclick="closeModal('concluirModal')">Cancelar</button>
+                <button class="modal-btn btn-primary" onclick="saveConclusion()">Concluir Reparo</button>
             </div>
         </div>
     </div>
+
 
     <div id="confirmationModal" class="modal confirmation-modal">
         <div class="modal-content">
@@ -527,7 +537,6 @@ if (!isset($_SESSION['user_id'])) {
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // ... (código existente de seleção de elementos e variáveis)
             const actionButtons = document.querySelectorAll('.action-btn');
             const filterContainer = document.getElementById('filterContainer');
             const ocorrenciasContainer = document.getElementById('ocorrenciasContainer');
@@ -652,7 +661,7 @@ if (!isset($_SESSION['user_id'])) {
                 }
                 const actionsHTML = `
                     <div class="item-actions">
-                        <button class="item-btn edit-btn" onclick="openEditModal(${item.id_manutencao})">Editar</button>
+                        <button class="item-btn concluir-btn" onclick="openConcluirModal(${item.id_manutencao})">Concluir</button>
                         <button class="item-btn status-btn" onclick="openConfirmationModal(${item.id_manutencao}, 'pendente')">Status</button>
                         <button class="item-btn cancel-btn" onclick="openConfirmationModal(${item.id_manutencao}, 'cancelado')">Cancelar</button>
                     </div>
@@ -742,7 +751,6 @@ if (!isset($_SESSION['user_id'])) {
                 });
             }
 
-            // --- Lógica dos Modais ---
             window.openModal = function(modalId) { document.getElementById(modalId).classList.add('is-active'); }
             window.closeModal = function(modalId) { document.getElementById(modalId).classList.remove('is-active'); }
 
@@ -753,28 +761,29 @@ if (!isset($_SESSION['user_id'])) {
                 }
                 return null;
             }
-
-            window.openEditModal = async function(id) {
+            
+            window.openConcluirModal = async function(id) {
                 currentEditingId = id;
                 const item = findOcorrenciaById(id);
                 if (!item) return;
 
-                document.getElementById('editModalEquipName').textContent = `${item.nome_equip} - ${item.referencia_equip}`;
-                document.getElementById('editOcorrenciaReparo').value = item.ocorrencia_reparo;
-                document.getElementById('editInicioReparo').value = formatDateForInput(item.inicio_periodo_reparo);
-                document.getElementById('editFimReparo').value = formatDateForInput(item.fim_periodo_reparo);
+                document.getElementById('concluirModalEquipName').textContent = `${item.nome_equip} - ${item.referencia_equip}`;
+                document.getElementById('concluirOcorrenciaText').textContent = item.ocorrencia_reparo;
+                document.getElementById('reparoFinalizado').value = '';
+                document.getElementById('concluirInicioReparo').value = formatDateForInput(item.inicio_periodo_reparo);
+                document.getElementById('concluirFimReparo').value = formatDateForInput(item.fim_periodo_reparo);
                 
-                const tecnicosContainer = document.getElementById('editTecnicosContainer');
-                const veiculosContainer = document.getElementById('editVeiculosContainer');
+                const tecnicosContainer = document.getElementById('concluirTecnicosContainer');
+                const veiculosContainer = document.getElementById('concluirVeiculosContainer');
                 tecnicosContainer.innerHTML = 'A carregar...';
                 veiculosContainer.innerHTML = 'A carregar...';
                 
-                openModal('editModal');
+                openModal('concluirModal');
 
                 const [tecnicosRes, veiculosRes] = await Promise.all([fetch('get_tecnicos.php'), fetch('get_veiculos.php')]);
                 const tecnicosData = await tecnicosRes.json();
                 const veiculosData = await veiculosRes.json();
-                
+
                 const selectedTecnicos = item.tecnicos_nomes ? item.tecnicos_nomes.split(', ') : [];
                 tecnicosContainer.innerHTML = '';
                 if (tecnicosData.success) {
@@ -803,19 +812,31 @@ if (!isset($_SESSION['user_id'])) {
                     });
                 }
             }
+            
+            window.saveConclusion = async function() {
+                const reparoFinalizado = document.getElementById('reparoFinalizado').value;
+                const inicioReparo = document.getElementById('concluirInicioReparo').value;
+                const fimReparo = document.getElementById('concluirFimReparo').value;
+                const tecnicos = Array.from(document.querySelectorAll('#concluirTecnicosContainer .choice-btn.selected')).map(btn => btn.dataset.id);
+                const veiculos = Array.from(document.querySelectorAll('#concluirVeiculosContainer .choice-btn.selected')).map(btn => btn.dataset.id);
 
-            window.saveEdit = async function() {
-                const selectedTecnicos = Array.from(document.querySelectorAll('#editTecnicosContainer .choice-btn.selected')).map(btn => btn.dataset.id);
-                const selectedVeiculos = Array.from(document.querySelectorAll('#editVeiculosContainer .choice-btn.selected')).map(btn => btn.dataset.id);
+                if (!reparoFinalizado.trim()) {
+                    alert('Por favor, descreva o reparo realizado.');
+                    return;
+                }
+                 if (!inicioReparo || !fimReparo || tecnicos.length === 0 || veiculos.length === 0) {
+                    alert('Por favor, preencha as datas e selecione ao menos um técnico e um veículo.');
+                    return;
+                }
 
                 const dataToSend = {
-                    action: 'edit',
+                    action: 'concluir_reparo',
                     id_manutencao: currentEditingId,
-                    ocorrencia_reparo: document.getElementById('editOcorrenciaReparo').value,
-                    inicio_reparo: document.getElementById('editInicioReparo').value,
-                    fim_reparo: document.getElementById('editFimReparo').value,
-                    tecnicos: selectedTecnicos,
-                    veiculos: selectedVeiculos
+                    reparo_finalizado: reparoFinalizado,
+                    inicio_reparo: inicioReparo,
+                    fim_reparo: fimReparo,
+                    tecnicos: tecnicos,
+                    veiculos: veiculos
                 };
 
                 try {
@@ -826,10 +847,10 @@ if (!isset($_SESSION['user_id'])) {
                     });
                     const result = await response.json();
                     if (result.success) {
-                        closeModal('editModal');
-                        fetchData(); // Recarrega os dados para mostrar as alterações
+                        closeModal('concluirModal');
+                        fetchData();
                     } else {
-                        alert('Erro ao salvar: ' + result.message);
+                        alert('Erro ao concluir: ' + result.message);
                     }
                 } catch (error) {
                     alert('Erro de comunicação com o servidor.');
@@ -865,7 +886,7 @@ if (!isset($_SESSION['user_id'])) {
                     const result = await response.json();
                     if (result.success) {
                         closeModal('confirmationModal');
-                        fetchData(); // Recarrega os dados
+                        fetchData();
                     } else {
                         alert('Erro ao alterar o status: ' + result.message);
                     }
@@ -874,7 +895,6 @@ if (!isset($_SESSION['user_id'])) {
                 }
             }
             
-            // Inicia o carregamento dos dados
             fetchData();
         });
     </script>
