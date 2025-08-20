@@ -7,10 +7,6 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 $user_email = $_SESSION['user_email'];
 
-if (isset($_SESSION['tipo_usuario']) && ($_SESSION['tipo_usuario'] !== 'administrador' && $_SESSION['tipo_usuario'] !== 'provedor')) {
-    header('Location: menu.php');
-    exit();
-}
 // O bloco PHP que buscava as cidades foi removido daqui.
 ?>
 <!DOCTYPE html>

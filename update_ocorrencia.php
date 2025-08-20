@@ -52,6 +52,25 @@ try {
         
         echo json_encode(['success' => true, 'message' => 'Status atualizado com sucesso para ' . $new_status]);
 
+    }elseif ($action === 'concluir_provedor') { // <-- ADICIONE ESTE BLOCO
+        $reparo_finalizado = $input['reparo_finalizado'] ?? null;
+        if (empty($reparo_finalizado)) {
+            throw new Exception('A descrição do reparo finalizado é obrigatória.');
+        }
+
+        $stmt = $conn->prepare(
+            "UPDATE manutencoes 
+             SET status_reparo = 'concluido', fim_reparo = NOW(), reparo_finalizado = ? 
+             WHERE id_manutencao = ?"
+        );
+        $stmt->bind_param('si', $reparo_finalizado, $id_manutencao);
+        if (!$stmt->execute()) {
+            throw new Exception('Falha ao concluir a ocorrência do provedor.');
+        }
+        $stmt->close();
+        
+        echo json_encode(['success' => true, 'message' => 'Ocorrência do provedor concluída com sucesso.']);
+
     } elseif ($action === 'edit' || $action === 'assign') { // Agora trata 'assign' também
         $ocorrencia = $input['ocorrencia_reparo'] ?? '';
         $inicio_reparo = $input['inicio_reparo'] ?? null;

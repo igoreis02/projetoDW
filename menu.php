@@ -346,6 +346,10 @@ if (isset($user_id)) {
                             <i class="fas fa-clipboard-list"></i>
                             <span>Atribuir Técnico</span>
                         </a>
+                        <a href="#" class="menu-button" id="ocorrenciaProvedores">
+                            <i class="fas fa-network-wired"></i>
+                            <span>Ocorrência Provedores</span>
+                        </a>
                     </div>
                     <div class="menu-row">
                         <a href="#" class="menu-button" id="manutencaoAndamento">
@@ -355,6 +359,10 @@ if (isset($user_id)) {
                         <a href="#" class="menu-button" id="manutencaoPendentes">
                             <i class="fas fa-clock"></i>
                             <span>Manutenções Pendentes</span>
+                        </a>
+                        <a href="#" class="menu-button" id="gestaoOcorrencias">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>Gestão de Ocorrências</span>
                         </a>
                     </div>
                 </div>
@@ -447,7 +455,20 @@ if (isset($user_id)) {
                     window.location.href = 'info_cidade.php';
                 });
             }
-            
+            const ocorrenciaProvedoresButton = document.getElementById('ocorrenciaProvedores');
+            if (ocorrenciaProvedoresButton) {
+                ocorrenciaProvedoresButton.addEventListener('click', function() {
+                    window.location.href = 'ocorrencia_provedores.php';
+                });
+            }
+
+            const gestaoOcorrenciasButton = document.getElementById('gestaoOcorrencias');
+            if (gestaoOcorrenciasButton) {
+                gestaoOcorrenciasButton.addEventListener('click', function() {
+                    window.location.href = 'gestao_ocorrencias.php';
+                });
+            }
+
             const logoutButton = document.querySelector('.sidebar-icons-left a[href="logout.php"]');
             if (logoutButton) {
                 logoutButton.addEventListener('click', function(event) {
