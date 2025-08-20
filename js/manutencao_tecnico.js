@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Variáveis de Estado ---
     let currentManutencao = null;
     let filtroAtual = 'corretiva';
-    let todasAsManutencoes = []; // Variável para guardar todas as manutenções e evitar novas buscas
+    let todasAsManutencoes = []; 
 
     // --- Funções Principais ---
 
@@ -112,7 +112,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         modalConcluirTitulo.textContent = isInstalacao ? 'Registrar Progresso da Instalação' : 'Concluir Reparo';
         confirmConcluirReparoBtn.textContent = isInstalacao ? 'Confirmar Etapas' : 'Confirmar Reparo';
-
+        
+        // CORREÇÃO: Garante que o botão esteja visível ao abrir
+        confirmConcluirReparoBtn.classList.remove('oculto');
+        
         camposReparo.classList.toggle('oculto', isInstalacao);
         camposInstalacao.classList.toggle('oculto', !isInstalacao);
 
@@ -141,7 +144,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         hideMessage(concluirReparoMessage);
         concluirReparoModal.classList.add('ativo');
-        confirmConcluirReparoBtn.classList.remove('oculto');
         toggleSpinner(confirmConcluirReparoBtn, concluirReparoSpinner, false);
     }
 
@@ -153,6 +155,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (referenciaEquipamentoDevolucaoModal) referenciaEquipamentoDevolucaoModal.textContent = manutencao.referencia_equip;
         if (ocorrenciaReparoDevolucaoModal) ocorrenciaReparoDevolucaoModal.textContent = manutencao.ocorrencia_reparo || 'N/A';
 
+        // CORREÇÃO: Garante que o botão esteja visível ao abrir
+        if (botaoConfirmarDevolucao) botaoConfirmarDevolucao.classList.remove('oculto');
+
         const isInstalacao = manutencao.tipo_manutencao.toLowerCase() === 'instalação';
         const tituloModal = devolucaoModal.querySelector('h3');
         if (tituloModal) {
@@ -163,7 +168,6 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleSpinner(botaoConfirmarDevolucao, spinnerDevolucao, false);
     }
 
-    // Função ÚNICA para renderizar a lista a partir dos dados guardados
     function renderManutencoes() {
         if (!listaManutencoes) return;
 
@@ -175,7 +179,15 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const manutencoesFiltradas = todasAsManutencoes.filter(m => m.tipo_manutencao.toLowerCase() === filtroAtual.toLowerCase());
+        // CORREÇÃO: Filtro de 'corretiva' agora inclui todos os tipos de manutenção
+        const manutencoesFiltradas = todasAsManutencoes.filter(m => {
+            const tipo = m.tipo_manutencao.toLowerCase();
+            if (filtroAtual === 'instalação') {
+                return tipo === 'instalação';
+            } else { // O botão "Corretiva" agora mostra todos os outros tipos
+                return tipo !== 'instalação';
+            }
+        });
 
         if (manutencoesFiltradas.length > 0) {
             manutencoesFiltradas.forEach(manutencao => {
@@ -216,20 +228,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     const statusLaco = manutencao.inst_laco == 1 ? 'Instalado' : 'Aguardando Instalação';
                     const statusInfra = manutencao.inst_infra == 1 ? 'Instalado' : 'Aguardando Instalação';
                     const statusEnergia = manutencao.inst_energia == 1 ? 'Instalado' : 'Aguardando Instalação';
-
-                    // Adiciona a observação de instalação, se existir
                     let htmlObservacao = '';
                     if (manutencao.observacao_instalacao) {
                         htmlObservacao = `<div class="descricao-problema" style="margin-top: 5px;"><span class="rotulo-info">Observação:</span> ${manutencao.observacao_instalacao}</div>`;
                     }
-
                     htmlConteudoPrincipal = `<div class="instalacao-status-container">
                                 <p class="status-item"><span class="rotulo-info">Base:</span> ${statusBase}</p>
                                 <p class="status-item"><span class="rotulo-info">Laço:</span> ${statusLaco}</p>
                                 <p class="status-item"><span class="rotulo-info">Infra:</span> ${statusInfra}</p>
                                 <p class="status-item"><span class="rotulo-info">Energia:</span> ${statusEnergia}</p>
                             </div>
-                            ${htmlObservacao}`; 
+                            ${htmlObservacao}`;
                 } else {
                     htmlConteudoPrincipal = `<div class="descricao-problema"><span class="rotulo-info">Descrição do problema:</span> ${manutencao.ocorrencia_reparo || 'Não informada'}</div>`;
                 }
@@ -250,12 +259,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     botaoLocalizar.classList.add('botao-localizar');
                     botaoLocalizar.textContent = 'Localizar no Mapa';
                     botaoLocalizar.addEventListener('click', () => {
-                        window.open(`https://www.google.com/maps/search/?api=1&query=${manutencao.latitude},${manutencao.longitude}`, '_blank');
+                        window.open(`https://www.google.com/maps?q=${manutencao.latitude},${manutencao.longitude}`, '_blank');
                     });
                     divBotoes.appendChild(botaoLocalizar);
                 }
 
-                const textoConcluir = isInstalacao ? 'Concluir Instalação' : 'Concluir Reparo';
+                const textoConcluir = isInstalacao ? 'Registrar Progresso' : 'Concluir Reparo';
                 const textoDevolver = isInstalacao ? 'Devolver Instalação' : 'Devolver Reparo';
 
                 const botaoConcluir = document.createElement('button');
@@ -274,8 +283,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 listaManutencoes.appendChild(itemDiv);
             });
         } else {
-            const tipo = filtroAtual;
-            showMessage(mensagemErro, `Nenhuma manutenção do tipo '${tipo}' encontrada.`, 'info');
+            const tipo = filtroAtual === 'instalação' ? 'instalações' : 'manutenções';
+            showMessage(mensagemErro, `Nenhuma ${tipo} encontrada.`, 'info');
         }
     }
 
@@ -299,7 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 showMessage(msgElemento, data.message || 'Status atualizado com sucesso!', 'sucesso');
                 setTimeout(() => {
                     isDevolucao ? fecharModalDevolucao() : fecharModalConcluirReparo();
-                    initialLoad(); // Recarrega todos os dados após uma atualização bem-sucedida
+                    initialLoad();
                 }, 2000);
             } else {
                 toggleSpinner(botao, spinner, false);
@@ -328,32 +337,19 @@ document.addEventListener('DOMContentLoaded', () => {
         filtroAtual = tipo;
         btnCorretiva.classList.toggle('ativo', tipo === 'corretiva');
         btnInstalacao.classList.toggle('ativo', tipo === 'instalação');
-        renderManutencoes(); // Apenas renderiza novamente com o novo filtro
+        renderManutencoes();
     }
 
-    // Função para verificar novas manutenções em tempo real (Polling)
     async function checkForUpdates() {
         try {
-            console.log("Verificando atualizações..."); // Para debug
             const response = await fetch(`get_manutencoes_tecnico.php?user_id=${userId}`);
             const newData = await response.json();
 
             if (newData.success && newData.manutencoes) {
-
-                // 1. Cria uma 'assinatura' da lista antiga baseada nos IDs.
                 const oldSignature = todasAsManutencoes.map(m => m.id_manutencao).sort().join(',');
-
-                // 2. Cria uma 'assinatura' da nova lista que acabamos de buscar.
                 const newSignature = newData.manutencoes.map(m => m.id_manutencao).sort().join(',');
-
-                // 3. Compara as assinaturas. Se forem diferentes, algo mudou!
                 if (newSignature !== oldSignature) {
-                    console.log("Novas atualizações encontradas! Atualizando a tela.");
-
-                    // Atualiza a nossa lista de dados principal
                     todasAsManutencoes = newData.manutencoes;
-
-                    // Re-renderiza a lista na tela com os novos dados
                     renderManutencoes();
                 }
             }
@@ -362,7 +358,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Função para CARREGAR os dados da API apenas UMA VEZ
     async function initialLoad() {
         mensagemCarregamento.classList.remove('oculto');
         hideMessage(mensagemErro);
@@ -370,29 +365,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(`get_manutencoes_tecnico.php?user_id=${userId}`);
             const data = await response.json();
 
-            if (data.success && data.manutencoes) {
-                todasAsManutencoes = data.manutencoes;
-            } else {
-                todasAsManutencoes = [];
-            }
+            todasAsManutencoes = (data.success && data.manutencoes) ? data.manutencoes : [];
 
-            const hasCorretivas = todasAsManutencoes.some(m => m.tipo_manutencao.toLowerCase() === 'corretiva');
-            const hasInstalacoes = todasAsManutencoes.some(m => m.tipo_manutencao.toLowerCase() === 'instalação');
-
-            if (hasCorretivas) {
-                filtroAtual = 'corretiva';
-            } else if (hasInstalacoes) {
-                filtroAtual = 'instalação';
-            } else {
-                filtroAtual = 'corretiva'; // Padrão
-            }
+            const hasManutencoes = todasAsManutencoes.some(m => m.tipo_manutencao.toLowerCase() !== 'instalação');
+            filtroAtual = hasManutencoes ? 'corretiva' : 'instalação';
 
             btnCorretiva.classList.toggle('ativo', filtroAtual === 'corretiva');
             btnInstalacao.classList.toggle('ativo', filtroAtual === 'instalação');
 
             renderManutencoes();
-
-            // Inicia a verificação de atualizações a cada 30 segundos
             setInterval(checkForUpdates, 30000);
 
         } catch (error) {
