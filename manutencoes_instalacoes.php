@@ -508,8 +508,9 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
                     <p><strong>Observação:</strong> <span id="confirmInstallationNotes"></span></p>
                 </div>
 
-                <div id="confirmTecnicoInLocoContainer" class="hidden">
-                    <p><strong>Ação:</strong> <span>A ocorrência será registrada como PENDENTE para atribuição de técnico.</span></p>
+                <div id="confirmProviderContainer" class="hidden">
+                    <p><strong>Problema:</strong> <span id="confirmProviderProblem"></span></p>
+                    <p><strong>Ação:</strong> <span>Atribuído ao provedor <strong id="confirmProviderName"></strong>, aguardando manutenção.</span></p>
                 </div>
 
                 <p><strong>Tipo de Operação:</strong> <span id="confirmMaintenanceType"></span></p>
