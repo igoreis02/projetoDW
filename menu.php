@@ -358,11 +358,11 @@ if (isset($user_id)) {
                     <div class="menu-row">
                         <a href="#" class="menu-button" id="manutencaoAndamento">
                             <i class="fas fa-cogs"></i>
-                            <span>Manutenções Em Andamento</span>
+                            <span>Ocorrências Em Andamento</span>
                         </a>
                         <a href="#" class="menu-button" id="manutencaoPendentes">
                             <i class="fas fa-clock"></i>
-                            <span>Manutenções Pendentes</span>
+                            <span>Ocorrências Pendentes</span>
                         </a>
                         <a href="#" class="menu-button" id="gestaoOcorrencias">
                             <i class="fas fa-exclamation-triangle"></i>
@@ -414,62 +414,44 @@ if (isset($user_id)) {
             const manutencaoButton = document.getElementById('manutencao');
             if (manutencaoButton) {
                 manutencaoButton.addEventListener('click', function() {
-                    window.location.href = 'manutencoes_instalacoes.php';
+                    window.location.href = 'manutencoes_instalacoes';
                 });
             }
             
-            const gerenciarUsuariosButton = document.getElementById('gerenciarUsuarios');
-            if (gerenciarUsuariosButton) {
-                gerenciarUsuariosButton.addEventListener('click', function() {
-                    window.location.href = 'gerenciar_usuario.php';
-                });
-            }
             
             const manutencaoAndamentoButton = document.getElementById('manutencaoAndamento');
             if (manutencaoAndamentoButton) {
                 manutencaoAndamentoButton.addEventListener('click', function() {
-                    window.location.href = 'manutencao_EmAndamento.php';
+                    window.location.href = 'ocorrenciasEmAndamento';
                 });
             }
 
             const manutencaoPendentesButton = document.getElementById('manutencaoPendentes');
             if (manutencaoPendentesButton) {
                 manutencaoPendentesButton.addEventListener('click', function() {
-                    window.location.href = 'manutencao_pendente.php';
+                    window.location.href = 'ocorrenciasPendentes';
                 });
             }
 
             const atribuirTecnicoButton = document.getElementById('atribuirTecnico');
             if (atribuirTecnicoButton) {
                 atribuirTecnicoButton.addEventListener('click', function() {
-                    window.location.href = 'atribuir_tecnico.php';
+                    window.location.href = 'atribuir_tecnico';
                 });
             }
 
-            const infoEquipamentosButton = document.getElementById('infoEquipamentos');
-            if (infoEquipamentosButton) {
-                infoEquipamentosButton.addEventListener('click', function() {
-                    window.location.href = 'info_equipamentos.php';
-                });
-            }
             
-            const gerenciarCidadesButton = document.getElementById('gerenciarCidades');
-            if (gerenciarCidadesButton) {
-                gerenciarCidadesButton.addEventListener('click', function() {
-                    window.location.href = 'info_cidade.php';
-                });
-            }
             const ocorrenciaProvedoresButton = document.getElementById('ocorrenciaProvedores');
             if (ocorrenciaProvedoresButton) {
                 ocorrenciaProvedoresButton.addEventListener('click', function() {
-                    window.location.href = 'ocorrencia_provedores.php';
+                    window.location.href = 'ocorrenciaProvedores';
                 });
             }
 
             const gestaoOcorrenciasButton = document.getElementById('gestaoOcorrencias');
             if (gestaoOcorrenciasButton) {
                 gestaoOcorrenciasButton.addEventListener('click', function() {
-                    window.location.href = 'gestao_ocorrencias.php';
+                    window.location.href = 'gestaoOcorrencias';
                 });
             }
 
