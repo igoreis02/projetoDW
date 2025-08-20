@@ -483,6 +483,21 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
         </div>
     </div>
 
+    <div id="pendingMaintenanceModal" class="modal">
+        <div class="modal-content">
+            <h3>Aviso de Manutenção Pendente</h3>
+            <p>
+                Esse equipamento já tem manutenção cadastrada.
+                <br><br>
+                <strong>Deseja adicionar esse problema à ocorrência existente?</strong>
+            </p>
+            <div class="confirmation-buttons">
+                <button class="confirm-button page-button" id="confirmAppendProblem">Sim</button>
+                <button class="cancel-button page-button" id="cancelAppendProblem">Não</button>
+            </div>
+        </div>
+    </div>
+
     <div id="confirmationModal" class="modal">
         <div class="modal-content">
             <span class="close-button" onclick="closeConfirmationModal()">&times;</span>
@@ -525,6 +540,8 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             <p id="confirmMessage" class="message hidden"></p>
         </div>
     </div>
+
+    
     <script src="js/manutencoes_instalacoes.js"></script>
 </body>
 

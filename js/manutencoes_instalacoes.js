@@ -45,6 +45,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const confirmProviderProblem = document.getElementById('confirmProviderProblem');
     const confirmProviderName = document.getElementById('confirmProviderName');
 
+    const pendingMaintenanceModal = document.getElementById('pendingMaintenanceModal');
+    const confirmAppendProblemBtn = document.getElementById('confirmAppendProblem');
+    const cancelAppendProblemBtn = document.getElementById('cancelAppendProblem');
+
     // --- SEÇÃO DE VARIÁVEIS DE ESTADO ---
     let allEquipments = [];
     let selectedCityId = null, selectedCityName = '';
@@ -52,6 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let selectedProblemDescription = '', selectedRepairDescription = '';
     let currentMaintenanceType = '', currentRepairStatus = '', currentFlow = '';
     let realizadoPor = '', tecnicoInLoco = null;
+     let existingMaintenanceData = null; // **NOVO**
 
     // --- SEÇÃO DE FUNÇÕES ---
 
@@ -178,7 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
             realizadoPorSection.style.display = 'flex';
         } else {
             realizadoPorSection.style.display = 'none';
-            resetarBotoesDeEscolha(); 
+             resetarBotoesDeEscolha(); 
         }
         repairDescriptionSection.style.display = 'none';
         tecnicoInLocoSection.style.display = 'none';
@@ -216,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
         repairDescriptionSection.style.display = 'flex';
     });
 
-    confirmEquipmentSelectionBtn.addEventListener('click', () => {
+     async function proceedToConfirmation() {
         const equipId = equipmentSelect.value;
         const problemDesc = problemDescriptionInput.value.trim();
         const repairDesc = repairDescriptionInput.value.trim();
@@ -241,59 +246,111 @@ document.addEventListener('DOMContentLoaded', () => {
         equipmentSelectionErrorMessage.classList.add('hidden');
         selectedEquipment = allEquipments.find(e => e.id_equipamento == equipId);
         selectedProblemDescription = problemDesc;
-        selectedRepairDescription = repairDesc;
-
-        confirmCityNameSpan.textContent = selectedCityName;
-        confirmMaintenanceTypeSpan.textContent = currentMaintenanceType.charAt(0).toUpperCase() + currentMaintenanceType.slice(1);
+        
+        // Preenche o modal de confirmação
+        document.getElementById('confirmCityName').textContent = selectedCityName;
+        document.getElementById('confirmMaintenanceType').textContent = currentMaintenanceType.charAt(0).toUpperCase() + currentMaintenanceType.slice(1);
         
         let finalStatus = currentRepairStatus;
         
-        // Esconde todas as seções de detalhes para começar do zero
-        maintenanceConfirmationDetails.classList.add('hidden');
-        confirmProviderContainer.classList.add('hidden');
+        document.getElementById('maintenanceConfirmationDetails').classList.add('hidden');
+        document.getElementById('confirmProviderContainer').classList.add('hidden');
         
         if (currentMaintenanceType === 'preditiva' && realizadoPor === 'provedor' && tecnicoInLoco) {
             finalStatus = 'pendente';
-            
-            // Mostra a seção específica do provedor
-            confirmProviderProblem.textContent = selectedProblemDescription;
-            confirmProviderName.textContent = selectedEquipment.nome_prov || 'Não especificado';
-            confirmProviderContainer.classList.remove('hidden');
+            document.getElementById('confirmProviderProblem').textContent = selectedProblemDescription;
+            document.getElementById('confirmProviderName').textContent = selectedEquipment.nome_prov || 'Não especificado';
+            document.getElementById('confirmProviderContainer').classList.remove('hidden');
         } else {
-            // Mostra a seção de manutenção normal
-            confirmEquipmentNameSpan.textContent = `${selectedEquipment.nome_equip} - ${selectedEquipment.referencia_equip}`;
-            confirmProblemDescriptionSpan.textContent = selectedProblemDescription;
-            if (selectedRepairDescription) {
-                confirmRepairDescriptionSpan.textContent = selectedRepairDescription;
-                confirmRepairDescriptionContainer.classList.remove('hidden');
+            document.getElementById('confirmEquipmentName').textContent = `${selectedEquipment.nome_equip} - ${selectedEquipment.referencia_equip}`;
+            document.getElementById('confirmProblemDescription').textContent = selectedProblemDescription;
+            if (repairDesc) {
+                document.getElementById('confirmRepairDescriptionSpan').textContent = repairDesc;
+                document.getElementById('confirmRepairDescriptionContainer').classList.remove('hidden');
             } else {
-                 confirmRepairDescriptionContainer.classList.add('hidden');
+                 document.getElementById('confirmRepairDescriptionContainer').classList.add('hidden');
             }
-            maintenanceConfirmationDetails.classList.remove('hidden');
+            document.getElementById('maintenanceConfirmationDetails').classList.remove('hidden');
         }
         
-        confirmRepairStatusSpan.textContent = finalStatus.charAt(0).toUpperCase() + finalStatus.slice(1);
+        document.getElementById('confirmRepairStatus').textContent = finalStatus.charAt(0).toUpperCase() + finalStatus.slice(1);
         confirmationModal.classList.add('is-active');
+    }
+
+    confirmEquipmentSelectionBtn.addEventListener('click', async () => {
+        const equipId = equipmentSelect.value;
+        const problemDesc = problemDescriptionInput.value.trim();
+        
+        if (!equipId || !problemDesc) {
+            equipmentSelectionErrorMessage.textContent = 'Por favor, selecione um equipamento e descreva o problema.';
+            equipmentSelectionErrorMessage.classList.remove('hidden');
+            return;
+        }
+        equipmentSelectionErrorMessage.classList.add('hidden');
+
+        // **NOVO FLUXO: Apenas para Matriz Técnica (corretiva)**
+        if (currentFlow === 'maintenance' && currentMaintenanceType === 'corretiva') {
+            try {
+                const response = await fetch(`check_pending_maintenance.php?equipment_id=${equipId}`);
+                const data = await response.json();
+
+                if (data.found) {
+                    existingMaintenanceData = {
+                        id: data.id_manutencao,
+                        ocorrencia: data.ocorrencia_existente
+                    };
+                    pendingMaintenanceModal.classList.add('is-active');
+                    return; 
+                }
+            } catch (error) {
+                console.error("Erro ao verificar manutenção pendente:", error);
+            }
+        }
+        
+        proceedToConfirmation();
     });
 
-    confirmSaveButton.addEventListener('click', async function () {
+    confirmAppendProblemBtn.addEventListener('click', () => {
+        pendingMaintenanceModal.classList.remove('is-active');
+        proceedToConfirmation(); 
+    });
+
+    cancelAppendProblemBtn.addEventListener('click', () => {
+        pendingMaintenanceModal.classList.remove('is-active');
+        existingMaintenanceData = null;
+    });
+
+    confirmSaveButton.addEventListener('click', async function() {
         confirmSpinner.classList.remove('hidden');
         confirmSaveButton.disabled = true;
         cancelSaveButton.disabled = true;
         confirmMessage.classList.add('hidden');
-
+    
         try {
-            const payload = {
-                city_id: selectedCityId,
-                equipment_id: selectedEquipment.id_equipamento,
-                id_provedor: selectedEquipment.id_provedor,
-                problem_description: selectedProblemDescription,
-                reparo_finalizado: repairDescriptionInput.value.trim(),
-                tipo_manutencao: currentMaintenanceType,
-                status_reparo: currentRepairStatus,
-                realizado_por: realizadoPor,
-                tecnico_in_loco: tecnicoInLoco
-            };
+            let payload = {};
+            
+            if (existingMaintenanceData) {
+                payload = {
+                    id_manutencao_existente: existingMaintenanceData.id,
+                    ocorrencia_concatenada: `${existingMaintenanceData.ocorrencia}, ${problemDescriptionInput.value.trim()}`,
+                    equipment_id: selectedEquipment.id_equipamento,
+                    city_id: selectedCityId,
+                    problem_description: problemDescriptionInput.value.trim(),
+                    tipo_manutencao: 'corretiva'
+                };
+            } else {
+                payload = {
+                    city_id: selectedCityId,
+                    equipment_id: selectedEquipment.id_equipamento,
+                    id_provedor: selectedEquipment.id_provedor,
+                    problem_description: selectedProblemDescription,
+                    reparo_finalizado: repairDescriptionInput.value.trim(),
+                    tipo_manutencao: currentMaintenanceType,
+                    status_reparo: currentRepairStatus,
+                    realizado_por: realizadoPor,
+                    tecnico_in_loco: tecnicoInLoco
+                };
+            }
 
             const response = await fetch('save_manutencao.php', {
                 method: 'POST',
@@ -302,22 +359,22 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const data = await response.json();
             if (!data.success) throw new Error(data.message || 'Ocorreu um erro.');
-
-            confirmMessage.textContent = "Cadastrada com sucesso!";
+            
+            confirmMessage.textContent = data.message;
             confirmMessage.className = 'message success';
             confirmMessage.classList.remove('hidden');
             confirmSpinner.classList.add('hidden');
-            confirmationButtonsDiv.style.display = 'none';
-
+            confirmationButtonsDiv.style.display = 'none'; 
+    
             setTimeout(() => {
                 closeCadastroManutencaoModal();
             }, 2000);
-
+    
         } catch (error) {
             confirmMessage.textContent = error.message;
             confirmMessage.className = 'message error';
             confirmMessage.classList.remove('hidden');
-
+    
             confirmSpinner.classList.add('hidden');
             confirmSaveButton.disabled = false;
             cancelSaveButton.disabled = false;
