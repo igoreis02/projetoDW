@@ -297,7 +297,6 @@ if (!isset($_SESSION['user_id'])) {
                 const startDate = startDateInput.value;
                 const endDate = endDateInput.value;
                 
-                // Adiciona o novo filtro de tipo
                 const params = new URLSearchParams({
                     type: activeType,
                     status: activeStatus,
@@ -316,7 +315,7 @@ if (!isset($_SESSION['user_id'])) {
                         updateDisplay();
                     } else {
                         ocorrenciasContainer.innerHTML = `<p>${result.message || 'Nenhuma ocorrência encontrada.'}</p>`;
-                        updateCityFilters([]); // Limpa filtros de cidade se não houver dados
+                        updateCityFilters([]);
                     }
                 } catch (error) {
                     console.error('Erro ao buscar dados:', error);
@@ -386,25 +385,32 @@ if (!isset($_SESSION['user_id'])) {
                 const statusTag = `<span class="status-tag tag-${statusClass}">${item.status_reparo}</span>`;
 
                 let detailsHTML = '';
+                const formatDate = (dateString) => {
+                    if (!dateString || dateString === '0000-00-00') return '';
+                    const date = new Date(dateString);
+                    return new Date(date.getTime() + date.getTimezoneOffset() * 60000).toLocaleDateString('pt-BR');
+                };
 
                 // Verifica se é uma instalação para montar o HTML específico
                 if (item.tipo_manutencao === 'instalação') {
-                    const formatDate = (dateString) => {
-                        if (!dateString || dateString === '0000-00-00') return '';
-                        const date = new Date(dateString);
-                        // Corrige o fuso horário para exibição correta
-                        return new Date(date.getTime() + date.getTimezoneOffset() * 60000).toLocaleDateString('pt-BR');
-                    };
-
-                    const lacoStatus = item.inst_laco == 1 ? `<span class="status-value instalado">Instalado ${formatDate(item.dt_laco)}</span>` : `<span class="status-value aguardando">Aguardando</span>`;
+                    
                     const baseStatus = item.inst_base == 1 ? `<span class="status-value instalado">Instalado ${formatDate(item.dt_base)}</span>` : `<span class="status-value aguardando">Aguardando</span>`;
                     const infraStatus = item.inst_infra == 1 ? `<span class="status-value instalado">Instalado ${formatDate(item.data_infra)}</span>` : `<span class="status-value aguardando">Aguardando</span>`;
                     const energiaStatus = item.inst_energia == 1 ? `<span class="status-value instalado">Instalado ${formatDate(item.dt_energia)}</span>` : `<span class="status-value aguardando">Aguardando</span>`;
+                    const provStatus = item.inst_prov == 1 ? `<span class="status-value instalado">Instalado ${formatDate(item.data_provedor)}</span>` : `<span class="status-value aguardando">Aguardando</span>`;
 
                     detailsHTML += `<div class="detail-item"><strong>Base</strong> <span>${baseStatus}</span></div>`;
-                    detailsHTML += `<div class="detail-item"><strong>Laço</strong> <span>${lacoStatus}</span></div>`;
+                    
+                    // Adiciona o Laço apenas se o tipo de equipamento não for DOME
+                    if (item.tipo_equip !== 'DOME') {
+                        const lacoStatus = item.inst_laco == 1 ? `<span class="status-value instalado">Instalado ${formatDate(item.dt_laco)}</span>` : `<span class="status-value aguardando">Aguardando</span>`;
+                        detailsHTML += `<div class="detail-item"><strong>Laço</strong> <span>${lacoStatus}</span></div>`;
+                    }
+                    
                     detailsHTML += `<div class="detail-item"><strong>Infra</strong> <span>${infraStatus}</span></div>`;
                     detailsHTML += `<div class="detail-item"><strong>Energia</strong> <span>${energiaStatus}</span></div>`;
+                    detailsHTML += `<div class="detail-item"><strong>Provedor</strong> <span>${provStatus}</span></div>`;
+
                 } else {
                     // HTML padrão para manutenções
                     detailsHTML += `<div class="detail-item"><strong>Problema</strong> <span>${item.ocorrencia_reparo || 'N/A'}</span></div>`;
@@ -421,7 +427,7 @@ if (!isset($_SESSION['user_id'])) {
                 if (item.tecnicos_nomes) {
                     detailsHTML += `<div class="detail-item"><strong>Técnicos</strong> <span>${item.tecnicos_nomes}</span></div>`;
                 }
-                if (item.nome_prov) {
+                if (item.nome_prov && item.tipo_manutencao !== 'instalação') { // Provedor já mostrado em instalação
                     detailsHTML += `<div class="detail-item"><strong>Provedor</strong> <span>${item.nome_prov}</span></div>`;
                 }
                 detailsHTML += `<div class="detail-item"><strong>Status</strong> <span>${statusTag}</span></div>`;

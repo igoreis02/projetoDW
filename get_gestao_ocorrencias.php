@@ -5,7 +5,7 @@ header('Access-Control-Allow-Origin: *');
 require_once 'conexao_bd.php';
 
 // --- Pega os parâmetros do GET ---
-$type_filtro = $_GET['type'] ?? 'manutencao'; // Novo filtro de tipo
+$type_filtro = $_GET['type'] ?? 'manutencao';
 $status_filtro = $_GET['status'] ?? 'todos';
 $data_inicio = $_GET['data_inicio'] ?? null;
 $data_fim = $_GET['data_fim'] ?? null;
@@ -15,7 +15,7 @@ $cidades_com_ocorrencias = [];
 $response_data = [];
 
 try {
-    // ADICIONADO: Campos de status de instalação (inst_laco, dt_laco, etc.)
+    // ADICIONADO: Campo e.tipo_equip para saber o tipo do equipamento
     $sql = "SELECT
                 m.id_manutencao,
                 m.tipo_manutencao,
@@ -28,8 +28,10 @@ try {
                 m.inst_base, m.dt_base,
                 m.inst_infra, m.data_infra,
                 m.inst_energia, m.dt_energia,
+                m.inst_prov, m.data_provedor,
                 e.nome_equip,
                 e.referencia_equip,
+                e.tipo_equip, 
                 c.nome AS cidade,
                 p.nome_prov,
                 CONCAT(en.logradouro, ', ', en.bairro) AS local_completo,

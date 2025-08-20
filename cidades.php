@@ -1,13 +1,13 @@
 <?php
 session_start();
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 if (!isset($_SESSION['user_id'])) {
-    header("Location: index.html");
-    exit;
+    header('Location: login.html');
+    exit();
 }
-$user_id = $_SESSION['user_id'];
-$user_email = $_SESSION['user_email'];
-
-
+require_once 'conexao_bd.php';
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -15,8 +15,9 @@ $user_email = $_SESSION['user_email'];
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Cidades</title>
     <link rel="stylesheet" href="css/style.css">
-    <title>Gerenciar Provedores</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -39,12 +40,12 @@ $user_email = $_SESSION['user_email'];
             margin-bottom: 2rem;
             text-align: center;
         }
-        
+
         .card h1 {
             color: #333;
             margin-bottom: 1.5rem;
         }
-        
+
         .cabecalho {
             width: 90%;
             max-width: 1000px;
@@ -83,14 +84,14 @@ $user_email = $_SESSION['user_email'];
             background-color: var(--cor-secundaria);
         }
 
-        .container-botao-adicionar-provedor {
+        .container-botao-adicionar-cidade {
             width: 100%;
             display: flex;
             justify-content: flex-start;
             margin-bottom: 1rem;
         }
 
-        .botao-adicionar-provedor {
+        .botao-adicionar-cidade {
             background-color: var(--cor-principal);
             color: white;
             padding: 12px 25px;
@@ -100,28 +101,13 @@ $user_email = $_SESSION['user_email'];
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
-        
-        .botao-adicionar-provedor:hover {
+
+        .botao-adicionar-cidade:hover {
             background-color: var(--cor-secundaria);
         }
         
-        .container-pesquisa {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 1.5rem;
-            gap: 10px;
-        }
-        
-        .container-pesquisa input {
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            width: 100%;
-            max-width: 400px;
-        }
-
-        .lista-provedores {
+        /* Novo estilo para a lista de cidades */
+        .lista-cidades {
             list-style: none;
             padding: 0;
             margin: 0;
@@ -130,7 +116,7 @@ $user_email = $_SESSION['user_email'];
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
         }
 
-        .item-provedor {
+        .item-cidade {
             background-color: #f9f9f9;
             padding: 1.5rem;
             border-radius: 0.75rem;
@@ -139,22 +125,27 @@ $user_email = $_SESSION['user_email'];
             position: relative;
         }
 
-        .item-provedor h3 {
+        .item-cidade h3 {
             margin-top: 0;
             margin-bottom: 0.5rem;
             color: var(--cor-secundaria);
         }
 
-        .item-provedor p {
+        .item-cidade p {
             margin: 0.25rem 0;
             color: #555;
         }
 
-        .item-provedor .botao-editar {
+        .item-cidade .btn-group {
             position: absolute;
             top: 1rem;
             right: 1rem;
-            background-color: #4CAF50;
+            display: flex;
+            gap: 5px;
+        }
+        
+        .item-cidade .botao-editar,
+        .item-cidade .botao-excluir {
             color: white;
             border: none;
             padding: 0.5rem 1rem;
@@ -162,11 +153,25 @@ $user_email = $_SESSION['user_email'];
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
-
-        .item-provedor .botao-editar:hover {
-            background-color: #45a049;
+        
+        .item-cidade .botao-editar {
+            background-color: #ffc107;
+            color: #333;
         }
 
+        .item-cidade .botao-excluir {
+            background-color: #dc3545;
+        }
+
+        .item-cidade .botao-editar:hover {
+            background-color: #e0a800;
+        }
+        
+        .item-cidade .botao-excluir:hover {
+            background-color: #c82333;
+        }
+        
+        /* Estilos do modal */
         .modal {
             display: none;
             position: fixed;
@@ -217,14 +222,6 @@ $user_email = $_SESSION['user_email'];
             border: 1px solid #ccc;
             box-sizing: border-box;
         }
-        
-        .formulario-modal select {
-            color: #333;
-        }
-        
-        .formulario-modal select option {
-            color: #333;
-        }
 
         .formulario-modal button {
             width: 100%;
@@ -236,12 +233,11 @@ $user_email = $_SESSION['user_email'];
             font-size: 1.1rem;
             cursor: pointer;
             transition: background-color 0.3s ease;
-            
             display: flex;
             justify-content: center;
             align-items: center;
         }
-        
+
         .formulario-modal .botao-salvar {
             background-color: #4CAF50;
         }
@@ -249,19 +245,19 @@ $user_email = $_SESSION['user_email'];
         .formulario-modal .botao-salvar:hover {
             background-color: #45a049;
         }
-        
+
         .mensagem {
             margin-top: 1rem;
             padding: 1rem;
             border-radius: 0.5rem;
             text-align: center;
         }
-        
+
         .mensagem.sucesso {
             background-color: #d4edda;
             color: #155724;
         }
-        
+
         .mensagem.erro {
             background-color: #f8d7da;
             color: #721c24;
@@ -295,64 +291,64 @@ $user_email = $_SESSION['user_email'];
                     <path d="M12 19l-7-7 7-7"></path>
                 </svg>
             </a>
-            <h1 class="titulo-cabecalho">Gerenciar Provedores</h1>
+            <h1 class="titulo-cabecalho">Gerenciar Cidades</h1>
         </header>
-        <div class="container-botao-adicionar-provedor">
-            <button class="botao-adicionar-provedor" onclick="abrirModalAdicionarProvedor()">Adicionar Provedor</button>
+        <div class="container-botao-adicionar-cidade">
+            <button class="botao-adicionar-cidade" onclick="abrirModalAdicionarCidade()">Adicionar Cidade</button>
         </div>
-
-        <div class="container-pesquisa">
-            <input type="text" id="campoPesquisa" placeholder="Pesquisar por nome ou cidade...">
-        </div>
-        <div id="containerListaProvedores">
+        <div id="containerListaCidades">
             </div>
     </main>
 
-    <div id="modalEdicaoProvedor" class="modal">
+    <div id="modalAdicionarCidade" class="modal">
         <div class="conteudo-modal">
-            <span class="fechar-modal" onclick="fecharModalEdicaoProvedor()">&times;</span>
-            <h2>Editar Provedor</h2>
-            <form id="formularioEdicaoProvedor" class="formulario-modal">
-                <input type="hidden" id="idProvedorEdicao" name="id_provedor">
-                <label for="nomeProvedorEdicao">Nome:</label>
-                <input type="text" id="nomeProvedorEdicao" name="nome_prov" required>
+            <span class="fechar-modal" onclick="fecharModalAdicionarCidade()">&times;</span>
+            <h2>Adicionar Nova Cidade</h2>
+            <form id="formularioAdicionarCidade" class="formulario-modal">
+                <label for="nomeCidadeAdicionar">Nome da Cidade:</label>
+                <input type="text" id="nomeCidadeAdicionar" name="nome" required>
                 
-                <label for="cidadeProvedorEdicao">Cidade:</label>
-                <select id="cidadeProvedorEdicao" name="id_cidade" required>
-                    <option value="">Carregando...</option>
-                </select>
+                <label for="siglaCidadeAdicionar">Sigla da Cidade:</label>
+                <input type="text" id="siglaCidadeAdicionar" name="sigla_cidade" required>
 
-                <div id="mensagemEdicaoProvedor" class="mensagem" style="display: none;"></div>
-                <button type="submit" class="botao-salvar">
-                    <span id="textoBotaoSalvarEdicao">Salvar</span>
-                    <span id="carregandoEdicaoProvedor" class="carregando"></span>
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <div id="modalAdicionarProvedor" class="modal">
-        <div class="conteudo-modal">
-            <span class="fechar-modal" onclick="fecharModalAdicionarProvedor()">&times;</span>
-            <h2>Adicionar Novo Provedor</h2>
-            <form id="formularioAdicionarProvedor" class="formulario-modal">
-                <label for="nomeProvedorAdicionar">Nome:</label>
-                <input type="text" id="nomeProvedorAdicionar" name="nome_prov" required>
-
-                <label for="cidadeProvedorAdicionar">Cidade:</label>
-                <select id="cidadeProvedorAdicionar" name="id_cidade" required>
-                    <option value="">Carregando...</option>
-                </select>
-
-                <div id="mensagemAdicionarProvedor" class="mensagem" style="display: none;"></div>
+                <label for="codCidadeAdicionar">Código da Cidade:</label>
+                <input type="text" id="codCidadeAdicionar" name="cod_cidade" required>
+                
+                <div id="mensagemAdicionarCidade" class="mensagem" style="display: none;"></div>
                 <button type="submit" class="botao-salvar">
                     <span id="textoBotaoAdicionar">Adicionar</span>
-                    <span id="carregandoAdicionarProvedor" class="carregando"></span>
+                    <span id="carregandoAdicionarCidade" class="carregando"></span>
                 </button>
             </form>
         </div>
     </div>
 
-    <script src="js/provedores.js"></script>
+    <div id="modalEdicaoCidade" class="modal">
+        <div class="conteudo-modal">
+            <span class="fechar-modal" onclick="fecharModalEdicaoCidade()">&times;</span>
+            <h2>Editar Cidade</h2>
+            <form id="formularioEdicaoCidade" class="formulario-modal">
+                <input type="hidden" id="idCidadeEdicao" name="id_cidade">
+                
+                <label for="nomeCidadeEdicao">Nome da Cidade:</label>
+                <input type="text" id="nomeCidadeEdicao" name="nome" required>
+
+                <label for="siglaCidadeEdicao">Sigla da Cidade:</label>
+                <input type="text" id="siglaCidadeEdicao" name="sigla_cidade" required>
+
+                <label for="codCidadeEdicao">Código da Cidade:</label>
+                <input type="text" id="codCidadeEdicao" name="cod_cidade" required>
+                
+                <div id="mensagemEdicaoCidade" class="mensagem" style="display: none;"></div>
+                <button type="submit" class="botao-salvar">
+                    <span id="textoBotaoSalvarEdicao">Salvar Alterações</span>
+                    <span id="carregandoEdicaoCidade" class="carregando"></span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/cidades.js"></script>
 </body>
+
 </html>

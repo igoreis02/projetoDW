@@ -1,13 +1,10 @@
 <?php
 session_start();
 if (!isset($_SESSION['user_id'])) {
-    header("Location: index.html");
-    exit;
+    header('Location: login.html');
+    exit();
 }
-$user_id = $_SESSION['user_id'];
-$user_email = $_SESSION['user_email'];
-
-
+require_once 'conexao_bd.php';
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -15,8 +12,9 @@ $user_email = $_SESSION['user_email'];
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Veículos</title>
     <link rel="stylesheet" href="css/style.css">
-    <title>Gerenciar Provedores</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -39,12 +37,12 @@ $user_email = $_SESSION['user_email'];
             margin-bottom: 2rem;
             text-align: center;
         }
-        
+
         .card h1 {
             color: #333;
             margin-bottom: 1.5rem;
         }
-        
+
         .cabecalho {
             width: 90%;
             max-width: 1000px;
@@ -52,12 +50,6 @@ $user_email = $_SESSION['user_email'];
             display: flex;
             align-items: center;
             justify-content: space-between;
-        }
-
-        .conteudo-cabecalho {
-            display: flex;
-            align-items: center;
-            width: 100%;
         }
 
         .titulo-cabecalho {
@@ -79,18 +71,14 @@ $user_email = $_SESSION['user_email'];
             left: 5%;
         }
 
-        .botao-voltar:hover {
-            background-color: var(--cor-secundaria);
-        }
-
-        .container-botao-adicionar-provedor {
+        .container-botao-adicionar {
             width: 100%;
             display: flex;
             justify-content: flex-start;
             margin-bottom: 1rem;
         }
 
-        .botao-adicionar-provedor {
+        .botao-adicionar {
             background-color: var(--cor-principal);
             color: white;
             padding: 12px 25px;
@@ -100,28 +88,12 @@ $user_email = $_SESSION['user_email'];
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
-        
-        .botao-adicionar-provedor:hover {
+
+        .botao-adicionar:hover {
             background-color: var(--cor-secundaria);
         }
         
-        .container-pesquisa {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 1.5rem;
-            gap: 10px;
-        }
-        
-        .container-pesquisa input {
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            width: 100%;
-            max-width: 400px;
-        }
-
-        .lista-provedores {
+        .lista-veiculos {
             list-style: none;
             padding: 0;
             margin: 0;
@@ -130,7 +102,7 @@ $user_email = $_SESSION['user_email'];
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
         }
 
-        .item-provedor {
+        .item-veiculo {
             background-color: #f9f9f9;
             padding: 1.5rem;
             border-radius: 0.75rem;
@@ -139,22 +111,27 @@ $user_email = $_SESSION['user_email'];
             position: relative;
         }
 
-        .item-provedor h3 {
+        .item-veiculo h3 {
             margin-top: 0;
             margin-bottom: 0.5rem;
             color: var(--cor-secundaria);
         }
 
-        .item-provedor p {
+        .item-veiculo p {
             margin: 0.25rem 0;
             color: #555;
         }
 
-        .item-provedor .botao-editar {
+        .item-veiculo .btn-group {
             position: absolute;
             top: 1rem;
             right: 1rem;
-            background-color: #4CAF50;
+            display: flex;
+            gap: 5px;
+        }
+        
+        .item-veiculo .botao-editar,
+        .item-veiculo .botao-excluir {
             color: white;
             border: none;
             padding: 0.5rem 1rem;
@@ -162,11 +139,17 @@ $user_email = $_SESSION['user_email'];
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
-
-        .item-provedor .botao-editar:hover {
-            background-color: #45a049;
+        
+        .item-veiculo .botao-editar {
+            background-color: #ffc107;
+            color: #333;
         }
 
+        .item-veiculo .botao-excluir {
+            background-color: #dc3545;
+        }
+        
+        /* Estilos do modal */
         .modal {
             display: none;
             position: fixed;
@@ -208,22 +191,13 @@ $user_email = $_SESSION['user_email'];
             color: #333;
         }
 
-        .formulario-modal input,
-        .formulario-modal select {
+        .formulario-modal input {
             width: 100%;
             padding: 0.75rem;
             margin-top: 0.5rem;
             border-radius: 0.5rem;
             border: 1px solid #ccc;
             box-sizing: border-box;
-        }
-        
-        .formulario-modal select {
-            color: #333;
-        }
-        
-        .formulario-modal select option {
-            color: #333;
         }
 
         .formulario-modal button {
@@ -236,36 +210,24 @@ $user_email = $_SESSION['user_email'];
             font-size: 1.1rem;
             cursor: pointer;
             transition: background-color 0.3s ease;
-            
             display: flex;
             justify-content: center;
             align-items: center;
         }
-        
+
         .formulario-modal .botao-salvar {
             background-color: #4CAF50;
         }
 
-        .formulario-modal .botao-salvar:hover {
-            background-color: #45a049;
-        }
-        
         .mensagem {
             margin-top: 1rem;
             padding: 1rem;
             border-radius: 0.5rem;
             text-align: center;
         }
-        
-        .mensagem.sucesso {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        
-        .mensagem.erro {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
+
+        .mensagem.sucesso { background-color: #d4edda; color: #155724; }
+        .mensagem.erro { background-color: #f8d7da; color: #721c24; }
 
         .carregando {
             border: 4px solid rgba(0, 0, 0, .1);
@@ -295,64 +257,63 @@ $user_email = $_SESSION['user_email'];
                     <path d="M12 19l-7-7 7-7"></path>
                 </svg>
             </a>
-            <h1 class="titulo-cabecalho">Gerenciar Provedores</h1>
+            <h1 class="titulo-cabecalho">Gerenciar Veículos</h1>
         </header>
-        <div class="container-botao-adicionar-provedor">
-            <button class="botao-adicionar-provedor" onclick="abrirModalAdicionarProvedor()">Adicionar Provedor</button>
+        <div class="container-botao-adicionar">
+            <button class="botao-adicionar" onclick="abrirModalAdicionarVeiculo()">Adicionar Veículo</button>
         </div>
-
-        <div class="container-pesquisa">
-            <input type="text" id="campoPesquisa" placeholder="Pesquisar por nome ou cidade...">
+        <div id="containerListaVeiculos">
         </div>
-        <div id="containerListaProvedores">
-            </div>
     </main>
 
-    <div id="modalEdicaoProvedor" class="modal">
+    <div id="modalAdicionarVeiculo" class="modal">
         <div class="conteudo-modal">
-            <span class="fechar-modal" onclick="fecharModalEdicaoProvedor()">&times;</span>
-            <h2>Editar Provedor</h2>
-            <form id="formularioEdicaoProvedor" class="formulario-modal">
-                <input type="hidden" id="idProvedorEdicao" name="id_provedor">
-                <label for="nomeProvedorEdicao">Nome:</label>
-                <input type="text" id="nomeProvedorEdicao" name="nome_prov" required>
+            <span class="fechar-modal" onclick="fecharModalAdicionarVeiculo()">&times;</span>
+            <h2>Adicionar Novo Veículo</h2>
+            <form id="formularioAdicionarVeiculo" class="formulario-modal">
+                <label for="nomeVeiculoAdicionar">Nome:</label>
+                <input type="text" id="nomeVeiculoAdicionar" name="nome" required>
                 
-                <label for="cidadeProvedorEdicao">Cidade:</label>
-                <select id="cidadeProvedorEdicao" name="id_cidade" required>
-                    <option value="">Carregando...</option>
-                </select>
+                <label for="placaVeiculoAdicionar">Placa:</label>
+                <input type="text" id="placaVeiculoAdicionar" name="placa" required>
 
-                <div id="mensagemEdicaoProvedor" class="mensagem" style="display: none;"></div>
+                <label for="modeloVeiculoAdicionar">Modelo:</label>
+                <input type="text" id="modeloVeiculoAdicionar" name="modelo" required>
+                
+                <div id="mensagemAdicionarVeiculo" class="mensagem" style="display: none;"></div>
                 <button type="submit" class="botao-salvar">
-                    <span id="textoBotaoSalvarEdicao">Salvar</span>
-                    <span id="carregandoEdicaoProvedor" class="carregando"></span>
+                    <span>Adicionar</span>
+                    <span id="carregandoAdicionarVeiculo" class="carregando"></span>
                 </button>
             </form>
         </div>
     </div>
 
-    <div id="modalAdicionarProvedor" class="modal">
+    <div id="modalEdicaoVeiculo" class="modal">
         <div class="conteudo-modal">
-            <span class="fechar-modal" onclick="fecharModalAdicionarProvedor()">&times;</span>
-            <h2>Adicionar Novo Provedor</h2>
-            <form id="formularioAdicionarProvedor" class="formulario-modal">
-                <label for="nomeProvedorAdicionar">Nome:</label>
-                <input type="text" id="nomeProvedorAdicionar" name="nome_prov" required>
+            <span class="fechar-modal" onclick="fecharModalEdicaoVeiculo()">&times;</span>
+            <h2>Editar Veículo</h2>
+            <form id="formularioEdicaoVeiculo" class="formulario-modal">
+                <input type="hidden" id="idVeiculoEdicao" name="id_veiculo">
+                
+                <label for="nomeVeiculoEdicao">Nome:</label>
+                <input type="text" id="nomeVeiculoEdicao" name="nome" required>
 
-                <label for="cidadeProvedorAdicionar">Cidade:</label>
-                <select id="cidadeProvedorAdicionar" name="id_cidade" required>
-                    <option value="">Carregando...</option>
-                </select>
+                <label for="placaVeiculoEdicao">Placa:</label>
+                <input type="text" id="placaVeiculoEdicao" name="placa" required>
 
-                <div id="mensagemAdicionarProvedor" class="mensagem" style="display: none;"></div>
+                <label for="modeloVeiculoEdicao">Modelo:</label>
+                <input type="text" id="modeloVeiculoEdicao" name="modelo" required>
+                
+                <div id="mensagemEdicaoVeiculo" class="mensagem" style="display: none;"></div>
                 <button type="submit" class="botao-salvar">
-                    <span id="textoBotaoAdicionar">Adicionar</span>
-                    <span id="carregandoAdicionarProvedor" class="carregando"></span>
+                    <span>Salvar Alterações</span>
+                    <span id="carregandoEdicaoVeiculo" class="carregando"></span>
                 </button>
             </form>
         </div>
     </div>
 
-    <script src="js/provedores.js"></script>
+    <script src="js/veiculos.js"></script>
 </body>
 </html>
