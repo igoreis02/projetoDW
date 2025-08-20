@@ -178,6 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
             realizadoPorSection.style.display = 'flex';
         } else {
             realizadoPorSection.style.display = 'none';
+            resetarBotoesDeEscolha(); 
         }
         repairDescriptionSection.style.display = 'none';
         tecnicoInLocoSection.style.display = 'none';
