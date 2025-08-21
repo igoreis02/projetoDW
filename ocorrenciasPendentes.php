@@ -128,21 +128,43 @@ if (!isset($_SESSION['user_id'])) {
         .city-group {
             margin-bottom: 2.5rem;
         }
+        
+        .city-group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid var(--cor-principal);
+        }
+
         .city-group-title {
             font-size: 1.8em;
             color: #374151;
             text-align: left;
-            margin-bottom: 1rem;
+            margin: 0;
             padding-bottom: 0.5rem;
-            border-bottom: 2px solid var(--cor-principal);
         }
+        
+        .atribuir-cidade-btn {
+            background-color: #3b82f6;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+        }
+        .atribuir-cidade-btn:hover {
+            background-color: #2563eb;
+        }
+
         .city-ocorrencias-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 1.5rem;
         }
 
-        /* Item de Ocorrência Individual */
         .ocorrencia-item {
             background-color: #ffffff; 
             border: 1px solid #e5e7eb;
@@ -150,11 +172,19 @@ if (!isset($_SESSION['user_id'])) {
             border-radius: 8px;
             padding: 1.5rem;
             box-shadow: 0 2px 8px rgba(0,0,0,0.06); 
-            transition: box-shadow 0.3s, transform 0.3s;
+            transition: all 0.3s;
             display: flex;
             flex-direction: column;
             align-items: flex-start;
+            cursor: pointer;
         }
+        
+        .ocorrencia-item.selected {
+            background-color: #eef2ff;
+            border-color: #6366f1;
+            transform: translateY(-2px);
+        }
+
         .ocorrencia-item[data-type="instalação"] {
             border-left-color: #f97316; 
         }
@@ -163,7 +193,6 @@ if (!isset($_SESSION['user_id'])) {
             transform: translateY(-3px);
         }
         
-        /* Layout do Cabeçalho do Item */
         .ocorrencia-header {
             text-align: left;
             margin-bottom: 1rem;
@@ -177,7 +206,6 @@ if (!isset($_SESSION['user_id'])) {
             margin: 0;
         }
         
-        /* Layout dos Detalhes do Item */
         .ocorrencia-details {
             display: flex;
             flex-direction: column;
@@ -238,12 +266,12 @@ if (!isset($_SESSION['user_id'])) {
             cursor: pointer;
             transition: all 0.2s ease;
         }
-        .assign-btn {
-            background-color: #3b82f6;
+        .edit-btn {
+            background-color: #f59e0b; /* Laranja */
             color: white;
         }
-        .assign-btn:hover {
-            background-color: #2563eb;
+        .edit-btn:hover {
+            background-color: #d97706;
         }
         .cancel-btn {
             background-color: #ef4444;
@@ -271,7 +299,6 @@ if (!isset($_SESSION['user_id'])) {
         }
         .hidden { display: none !important; }
 
-        /* Estilos para Modais */
         .modal {
             display: none;
             position: fixed;
@@ -425,7 +452,6 @@ if (!isset($_SESSION['user_id'])) {
         <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
     </div>
 
-    <!-- Modal de Atribuição -->
     <div id="assignModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -433,11 +459,7 @@ if (!isset($_SESSION['user_id'])) {
                 <button class="modal-close" onclick="closeModal('assignModal')">&times;</button>
             </div>
             <div class="modal-body">
-                <h4 id="assignModalEquipName" style="font-size: 1.2em; text-align: center;"></h4>
-                <div class="form-group">
-                    <label>Ocorrência</label>
-                    <p id="assignOcorrenciaText"></p>
-                </div>
+                <div id="assignModalInfo"></div>
                 <div class="form-group">
                     <label>Selecione a data para execução</label>
                     <div class="date-inputs">
@@ -467,7 +489,27 @@ if (!isset($_SESSION['user_id'])) {
         </div>
     </div>
 
-    <!-- Modal de Confirmação -->
+    <div id="editOcorrenciaModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Editar Ocorrência</h3>
+                <button class="modal-close" onclick="closeModal('editOcorrenciaModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="editOcorrenciaModalInfo"></div>
+                <div class="form-group">
+                    <label for="editOcorrenciaTextarea">Descrição da Ocorrência</label>
+                    <textarea id="editOcorrenciaTextarea" rows="4"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn btn-secondary" onclick="closeModal('editOcorrenciaModal')">Cancelar</button>
+                <button class="modal-btn btn-primary" onclick="saveOcorrenciaUpdate()">Salvar Alteração</button>
+            </div>
+        </div>
+    </div>
+
+
     <div id="confirmationModal" class="modal confirmation-modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -494,7 +536,8 @@ if (!isset($_SESSION['user_id'])) {
             let activeType = 'manutencao';
             let activeCity = 'todos';
             let allData = null; 
-            let currentAssigningItem = null;
+            let currentItemsToAssign = [];
+            let currentEditingItem = null;
 
             async function fetchData() {
                 try {
@@ -528,8 +571,12 @@ if (!isset($_SESSION['user_id'])) {
                         ocorrencias[cidade].forEach(item => {
                             cityGridHTML += createOcorrenciaHTML(item);
                         });
+                        
                         cityGroup.innerHTML = `
-                            <h2 class="city-group-title">${cidade}</h2>
+                            <div class="city-group-header">
+                                <h2 class="city-group-title">${cidade}</h2>
+                                <button class="atribuir-cidade-btn hidden" data-city="${cidade}" onclick="handleMultiAssignClick(this)">Atribuir</button>
+                            </div>
                             <div class="city-ocorrencias-grid">
                                 ${cityGridHTML}
                             </div>
@@ -575,11 +622,7 @@ if (!isset($_SESSION['user_id'])) {
             function createOcorrenciaHTML(item) {
                 const statusHTML = `<span class="status-tag status-pendente">Pendente</span>`;
                 let detailsHTML = '';
-
-                let atribuidoPorHTML = '';
-                if (item.atribuido_por) {
-                    atribuidoPorHTML = `<div class="detail-item"><strong>Atribuído por</strong> <span>${item.atribuido_por}</span></div>`;
-                }
+                let atribuidoPorHTML = item.atribuido_por ? `<div class="detail-item"><strong>Solicitado por</strong> <span>${item.atribuido_por}</span></div>` : '';
 
                 if (item.tipo_manutencao === 'instalação') {
                     const lacoStatus = item.inst_laco == 1 ? `<span class="status-value instalado">Instalado ${formatDate(item.dt_laco)}</span>` : `<span class="status-value aguardando">Aguardando instalação</span>`;
@@ -595,13 +638,13 @@ if (!isset($_SESSION['user_id'])) {
                         <div class="detail-item"><strong>Energia</strong> <span>${energiaStatus}</span></div>
                         <div class="detail-item"><strong>Provedor</strong> <span>${provStatus}</span></div>
                         <div class="detail-item"><strong>Início Ocorrência</strong> <span>${new Date(item.inicio_reparo).toLocaleString('pt-BR')}</span></div>
+                        ${atribuidoPorHTML}
                         <div class="detail-item"><strong>Status</strong> ${statusHTML}</div>
                         <div class="detail-item"><strong>Local</strong> <span>${item.local_completo || ''}</span></div>
                         ${item.observacao_instalacao ? `<div class="detail-item"><strong>Observação</strong> <span>${item.observacao_instalacao}</span></div>` : ''}
                     `;
                 } else {
                      detailsHTML = `
-                     
                         <div class="detail-item"><strong>Ocorrência</strong> <span>${item.ocorrencia_reparo || 'Não especificada'}</span></div>
                         <div class="detail-item"><strong>Início Ocorrência</strong> <span>${new Date(item.inicio_reparo).toLocaleString('pt-BR')}</span></div>
                         ${atribuidoPorHTML}
@@ -613,10 +656,11 @@ if (!isset($_SESSION['user_id'])) {
 
                 const actionsHTML = `
                     <div class="item-actions">
-                        <button class="item-btn assign-btn" onclick="openAssignModal(${item.id_manutencao})">Atribuir</button>
-                        <button class="item-btn cancel-btn" onclick="openConfirmationModal(${item.id_manutencao}, 'cancelado')">Cancelar</button>
+                        <button class="item-btn edit-btn" onclick="openEditOcorrenciaModal(${item.id_manutencao}, event)">Editar</button>
+                        <button class="item-btn cancel-btn" onclick="openConfirmationModal(${item.id_manutencao}, 'cancelado', event)">Cancelar</button>
                     </div>
                 `;
+
                 return `
                     <div class="ocorrencia-item" data-type="${item.tipo_manutencao}" data-id="${item.id_manutencao}">
                         <div class="ocorrencia-header">
@@ -663,6 +707,7 @@ if (!isset($_SESSION['user_id'])) {
                         group.classList.add('hidden');
                     }
                 });
+                checkSelectionAndToggleButtons();
             }
 
             actionButtons.forEach(button => {
@@ -688,7 +733,6 @@ if (!isset($_SESSION['user_id'])) {
                 });
             }
 
-            // --- Lógica dos Modais ---
             window.openModal = function(modalId) { document.getElementById(modalId).classList.add('is-active'); }
             window.closeModal = function(modalId) { document.getElementById(modalId).classList.remove('is-active'); }
 
@@ -700,12 +744,44 @@ if (!isset($_SESSION['user_id'])) {
                 return null;
             }
 
-            window.openAssignModal = async function(id) {
-                currentAssigningItem = findOcorrenciaById(id);
-                if (!currentAssigningItem) return;
+            ocorrenciasContainer.addEventListener('click', function(e) {
+                if (e.target.closest('.item-btn')) {
+                    return;
+                }
+                const item = e.target.closest('.ocorrencia-item');
+                if (item) {
+                    item.classList.toggle('selected');
+                    checkSelectionAndToggleButtons();
+                }
+            });
 
-                document.getElementById('assignModalEquipName').textContent = `${currentAssigningItem.nome_equip} - ${currentAssigningItem.referencia_equip}`;
-                document.getElementById('assignOcorrenciaText').textContent = currentAssigningItem.ocorrencia_reparo;
+            function checkSelectionAndToggleButtons() {
+                document.querySelectorAll('.city-group').forEach(group => {
+                    const city = group.dataset.city;
+                    const selectedItems = group.querySelectorAll('.ocorrencia-item.selected:not(.hidden)');
+                    const btn = group.querySelector(`.atribuir-cidade-btn[data-city="${city}"]`);
+                    
+                    if (btn) {
+                        btn.classList.toggle('hidden', selectedItems.length === 0);
+                    }
+                });
+            }
+
+            window.handleMultiAssignClick = async function(button) {
+                const city = button.dataset.city;
+                const group = document.querySelector(`.city-group[data-city="${city}"]`);
+                const selectedItems = group.querySelectorAll('.ocorrencia-item.selected:not(.hidden)');
+                
+                currentItemsToAssign = Array.from(selectedItems).map(itemEl => {
+                    const itemId = itemEl.dataset.id;
+                    return findOcorrenciaById(itemId);
+                });
+
+                if (currentItemsToAssign.length === 0) return;
+                
+                const modalInfo = document.getElementById('assignModalInfo');
+                modalInfo.innerHTML = `<p><strong>${currentItemsToAssign.length} ocorrência(s) selecionada(s) em ${city}.</strong></p>`;
+
                 document.getElementById('assignInicioReparo').value = '';
                 document.getElementById('assignFimReparo').value = '';
                 
@@ -754,14 +830,60 @@ if (!isset($_SESSION['user_id'])) {
                     return;
                 }
 
+                for (const item of currentItemsToAssign) {
+                    const dataToSend = {
+                        action: 'assign',
+                        id_manutencao: item.id_manutencao,
+                        ocorrencia_reparo: item.ocorrencia_reparo,
+                        inicio_reparo: document.getElementById('assignInicioReparo').value,
+                        fim_reparo: document.getElementById('assignFimReparo').value,
+                        tecnicos: selectedTecnicos,
+                        veiculos: selectedVeiculos
+                    };
+
+                    try {
+                        const response = await fetch('update_ocorrencia.php', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(dataToSend)
+                        });
+                        const result = await response.json();
+                        if (!result.success) {
+                            alert(`Erro ao salvar a ocorrência ${item.id_manutencao}: ${result.message}`);
+                        }
+                    } catch (error) {
+                        alert(`Erro de comunicação com o servidor para a ocorrência ${item.id_manutencao}.`);
+                    }
+                }
+                
+                closeModal('assignModal');
+                fetchData();
+            }
+
+            window.openEditOcorrenciaModal = function(id, event) {
+                event.stopPropagation();
+                currentEditingItem = findOcorrenciaById(id);
+                if (!currentEditingItem) return;
+
+                document.getElementById('editOcorrenciaModalInfo').innerHTML = `
+                    <p><strong>Equipamento:</strong> ${currentEditingItem.nome_equip} - ${currentEditingItem.referencia_equip}</p>
+                `;
+                document.getElementById('editOcorrenciaTextarea').value = currentEditingItem.ocorrencia_reparo;
+                
+                openModal('editOcorrenciaModal');
+            }
+
+            window.saveOcorrenciaUpdate = async function() {
+                const newOcorrenciaText = document.getElementById('editOcorrenciaTextarea').value;
+                if (!newOcorrenciaText.trim()) {
+                    alert('A descrição da ocorrência não pode ficar em branco.');
+                    return;
+                }
+                
                 const dataToSend = {
-                    action: 'assign',
-                    id_manutencao: currentAssigningItem.id_manutencao,
-                    ocorrencia_reparo: currentAssigningItem.ocorrencia_reparo,
-                    inicio_reparo: document.getElementById('assignInicioReparo').value,
-                    fim_reparo: document.getElementById('assignFimReparo').value,
-                    tecnicos: selectedTecnicos,
-                    veiculos: selectedVeiculos
+                    action: 'edit_ocorrencia',
+                    id_manutencao: currentEditingItem.id_manutencao,
+                    ocorrencia_reparo: newOcorrenciaText
                 };
 
                 try {
@@ -772,17 +894,19 @@ if (!isset($_SESSION['user_id'])) {
                     });
                     const result = await response.json();
                     if (result.success) {
-                        closeModal('assignModal');
+                        closeModal('editOcorrenciaModal');
                         fetchData();
                     } else {
-                        alert('Erro ao salvar: ' + result.message);
+                        alert('Erro ao salvar alteração: ' + result.message);
                     }
                 } catch (error) {
                     alert('Erro de comunicação com o servidor.');
                 }
             }
 
-            window.openConfirmationModal = function(id, status) {
+
+            window.openConfirmationModal = function(id, status, event) {
+                if(event) event.stopPropagation();
                 const title = 'Cancelar Ocorrência';
                 const text = 'Tem a certeza de que deseja cancelar esta ocorrência? Esta ação não pode ser desfeita.';
                 

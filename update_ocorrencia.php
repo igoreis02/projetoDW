@@ -18,7 +18,6 @@ if ($conn->connect_error) {
     exit();
 }
 
-// Pega o corpo da requisição POST
 $input = json_decode(file_get_contents('php://input'), true);
 
 if (!$input) {
@@ -82,7 +81,6 @@ try {
             throw new Exception('Todos os campos são obrigatórios para concluir o reparo.');
         }
 
-        // 1. Atualiza a tabela principal de manutenções
         $stmt = $conn->prepare("UPDATE manutencoes SET status_reparo = 'concluido', fim_reparo = NOW(), reparo_finalizado = ? WHERE id_manutencao = ?");
         $stmt->bind_param('si', $reparo_finalizado, $id_manutencao);
         if (!$stmt->execute()) {
@@ -90,7 +88,6 @@ try {
         }
         $stmt->close();
 
-        // 2. Apaga as associações antigas de técnicos e veículos
         $stmt = $conn->prepare("DELETE FROM manutencoes_tecnicos WHERE id_manutencao = ?");
         $stmt->bind_param('i', $id_manutencao);
         if (!$stmt->execute()) {
@@ -98,7 +95,6 @@ try {
         }
         $stmt->close();
 
-        // 3. Insere as novas associações (já concluídas)
         $stmt = $conn->prepare("INSERT INTO manutencoes_tecnicos (id_manutencao, id_tecnico, id_veiculo, inicio_reparoTec, fim_reparoT, status_tecnico) VALUES (?, ?, ?, ?, ?, 'concluido')");
         
         $veiculos_count = count($veiculos);
@@ -115,24 +111,32 @@ try {
         $stmt->close();
 
         echo json_encode(['success' => true, 'message' => 'Reparo concluído e registrado com sucesso.']);
+    
+    } elseif ($action === 'edit_ocorrencia') {
+        $ocorrencia = $input['ocorrencia_reparo'] ?? null;
+        if (empty($ocorrencia)) {
+            throw new Exception('O texto da ocorrência não pode ser vazio.');
+        }
 
+        $stmt = $conn->prepare("UPDATE manutencoes SET ocorrencia_reparo = ? WHERE id_manutencao = ?");
+        $stmt->bind_param('si', $ocorrencia, $id_manutencao);
+        if (!$stmt->execute()) {
+            throw new Exception('Falha ao atualizar a descrição da ocorrência.');
+        }
+        $stmt->close();
+        
+        echo json_encode(['success' => true, 'message' => 'Ocorrência atualizada com sucesso.']);
 
-    } elseif ($action === 'edit' || $action === 'assign') {
-        $ocorrencia = $input['ocorrencia_reparo'] ?? '';
+    } elseif ($action === 'assign') {
         $inicio_reparo = $input['inicio_reparo'] ?? null;
         $fim_reparo = $input['fim_reparo'] ?? null;
         $tecnicos = $input['tecnicos'] ?? [];
         $veiculos = $input['veiculos'] ?? [];
 
-        if ($action === 'assign') {
-            $stmt = $conn->prepare("UPDATE manutencoes SET ocorrencia_reparo = ?, status_reparo = 'em andamento' WHERE id_manutencao = ?");
-            $stmt->bind_param('si', $ocorrencia, $id_manutencao);
-        } else {
-            $stmt = $conn->prepare("UPDATE manutencoes SET ocorrencia_reparo = ? WHERE id_manutencao = ?");
-            $stmt->bind_param('si', $ocorrencia, $id_manutencao);
-        }
+        $stmt = $conn->prepare("UPDATE manutencoes SET status_reparo = 'em andamento' WHERE id_manutencao = ?");
+        $stmt->bind_param('i', $id_manutencao);
         if (!$stmt->execute()) {
-            throw new Exception('Falha ao atualizar a ocorrência.');
+            throw new Exception('Falha ao atualizar o status da ocorrência.');
         }
         $stmt->close();
 
@@ -144,7 +148,7 @@ try {
         $stmt->close();
 
         if (!empty($tecnicos)) {
-            $stmt = $conn->prepare("INSERT INTO manutencoes_tecnicos (id_manutencao, id_tecnico, id_veiculo, inicio_reparoTec, fim_reparoT) VALUES (?, ?, ?, ?, ?)");
+            $stmt = $conn->prepare("INSERT INTO manutencoes_tecnicos (id_manutencao, id_tecnico, id_veiculo, inicio_reparoTec, fim_reparoT, status_tecnico) VALUES (?, ?, ?, ?, ?, 'pendente')");
             
             $veiculos_count = count($veiculos);
             $i = 0;
@@ -160,8 +164,7 @@ try {
             $stmt->close();
         }
         
-        $message = $action === 'assign' ? 'Ocorrência atribuída com sucesso.' : 'Ocorrência atualizada com sucesso.';
-        echo json_encode(['success' => true, 'message' => $message]);
+        echo json_encode(['success' => true, 'message' => 'Ocorrência atribuída com sucesso.']);
     } else {
         throw new Exception('Ação desconhecida.');
     }
