@@ -183,7 +183,7 @@ if (!isset($_SESSION['user_id'])) {
             font-weight: 600;
             font-size: 0.9em;
         }
-        .ocorrencia-em-andamento {
+        .ocorrencia-pendente {
             background-color: #f0f9ff;
             color: #f59e0b;
         }

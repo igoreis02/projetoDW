@@ -346,9 +346,10 @@ if (isset($user_id)) {
                             <i class="fas fa-tools"></i>
                             <span>Manutenções/Instalações</span>
                         </a>
-                        <a href="#" class="menu-button" id="atribuirTecnico">
-                            <i class="fas fa-clipboard-list"></i>
-                            <span>Atribuir Técnico</span>
+                        <a href="#" class="menu-button" id="manutencaoPendentes">
+                            <i class="fas fa-clock"></i>
+                            <span>
+                                Atribuir Técnico Ocorrências Pendentes</span>
                         </a>
                         <a href="#" class="menu-button" id="ocorrenciaProvedores">
                             <i class="fas fa-network-wired"></i>
@@ -360,10 +361,7 @@ if (isset($user_id)) {
                             <i class="fas fa-cogs"></i>
                             <span>Ocorrências Em Andamento</span>
                         </a>
-                        <a href="#" class="menu-button" id="manutencaoPendentes">
-                            <i class="fas fa-clock"></i>
-                            <span>Ocorrências Pendentes</span>
-                        </a>
+                        
                         <a href="#" class="menu-button" id="gestaoOcorrencias">
                             <i class="fas fa-exclamation-triangle"></i>
                             <span>Gestão de Ocorrências</span>

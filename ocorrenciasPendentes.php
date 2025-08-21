@@ -214,6 +214,7 @@ if (!isset($_SESSION['user_id'])) {
             flex-grow: 1;
             width: 100%;
         }
+        
         .detail-item {
             font-size: 0.95em;
             color: #374151;
@@ -399,12 +400,18 @@ if (!isset($_SESSION['user_id'])) {
         }
         .modal-footer {
             display: flex;
-            justify-content: flex-end;
+            flex-direction: column; 
+            align-items: flex-end; 
             gap: 1rem;
             margin-top: 2rem;
             padding-top: 1.5rem;
             border-top: 1px solid #e5e7eb;
         }
+        .modal-footer-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
         .modal-btn {
             padding: 0.75rem 1.5rem;
             border: none;
@@ -425,6 +432,36 @@ if (!isset($_SESSION['user_id'])) {
             text-align: center;
             font-size: 1.1em;
         }
+        .modal-error-message {
+            color: #ef4444;
+            font-weight: bold;
+            width: 100%;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        
+        /* Spinner de carregamento */
+        .spinner {
+            border: 4px solid rgba(0,0,0,0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #09f;
+            animation: spin 1s ease infinite;
+        }
+        .modal-btn .spinner {
+            width: 20px;
+            height: 20px;
+            border-width: 3px;
+            border-left-color: #fff;
+            margin-left: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         @media (max-width: 1200px) { .city-ocorrencias-grid { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 768px) { .city-ocorrencias-grid { grid-template-columns: 1fr; } .card { padding: 1.5rem; } .header-container h2 { font-size: 1.8em; } .action-buttons, .filter-container { flex-direction: column; } }
     </style>
@@ -446,7 +483,7 @@ if (!isset($_SESSION['user_id'])) {
         <div id="filterContainer" class="filter-container"></div>
 
         <div id="ocorrenciasContainer" class="ocorrencias-container">
-            <p id="loadingMessage">A carregar ocorrências...</p>
+            <div id="loadingMessage" class="spinner"></div>
         </div>
 
         <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
@@ -483,8 +520,14 @@ if (!isset($_SESSION['user_id'])) {
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="modal-btn btn-secondary" onclick="closeModal('assignModal')">Fechar</button>
-                <button class="modal-btn btn-primary" onclick="saveAssignment()">Salvar Atribuição</button>
+                <div id="assignErrorMessage" class="modal-error-message hidden"></div>
+                <div class="modal-footer-buttons">
+                    <button class="modal-btn btn-secondary" onclick="closeModal('assignModal')">Fechar</button>
+                    <button id="saveAssignmentBtn" class="modal-btn btn-primary" onclick="saveAssignment()">
+                        <span>Salvar Atribuição</span>
+                        <div class="spinner hidden"></div>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -503,8 +546,10 @@ if (!isset($_SESSION['user_id'])) {
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="modal-btn btn-secondary" onclick="closeModal('editOcorrenciaModal')">Cancelar</button>
-                <button class="modal-btn btn-primary" onclick="saveOcorrenciaUpdate()">Salvar Alteração</button>
+                <div class="modal-footer-buttons">
+                    <button class="modal-btn btn-secondary" onclick="closeModal('editOcorrenciaModal')">Cancelar</button>
+                    <button class="modal-btn btn-primary" onclick="saveOcorrenciaUpdate()">Salvar Alteração</button>
+                </div>
             </div>
         </div>
     </div>
@@ -518,434 +563,17 @@ if (!isset($_SESSION['user_id'])) {
             </div>
             <div class="modal-body">
                 <p id="confirmationModalText"></p>
+                <p id="confirmationMessage" class="hidden" style="margin-top: 1rem;"></p>
             </div>
-            <div class="modal-footer">
-                <button class="modal-btn btn-secondary" onclick="closeModal('confirmationModal')">Não</button>
-                <button id="confirmActionButton" class="modal-btn btn-primary">Confirmar</button>
+            <div id="confirmationFooter" class="modal-footer">
+                 <div class="modal-footer-buttons">
+                    <button class="modal-btn btn-secondary" onclick="closeModal('confirmationModal')">Não</button>
+                    <button id="confirmActionButton" class="modal-btn btn-primary">Confirmar</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const actionButtons = document.querySelectorAll('.action-btn');
-            const filterContainer = document.getElementById('filterContainer');
-            const ocorrenciasContainer = document.getElementById('ocorrenciasContainer');
-            const loadingMessage = document.getElementById('loadingMessage');
-
-            let activeType = 'manutencao';
-            let activeCity = 'todos';
-            let allData = null; 
-            let currentItemsToAssign = [];
-            let currentEditingItem = null;
-
-            async function fetchData() {
-                try {
-                    const response = await fetch('get_ocorrencias_pendentes.php');
-                    const result = await response.json();
-                    loadingMessage.classList.add('hidden');
-                    if (result.success) {
-                        allData = result.data;
-                        renderAllOcorrencias(allData);
-                        updateCityFilters();
-                        updateDisplay();
-                    } else {
-                        ocorrenciasContainer.innerHTML = `<p>${result.message || 'Nenhuma ocorrência encontrada.'}</p>`;
-                    }
-                } catch (error) {
-                    console.error('Erro ao buscar dados:', error);
-                    loadingMessage.classList.add('hidden');
-                    ocorrenciasContainer.innerHTML = `<p>Ocorreu um erro ao carregar os dados. Tente novamente.</p>`;
-                }
-            }
-
-            function renderAllOcorrencias(data) {
-                const { ocorrencias } = data;
-                ocorrenciasContainer.innerHTML = '';
-                if (ocorrencias && Object.keys(ocorrencias).length > 0) {
-                    for (const cidade in ocorrencias) {
-                        const cityGroup = document.createElement('div');
-                        cityGroup.className = 'city-group';
-                        cityGroup.dataset.city = cidade;
-                        let cityGridHTML = '';
-                        ocorrencias[cidade].forEach(item => {
-                            cityGridHTML += createOcorrenciaHTML(item);
-                        });
-                        
-                        cityGroup.innerHTML = `
-                            <div class="city-group-header">
-                                <h2 class="city-group-title">${cidade}</h2>
-                                <button class="atribuir-cidade-btn hidden" data-city="${cidade}" onclick="handleMultiAssignClick(this)">Atribuir</button>
-                            </div>
-                            <div class="city-ocorrencias-grid">
-                                ${cityGridHTML}
-                            </div>
-                        `;
-                        ocorrenciasContainer.appendChild(cityGroup);
-                    }
-                } else {
-                    ocorrenciasContainer.innerHTML = `<p>Nenhuma ocorrência pendente encontrada.</p>`;
-                }
-            }
-            
-            function updateCityFilters() {
-                filterContainer.innerHTML = ''; 
-                const citiesWithContent = new Set();
-                document.querySelectorAll('.ocorrencia-item').forEach(item => {
-                    const itemType = item.dataset.type;
-                    let typeMatch = false;
-                    if (activeType === 'manutencao') {
-                        if (['corretiva', 'preventiva', 'preditiva'].includes(itemType)) typeMatch = true;
-                    } else if (activeType === 'instalação') {
-                        if (itemType === 'instalação') typeMatch = true;
-                    }
-                    if (typeMatch) {
-                        const city = item.closest('.city-group').dataset.city;
-                        citiesWithContent.add(city);
-                    }
-                });
-                const allButton = document.createElement('button');
-                allButton.className = 'filter-btn active';
-                allButton.dataset.city = 'todos';
-                allButton.textContent = 'Todos';
-                filterContainer.appendChild(allButton);
-                Array.from(citiesWithContent).sort().forEach(cidade => {
-                    const button = document.createElement('button');
-                    button.className = 'filter-btn';
-                    button.dataset.city = cidade;
-                    button.textContent = cidade;
-                    filterContainer.appendChild(button);
-                });
-                addFilterListeners();
-            }
-
-            function createOcorrenciaHTML(item) {
-                const statusHTML = `<span class="status-tag status-pendente">Pendente</span>`;
-                let detailsHTML = '';
-                let atribuidoPorHTML = item.atribuido_por ? `<div class="detail-item"><strong>Solicitado por</strong> <span>${item.atribuido_por}</span></div>` : '';
-
-                if (item.tipo_manutencao === 'instalação') {
-                    const lacoStatus = item.inst_laco == 1 ? `<span class="status-value instalado">Instalado ${formatDate(item.dt_laco)}</span>` : `<span class="status-value aguardando">Aguardando instalação</span>`;
-                    const baseStatus = item.inst_base == 1 ? `<span class="status-value instalado">Instalado ${formatDate(item.dt_base)}</span>` : `<span class="status-value aguardando">Aguardando instalação</span>`;
-                    const infraStatus = item.inst_infra == 1 ? `<span class="status-value instalado">Instalado ${formatDate(item.data_infra)}</span>` : `<span class="status-value aguardando">Aguardando instalação</span>`;
-                    const energiaStatus = item.inst_energia == 1 ? `<span class="status-value instalado">Instalado ${formatDate(item.dt_energia)}</span>` : `<span class="status-value aguardando">Aguardando instalação</span>`;
-                    const provStatus = item.inst_prov == 1 ? `<span class="status-value instalado">Instalado ${formatDate(item.data_provedor)}</span>` : `<span class="status-value aguardando">Aguardando instalação</span>`;
-                    
-                    detailsHTML = `
-                        <div class="detail-item"><strong>Laço</strong> <span>${lacoStatus}</span></div>
-                        <div class="detail-item"><strong>Base</strong> <span>${baseStatus}</span></div>
-                        <div class="detail-item"><strong>Infra</strong> <span>${infraStatus}</span></div>
-                        <div class="detail-item"><strong>Energia</strong> <span>${energiaStatus}</span></div>
-                        <div class="detail-item"><strong>Provedor</strong> <span>${provStatus}</span></div>
-                        <div class="detail-item"><strong>Início Ocorrência</strong> <span>${new Date(item.inicio_reparo).toLocaleString('pt-BR')}</span></div>
-                        ${atribuidoPorHTML}
-                        <div class="detail-item"><strong>Status</strong> ${statusHTML}</div>
-                        <div class="detail-item"><strong>Local</strong> <span>${item.local_completo || ''}</span></div>
-                        ${item.observacao_instalacao ? `<div class="detail-item"><strong>Observação</strong> <span>${item.observacao_instalacao}</span></div>` : ''}
-                    `;
-                } else {
-                     detailsHTML = `
-                        <div class="detail-item"><strong>Ocorrência</strong> <span>${item.ocorrencia_reparo || 'Não especificada'}</span></div>
-                        <div class="detail-item"><strong>Início Ocorrência</strong> <span>${new Date(item.inicio_reparo).toLocaleString('pt-BR')}</span></div>
-                        ${atribuidoPorHTML}
-                        <div class="detail-item"><strong>Status</strong> ${statusHTML}</div>
-                        <div class="detail-item"><strong>Local</strong> <span>${item.local_completo || ''}</span></div>
-                        ${item.motivo_devolucao ? `<div class="detail-item"><strong>Devolvida</strong> <span>${item.motivo_devolucao}</span></div>` : ''}
-                    `;
-                }
-
-                const actionsHTML = `
-                    <div class="item-actions">
-                        <button class="item-btn edit-btn" onclick="openEditOcorrenciaModal(${item.id_manutencao}, event)">Editar</button>
-                        <button class="item-btn cancel-btn" onclick="openConfirmationModal(${item.id_manutencao}, 'cancelado', event)">Cancelar</button>
-                    </div>
-                `;
-
-                return `
-                    <div class="ocorrencia-item" data-type="${item.tipo_manutencao}" data-id="${item.id_manutencao}">
-                        <div class="ocorrencia-header">
-                            <h3>${item.nome_equip} - ${item.referencia_equip}</h3>
-                        </div>
-                        <div class="ocorrencia-details">
-                            ${detailsHTML}
-                        </div>
-                        ${actionsHTML}
-                    </div>
-                `;
-            }
-            
-            function formatDate(dateString) {
-                if (!dateString || dateString === '0000-00-00') return '';
-                const date = new Date(dateString);
-                return new Date(date.getTime() + date.getTimezoneOffset() * 60000).toLocaleDateString('pt-BR');
-            }
-
-            function updateDisplay() {
-                const cityGroups = document.querySelectorAll('.city-group');
-                cityGroups.forEach(group => {
-                    const groupCity = group.dataset.city;
-                    let hasVisibleItemsInGroup = false;
-                    const cityMatch = activeCity === 'todos' || groupCity === activeCity;
-                    if (cityMatch) {
-                        group.querySelectorAll('.ocorrencia-item').forEach(item => {
-                            const itemType = item.dataset.type;
-                            let typeMatch = false;
-                            if (activeType === 'manutencao') {
-                                if (['corretiva', 'preventiva', 'preditiva'].includes(itemType)) typeMatch = true;
-                            } else if (activeType === 'instalação') {
-                                if (itemType === 'instalação') typeMatch = true;
-                            }
-                            if (typeMatch) {
-                                item.classList.remove('hidden');
-                                hasVisibleItemsInGroup = true;
-                            } else {
-                                item.classList.add('hidden');
-                            }
-                        });
-                        group.classList.toggle('hidden', !hasVisibleItemsInGroup);
-                    } else {
-                        group.classList.add('hidden');
-                    }
-                });
-                checkSelectionAndToggleButtons();
-            }
-
-            actionButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    actionButtons.forEach(btn => btn.classList.remove('active'));
-                    button.classList.add('active');
-                    activeType = button.dataset.type;
-                    activeCity = 'todos'; 
-                    updateCityFilters(); 
-                    updateDisplay(); 
-                });
-            });
-
-            function addFilterListeners() {
-                const filterButtons = document.querySelectorAll('.filter-btn');
-                filterButtons.forEach(button => {
-                    button.addEventListener('click', () => {
-                        filterButtons.forEach(btn => btn.classList.remove('active'));
-                        button.classList.add('active');
-                        activeCity = button.dataset.city;
-                        updateDisplay();
-                    });
-                });
-            }
-
-            window.openModal = function(modalId) { document.getElementById(modalId).classList.add('is-active'); }
-            window.closeModal = function(modalId) { document.getElementById(modalId).classList.remove('is-active'); }
-
-            function findOcorrenciaById(id) {
-                for (const cidade in allData.ocorrencias) {
-                    const found = allData.ocorrencias[cidade].find(item => item.id_manutencao == id);
-                    if (found) return found;
-                }
-                return null;
-            }
-
-            ocorrenciasContainer.addEventListener('click', function(e) {
-                if (e.target.closest('.item-btn')) {
-                    return;
-                }
-                const item = e.target.closest('.ocorrencia-item');
-                if (item) {
-                    item.classList.toggle('selected');
-                    checkSelectionAndToggleButtons();
-                }
-            });
-
-            function checkSelectionAndToggleButtons() {
-                document.querySelectorAll('.city-group').forEach(group => {
-                    const city = group.dataset.city;
-                    const selectedItems = group.querySelectorAll('.ocorrencia-item.selected:not(.hidden)');
-                    const btn = group.querySelector(`.atribuir-cidade-btn[data-city="${city}"]`);
-                    
-                    if (btn) {
-                        btn.classList.toggle('hidden', selectedItems.length === 0);
-                    }
-                });
-            }
-
-            window.handleMultiAssignClick = async function(button) {
-                const city = button.dataset.city;
-                const group = document.querySelector(`.city-group[data-city="${city}"]`);
-                const selectedItems = group.querySelectorAll('.ocorrencia-item.selected:not(.hidden)');
-                
-                currentItemsToAssign = Array.from(selectedItems).map(itemEl => {
-                    const itemId = itemEl.dataset.id;
-                    return findOcorrenciaById(itemId);
-                });
-
-                if (currentItemsToAssign.length === 0) return;
-                
-                const modalInfo = document.getElementById('assignModalInfo');
-                modalInfo.innerHTML = `<p><strong>${currentItemsToAssign.length} ocorrência(s) selecionada(s) em ${city}.</strong></p>`;
-
-                document.getElementById('assignInicioReparo').value = '';
-                document.getElementById('assignFimReparo').value = '';
-                
-                const tecnicosContainer = document.getElementById('assignTecnicosContainer');
-                const veiculosContainer = document.getElementById('assignVeiculosContainer');
-                tecnicosContainer.innerHTML = 'A carregar...';
-                veiculosContainer.innerHTML = 'A carregar...';
-                
-                openModal('assignModal');
-
-                const [tecnicosRes, veiculosRes] = await Promise.all([fetch('get_tecnicos.php'), fetch('get_veiculos.php')]);
-                const tecnicosData = await tecnicosRes.json();
-                const veiculosData = await veiculosRes.json();
-                
-                tecnicosContainer.innerHTML = '';
-                if (tecnicosData.success) {
-                    tecnicosData.tecnicos.forEach(tec => {
-                        const btn = document.createElement('button');
-                        btn.className = 'choice-btn';
-                        btn.dataset.id = tec.id_tecnico;
-                        btn.textContent = tec.nome;
-                        btn.onclick = () => btn.classList.toggle('selected');
-                        tecnicosContainer.appendChild(btn);
-                    });
-                }
-
-                veiculosContainer.innerHTML = '';
-                if (veiculosData.length > 0) {
-                    veiculosData.forEach(vec => {
-                        const btn = document.createElement('button');
-                        btn.className = 'choice-btn';
-                        btn.dataset.id = vec.id_veiculo;
-                        btn.textContent = `${vec.nome} (${vec.placa})`;
-                        btn.onclick = () => btn.classList.toggle('selected');
-                        veiculosContainer.appendChild(btn);
-                    });
-                }
-            }
-
-            window.saveAssignment = async function() {
-                const selectedTecnicos = Array.from(document.querySelectorAll('#assignTecnicosContainer .choice-btn.selected')).map(btn => btn.dataset.id);
-                const selectedVeiculos = Array.from(document.querySelectorAll('#assignVeiculosContainer .choice-btn.selected')).map(btn => btn.dataset.id);
-
-                if (selectedTecnicos.length === 0) {
-                    alert('Por favor, selecione pelo menos um técnico.');
-                    return;
-                }
-
-                for (const item of currentItemsToAssign) {
-                    const dataToSend = {
-                        action: 'assign',
-                        id_manutencao: item.id_manutencao,
-                        ocorrencia_reparo: item.ocorrencia_reparo,
-                        inicio_reparo: document.getElementById('assignInicioReparo').value,
-                        fim_reparo: document.getElementById('assignFimReparo').value,
-                        tecnicos: selectedTecnicos,
-                        veiculos: selectedVeiculos
-                    };
-
-                    try {
-                        const response = await fetch('update_ocorrencia.php', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(dataToSend)
-                        });
-                        const result = await response.json();
-                        if (!result.success) {
-                            alert(`Erro ao salvar a ocorrência ${item.id_manutencao}: ${result.message}`);
-                        }
-                    } catch (error) {
-                        alert(`Erro de comunicação com o servidor para a ocorrência ${item.id_manutencao}.`);
-                    }
-                }
-                
-                closeModal('assignModal');
-                fetchData();
-            }
-
-            window.openEditOcorrenciaModal = function(id, event) {
-                event.stopPropagation();
-                currentEditingItem = findOcorrenciaById(id);
-                if (!currentEditingItem) return;
-
-                document.getElementById('editOcorrenciaModalInfo').innerHTML = `
-                    <p><strong>Equipamento:</strong> ${currentEditingItem.nome_equip} - ${currentEditingItem.referencia_equip}</p>
-                `;
-                document.getElementById('editOcorrenciaTextarea').value = currentEditingItem.ocorrencia_reparo;
-                
-                openModal('editOcorrenciaModal');
-            }
-
-            window.saveOcorrenciaUpdate = async function() {
-                const newOcorrenciaText = document.getElementById('editOcorrenciaTextarea').value;
-                if (!newOcorrenciaText.trim()) {
-                    alert('A descrição da ocorrência não pode ficar em branco.');
-                    return;
-                }
-                
-                const dataToSend = {
-                    action: 'edit_ocorrencia',
-                    id_manutencao: currentEditingItem.id_manutencao,
-                    ocorrencia_reparo: newOcorrenciaText
-                };
-
-                try {
-                    const response = await fetch('update_ocorrencia.php', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(dataToSend)
-                    });
-                    const result = await response.json();
-                    if (result.success) {
-                        closeModal('editOcorrenciaModal');
-                        fetchData();
-                    } else {
-                        alert('Erro ao salvar alteração: ' + result.message);
-                    }
-                } catch (error) {
-                    alert('Erro de comunicação com o servidor.');
-                }
-            }
-
-
-            window.openConfirmationModal = function(id, status, event) {
-                if(event) event.stopPropagation();
-                const title = 'Cancelar Ocorrência';
-                const text = 'Tem a certeza de que deseja cancelar esta ocorrência? Esta ação não pode ser desfeita.';
-                
-                document.getElementById('confirmationModalTitle').textContent = title;
-                document.getElementById('confirmationModalText').textContent = text;
-                
-                const confirmBtn = document.getElementById('confirmActionButton');
-                confirmBtn.onclick = () => executeStatusChange(id, status);
-
-                openModal('confirmationModal');
-            }
-
-            async function executeStatusChange(id, status) {
-                const dataToSend = {
-                    action: 'update_status',
-                    id_manutencao: id,
-                    status: status
-                };
-
-                try {
-                    const response = await fetch('update_ocorrencia.php', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(dataToSend)
-                    });
-                    const result = await response.json();
-                    if (result.success) {
-                        closeModal('confirmationModal');
-                        fetchData();
-                    } else {
-                        alert('Erro ao alterar o status: ' + result.message);
-                    }
-                } catch (error) {
-                    alert('Erro de comunicação com o servidor.');
-                }
-            }
-            
-            fetchData();
-        });
-    </script>
+    <script src="js/ocorrenciasPendentes.js"></script>
 </body>
 </html>
