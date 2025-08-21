@@ -65,13 +65,18 @@ try {
         $fim_reparo = $input['fim_reparo'] ?? null;
         $tecnicos = $input['tecnicos'] ?? [];
         $veiculos = $input['veiculos'] ?? [];
+        $materiais_utilizados = $input['materiais_utilizados'] ?? null;
+        $rompimento_lacre = $input['rompimento_lacre'] ? 1 : 0;
+        $numero_lacre = $input['numero_lacre'] ?? null;
+        $info_rompimento = $input['info_rompimento'] ?? null;
 
-        if (empty($reparo_finalizado) || empty($inicio_reparo) || empty($fim_reparo) || empty($tecnicos) || empty($veiculos)) {
+        if (empty($reparo_finalizado) || empty($inicio_reparo) || empty($fim_reparo) || empty($tecnicos) || empty($veiculos) || empty($materiais_utilizados)) {
             throw new Exception('Todos os campos são obrigatórios para concluir o reparo.');
         }
 
-        $stmt = $conn->prepare("UPDATE manutencoes SET status_reparo = 'concluido', fim_reparo = NOW(), reparo_finalizado = ? WHERE id_manutencao = ?");
-        $stmt->bind_param('si', $reparo_finalizado, $id_manutencao);
+        $stmt = $conn->prepare("UPDATE manutencoes SET status_reparo = 'concluido', fim_reparo = NOW(), reparo_finalizado = ?, materiais_utilizados = ?, rompimento_lacre = ?, numero_lacre = ?, info_rompimento = ? WHERE id_manutencao = ?");
+        $stmt->bind_param('ssissi', $reparo_finalizado, $materiais_utilizados, $rompimento_lacre, $numero_lacre, $info_rompimento, $id_manutencao);
+        
         if (!$stmt->execute()) {
             throw new Exception('Falha ao concluir a manutenção principal.');
         }

@@ -419,6 +419,8 @@ if (!isset($_SESSION['user_id'])) {
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
+            display: flex;
+            align-items: center;
         }
         .btn-primary {
             background-color: #4f46e5;
@@ -431,6 +433,64 @@ if (!isset($_SESSION['user_id'])) {
         .confirmation-modal .modal-body {
             text-align: center;
             font-size: 1.1em;
+        }
+        
+        /* Spinner de Carregamento */
+        .loading-spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--cor-principal);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
+        .modal-btn .spinner {
+            width: 20px;
+            height: 20px;
+            border-width: 3px;
+            border-left-color: #fff;
+            margin-left: 8px;
+            display: none; /* Escondido por padrão */
+        }
+        
+        .modal-error-message {
+            color: #ef4444;
+            font-weight: 600;
+            font-size: 0.9em;
+            margin-top: 0.5rem;
+            text-align: left;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .input-group input[type="text"] {
+            flex-grow: 1;
+        }
+
+        .input-group .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+        }
+
+        .lacre-buttons button {
+            padding: 8px 16px;
+        }
+
+        .lacre-fields {
+            padding-left: 1rem;
+            border-left: 3px solid #e5e7eb;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         /* Responsividade */
@@ -466,7 +526,7 @@ if (!isset($_SESSION['user_id'])) {
         <div id="filterContainer" class="filter-container"></div>
 
         <div id="ocorrenciasContainer" class="ocorrencias-container">
-            <p id="loadingMessage">A carregar ocorrências...</p>
+            <div id="loadingMessage" class="loading-spinner"></div>
         </div>
 
         <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
@@ -505,14 +565,45 @@ if (!isset($_SESSION['user_id'])) {
                     <label>Veículos Utilizados</label>
                     <div id="concluirVeiculosContainer" class="choice-buttons"></div>
                 </div>
+
+                <div class="form-group">
+                    <label for="materiaisUtilizados">Materiais Utilizados</label>
+                    <div class="input-group">
+                        <input type="text" id="materiaisUtilizados" placeholder="Ex: Switch, conector, etc.">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="nenhumMaterialCheckbox"> Nenhum
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Houve rompimento de lacre?</label>
+                    <div class="choice-buttons lacre-buttons">
+                        <button id="lacreSimBtn" class="choice-btn">Sim</button>
+                        <button id="lacreNaoBtn" class="choice-btn selected">Não</button>
+                    </div>
+                </div>
+
+                <div id="lacreFieldsContainer" class="form-group lacre-fields hidden">
+                    <label for="numeroLacre">Número do lacre:</label>
+                    <input type="text" id="numeroLacre" placeholder="Digite o número do lacre">
+                    <label for="infoRompimento">Qual lacre foi rompido?</label>
+                    <input type="text" id="infoRompimento" placeholder="Ex: Metrológico, switch">
+                </div>
+                
                  <div class="form-group">
                     <label for="reparoFinalizado">Descrição do Reparo Realizado</label>
                     <textarea id="reparoFinalizado" rows="3" placeholder="Descreva o que foi feito..."></textarea>
+                    <div id="reparoErrorMessage" class="modal-error-message hidden"></div>
                 </div>
             </div>
             <div class="modal-footer">
+                <p id="conclusionSuccessMessage" class="hidden" style="color: green; font-weight: bold; width: 100%; text-align: center;"></p>
                 <button class="modal-btn btn-secondary" onclick="closeModal('concluirModal')">Cancelar</button>
-                <button class="modal-btn btn-primary" onclick="saveConclusion()">Concluir Reparo</button>
+                <button id="saveConclusionBtn" class="modal-btn btn-primary" onclick="saveConclusion()">
+                    Concluir Reparo
+                    <div id="conclusionSpinner" class="spinner"></div>
+                </button>
             </div>
         </div>
     </div>
@@ -541,30 +632,62 @@ if (!isset($_SESSION['user_id'])) {
             const filterContainer = document.getElementById('filterContainer');
             const ocorrenciasContainer = document.getElementById('ocorrenciasContainer');
             const loadingMessage = document.getElementById('loadingMessage');
+            const nenhumMaterialCheckbox = document.getElementById('nenhumMaterialCheckbox');
+            const materiaisUtilizadosInput = document.getElementById('materiaisUtilizados');
+            const lacreSimBtn = document.getElementById('lacreSimBtn');
+            const lacreNaoBtn = document.getElementById('lacreNaoBtn');
+            const lacreFieldsContainer = document.getElementById('lacreFieldsContainer');
 
             let activeType = 'manutencao';
             let activeCity = 'todos';
             let allData = null; 
             let currentEditingId = null;
+            let updateInterval;
 
-            async function fetchData() {
+            async function fetchData(isUpdate = false) {
+                if (!isUpdate) {
+                    loadingMessage.classList.remove('hidden');
+                    ocorrenciasContainer.innerHTML = '';
+                }
+
                 try {
                     const response = await fetch('get_ocorrencias_em_andamento.php');
                     const result = await response.json();
-                    loadingMessage.classList.add('hidden');
-                    if (result.success) {
-                        allData = result.data;
-                        renderAllOcorrencias(allData);
-                        updateCityFilters();
-                        updateDisplay();
+
+                    const newSignature = JSON.stringify(result.data);
+                    const oldSignature = JSON.stringify(allData);
+
+                    if (isUpdate) {
+                        if (newSignature !== oldSignature) {
+                            allData = result.data;
+                            renderAllOcorrencias(allData);
+                            updateDisplay();
+                        }
                     } else {
-                        ocorrenciasContainer.innerHTML = `<p>${result.message || 'Nenhuma ocorrência encontrada.'}</p>`;
+                        if (result.success) {
+                            allData = result.data;
+                            renderAllOcorrencias(allData);
+                            updateCityFilters();
+                            updateDisplay();
+                        } else {
+                            ocorrenciasContainer.innerHTML = `<p>${result.message || 'Nenhuma ocorrência encontrada.'}</p>`;
+                        }
                     }
                 } catch (error) {
-                    console.error('Erro ao buscar dados:', error);
-                    loadingMessage.classList.add('hidden');
-                    ocorrenciasContainer.innerHTML = `<p>Ocorreu um erro ao carregar os dados. Tente novamente.</p>`;
+                    if (!isUpdate) {
+                        console.error('Erro ao buscar dados:', error);
+                        ocorrenciasContainer.innerHTML = `<p>Ocorreu um erro ao carregar os dados. Tente novamente.</p>`;
+                    }
+                } finally {
+                    if (!isUpdate) {
+                        loadingMessage.classList.add('hidden');
+                    }
                 }
+            }
+            
+            function startAutoUpdate() {
+                if (updateInterval) clearInterval(updateInterval);
+                updateInterval = setInterval(() => fetchData(true), 30000); 
             }
 
             function renderAllOcorrencias(data) {
@@ -641,13 +764,19 @@ if (!isset($_SESSION['user_id'])) {
                         <div class="detail-item"><strong>Tempo Reparo</strong> <span>${tempoReparo}</span></div>
                     `;
                 } else {
-                    const lacoStatus = item.inst_laco == 1 ? `<span class="status-value instalado">Instalado ${formatDate(item.dt_laco)}</span>` : `<span class="status-value aguardando">Aguardando instalação</span>`;
                     const baseStatus = item.inst_base == 1 ? `<span class="status-value instalado">Instalado ${formatDate(item.dt_base)}</span>` : `<span class="status-value aguardando">Aguardando instalação</span>`;
                     const infraStatus = item.inst_infra == 1 ? `<span class="status-value instalado">Instalado ${formatDate(item.data_infra)}</span>` : `<span class="status-value aguardando">Aguardando instalação</span>`;
                     const energiaStatus = item.inst_energia == 1 ? `<span class="status-value instalado">Instalado ${formatDate(item.dt_energia)}</span>` : `<span class="status-value aguardando">Aguardando instalação</span>`;
+                    
+                    let lacoHTML = '';
+                    if (item.tipo_equip !== 'DOME' && item.tipo_equip !== 'CCO') {
+                        const lacoStatus = item.inst_laco == 1 ? `<span class="status-value instalado">Instalado ${formatDate(item.dt_laco)}</span>` : `<span class="status-value aguardando">Aguardando instalação</span>`;
+                        lacoHTML = `<div class="detail-item"><strong>Laço</strong> <span>${lacoStatus}</span></div>`;
+                    }
+
                     detailsHTML = `
                         <div class="detail-item stacked"><strong>Tipo</strong> <span>${tipoOcorrencia}</span></div>
-                        <div class="detail-item"><strong>Laço</strong> <span>${lacoStatus}</span></div>
+                        ${lacoHTML}
                         <div class="detail-item"><strong>Base</strong> <span>${baseStatus}</span></div>
                         <div class="detail-item"><strong>Infra</strong> <span>${infraStatus}</span></div>
                         <div class="detail-item"><strong>Energia</strong> <span>${energiaStatus}</span></div>
@@ -752,7 +881,20 @@ if (!isset($_SESSION['user_id'])) {
             }
 
             window.openModal = function(modalId) { document.getElementById(modalId).classList.add('is-active'); }
-            window.closeModal = function(modalId) { document.getElementById(modalId).classList.remove('is-active'); }
+            window.closeModal = function(modalId) { 
+                const modal = document.getElementById(modalId);
+                modal.classList.remove('is-active');
+                if (modalId === 'concluirModal') {
+                    // Reseta o estado do botão e mensagens ao fechar
+                    const saveBtn = document.getElementById('saveConclusionBtn');
+                    const spinner = document.getElementById('conclusionSpinner');
+                    saveBtn.disabled = false;
+                    spinner.style.display = 'none';
+                    saveBtn.firstChild.textContent = 'Concluir Reparo';
+                    document.getElementById('reparoErrorMessage').classList.add('hidden');
+                    document.getElementById('conclusionSuccessMessage').classList.add('hidden');
+                }
+            }
 
             function findOcorrenciaById(id) {
                 for (const cidade in allData.ocorrencias) {
@@ -773,6 +915,15 @@ if (!isset($_SESSION['user_id'])) {
                 document.getElementById('concluirInicioReparo').value = formatDateForInput(item.inicio_periodo_reparo);
                 document.getElementById('concluirFimReparo').value = formatDateForInput(item.fim_periodo_reparo);
                 
+                // Reset dos novos campos
+                materiaisUtilizadosInput.value = '';
+                nenhumMaterialCheckbox.checked = false;
+                materiaisUtilizadosInput.disabled = false;
+                lacreNaoBtn.click(); // Define 'Não' como padrão
+                document.getElementById('numeroLacre').value = '';
+                document.getElementById('infoRompimento').value = '';
+
+
                 const tecnicosContainer = document.getElementById('concluirTecnicosContainer');
                 const veiculosContainer = document.getElementById('concluirVeiculosContainer');
                 tecnicosContainer.innerHTML = 'A carregar...';
@@ -814,20 +965,73 @@ if (!isset($_SESSION['user_id'])) {
             }
             
             window.saveConclusion = async function() {
-                const reparoFinalizado = document.getElementById('reparoFinalizado').value;
+                const reparoFinalizadoInput = document.getElementById('reparoFinalizado');
+                const reparoFinalizado = reparoFinalizadoInput.value;
                 const inicioReparo = document.getElementById('concluirInicioReparo').value;
                 const fimReparo = document.getElementById('concluirFimReparo').value;
                 const tecnicos = Array.from(document.querySelectorAll('#concluirTecnicosContainer .choice-btn.selected')).map(btn => btn.dataset.id);
                 const veiculos = Array.from(document.querySelectorAll('#concluirVeiculosContainer .choice-btn.selected')).map(btn => btn.dataset.id);
-
+                const errorMessageDiv = document.getElementById('reparoErrorMessage');
+                
+                // Limpa mensagens de erro anteriores
+                errorMessageDiv.classList.add('hidden');
+                errorMessageDiv.textContent = '';
+                
+                // Validação
                 if (!reparoFinalizado.trim()) {
-                    alert('Por favor, descreva o reparo realizado.');
+                    errorMessageDiv.textContent = 'Por favor, descreva o reparo realizado.';
+                    errorMessageDiv.classList.remove('hidden');
                     return;
                 }
-                 if (!inicioReparo || !fimReparo || tecnicos.length === 0 || veiculos.length === 0) {
-                    alert('Por favor, preencha as datas e selecione ao menos um técnico e um veículo.');
+
+                const hoje = new Date().toISOString().split('T')[0];
+                if (inicioReparo < hoje) {
+                    errorMessageDiv.textContent = 'A data de início não pode ser anterior à data atual.';
+                    errorMessageDiv.classList.remove('hidden');
                     return;
                 }
+                
+                if (fimReparo < inicioReparo) {
+                    errorMessageDiv.textContent = 'A data de fim não pode ser anterior à data de início.';
+                    errorMessageDiv.classList.remove('hidden');
+                    return;
+                }
+                
+                if (tecnicos.length === 0) {
+                    errorMessageDiv.textContent = 'Selecione pelo menos um técnico.';
+                    errorMessageDiv.classList.remove('hidden');
+                    return;
+                }
+                
+                if (veiculos.length === 0) {
+                    errorMessageDiv.textContent = 'Selecione pelo menos um veículo.';
+                    errorMessageDiv.classList.remove('hidden');
+                    return;
+                }
+
+                // Validação dos novos campos
+                let materiais = materiaisUtilizadosInput.value.trim();
+                if (nenhumMaterialCheckbox.checked) {
+                    materiais = 'Nenhum material utilizado';
+                } else if (!materiais) {
+                    errorMessageDiv.textContent = 'Informe os materiais utilizados ou marque "Nenhum".';
+                    errorMessageDiv.classList.remove('hidden');
+                    return;
+                }
+
+                const rompimentoLacre = lacreSimBtn.classList.contains('selected');
+                let numeroLacre = null, infoRompimento = null;
+
+                if (rompimentoLacre) {
+                    numeroLacre = document.getElementById('numeroLacre').value.trim();
+                    infoRompimento = document.getElementById('infoRompimento').value.trim();
+                    if (!numeroLacre || !infoRompimento) {
+                        errorMessageDiv.textContent = 'Preencha as informações sobre o rompimento do lacre.';
+                        errorMessageDiv.classList.remove('hidden');
+                        return;
+                    }
+                }
+
 
                 const dataToSend = {
                     action: 'concluir_reparo',
@@ -836,8 +1040,20 @@ if (!isset($_SESSION['user_id'])) {
                     inicio_reparo: inicioReparo,
                     fim_reparo: fimReparo,
                     tecnicos: tecnicos,
-                    veiculos: veiculos
+                    veiculos: veiculos,
+                    materiais_utilizados: materiais,
+                    rompimento_lacre: rompimentoLacre,
+                    numero_lacre: numeroLacre,
+                    info_rompimento: infoRompimento
                 };
+                
+                const saveBtn = document.getElementById('saveConclusionBtn');
+                const spinner = document.getElementById('conclusionSpinner');
+
+                // Desativa o botão e mostra o spinner
+                saveBtn.disabled = true;
+                spinner.style.display = 'inline-block';
+                saveBtn.firstChild.textContent = 'Salvando...';
 
                 try {
                     const response = await fetch('update_ocorrencia.php', {
@@ -847,13 +1063,29 @@ if (!isset($_SESSION['user_id'])) {
                     });
                     const result = await response.json();
                     if (result.success) {
-                        closeModal('concluirModal');
-                        fetchData();
+                        const successMsg = document.getElementById('conclusionSuccessMessage');
+                        successMsg.textContent = 'Ocorrência concluída com sucesso!';
+                        successMsg.classList.remove('hidden');
+                        
+                        setTimeout(() => {
+                            closeModal('concluirModal');
+                            fetchData();
+                        }, 2000); // Fecha o modal após 2 segundos
                     } else {
-                        alert('Erro ao concluir: ' + result.message);
+                        errorMessageDiv.textContent = 'Erro ao concluir: ' + result.message;
+                        errorMessageDiv.classList.remove('hidden');
+                        // Reativa o botão em caso de erro
+                        saveBtn.disabled = false;
+                        spinner.style.display = 'none';
+                        saveBtn.firstChild.textContent = 'Concluir Reparo';
                     }
                 } catch (error) {
-                    alert('Erro de comunicação com o servidor.');
+                    errorMessageDiv.textContent = 'Erro de comunicação com o servidor.';
+                    errorMessageDiv.classList.remove('hidden');
+                    // Reativa o botão em caso de erro
+                    saveBtn.disabled = false;
+                    spinner.style.display = 'none';
+                    saveBtn.firstChild.textContent = 'Concluir Reparo';
                 }
             }
 
@@ -895,7 +1127,32 @@ if (!isset($_SESSION['user_id'])) {
                 }
             }
             
+            // Listeners para os novos campos
+            nenhumMaterialCheckbox.addEventListener('change', () => {
+                if (nenhumMaterialCheckbox.checked) {
+                    materiaisUtilizadosInput.value = 'Nenhum material utilizado';
+                    materiaisUtilizadosInput.disabled = true;
+                } else {
+                    materiaisUtilizadosInput.value = '';
+                    materiaisUtilizadosInput.disabled = false;
+                }
+            });
+
+            lacreSimBtn.addEventListener('click', () => {
+                lacreSimBtn.classList.add('selected');
+                lacreNaoBtn.classList.remove('selected');
+                lacreFieldsContainer.classList.remove('hidden');
+            });
+
+            lacreNaoBtn.addEventListener('click', () => {
+                lacreNaoBtn.classList.add('selected');
+                lacreSimBtn.classList.remove('selected');
+                lacreFieldsContainer.classList.add('hidden');
+            });
+
+
             fetchData();
+            startAutoUpdate();
         });
     </script>
 </body>

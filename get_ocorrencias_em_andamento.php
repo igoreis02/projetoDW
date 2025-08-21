@@ -12,7 +12,7 @@ $cidades_com_ocorrencias = [];
 $response_data = [];
 
 try {
-    // --- Consulta SQL atualizada para incluir os veículos ---
+    // --- Consulta SQL atualizada para incluir o tipo de equipamento ---
     $sql = "SELECT
                 m.id_manutencao,
                 m.tipo_manutencao,
@@ -25,10 +25,10 @@ try {
                 m.inst_energia, m.dt_energia,
                 e.nome_equip,
                 e.referencia_equip,
+                e.tipo_equip,
                 c.nome AS cidade,
                 CONCAT(en.logradouro, ', ', en.bairro) AS local_completo,
                 GROUP_CONCAT(DISTINCT u.nome SEPARATOR ', ') AS tecnicos_nomes,
-                -- CORREÇÃO: Usando CONCAT explícito dentro do GROUP_CONCAT para maior robustez
                 GROUP_CONCAT(DISTINCT CONCAT(v.nome, ' (', v.placa, ')') SEPARATOR ', ') AS veiculos_nomes,
                 MIN(mt.inicio_reparoTec) AS inicio_periodo_reparo,
                 MAX(mt.fim_reparoT) AS fim_periodo_reparo
