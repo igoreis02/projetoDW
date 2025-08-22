@@ -12,6 +12,7 @@ if (!isset($_SESSION['user_id'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ocorrências Pendentes</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" type="image/png" href="imagens/favicon.png">
     <style>
         /* Estilos Gerais */
         body {
