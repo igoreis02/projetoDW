@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         ${atribuidoPorHTML}
                         <div class="detail-item"><strong>Status</strong> ${statusHTML}</div>
                         <div class="detail-item"><strong>Local</strong> <span>${item.local_completo || 'N/A'}</span></div>
-                        ${item.motivo_devolucao ? `<div class="detail-item"><strong>Devolvida</strong> <span>${item.motivo_devolucao}</span></div>` : ''}
+                        ${item.motivo_devolucao ? `<div class="detail-item"><strong>Devolvida</strong> <span class="status-tag status-pendente">${item.motivo_devolucao}</span></div>` : ''}
                     `;
         }
 

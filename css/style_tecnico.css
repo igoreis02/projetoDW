@@ -42,7 +42,7 @@ body {
     height: 100vmin;
     border-radius:
         47% 53% 61% 39% / 45% 51% 49% 55%;
-    background: var(--cor-secundaria);
+    background: #112058;
 }
 
 .background::after {
@@ -53,7 +53,7 @@ body {
     width: inherit;
     height: inherit;
     border-radius: inherit;
-    background: var(--cor-secundaria);
+    background: #112058;
 }
 
 .card {
@@ -117,8 +117,8 @@ body {
     padding: 15px;
     margin-top: 30px;
     text-align: center;
-    background-color: var(--botao-voltar);
-    color: var(--cor-letra-botaoVoltar);
+    background-color: #112058;
+    color: white;
     text-decoration: none;
     border-radius: 8px;
     font-size: 1.1em;
@@ -127,7 +127,7 @@ body {
 }
 
 .voltar-btn:hover {
-    background-color: var(--botao-voltar-hover);
+    background-color: #09143fff;
 }
 
 .modal {
@@ -908,7 +908,7 @@ body {
 }
 
 .botao-filtro.ativo {
-    background-color: var(--cor-principal);
+    background-color: #112058;
     border-color: var(--cor-principal);
     color: white;
 }

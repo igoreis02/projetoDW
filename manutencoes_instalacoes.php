@@ -78,7 +78,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             padding: 25px;
             font-size: 1.3em;
             color: white;
-            background-color: var(--cor-principal);
+            background-color: #112058;
             border: none;
             border-radius: 8px;
             cursor: pointer;
@@ -92,7 +92,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
         }
 
         .page-button:hover {
-            background-color: var(--cor-secundaria);
+            background-color: #09143fff;
             transform: translateY(-5px);
         }
 
@@ -107,8 +107,8 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             padding: 15px;
             margin-top: 30px;
             text-align: center;
-            background-color: var(--botao-voltar);
-            color: var(--cor-letra-botaoVoltar);
+            background-color: #112058;
+            color: white;
             text-decoration: none;
             border-radius: 8px;
             font-size: 1.1em;
@@ -116,7 +116,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
         }
 
         .voltar-btn:hover {
-            background-color: var(--botao-voltar-hover);
+            background-color: #09143fff;
         }
 
         .footer {
@@ -201,7 +201,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             padding: 12px 20px;
             font-size: 1.1em;
             color: white;
-            background-color: var(--cor-principal);
+            background-color: #112058;
             border: none;
             border-radius: 8px;
             cursor: pointer;
@@ -264,7 +264,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
         }
 
         .choice-buttons .selected {
-            background-color: var(--cor-secundaria) !important;
+            background-color: #09143fff !important;
             transform: translateY(2px);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) inset;
         }

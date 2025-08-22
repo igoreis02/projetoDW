@@ -62,7 +62,7 @@ if (isset($user_id)) {
             align-items: center;
             justify-content: center;
             flex: 1;
-            background-color: #A6A6A6;
+            background-color: #112058;
             color: white;
             padding: 20px;
             border-radius: 10px;
@@ -132,7 +132,7 @@ if (isset($user_id)) {
             left: 0;
             width: 70px;
             height: 100vh;
-            background-color: #A6A6A6;
+            background-color: #112058;
             padding: 10px 0;
             box-sizing: border-box;
             display: flex;
@@ -171,7 +171,7 @@ if (isset($user_id)) {
         }
 
         .sidebar-icons-left a:hover {
-            background-color: rgba(255, 255, 255, 0.2);
+            background-color: rgba(9, 16, 43, 0.2);
         }
 
         .sidebar-icons-left a i {

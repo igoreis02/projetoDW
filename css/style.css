@@ -68,7 +68,7 @@ body {
     height: 100vmin;
     border-radius:
         47% 53% 61% 39% / 45% 51% 49% 55%;
-    background: var(--cor-secundaria);
+    background: #112058;
 }
 
 
@@ -80,7 +80,7 @@ body {
     width: inherit;
     height: inherit;
     border-radius: inherit;
-    background: var(--cor-secundaria);
+    background: #112058;
 }
 
 .card.logo {
@@ -101,9 +101,9 @@ body {
 }
 
 .logo {
-    width: 40%;
+    width: 60%;
     position: absolute;
-    top: 15px;
+    top: 50px;
     left: 50%;
     translate: -50% 0;
 

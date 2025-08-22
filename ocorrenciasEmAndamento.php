@@ -1,7 +1,7 @@
 <?php
 session_start();
 if (!isset($_SESSION['user_id'])) {
-    header('Location: login.html');
+    header('Location: index.html');
     exit();
 }
 ?>
@@ -87,7 +87,7 @@ if (!isset($_SESSION['user_id'])) {
             background-color: #e0e7ff;
         }
         .action-btn.active {
-            background-color: var(--cor-principal);
+            background-color: #112058;
             color: white;
         }
 
@@ -292,15 +292,15 @@ if (!isset($_SESSION['user_id'])) {
             padding: 15px 30px;
             margin-top: 3rem;
             text-align: center;
-            background-color: var(--botao-voltar);
-            color: var(--cor-letra-botaoVoltar);
+            background-color: #112058;
+            color: white;
             text-decoration: none;
             border-radius: 8px;
             font-size: 1.1em;
             transition: background-color 0.3s ease;
         }
         .voltar-btn:hover {
-            background-color: var(--botao-voltar-hover);
+            background-color: #09143fff;
         }
 
         .hidden { display: none !important; }

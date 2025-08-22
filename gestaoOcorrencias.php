@@ -1,7 +1,7 @@
 <?php
 session_start();
 if (!isset($_SESSION['user_id'])) {
-    header('Location: login.html');
+    header('Location: index.html');
     exit();
 }
 ?>
@@ -48,7 +48,7 @@ if (!isset($_SESSION['user_id'])) {
         }
         .header-container h2 {
             font-size: 2.2em;
-            color: var(--cor-principal);
+            color: black;
             margin: 0;
         }
         .back-btn-icon {
@@ -83,7 +83,7 @@ if (!isset($_SESSION['user_id'])) {
             background-color: #e0e7ff;
         }
         .action-btn.active {
-            background-color: var(--cor-principal);
+            background-color: #112058;
             color: white;
         }
 

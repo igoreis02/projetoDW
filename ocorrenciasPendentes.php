@@ -1,7 +1,7 @@
 <?php
 session_start();
 if (!isset($_SESSION['user_id'])) {
-    header('Location: login.html');
+    header('Location: index.html');
     exit();
 }
 ?>
@@ -48,7 +48,7 @@ if (!isset($_SESSION['user_id'])) {
         }
         .header-container h2 {
             font-size: 2.2em;
-            color: var(--cor-principal);
+            color: black;
             margin: 0;
         }
         .close-btn, .back-btn-icon {
@@ -87,7 +87,7 @@ if (!isset($_SESSION['user_id'])) {
             background-color: #e0e7ff;
         }
         .action-btn.active {
-            background-color: var(--cor-principal);
+            background-color: #112058;
             color: white;
         }
 
@@ -146,7 +146,7 @@ if (!isset($_SESSION['user_id'])) {
         }
         
         .atribuir-cidade-btn {
-            background-color: #3b82f6;
+            background-color: #112058;
             color: white;
             padding: 8px 16px;
             border: none;
@@ -156,7 +156,7 @@ if (!isset($_SESSION['user_id'])) {
             transition: background-color 0.3s ease;
         }
         .atribuir-cidade-btn:hover {
-            background-color: #2563eb;
+            background-color: #112058;
         }
 
         .city-ocorrencias-grid {
@@ -268,11 +268,11 @@ if (!isset($_SESSION['user_id'])) {
             transition: all 0.2s ease;
         }
         .edit-btn {
-            background-color: #f59e0b; /* Laranja */
+            background-color: #3b82f6; /* Azul */
             color: white;
         }
         .edit-btn:hover {
-            background-color: #d97706;
+            background-color: #2563eb;
         }
         .cancel-btn {
             background-color: #ef4444;
@@ -288,15 +288,15 @@ if (!isset($_SESSION['user_id'])) {
             padding: 15px 30px;
             margin-top: 3rem;
             text-align: center;
-            background-color: var(--botao-voltar);
-            color: var(--cor-letra-botaoVoltar);
+            background-color: #112058;
+            color: white;
             text-decoration: none;
             border-radius: 8px;
             font-size: 1.1em;
             transition: background-color 0.3s ease;
         }
         .voltar-btn:hover {
-            background-color: var(--botao-voltar-hover);
+            background-color: #09143fff;
         }
         .hidden { display: none !important; }
 
