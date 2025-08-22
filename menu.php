@@ -39,7 +39,6 @@ if (isset($user_id)) {
     <link rel="icon" type="image/png" href="imagens/favicon.png">
     <title>Menu</title>
     <style>
-
         .card:before {
             content: none;
         }
@@ -94,7 +93,7 @@ if (isset($user_id)) {
             margin: 40px auto;
             position: relative;
         }
-        
+
         .card-header {
             font-size: 2rem;
             font-weight: 700;
@@ -108,24 +107,27 @@ if (isset($user_id)) {
             .menu-row {
                 flex-direction: column;
             }
+
             .menu-button {
                 width: 100%;
             }
+
             .card {
                 margin: 20px auto;
                 padding: 1rem;
             }
+
             .card-header {
                 font-size: 1.5rem;
             }
         }
-        
+
         /* Contêiner principal do layout flexível */
         .main-wrapper {
             display: flex;
             min-height: 100vh;
         }
-        
+
         /* Estilo para a barra lateral */
         .sidebar-icons-left {
             position: fixed;
@@ -147,7 +149,7 @@ if (isset($user_id)) {
         .sidebar-icons-left.expanded {
             width: 250px;
         }
-        
+
         .sidebar-icons-left a {
             position: relative;
             display: flex;
@@ -162,11 +164,12 @@ if (isset($user_id)) {
             transition: background-color 0.3s ease;
             box-sizing: border-box;
         }
-        
+
         .sidebar-icons-left.expanded a {
-            justify-content: flex-start; /* Alinha o conteúdo à esquerda quando expandida */
+            justify-content: flex-start;
+            /* Alinha o conteúdo à esquerda quando expandida */
         }
-        
+
         .sidebar-icons-left a:first-of-type {
             margin-top: auto;
         }
@@ -180,7 +183,7 @@ if (isset($user_id)) {
             min-width: 30px;
             text-align: center;
         }
-        
+
         /* CORREÇÃO: Permite que o texto quebre a linha e impede que ele ultrapasse o limite */
         .sidebar-icons-left a span {
             display: none;
@@ -193,12 +196,13 @@ if (isset($user_id)) {
         .sidebar-icons-left.expanded a span {
             display: block;
         }
-        
+
         /* Estilos para a tooltip */
         .sidebar-icons-left:not(.expanded) a::after {
             content: attr(data-title);
             position: absolute;
-            left: 80px; /* Posição à direita do ícone */
+            left: 80px;
+            /* Posição à direita do ícone */
             top: 50%;
             transform: translateY(-50%);
             background-color: rgba(0, 0, 0, 0.7);
@@ -215,11 +219,13 @@ if (isset($user_id)) {
             opacity: 1;
             visibility: visible;
         }
+
         /* Estilos para o botão de alternância do menu */
         .menu-toggle-btn {
-            position: fixed; 
+            position: fixed;
             top: 20px;
-            left: 80px; /* Posicionamento depois da barra de navegação */
+            left: 80px;
+            /* Posicionamento depois da barra de navegação */
             width: 30px;
             height: 25px;
             display: flex;
@@ -230,13 +236,15 @@ if (isset($user_id)) {
             background: none;
             border: none;
             padding: 0;
-            transition: left 0.3s ease; /* Adiciona transição para a propriedade left */
+            transition: left 0.3s ease;
+            /* Adiciona transição para a propriedade left */
         }
-        
+
         .menu-toggle-btn.menu-shifted {
-            left: 260px; /* Nova posição para o botão quando o menu está aberto (250px do menu + 10px de margem) */
+            left: 260px;
+            /* Nova posição para o botão quando o menu está aberto (250px do menu + 10px de margem) */
         }
-        
+
 
         .menu-toggle-btn span {
             display: block;
@@ -245,38 +253,40 @@ if (isset($user_id)) {
             background-color: #333;
             transition: all 0.3s ease;
         }
-        
+
         .content-container {
             flex-grow: 1;
             padding: 20px;
             margin-left: 70px;
             transition: margin-left 0.3s ease;
         }
-        
+
         .content-container.sidebar-open {
             margin-left: 250px;
         }
-        
+
         .sidebar-user-info {
             padding: 20px 10px;
             color: white;
             text-align: center;
-            display: none; /* Esconde por padrão */
+            display: none;
+            /* Esconde por padrão */
             border-bottom: 1px solid rgba(255, 255, 255, 0.3);
             margin-bottom: 20px;
             width: 100%;
             box-sizing: border-box;
         }
-        
+
         .sidebar-user-info.visible {
-            display: block; /* Mostra ao expandir */
+            display: block;
+            /* Mostra ao expandir */
         }
-        
+
         .sidebar-user-info p {
             margin: 5px 0;
             font-size: 0.9rem;
         }
-        
+
         .btn-change-password {
             background-color: #007bff;
             color: white;
@@ -287,7 +297,7 @@ if (isset($user_id)) {
             margin-top: 10px;
             font-size: 0.8rem;
         }
-        
+
         .btn-change-password:hover {
             background-color: #0056b3;
         }
@@ -296,7 +306,7 @@ if (isset($user_id)) {
 </head>
 
 <body>
-    
+
     <div class="main-wrapper">
         <div id="sidebar-icons" class="sidebar-icons-left">
             <div id="user-info-container" class="sidebar-user-info">
@@ -305,17 +315,17 @@ if (isset($user_id)) {
                 <p><strong>Tipo:</strong> <span id="user-type-display"></span></p>
                 <button id="change-password-btn" class="btn-change-password">Alterar Senha</button>
             </div>
-            
+
             <a href="usuarios" data-title="Gerenciar Usuários">
-                <i class="fas fa-users-cog" ></i>
+                <i class="fas fa-users-cog"></i>
                 <span>Gerenciar Usuários</span>
             </a>
             <a href="cidades" data-title="Gerenciar Cidades">
-                <i class="fas fa-city" ></i>
+                <i class="fas fa-city"></i>
                 <span>Gerenciar Cidades</span>
             </a>
             <a href="equipamentos" data-title="Informações dos Equipamentos">
-                <i class="fas fa-server" ></i>
+                <i class="fas fa-server"></i>
                 <span>Informações dos Equipamentos</span>
             </a>
             <a href="veiculos" data-title="Veículos">
@@ -331,7 +341,7 @@ if (isset($user_id)) {
                 <span>Logout</span>
             </a>
         </div>
-    
+
         <div class="content-container">
             <button id="menu-toggle-btn" class="menu-toggle-btn">
                 <span></span>
@@ -339,13 +349,13 @@ if (isset($user_id)) {
                 <span></span>
             </button>
             <div class="card">
-                
+
                 <h1 class="card-header">Menu Principal</h1>
                 <div class="menu-buttons-container">
                     <div class="menu-row">
                         <a href="#" class="menu-button" id="manutencao">
                             <i class="fas fa-tools"></i>
-                            <span>Manutenções/Instalações</span>
+                            <span>Ocorrências e Instalações</span>
                         </a>
                         <a href="#" class="menu-button" id="manutencaoPendentes">
                             <i class="fas fa-clock"></i>
@@ -362,17 +372,31 @@ if (isset($user_id)) {
                             <i class="fas fa-cogs"></i>
                             <span>Ocorrências Em Andamento</span>
                         </a>
-                        
+
                         <a href="#" class="menu-button" id="gestaoOcorrencias">
                             <i class="fas fa-exclamation-triangle"></i>
                             <span>Gestão de Ocorrências</span>
+                        </a>
+                    </div>
+                    <div class="menu-row">
+                        <a href="#" class="menu-button" id="solicitacaoClientesBtn">
+                            <i class="fas fa-headset"></i>
+                            <span>Solicitação Clientes</span>
+                        </a>
+                        <a href="#" class="menu-button" id="lacresImetroBtn">
+                            <i class="fas fa-stamp"></i>
+                            <span>Lacres IMETRO</span>
+                        </a>
+                        <a href="#" class="menu-button" id="afericoesBtn">
+                            <i class="fas fa-gauge-high"></i>
+                            <span>Aferições</span>
                         </a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const sidebar = document.getElementById('sidebar-icons');
@@ -395,15 +419,15 @@ if (isset($user_id)) {
             menuToggleBtn.addEventListener('click', function() {
                 sidebar.classList.toggle('expanded');
                 contentContainer.classList.toggle('sidebar-open');
-                menuToggleBtn.classList.toggle('menu-shifted'); // Adiciona/remove a classe para mover o botão
-                
+                menuToggleBtn.classList.toggle('menu-shifted');
+
                 if (sidebar.classList.contains('expanded')) {
                     userInfoContainer.style.display = 'block';
                 } else {
                     userInfoContainer.style.display = 'none';
                 }
             });
-            
+
             if (changePasswordBtn) {
                 changePasswordBtn.addEventListener('click', function() {
                     window.location.href = 'change_password.php';
@@ -416,8 +440,8 @@ if (isset($user_id)) {
                     window.location.href = 'manutencoes_instalacoes';
                 });
             }
-            
-            
+
+
             const manutencaoAndamentoButton = document.getElementById('manutencaoAndamento');
             if (manutencaoAndamentoButton) {
                 manutencaoAndamentoButton.addEventListener('click', function() {
@@ -439,7 +463,7 @@ if (isset($user_id)) {
                 });
             }
 
-            
+
             const ocorrenciaProvedoresButton = document.getElementById('ocorrenciaProvedores');
             if (ocorrenciaProvedoresButton) {
                 ocorrenciaProvedoresButton.addEventListener('click', function() {
@@ -451,6 +475,33 @@ if (isset($user_id)) {
             if (gestaoOcorrenciasButton) {
                 gestaoOcorrenciasButton.addEventListener('click', function() {
                     window.location.href = 'gestaoOcorrencias';
+                });
+            }
+
+            // Lógica para os novos botões
+            const solicitacaoClientesBtn = document.getElementById('solicitacaoClientesBtn');
+            if (solicitacaoClientesBtn) {
+                solicitacaoClientesBtn.addEventListener('click', function() {
+                    // Redireciona para a nova página de solicitações de clientes
+                    window.location.href = 'solicitacoesClientes';
+                });
+            }
+
+            const lacresImetroBtn = document.getElementById('lacresImetroBtn');
+            if (lacresImetroBtn) {
+                lacresImetroBtn.addEventListener('click', function() {
+                    // Redireciona para a nova página de lacres do IMETRO
+                    // window.location.href = 'lacresImetro'; // Substitua pelo nome correto da página
+                    alert('Funcionalidade "Lacres IMETRO" ainda não implementada.');
+                });
+            }
+
+            const afericoesBtn = document.getElementById('afericoesBtn');
+            if (afericoesBtn) {
+                afericoesBtn.addEventListener('click', function() {
+                    // Redireciona para a nova página de aferições
+                    // window.location.href = 'afericoes'; // Substitua pelo nome correto da página
+                    alert('Funcionalidade "Aferições" ainda não implementada.');
                 });
             }
 
