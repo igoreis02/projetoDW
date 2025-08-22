@@ -6,13 +6,17 @@ header('Access-Control-Allow-Origin: *');
 // --- Configurações do Banco de Dados ---
 require_once 'conexao_bd.php';
 
+// Pega os parâmetros de data da URL
+$data_inicio = $_GET['data_inicio'] ?? null;
+$data_fim = $_GET['data_fim'] ?? null;
+
 // --- Variáveis para armazenar os dados ---
 $ocorrencias_por_cidade = [];
 $cidades_com_ocorrencias = [];
 $response_data = [];
 
 try {
-    // --- Consulta SQL atualizada para incluir os novos campos ---
+    // --- Consulta SQL base ---
     $sql = "SELECT
                 m.id_manutencao,
                 m.tipo_manutencao,
@@ -36,15 +40,40 @@ try {
             JOIN cidades AS c ON m.id_cidade = c.id_cidade
             LEFT JOIN endereco AS en ON e.id_endereco = en.id_endereco
             LEFT JOIN usuario AS u ON m.id_usuario = u.id_usuario
-            WHERE m.status_reparo = 'pendente' 
-            GROUP BY m.id_manutencao
-            ORDER BY c.nome, m.inicio_reparo DESC";
+            WHERE m.status_reparo = 'pendente'";
 
-    $result = $conn->query($sql);
+    $params = [];
+    $types = "";
 
-    if ($result === false) {
+    // Adiciona o filtro de data de início se fornecido
+    if (!empty($data_inicio)) {
+        $sql .= " AND DATE(m.inicio_reparo) >= ?";
+        $params[] = $data_inicio;
+        $types .= 's';
+    }
+
+    // Adiciona o filtro de data de fim se fornecido
+    if (!empty($data_fim)) {
+        $sql .= " AND DATE(m.inicio_reparo) <= ?";
+        $params[] = $data_fim;
+        $types .= 's';
+    }
+
+    $sql .= " GROUP BY m.id_manutencao
+              ORDER BY c.nome, m.inicio_reparo DESC";
+    
+    $stmt = $conn->prepare($sql);
+
+    if ($stmt === false) {
         throw new Exception("Erro na consulta SQL: " . $conn->error);
     }
+    
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
+    
+    $stmt->execute();
+    $result = $stmt->get_result();
 
     if ($result->num_rows > 0) {
         while ($row = $result->fetch_assoc()) {
@@ -66,12 +95,15 @@ try {
         echo json_encode(['success' => true, 'data' => $response_data]);
 
     } else {
-        echo json_encode(['success' => false, 'message' => 'Nenhuma ocorrência pendente encontrada.']);
+        echo json_encode(['success' => false, 'message' => 'Nenhuma ocorrência pendente encontrada para os filtros selecionados.']);
     }
 
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'message' => 'Erro ao carregar dados: ' . $e->getMessage()]);
 } finally {
+    if (isset($stmt)) {
+        $stmt->close();
+    }
     $conn->close();
 }
 ?>

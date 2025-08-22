@@ -13,20 +13,19 @@ $data = json_decode($input, true);
 
 $id_usuario_logado = $_SESSION['user_id'];
 
-if (!isset($data['id_cidade']) || !isset($data['solicitante']) || !isset($data['desc_solicitacao'])) {
+if (!isset($data['id_cidade']) || !isset($data['solicitante']) || !isset($data['tipo_solicitacao']) || !isset($data['desc_solicitacao'])) {
     echo json_encode(['success' => false, 'message' => 'Dados incompletos para adicionar a solicitação.']);
     exit();
 }
 
 try {
-    // A query agora inclui o status 'concluido' e a data de conclusão
-    $stmt = $conn->prepare("INSERT INTO solicitacao_cliente (id_usuario, id_cidade, solicitante, desc_solicitacao, desdobramento_soli, status_solicitacao, data_conclusao) VALUES (?, ?, ?, ?, ?, 'concluido', NOW())");
+    // A query agora insere o tipo_solicitacao e o status_solicitacao padrão é 'pendente' (definido no DB)
+    $stmt = $conn->prepare("INSERT INTO solicitacao_cliente (id_usuario, id_cidade, solicitante, tipo_solicitacao, desc_solicitacao, desdobramento_soli) VALUES (?, ?, ?, ?, ?, ?)");
     
-    // O bind_param foi ajustado para os campos corretos
-    $stmt->bind_param("iisss", $id_usuario_logado, $data['id_cidade'], $data['solicitante'], $data['desc_solicitacao'], $data['desdobramento_soli']);
+    $stmt->bind_param("iissss", $id_usuario_logado, $data['id_cidade'], $data['solicitante'], $data['tipo_solicitacao'], $data['desc_solicitacao'], $data['desdobramento_soli']);
     
     if ($stmt->execute()) {
-        echo json_encode(['success' => true, 'message' => 'Solicitação adicionada e concluída com sucesso!']);
+        echo json_encode(['success' => true, 'message' => 'Solicitação adicionada com sucesso!']);
     } else {
         throw new Exception($stmt->error);
     }

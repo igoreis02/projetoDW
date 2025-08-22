@@ -8,24 +8,51 @@ $solicitacoes_por_cidade = [];
 $cidades_com_solicitacoes = [];
 $response_data = [];
 
-// Pega o termo de pesquisa da URL
+// Pega os novos parâmetros da URL
 $search_term = $_GET['search'] ?? '';
+$data_inicio = $_GET['data_inicio'] ?? null;
+$data_fim = $_GET['data_fim'] ?? null;
+$status_filtro = $_GET['status'] ?? 'todos'; // Novo filtro de status
 
 try {
     $sql = "SELECT
-                s.id_solicitacao, s.solicitante, s.desc_solicitacao, s.desdobramento_soli,
+                s.id_solicitacao, s.solicitante, s.tipo_solicitacao, s.desc_solicitacao, s.desdobramento_soli,
                 s.data_solicitacao, s.data_conclusao, s.status_solicitacao,
                 u.id_usuario, u.nome AS nome_usuario,
                 c.id_cidade, c.nome AS nome_cidade
             FROM solicitacao_cliente AS s
             LEFT JOIN usuario AS u ON s.id_usuario = u.id_usuario
             LEFT JOIN cidades AS c ON s.id_cidade = c.id_cidade
-            WHERE (s.solicitante LIKE ? OR c.nome LIKE ? OR u.nome LIKE ? OR s.desc_solicitacao LIKE ?)
-            ORDER BY c.nome, s.data_solicitacao DESC";
+            WHERE (s.solicitante LIKE ? OR c.nome LIKE ? OR u.nome LIKE ? OR s.desc_solicitacao LIKE ?)";
+
+    $params = [];
+    $types = "ssss";
+    $param = "%" . $search_term . "%";
+    array_push($params, $param, $param, $param, $param);
+
+    // Adiciona filtros de data
+    if ($data_inicio) {
+        $sql .= " AND DATE(s.data_solicitacao) >= ?";
+        $types .= "s";
+        $params[] = $data_inicio;
+    }
+    if ($data_fim) {
+        $sql .= " AND DATE(s.data_solicitacao) <= ?";
+        $types .= "s";
+        $params[] = $data_fim;
+    }
+
+    // Adiciona o novo filtro de STATUS
+    if ($status_filtro && $status_filtro !== 'todos') {
+        $sql .= " AND s.status_solicitacao = ?";
+        $types .= "s";
+        $params[] = $status_filtro;
+    }
+
+    $sql .= " ORDER BY c.nome, s.data_solicitacao DESC";
 
     $stmt = $conn->prepare($sql);
-    $param = "%" . $search_term . "%";
-    $stmt->bind_param("ssss", $param, $param, $param, $param);
+    $stmt->bind_param($types, ...$params);
     
     $stmt->execute();
     $result = $stmt->get_result();
