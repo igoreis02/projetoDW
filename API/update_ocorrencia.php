@@ -46,16 +46,56 @@ try {
             throw new Exception('A descrição do reparo finalizado é obrigatória.');
         }
 
-        $stmt = $conn->prepare(
-            "UPDATE manutencoes 
-             SET status_reparo = 'concluido', fim_reparo = NOW(), reparo_finalizado = ? 
-             WHERE id_manutencao = ?"
-        );
-        $stmt->bind_param('si', $reparo_finalizado, $id_manutencao);
-        if (!$stmt->execute()) {
+        $stmt_check = $conn->prepare("SELECT tipo_manutencao, id_equipamento, inicio_reparo FROM manutencoes WHERE id_manutencao = ?");
+        $stmt_check->bind_param("i", $id_manutencao);
+        $stmt_check->execute();
+        $result = $stmt_check->get_result();
+        $manutencao_data = $result->fetch_assoc();
+        $stmt_check->close();
+
+        if (!$manutencao_data) {
+            throw new Exception('Ocorrência não encontrada.');
+        }
+
+        $tipo_manutencao = $manutencao_data['tipo_manutencao'];
+        $id_equipamento = $manutencao_data['id_equipamento'];
+        
+        if ($tipo_manutencao === 'instalação') {
+            // Se for instalação, calcula o tempo de reparo e atualiza todos os campos
+            $stmt_manutencao = $conn->prepare(
+                "UPDATE manutencoes 
+                 SET status_reparo = 'concluido', 
+                     fim_reparo = NOW(), 
+                     reparo_finalizado = ?, 
+                     inst_prov = 1, 
+                     data_provedor = NOW(),
+                     tempo_reparo = TIMEDIFF(NOW(), inicio_reparo)
+                 WHERE id_manutencao = ?"
+            );
+            $stmt_manutencao->bind_param('si', $reparo_finalizado, $id_manutencao);
+        } else {
+            // Se for outro tipo de manutenção, faz o update padrão
+            $stmt_manutencao = $conn->prepare(
+                "UPDATE manutencoes 
+                 SET status_reparo = 'concluido', 
+                     fim_reparo = NOW(), 
+                     reparo_finalizado = ? 
+                 WHERE id_manutencao = ?"
+            );
+            $stmt_manutencao->bind_param('si', $reparo_finalizado, $id_manutencao);
+        }
+
+        if (!$stmt_manutencao->execute()) {
             throw new Exception('Falha ao concluir a ocorrência do provedor.');
         }
-        $stmt->close();
+        $stmt_manutencao->close();
+        
+        if ($tipo_manutencao === 'instalação' && !empty($id_equipamento)) {
+            $stmt_equip = $conn->prepare("UPDATE equipamentos SET status = 'ativo' WHERE id_equipamento = ?");
+            $stmt_equip->bind_param('i', $id_equipamento);
+            $stmt_equip->execute();
+            $stmt_equip->close();
+        }
         
         echo json_encode(['success' => true, 'message' => 'Ocorrência do provedor concluída com sucesso.']);
 
@@ -106,21 +146,18 @@ try {
 
         echo json_encode(['success' => true, 'message' => 'Reparo concluído e registrado com sucesso.']);
     
-    // <<< ESTE BLOCO FOI ATUALIZADO PARA SUPORTAR A EDIÇÃO DO REPARO FINALIZADO
     } elseif ($action === 'edit_ocorrencia') {
         $ocorrencia = $input['ocorrencia_reparo'] ?? null;
-        $reparo_finalizado = $input['reparo_finalizado'] ?? null; // Pega o novo campo
+        $reparo_finalizado = $input['reparo_finalizado'] ?? null;
 
         if (empty($ocorrencia)) {
             throw new Exception('O texto da ocorrência não pode ser vazio.');
         }
 
-        // Prepara a query e os parâmetros dinamicamente
         $params = [$ocorrencia];
         $types = 's';
         $sql = "UPDATE manutencoes SET ocorrencia_reparo = ?";
 
-        // Se o reparo finalizado foi enviado (não é nulo), adiciona à query
         if (isset($reparo_finalizado)) {
             $sql .= ", reparo_finalizado = ?";
             $types .= 's';
@@ -132,7 +169,6 @@ try {
         $params[] = $id_manutencao;
 
         $stmt = $conn->prepare($sql);
-        // Usa o operador ... para passar os parâmetros do array
         $stmt->bind_param($types, ...$params);
         
         if (!$stmt->execute()) {
@@ -141,7 +177,6 @@ try {
         $stmt->close();
         
         echo json_encode(['success' => true, 'message' => 'Ocorrência atualizada com sucesso.']);
-        // FIM DO BLOCO ATUALIZADO
 
     } elseif ($action === 'assign') {
         $inicio_reparo = $input['inicio_reparo'] ?? null;
