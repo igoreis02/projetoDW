@@ -384,6 +384,10 @@ if (!isset($_SESSION['user_id'])) {
             border-radius: 8px;
             font-size: 1.1em;
         }
+        .voltar-btn:hover {
+            background-color: #0d1b2a;
+        }
+
         .hidden { display: none !important; }
 
         /* Estilos de Modais (sem alterações) */

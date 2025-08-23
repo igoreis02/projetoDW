@@ -7,6 +7,7 @@ if (!isset($_SESSION['user_id'])) {
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -27,19 +28,17 @@ if (!isset($_SESSION['user_id'])) {
             box-sizing: border-box;
         }
 
-        /* Card Principal */
         .card {
             background-color: #ffffff;
             padding: 2.5rem;
             border-radius: 1rem;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
             width: 95%;
-            max-width: 1200px;
+            max-width: 1300px;
             text-align: center;
             position: relative;
         }
 
-        /* Título e Botões de Navegação */
         .header-container {
             display: flex;
             justify-content: center;
@@ -47,12 +46,15 @@ if (!isset($_SESSION['user_id'])) {
             position: relative;
             margin-bottom: 2rem;
         }
+
         .header-container h2 {
             font-size: 2.2em;
-            color: var(--cor-principal);
+            color: black;
             margin: 0;
         }
-        .close-btn, .back-btn-icon {
+
+        .close-btn,
+        .back-btn-icon {
             position: absolute;
             top: 50%;
             transform: translateY(-50%);
@@ -62,21 +64,92 @@ if (!isset($_SESSION['user_id'])) {
             text-decoration: none;
             transition: color 0.3s;
         }
-        .close-btn { right: 0; }
-        .back-btn-icon { left: 0; }
-        .close-btn:hover, .back-btn-icon:hover { color: #333; }
 
-        /* Filtros de Cidade */
-        .filter-container {
-            margin-bottom: 2rem;
+        .close-btn {
+            right: 0;
+        }
+
+        .back-btn-icon {
+            left: 0;
+        }
+
+        .close-btn:hover,
+        .back-btn-icon:hover {
+            color: #333;
+        }
+
+        /* --- ESTILOS DE FILTROS ATUALIZADOS (COMO OCORRENCIASPENDENTES.PHP) --- */
+        .main-controls-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            position: relative;
+            min-height: 48px;
+            margin-bottom: 1.5rem;
             padding-bottom: 1.5rem;
             border-bottom: 1px solid #e5e7eb;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .action-btn {
+            padding: 12px 25px;
+            font-size: 1.1em;
+            font-weight: 600;
+            color: black;
+            background-color: #eef2ff;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:hover {
+            background-color: #e0e7ff;
+        }
+
+        .action-btn.active {
+            background-color: #112058;
+            color: white;
+        }
+
+        .date-filter-container {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .date-filter-container label {
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .date-filter-container input[type="date"] {
+            padding: 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        /* --- FIM DOS ESTILOS ATUALIZADOS --- */
+
+        .filter-container {
+            margin-bottom: 1.5rem;
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
             gap: 0.8rem;
             min-height: 38px;
         }
+
         .filter-btn {
             padding: 8px 18px;
             font-size: 0.9em;
@@ -87,22 +160,50 @@ if (!isset($_SESSION['user_id'])) {
             cursor: pointer;
             transition: all 0.3s ease;
         }
+
         .filter-btn:hover {
             background-color: #e5e7eb;
         }
-        .filter-btn.active {
+
+        .filter-btn.active.todos {
+            background-color: #6b7280;
+            color: white;
+            border-color: #6b7280;
+        }
+
+        .filter-btn.active.pendente {
+            background-color: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .filter-btn.active.concluido {
+            background-color: #22c55e;
+            color: white;
+            border-color: #22c55e;
+        }
+
+        .filter-btn.active.cancelado {
+            background-color: #ef4444;
+            color: white;
+            border-color: #ef4444;
+        }
+
+        .filter-btn.active.city {
             background-color: #6366f1;
             color: white;
             border-color: #6366f1;
         }
 
-        /* Container de Grupos de Cidade */
+        /* Ocorrências */
         .ocorrencias-container {
             width: 100%;
         }
+
         .city-group {
             margin-bottom: 2.5rem;
         }
+
         .city-group-title {
             font-size: 1.8em;
             color: #374151;
@@ -111,31 +212,42 @@ if (!isset($_SESSION['user_id'])) {
             padding-bottom: 0.5rem;
             border-bottom: 2px solid var(--cor-principal);
         }
+
         .city-ocorrencias-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
             gap: 1.5rem;
         }
 
-        /* Item de Ocorrência Individual */
         .ocorrencia-item {
             background-color: #ffffff;
             border: 1px solid #e5e7eb;
-            border-left: 5px solid #f97316; /* Laranja para provedores */
             border-radius: 8px;
             padding: 1.5rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
             transition: box-shadow 0.3s, transform 0.3s;
             display: flex;
             flex-direction: column;
             align-items: flex-start;
         }
+
         .ocorrencia-item:hover {
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             transform: translateY(-3px);
         }
 
-        /* Layout do Cabeçalho do Item */
+        .ocorrencia-item.status-pendente {
+            border-left: 5px solid #3b82f6;
+        }
+
+        .ocorrencia-item.status-concluido {
+            border-left: 5px solid #22c55e;
+        }
+
+        .ocorrencia-item.status-cancelado {
+            border-left: 5px solid #ef4444;
+        }
+
         .ocorrencia-header {
             text-align: left;
             margin-bottom: 1rem;
@@ -143,13 +255,13 @@ if (!isset($_SESSION['user_id'])) {
             border-bottom: 1px dashed #d1d5db;
             width: 100%;
         }
+
         .ocorrencia-header h3 {
             font-size: 1.3em;
             color: #111827;
             margin: 0;
         }
 
-        /* Layout dos Detalhes do Item */
         .ocorrencia-details {
             display: flex;
             flex-direction: column;
@@ -158,29 +270,51 @@ if (!isset($_SESSION['user_id'])) {
             flex-grow: 1;
             width: 100%;
         }
+
         .detail-item {
             font-size: 0.95em;
             color: #374151;
             line-height: 1.5;
             text-align: left;
         }
+
         .detail-item strong {
             font-weight: 600;
             color: #1f2937;
         }
+
         .detail-item strong::after {
             content: ": ";
         }
+
+        .detail-item.reparo-info span {
+            color: #15803d;
+            font-style: italic;
+        }
+
         .status-tag {
-            padding: 2px 8px;
+            padding: 3px 10px;
             border-radius: 15px;
             font-weight: 600;
             font-size: 0.9em;
+            text-transform: capitalize;
         }
-        .status-pendente {
+
+        .status-tag.pendente {
             background-color: #eff6ff;
             color: #3b82f6;
         }
+
+        .status-tag.concluido {
+            background-color: #dcfce7;
+            color: #16a34a;
+        }
+
+        .status-tag.cancelado {
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
+
         .item-actions {
             display: flex;
             justify-content: flex-end;
@@ -190,6 +324,7 @@ if (!isset($_SESSION['user_id'])) {
             border-top: 1px solid #e5e7eb;
             width: 100%;
         }
+
         .item-btn {
             padding: 8px 16px;
             font-size: 0.9em;
@@ -199,20 +334,39 @@ if (!isset($_SESSION['user_id'])) {
             cursor: pointer;
             transition: all 0.2s ease;
         }
+
+        .item-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
         .concluir-btn {
-            background-color: #22c55e; /* Verde */
+            background-color: #22c55e;
             color: white;
         }
+
         .concluir-btn:hover {
             background-color: #16a34a;
         }
-        .cancel-btn {
-            background-color: #ef4444; /* Vermelho */
+
+        .edit-btn {
+            background-color: #3b82f6;
             color: white;
         }
+
+        .edit-btn:hover {
+            background-color: #2563eb;
+        }
+
+        .cancel-btn {
+            background-color: #ef4444;
+            color: white;
+        }
+
         .cancel-btn:hover {
             background-color: #dc2626;
         }
+
         .voltar-btn {
             display: inline-block;
             width: auto;
@@ -220,17 +374,21 @@ if (!isset($_SESSION['user_id'])) {
             padding: 15px 30px;
             margin-top: 3rem;
             text-align: center;
-            background-color: var(--botao-voltar);
-            color: var(--cor-letra-botaoVoltar);
+            background-color: #112058;
+            color: white;
             text-decoration: none;
             border-radius: 8px;
             font-size: 1.1em;
             transition: background-color 0.3s ease;
         }
+
         .voltar-btn:hover {
-            background-color: var(--botao-voltar-hover);
+            background-color: #0d1b2a;
         }
-        .hidden { display: none !important; }
+
+        .hidden {
+            display: none !important;
+        }
 
         /* Estilos para Modais */
         .modal {
@@ -246,18 +404,21 @@ if (!isset($_SESSION['user_id'])) {
             align-items: center;
             justify-content: center;
         }
+
         .modal.is-active {
             display: flex;
         }
+
         .modal-content {
             background-color: #fff;
             padding: 2rem;
             border-radius: 0.75rem;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
             width: 90%;
             max-width: 600px;
             text-align: left;
         }
+
         .modal-header {
             display: flex;
             justify-content: space-between;
@@ -266,11 +427,13 @@ if (!isset($_SESSION['user_id'])) {
             padding-bottom: 1rem;
             margin-bottom: 1.5rem;
         }
+
         .modal-header h3 {
             margin: 0;
             font-size: 1.5em;
             color: #111827;
         }
+
         .modal-close {
             font-size: 2rem;
             font-weight: bold;
@@ -279,21 +442,26 @@ if (!isset($_SESSION['user_id'])) {
             background: none;
             border: none;
         }
+
         .modal-body {
             display: flex;
             flex-direction: column;
             gap: 1.5rem;
         }
+
         .form-group {
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
         }
+
         .form-group label {
             font-weight: 600;
             color: #374151;
         }
-        .form-group textarea, .form-group p {
+
+        .form-group textarea,
+        .form-group p {
             width: 100%;
             padding: 0.75rem;
             border: 1px solid #d1d5db;
@@ -303,17 +471,26 @@ if (!isset($_SESSION['user_id'])) {
             min-height: 100px;
             margin: 0;
         }
-         .form-group p {
+
+        .form-group p {
             background-color: #f3f4f6;
         }
+
         .modal-footer {
             display: flex;
-            justify-content: flex-end;
+            flex-direction: column;
+            align-items: flex-end;
             gap: 1rem;
             margin-top: 2rem;
             padding-top: 1.5rem;
             border-top: 1px solid #e5e7eb;
         }
+
+        .modal-footer-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
         .modal-btn {
             padding: 0.75rem 1.5rem;
             border: none;
@@ -321,30 +498,51 @@ if (!isset($_SESSION['user_id'])) {
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
+
+        .modal-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
         .btn-primary {
             background-color: #22c55e;
             color: white;
         }
+
+        .btn-primary.edit {
+            background-color: #3b82f6;
+        }
+
         .btn-primary.cancel {
             background-color: #ef4444;
         }
+
         .btn-secondary {
             background-color: #e5e7eb;
             color: #374151;
         }
-        .confirmation-modal .modal-body {
-            text-align: center;
-            font-size: 1.1em;
-        }
+
         .message {
             text-align: center;
             padding: 1rem;
             border-radius: 0.5rem;
             font-weight: 600;
+            width: 100%;
         }
-        .message.success { background-color: #dcfce7; color: #16a34a; }
-        .message.error { background-color: #fee2e2; color: #ef4444; }
+
+        .message.success {
+            background-color: #dcfce7;
+            color: #16a34a;
+        }
+
+        .message.error {
+            background-color: #fee2e2;
+            color: #ef4444;
+        }
 
         .spinner {
             border: 4px solid rgba(255, 255, 255, 0.3);
@@ -354,17 +552,21 @@ if (!isset($_SESSION['user_id'])) {
             height: 18px;
             animation: spin 1s linear infinite;
             display: none;
-            vertical-align: middle;
             margin-left: 8px;
         }
+
         .spinner.is-active {
             display: inline-block;
         }
+
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
     </style>
 </head>
+
 <body>
     <div class="background"></div>
     <div class="card">
@@ -374,7 +576,27 @@ if (!isset($_SESSION['user_id'])) {
             <a href="menu.php" class="close-btn" title="Voltar ao Menu">&times;</a>
         </div>
 
-        <div id="filterContainer" class="filter-container"></div>
+        <div class="main-controls-container">
+            <div class="action-buttons" id="typeFilterContainer">
+                <button class="action-btn active" data-type="manutencao">Manutenções</button>
+                <button class="action-btn" data-type="instalacao">Instalações</button>
+            </div>
+            <div class="date-filter-container">
+                <label for="startDate">De:</label>
+                <input type="date" id="startDate">
+                <label for="endDate">Até:</label>
+                <input type="date" id="endDate">
+            </div>
+        </div>
+
+        <div id="statusFilterContainer" class="filter-container">
+            <button class="filter-btn active todos" data-status="todos">Todos</button>
+            <button class="filter-btn pendente" data-status="pendente">Pendente</button>
+            <button class="filter-btn concluido" data-status="concluido">Concluído</button>
+            <button class="filter-btn cancelado" data-status="cancelado">Cancelado</button>
+        </div>
+
+        <div id="cityFilterContainer" class="filter-container" style="padding-top: 0; margin-bottom: 2rem;"></div>
 
         <div id="ocorrenciasContainer" class="ocorrencias-container">
             <p id="loadingMessage">A carregar ocorrências...</p>
@@ -386,329 +608,76 @@ if (!isset($_SESSION['user_id'])) {
     <div id="concluirModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Concluir Ocorrência</h3>
-                <button class="modal-close" onclick="closeModal('concluirModal')">&times;</button>
+                <h3>Concluir Ocorrência</h3><button class="modal-close"
+                    onclick="closeModal('concluirModal')">&times;</button>
             </div>
             <div class="modal-body">
                 <h4 id="concluirModalEquipName" style="font-size: 1.2em; text-align: center;"></h4>
-                <div class="form-group">
-                    <label>Problema Reportado</label>
+                <div class="form-group"><label>Problema Reportado</label>
                     <p id="concluirOcorrenciaText"></p>
                 </div>
-                <div class="form-group">
-                    <label for="reparoRealizadoTextarea">Descrição do Reparo</label>
-                    <textarea id="reparoRealizadoTextarea" placeholder="Descreva o serviço que foi realizado..."></textarea>
+                <div class="form-group"><label for="reparoRealizadoTextarea">Descrição do Reparo</label><textarea
+                        id="reparoRealizadoTextarea" placeholder="Descreva o serviço que foi realizado..."></textarea>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="modal-btn btn-secondary" onclick="closeModal('concluirModal')">Cancelar</button>
-                <button class="modal-btn btn-primary" onclick="openConfirmationModal('concluir')">Confirmar Reparo</button>
+                <div class="modal-footer-buttons"><button class="modal-btn btn-secondary"
+                        onclick="closeModal('concluirModal')">Cancelar</button><button class="modal-btn btn-primary"
+                        onclick="openConfirmationModal('concluir')">Confirmar Reparo</button></div>
             </div>
         </div>
     </div>
 
-    <div id="confirmationModal" class="modal confirmation-modal">
+    <div id="editModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="confirmationModalTitle"></h3>
-                <button class="modal-close" onclick="closeModal('confirmationModal')">&times;</button>
+                <h3>Editar Ocorrência</h3><button class="modal-close" onclick="closeModal('editModal')">&times;</button>
             </div>
             <div class="modal-body">
-                <p id="confirmationModalText"></p>
-                <strong id="confirmReparoText" class="hidden" style="display: block; margin-top: 10px; font-style: italic;"></strong>
+                <h4 id="editModalEquipName" style="font-size: 1.2em; text-align: center;"></h4>
+                <div class="form-group">
+                    <label for="editOcorrenciaTextarea">Descrição do Problema</label>
+                    <textarea id="editOcorrenciaTextarea"></textarea>
+                </div>
+                <div id="editReparoGroup" class="form-group hidden">
+                    <label for="editReparoTextarea">Descrição do Reparo</label>
+                    <textarea id="editReparoTextarea"></textarea>
+                </div>
             </div>
-            <div class="modal-footer" id="confirmationButtons">
-                <button class="modal-btn btn-secondary" onclick="closeModal('confirmationModal')">Não</button>
-                <button id="confirmActionButton" class="modal-btn btn-primary">
-                    <span id="confirmActionText"></span>
-                    <span id="confirmSpinner" class="spinner"></span>
-                </button>
+            <div class="modal-footer">
+                <p id="editMessage" class="message hidden"></p>
+                <div id="editButtons" class="modal-footer-buttons">
+                    <button class="modal-btn btn-secondary" onclick="closeModal('editModal')">Cancelar</button>
+                    <button id="saveEditBtn" class="modal-btn btn-primary edit" onclick="saveOcorrenciaEdit()">
+                        <span>Salvar Alterações</span>
+                        <span class="spinner"></span>
+                    </button>
+                </div>
             </div>
-            <p id="confirmationMessage" class="message hidden"></p>
         </div>
     </div>
 
+    <div id="confirmationModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="confirmationModalTitle"></h3><button class="modal-close"
+                    onclick="closeModal('confirmationModal')">&times;</button>
+            </div>
+            <div class="modal-body" style="text-align: center; font-size: 1.1em;">
+                <p id="confirmationModalText"></p><strong id="confirmReparoText" class="hidden"
+                    style="display: block; margin-top: 10px; font-style: italic;"></strong>
+            </div>
+            <div class="modal-footer">
+                <p id="confirmationMessage" class="message hidden"></p>
+                <div id="confirmationButtons" class="modal-footer-buttons"><button class="modal-btn btn-secondary"
+                        onclick="closeModal('confirmationModal')">Não</button><button id="confirmActionButton"
+                        class="modal-btn btn-primary"><span id="confirmActionText"></span><span id="confirmSpinner"
+                            class="spinner"></span></button></div>
+            </div>
+        </div>
+    </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // ... (demais variáveis e funções existentes) ...
-            const filterContainer = document.getElementById('filterContainer');
-            const ocorrenciasContainer = document.getElementById('ocorrenciasContainer');
-            const loadingMessage = document.getElementById('loadingMessage');
-
-            let activeCity = 'todos';
-            let allData = null;
-            let currentItem = null;
-
-            async function fetchData() {
-                try {
-                    const response = await fetch('get_ocorrencias_provedores.php');
-                    const result = await response.json();
-                    loadingMessage.classList.add('hidden');
-                    if (result.success) {
-                        allData = result.data;
-                        renderAllOcorrencias(allData);
-                        updateCityFilters();
-                        updateDisplay();
-                    } else {
-                        ocorrenciasContainer.innerHTML = `<p>${result.message || 'Nenhuma ocorrência encontrada.'}</p>`;
-                    }
-                } catch (error) {
-                    console.error('Erro ao buscar dados:', error);
-                    loadingMessage.classList.add('hidden');
-                    ocorrenciasContainer.innerHTML = `<p>Ocorreu um erro ao carregar os dados. Tente novamente.</p>`;
-                }
-            }
-
-            function renderAllOcorrencias(data) {
-                const { ocorrencias } = data;
-                ocorrenciasContainer.innerHTML = '';
-                if (ocorrencias && Object.keys(ocorrencias).length > 0) {
-                    for (const cidade in ocorrencias) {
-                        const cityGroup = document.createElement('div');
-                        cityGroup.className = 'city-group';
-                        cityGroup.dataset.city = cidade;
-                        let cityGridHTML = '';
-                        ocorrencias[cidade].forEach(item => {
-                            cityGridHTML += createOcorrenciaHTML(item);
-                        });
-                        cityGroup.innerHTML = `
-                            <h2 class="city-group-title">${cidade}</h2>
-                            <div class="city-ocorrencias-grid">
-                                ${cityGridHTML}
-                            </div>
-                        `;
-                        ocorrenciasContainer.appendChild(cityGroup);
-                    }
-                } else {
-                    ocorrenciasContainer.innerHTML = `<p>Nenhuma ocorrência de provedor pendente encontrada.</p>`;
-                }
-            }
-
-            function updateCityFilters() {
-                filterContainer.innerHTML = '';
-                const cities = allData.cidades || [];
-                const allButton = document.createElement('button');
-                allButton.className = 'filter-btn active';
-                allButton.dataset.city = 'todos';
-                allButton.textContent = 'Todos';
-                filterContainer.appendChild(allButton);
-
-                cities.sort().forEach(cidade => {
-                    const button = document.createElement('button');
-                    button.className = 'filter-btn';
-                    button.dataset.city = cidade;
-                    button.textContent = cidade;
-                    filterContainer.appendChild(button);
-                });
-                addFilterListeners();
-            }
-
-            function createOcorrenciaHTML(item) {
-                const statusHTML = `<span class="status-tag status-pendente">Pendente</span>`;
-                let atribuidoPorHTML = item.atribuido_por ? `<div class="detail-item"><strong>Reportado por</strong> <span>${item.atribuido_por}</span></div>` : '';
-
-                const detailsHTML = `
-                    <div class="detail-item"><strong>Provedor</strong> <span>${item.nome_prov || 'Não especificado'}</span></div>
-                    <div class="detail-item"><strong>Problema</strong> <span>${item.ocorrencia_reparo || 'Não especificado'}</span></div>
-                    <div class="detail-item"><strong>Início Ocorrência</strong> <span>${new Date(item.inicio_reparo).toLocaleString('pt-BR')}</span></div>
-                    ${atribuidoPorHTML}
-                    <div class="detail-item"><strong>Status</strong> ${statusHTML}</div>
-                    <div class="detail-item"><strong>Local</strong> <span>${item.local_completo || ''}</span></div>
-                `;
-
-                // ADICIONADO BOTÃO DE CANCELAR
-                const actionsHTML = `
-                    <div class="item-actions">
-                        <button class="item-btn concluir-btn" onclick="openConcluirModal(${item.id_manutencao})">Concluir</button>
-                        <button class="item-btn cancel-btn" onclick="openConfirmationModal('cancelar', ${item.id_manutencao})">Cancelar</button>
-                    </div>
-                `;
-                return `
-                    <div class="ocorrencia-item" data-id="${item.id_manutencao}">
-                        <div class="ocorrencia-header">
-                            <h3>${item.nome_equip} - ${item.referencia_equip}</h3>
-                        </div>
-                        <div class="ocorrencia-details">
-                            ${detailsHTML}
-                        </div>
-                        ${actionsHTML}
-                    </div>
-                `;
-            }
-            
-            function updateDisplay() {
-                document.querySelectorAll('.city-group').forEach(group => {
-                    group.style.display = (activeCity === 'todos' || group.dataset.city === activeCity) ? 'block' : 'none';
-                });
-            }
-
-            function addFilterListeners() {
-                document.querySelectorAll('.filter-btn').forEach(button => {
-                    button.addEventListener('click', () => {
-                        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-                        button.classList.add('active');
-                        activeCity = button.dataset.city;
-                        updateDisplay();
-                    });
-                });
-            }
-
-            window.openModal = (modalId) => document.getElementById(modalId).classList.add('is-active');
-            window.closeModal = (modalId) => {
-                const modal = document.getElementById(modalId);
-                modal.classList.remove('is-active');
-
-                if(modalId === 'confirmationModal') {
-                    document.getElementById('confirmationButtons').style.display = 'flex';
-                    document.getElementById('confirmationMessage').classList.add('hidden');
-                    const confirmButton = document.getElementById('confirmActionButton');
-                    const spinner = document.getElementById('confirmSpinner');
-                    spinner.classList.remove('is-active');
-                    confirmButton.disabled = false;
-                }
-            }
-
-            function findOcorrenciaById(id) {
-                for (const cidade in allData.ocorrencias) {
-                    const found = allData.ocorrencias[cidade].find(item => item.id_manutencao == id);
-                    if (found) return found;
-                }
-                return null;
-            }
-
-            window.openConcluirModal = (id) => {
-                currentItem = findOcorrenciaById(id);
-                if (!currentItem) return;
-
-                document.getElementById('concluirModalEquipName').textContent = `${currentItem.nome_equip} - ${currentItem.referencia_equip}`;
-                document.getElementById('concluirOcorrenciaText').textContent = currentItem.ocorrencia_reparo;
-                document.getElementById('reparoRealizadoTextarea').value = '';
-                openModal('concluirModal');
-            }
-
-            window.openConfirmationModal = (type, id) => {
-                if (id) {
-                    currentItem = findOcorrenciaById(id);
-                }
-
-                const titleEl = document.getElementById('confirmationModalTitle');
-                const textEl = document.getElementById('confirmationModalText');
-                const reparoTextEl = document.getElementById('confirmReparoText');
-                const actionButton = document.getElementById('confirmActionButton');
-                const actionText = document.getElementById('confirmActionText');
-
-                reparoTextEl.classList.add('hidden');
-                actionButton.classList.remove('cancel');
-                
-                if (type === 'concluir') {
-                    const reparoDesc = document.getElementById('reparoRealizadoTextarea').value;
-                    if (!reparoDesc.trim()) {
-                        alert('A descrição do reparo é obrigatória.');
-                        return;
-                    }
-                    titleEl.textContent = 'Confirmar Conclusão';
-                    textEl.textContent = 'Tem certeza que deseja marcar esta ocorrência como concluída com a seguinte descrição de reparo?';
-                    reparoTextEl.textContent = `"${reparoDesc}"`;
-                    reparoTextEl.classList.remove('hidden');
-                    actionText.textContent = "Sim, Concluir";
-                    actionButton.onclick = () => saveConclusion();
-                    closeModal('concluirModal');
-
-                } else if (type === 'cancelar') {
-                    titleEl.textContent = 'Confirmar Cancelamento';
-                    textEl.textContent = 'Tem certeza que deseja cancelar esta ocorrência? Esta ação não pode ser desfeita.';
-                    actionText.textContent = "Sim, Cancelar";
-                    actionButton.classList.add('cancel');
-                    actionButton.onclick = () => executeStatusChange(currentItem.id_manutencao, 'cancelado');
-                }
-
-                openModal('confirmationModal');
-            }
-            
-            async function executeStatusChange(id, status) {
-                 const confirmButton = document.getElementById('confirmActionButton');
-                const spinner = document.getElementById('confirmSpinner');
-                const messageEl = document.getElementById('confirmationMessage');
-
-                spinner.classList.add('is-active');
-                confirmButton.disabled = true;
-
-                const dataToSend = {
-                    action: 'update_status',
-                    id_manutencao: id,
-                    status: status
-                };
-
-                try {
-                    const response = await fetch('update_ocorrencia.php', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(dataToSend)
-                    });
-                    const result = await response.json();
-                     document.getElementById('confirmationButtons').style.display = 'none';
-
-                    if (result.success) {
-                        messageEl.textContent = 'Ocorrência cancelada com sucesso!';
-                        messageEl.className = 'message success';
-                        setTimeout(() => { closeModal('confirmationModal'); fetchData(); }, 2000);
-                    } else {
-                         throw new Error(result.message || 'Erro desconhecido.');
-                    }
-                } catch (error) {
-                    messageEl.textContent = `Erro: ${error.message}`;
-                    messageEl.className = 'message error';
-                } finally {
-                     messageEl.classList.remove('hidden');
-                }
-            }
-
-
-            window.saveConclusion = async () => {
-                const reparoFinalizado = document.getElementById('reparoRealizadoTextarea').value.trim();
-                const confirmButton = document.getElementById('confirmActionButton');
-                const spinner = document.getElementById('confirmSpinner');
-                const messageEl = document.getElementById('confirmationMessage');
-
-                spinner.classList.add('is-active');
-                confirmButton.disabled = true;
-
-                const dataToSend = {
-                    action: 'concluir_provedor',
-                    id_manutencao: currentItem.id_manutencao,
-                    reparo_finalizado: reparoFinalizado
-                };
-
-                try {
-                    const response = await fetch('update_ocorrencia.php', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(dataToSend)
-                    });
-                    const result = await response.json();
-                    document.getElementById('confirmationButtons').style.display = 'none';
-
-                    if (result.success) {
-                        messageEl.textContent = 'Ocorrência concluída com sucesso!';
-                        messageEl.className = 'message success';
-                        setTimeout(() => {
-                            closeModal('confirmationModal');
-                            fetchData();
-                        }, 2000);
-                    } else {
-                        throw new Error(result.message || 'Erro desconhecido.');
-                    }
-                } catch (error) {
-                    messageEl.textContent = `Erro: ${error.message}`;
-                    messageEl.className = 'message error';
-                } finally {
-                    messageEl.classList.remove('hidden');
-                }
-            }
-
-            fetchData();
-        });
-    </script>
+    <script src="js/ocorrenciasProvedores.js"></script>
 </body>
+
 </html>
