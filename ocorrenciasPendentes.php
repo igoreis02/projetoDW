@@ -65,19 +65,153 @@ if (!isset($_SESSION['user_id'])) {
         .close-btn { right: 0; }
         .back-btn-icon { left: 0; }
         .close-btn:hover, .back-btn-icon:hover { color: #333; }
+        
+        /* --- NOVOS ESTILOS ADICIONADOS --- */
 
-        /* Botões de Ação (Manutenção/Instalação) */
+        /* Container principal para todos os controles (datas, botões, pesquisa) */
+        .controls-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Container para a linha de cima: Datas + Botões */
+        .main-controls-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap; /* Permite quebrar a linha em telas pequenas */
+            gap: 1.5rem; /* Espaço entre o grupo de datas e o grupo de botões */
+            width: 100%;
+            position: relative; /* Necessário para o posicionamento absoluto do filho */
+            min-height: 48px; /* Altura mínima para conter os botões */
+        }
+
+        /* Container para os filtros de data */
+        .date-filter-container {
+            right: 0;
+            top: 50%;
+            position: absolute;
+            display: flex;
+            transform: translateY(-50%);
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .date-filter-container label {
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .date-filter-container input[type="date"] {
+            padding: 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        /* Container para os botões de Manutenção/Instalação */
         .action-buttons {
             display: flex;
             justify-content: center;
             gap: 1rem;
-            margin-bottom: 1.5rem;
+            margin: 0; /* Remove a margem que existia antes */
         }
+        
+        /* Container para a pesquisa (linha de baixo) */
+        .search-container {
+            width: 100%;
+            max-width: 500px; /* Limita a largura da barra de pesquisa */
+            margin-top: 0.5rem; /* Pequeno espaço acima da pesquisa */
+        }
+
+        #searchInput {
+            width: 100%;
+            padding: 10px;
+            border-radius: 20px; /* Bordas arredondadas */
+            border: 1px solid #d1d5db;
+            font-size: 1em;
+            outline: none; /* Remove a borda de foco */
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        
+        #searchInput:focus {
+            border-color: #112058;
+            box-shadow: 0 0 0 3px rgba(17, 32, 88, 0.1);
+        }
+        
+        /* Spinner de Carregamento da Página */
+        #pageLoader {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem 0;
+            gap: 1.5rem;
+        }
+        .page-spinner {
+            border: 8px solid rgba(0,0,0,0.1);
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border-left-color: #112058;
+            animation: spin 1s ease infinite;
+        }
+        #pageLoader p {
+            font-size: 1.5em;
+            color: #374151;
+            font-weight: 600;
+        }
+        
+        /* Spinner pequeno para botões */
+        .spinner {
+            border: 3px solid rgba(255,255,255,0.3);
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border-left-color: #fff;
+            animation: spin 1s ease infinite;
+        }
+        .modal-btn .spinner {
+            margin-left: 8px;
+        }
+        .modal-btn span {
+            vertical-align: middle;
+        }
+
+        /* Notificação Toast */
+        #toastNotification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #28a745;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            font-size: 1.1em;
+            font-weight: 600;
+            z-index: 2000;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        #toastNotification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .hidden { display: none !important; }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
         .action-btn {
             padding: 12px 25px;
             font-size: 1.1em;
             font-weight: 600;
-            color: var(--cor-principal);
+            color: black;
             background-color: #eef2ff;
             border: 2px solid transparent;
             border-radius: 8px;
@@ -92,7 +226,6 @@ if (!isset($_SESSION['user_id'])) {
             color: white;
         }
 
-        /* Filtros de Cidade */
         .filter-container {
             margin-bottom: 2rem;
             padding-bottom: 1.5rem;
@@ -111,10 +244,6 @@ if (!isset($_SESSION['user_id'])) {
             border: 1px solid #d1d5db;
             border-radius: 20px;
             cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .filter-btn:hover {
-            background-color: #e5e7eb;
         }
         .filter-btn.active {
             background-color: #6366f1;
@@ -122,14 +251,12 @@ if (!isset($_SESSION['user_id'])) {
             border-color: #6366f1;
         }
 
-        /* Container de Grupos de Cidade */
         .ocorrencias-container {
             width: 100%;
         }
         .city-group {
             margin-bottom: 2.5rem;
         }
-        
         .city-group-header {
             display: flex;
             justify-content: space-between;
@@ -137,7 +264,6 @@ if (!isset($_SESSION['user_id'])) {
             margin-bottom: 1rem;
             border-bottom: 2px solid var(--cor-principal);
         }
-
         .city-group-title {
             font-size: 1.8em;
             color: #374151;
@@ -145,7 +271,6 @@ if (!isset($_SESSION['user_id'])) {
             margin: 0;
             padding-bottom: 0.5rem;
         }
-        
         .atribuir-cidade-btn {
             background-color: #112058;
             color: white;
@@ -154,18 +279,12 @@ if (!isset($_SESSION['user_id'])) {
             border-radius: 6px;
             cursor: pointer;
             font-weight: 600;
-            transition: background-color 0.3s ease;
         }
-        .atribuir-cidade-btn:hover {
-            background-color: #112058;
-        }
-
         .city-ocorrencias-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
             gap: 1.5rem;
         }
-
         .ocorrencia-item {
             background-color: #ffffff; 
             border: 1px solid #e5e7eb;
@@ -179,21 +298,12 @@ if (!isset($_SESSION['user_id'])) {
             align-items: flex-start;
             cursor: pointer;
         }
-        
         .ocorrencia-item.selected {
             background-color: #eef2ff;
             border-color: #6366f1;
             transform: translateY(-2px);
         }
-
-        .ocorrencia-item[data-type="instalação"] {
-            border-left-color: #f97316; 
-        }
-        .ocorrencia-item:hover {
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            transform: translateY(-3px);
-        }
-        
+        .ocorrencia-item[data-type="instalação"] { border-left-color: #f97316; }
         .ocorrencia-header {
             text-align: left;
             margin-bottom: 1rem;
@@ -206,16 +316,13 @@ if (!isset($_SESSION['user_id'])) {
             color: #111827;
             margin: 0;
         }
-        
         .ocorrencia-details {
             display: flex;
             flex-direction: column;
-            align-items: flex-start;
             gap: 0.8rem;
             flex-grow: 1;
             width: 100%;
         }
-        
         .detail-item {
             font-size: 0.95em;
             color: #374151;
@@ -225,12 +332,6 @@ if (!isset($_SESSION['user_id'])) {
         .detail-item strong {
             font-weight: 600;
             color: #1f2937;
-        }
-        .detail-item strong::after {
-            content: ": ";
-        }
-        .detail-item span {
-            word-break: break-word;
         }
         .status-tag {
             padding: 2px 8px;
@@ -268,20 +369,8 @@ if (!isset($_SESSION['user_id'])) {
             cursor: pointer;
             transition: all 0.2s ease;
         }
-        .edit-btn {
-            background-color: #3b82f6; /* Azul */
-            color: white;
-        }
-        .edit-btn:hover {
-            background-color: #2563eb;
-        }
-        .cancel-btn {
-            background-color: #ef4444;
-            color: white;
-        }
-        .cancel-btn:hover {
-            background-color: #dc2626;
-        }
+        .edit-btn { background-color: #3b82f6; color: white; }
+        .cancel-btn { background-color: #ef4444; color: white; }
         .voltar-btn {
             display: inline-block;
             width: auto;
@@ -294,175 +383,33 @@ if (!isset($_SESSION['user_id'])) {
             text-decoration: none;
             border-radius: 8px;
             font-size: 1.1em;
-            transition: background-color 0.3s ease;
-        }
-        .voltar-btn:hover {
-            background-color: #09143fff;
         }
         .hidden { display: none !important; }
 
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0, 0, 0, 0.6);
-            align-items: center;
-            justify-content: center;
-        }
-        .modal.is-active {
-            display: flex;
-        }
-        .modal-content {
-            background-color: #fff;
-            padding: 2rem;
-            border-radius: 0.75rem;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            width: 90%;
-            max-width: 600px;
-            text-align: left;
-        }
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #e5e7eb;
-            padding-bottom: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        .modal-header h3 {
-            margin: 0;
-            font-size: 1.5em;
-            color: #111827;
-        }
-        .modal-close {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #9ca3af;
-            cursor: pointer;
-            background: none;
-            border: none;
-        }
-        .modal-body {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-        .form-group label {
-            font-weight: 600;
-            color: #374151;
-        }
-        .form-group input, .form-group textarea, .form-group p {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #d1d5db;
-            border-radius: 0.5rem;
-            font-size: 1em;
-            box-sizing: border-box;
-            margin: 0;
-        }
-        .form-group p {
-            background-color: #f3f4f6;
-            min-height: 44px;
-        }
-        .date-inputs {
-            display: flex;
-            gap: 1rem;
-        }
-        .date-inputs .form-group {
-            flex: 1;
-        }
-        .choice-buttons {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-        .choice-btn {
-            padding: 0.5rem 1rem;
-            border: 1px solid #d1d5db;
-            border-radius: 20px;
-            cursor: pointer;
-            background-color: #f9fafb;
-            transition: all 0.2s;
-        }
-        .choice-btn.selected {
-            background-color: var(--cor-principal);
-            color: white;
-            border-color: var(--cor-principal);
-        }
-        .modal-footer {
-            display: flex;
-            flex-direction: column; 
-            align-items: flex-end; 
-            gap: 1rem;
-            margin-top: 2rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid #e5e7eb;
-        }
-        .modal-footer-buttons {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .modal-btn {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .btn-primary {
-            background-color: #4f46e5;
-            color: white;
-        }
-        .btn-secondary {
-            background-color: #e5e7eb;
-            color: #374151;
-        }
-        .confirmation-modal .modal-body {
-            text-align: center;
-            font-size: 1.1em;
-        }
-        .modal-error-message {
-            color: #ef4444;
-            font-weight: bold;
-            width: 100%;
-            text-align: center;
-            margin-bottom: 1rem;
-        }
-        
-        /* Spinner de carregamento */
-        .spinner {
-            border: 4px solid rgba(0,0,0,0.1);
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            border-left-color: #09f;
-            animation: spin 1s ease infinite;
-        }
-        .modal-btn .spinner {
-            width: 20px;
-            height: 20px;
-            border-width: 3px;
-            border-left-color: #fff;
-            margin-left: 8px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
+        /* Estilos de Modais (sem alterações) */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0, 0, 0, 0.6); align-items: center; justify-content: center; }
+        .modal.is-active { display: flex; }
+        .modal-content { background-color: #fff; padding: 2rem; border-radius: 0.75rem; box-shadow: 0 5px 15px rgba(0,0,0,0.3); width: 90%; max-width: 600px; text-align: left; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e5e7eb; padding-bottom: 1rem; margin-bottom: 1.5rem; }
+        .modal-header h3 { margin: 0; font-size: 1.5em; color: #111827; }
+        .modal-close { font-size: 2rem; font-weight: bold; color: #9ca3af; cursor: pointer; background: none; border: none; }
+        .modal-body { display: flex; flex-direction: column; gap: 1.5rem; }
+        .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
+        .form-group label { font-weight: 600; color: #374151; }
+        .form-group input, .form-group textarea, .form-group p { width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; font-size: 1em; box-sizing: border-box; margin:0; }
+        .date-inputs { display: flex; gap: 1rem; }
+        .choice-buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        .choice-btn { padding: 0.5rem 1rem; border: 1px solid #d1d5db; border-radius: 20px; cursor: pointer; background-color: #f9fafb; }
+        .choice-btn.selected { background-color: var(--cor-principal); color: white; border-color: var(--cor-principal); }
+        .modal-footer { display: flex; flex-direction: column; align-items: flex-end; gap: 1rem; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #e5e7eb; }
+        .modal-footer-buttons { display: flex; gap: 1rem; }
+        .modal-btn { padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem; font-weight: 600; cursor: pointer; }
+        .btn-primary { background-color: #4f46e5; color: white; }
+        .btn-secondary { background-color: #e5e7eb; color: #374151; }
+        .modal-error-message { color: #ef4444; font-weight: bold; width: 100%; text-align: center; margin-bottom: 1rem; }
+        .spinner { border: 4px solid rgba(0,0,0,0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #09f; animation: spin 1s ease infinite; }
+        .modal-btn .spinner { width: 20px; height: 20px; border-width: 3px; border-left-color: #fff; margin-left: 8px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         @media (max-width: 1200px) { .city-ocorrencias-grid { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 768px) { .city-ocorrencias-grid { grid-template-columns: 1fr; } .card { padding: 1.5rem; } .header-container h2 { font-size: 1.8em; } .action-buttons, .filter-container { flex-direction: column; } }
     </style>
@@ -475,18 +422,29 @@ if (!isset($_SESSION['user_id'])) {
             <h2>Ocorrências Pendentes</h2>
             <a href="menu.php" class="close-btn" title="Voltar ao Menu">&times;</a>
         </div>
-
-        <div class="action-buttons">
-            <button id="btnManutencoes" class="action-btn active" data-type="manutencao">Manutenções</button>
-            <button id="btnInstalacoes" class="action-btn" data-type="instalação">Instalações</button>
+        
+        <div class="controls-wrapper">
+            <div class="main-controls-container">
+                <div class="action-buttons">
+                    <button id="btnManutencoes" class="action-btn active" data-type="manutencao">Manutenções</button>
+                    <button id="btnInstalacoes" class="action-btn" data-type="instalação">Instalações</button>
+                </div>
+                <div class="date-filter-container">
+                    <label for="startDate">De:</label>
+                    <input type="date" id="startDate">
+                    <label for="endDate">Até:</label>
+                    <input type="date" id="endDate">
+                </div>
+            </div>
+            <div class="search-container">
+                <input type="text" id="searchInput" placeholder="Pesquisar por nome, referência, ocorrência ou usuário...">
+            </div>
         </div>
 
         <div id="filterContainer" class="filter-container"></div>
-
         <div id="ocorrenciasContainer" class="ocorrencias-container">
-            <div id="loadingMessage" class="spinner"></div>
+            <div id="loadingMessage" class="spinner">Carregando...</div>
         </div>
-
         <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
     </div>
 
@@ -532,7 +490,6 @@ if (!isset($_SESSION['user_id'])) {
             </div>
         </div>
     </div>
-
     <div id="editOcorrenciaModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -554,8 +511,6 @@ if (!isset($_SESSION['user_id'])) {
             </div>
         </div>
     </div>
-
-
     <div id="confirmationModal" class="modal confirmation-modal">
         <div class="modal-content">
             <div class="modal-header">

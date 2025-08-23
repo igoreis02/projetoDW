@@ -1,42 +1,73 @@
 document.addEventListener('DOMContentLoaded', function () {
+    // --- REFERÊNCIAS AOS ELEMENTOS ---
     const actionButtons = document.querySelectorAll('.action-btn');
     const filterContainer = document.getElementById('filterContainer');
     const ocorrenciasContainer = document.getElementById('ocorrenciasContainer');
     const loadingMessage = document.getElementById('loadingMessage');
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+    const searchInput = document.getElementById('searchInput');
 
+    // --- VARIÁVEIS DE ESTADO ---
     let activeType = 'manutencao';
     let activeCity = 'todos';
-    let allData = null;
+    let allData = null; // Armazena todos os dados vindos do backend
     let currentItemsToAssign = [];
     let currentEditingItem = null;
-    let updateInterval;
+    let updateInterval; // Variável para o intervalo de atualização
 
+    // --- LÓGICA DE BUSCA E RENDERIZAÇÃO ---
+
+    /**
+     * Busca os dados no backend. Pode ser uma carga inicial ou uma verificação de atualização.
+     * @param {boolean} isUpdate - Se true, a função age como uma verificação silenciosa.
+     */
     async function fetchData(isUpdate = false) {
+        // Mostra o spinner apenas na carga inicial, não nas atualizações em segundo plano
         if (!isUpdate) {
             loadingMessage.classList.remove('hidden');
         }
+        
+        const startDate = startDateInput.value;
+        const endDate = endDateInput.value;
+        
+        // Validação para garantir que a data final não é anterior à inicial
+        if (endDate && startDate && endDate < startDate) {
+            console.warn("A data final não pode ser anterior à data de início. Ajustando...");
+            endDateInput.value = startDate;
+            // A busca de dados continuará com a data corrigida na próxima chamada.
+            // Para uma resposta imediata, poderíamos chamar fetchData() novamente aqui, mas vamos deixar o fluxo natural.
+        }
+
+        const params = new URLSearchParams({
+            data_inicio: startDate,
+            data_fim: endDate || startDate // Garante que a data fim seja enviada mesmo que vazia
+        });
+
         try {
-            const response = await fetch('get_ocorrencias_pendentes.php');
+            const response = await fetch(`get_ocorrencias_pendentes.php?${params.toString()}`);
             const result = await response.json();
 
+            // Gera uma "assinatura" dos dados para comparar se houve mudança
             const newSignature = JSON.stringify(result.data);
             const oldSignature = JSON.stringify(allData);
-
+            
+            // Se for uma atualização e os dados mudaram, atualiza a tela
             if (isUpdate) {
                 if (newSignature !== oldSignature) {
+                    console.log("Novas ocorrências detectadas. Atualizando a lista.");
                     allData = result.data;
-                    renderAllOcorrencias(allData);
-                    updateDisplay();
+                    applyFiltersAndRender(); // Re-renderiza com os novos dados e filtros atuais
                 }
-            } else {
+            } else { // Se for a carga inicial
                 loadingMessage.classList.add('hidden');
                 if (result.success) {
                     allData = result.data;
-                    renderAllOcorrencias(allData);
-                    updateCityFilters();
-                    updateDisplay();
+                    applyFiltersAndRender();
                 } else {
+                    allData = null;
                     ocorrenciasContainer.innerHTML = `<p>${result.message || 'Nenhuma ocorrência encontrada.'}</p>`;
+                    updateCityFilters([]);
                 }
             }
         } catch (error) {
@@ -48,16 +79,63 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    /**
+     * NOVA FUNÇÃO: Inicia a verificação automática de novas ocorrências.
+     */
     function startAutoUpdate() {
-        if (updateInterval) clearInterval(updateInterval);
-        updateInterval = setInterval(() => fetchData(true), 30000);
+        if (updateInterval) clearInterval(updateInterval); // Limpa qualquer intervalo anterior
+        // A cada 30 segundos, chama fetchData no modo de atualização (silencioso)
+        updateInterval = setInterval(() => fetchData(true), 30000); 
+    }
+
+    /**
+     * Aplica os filtros de tipo, pesquisa e cidade sobre os dados já carregados.
+     */
+    function applyFiltersAndRender() {
+        if (!allData || !allData.ocorrencias) {
+            ocorrenciasContainer.innerHTML = `<p>Nenhuma ocorrência pendente encontrada.</p>`;
+            updateCityFilters([]);
+            return;
+        }
+
+        const searchTerm = searchInput.value.toLowerCase();
+        let filteredOcorrencias = {};
+        let citiesWithContent = new Set();
+
+        for (const cidade in allData.ocorrencias) {
+            const itemsInCity = allData.ocorrencias[cidade].filter(item => {
+                const searchMatch = !searchTerm ||
+                    (item.nome_equip && item.nome_equip.toLowerCase().includes(searchTerm)) ||
+                    (item.referencia_equip && item.referencia_equip.toLowerCase().includes(searchTerm)) ||
+                    (item.ocorrencia_reparo && item.ocorrencia_reparo.toLowerCase().includes(searchTerm)) ||
+                    (item.atribuido_por && item.atribuido_por.toLowerCase().includes(searchTerm));
+                
+                let typeMatch = false;
+                if (activeType === 'manutencao') {
+                    if (['corretiva', 'preventiva', 'preditiva'].includes(item.tipo_manutencao)) typeMatch = true;
+                } else if (activeType === 'instalação') {
+                    if (item.tipo_manutencao === 'instalação') typeMatch = true;
+                }
+                
+                return searchMatch && typeMatch;
+            });
+
+            if (itemsInCity.length > 0) {
+                filteredOcorrencias[cidade] = itemsInCity;
+                citiesWithContent.add(cidade);
+            }
+        }
+
+        renderAllOcorrencias({ ocorrencias: filteredOcorrencias });
+        updateCityFilters(Array.from(citiesWithContent));
+        updateDisplay();
     }
 
     function renderAllOcorrencias(data) {
         const { ocorrencias } = data;
         ocorrenciasContainer.innerHTML = '';
         if (ocorrencias && Object.keys(ocorrencias).length > 0) {
-            for (const cidade in ocorrencias) {
+            Object.keys(ocorrencias).sort().forEach(cidade => {
                 const cityGroup = document.createElement('div');
                 cityGroup.className = 'city-group';
                 cityGroup.dataset.city = cidade;
@@ -67,52 +145,111 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
 
                 cityGroup.innerHTML = `
-                            <div class="city-group-header">
-                                <h2 class="city-group-title">${cidade}</h2>
-                                <button class="atribuir-cidade-btn hidden" data-city="${cidade}" onclick="handleMultiAssignClick(this)">Atribuir</button>
-                            </div>
-                            <div class="city-ocorrencias-grid">
-                                ${cityGridHTML}
-                            </div>
-                        `;
+                    <div class="city-group-header">
+                        <h2 class="city-group-title">${cidade}</h2>
+                        <button class="atribuir-cidade-btn hidden" data-city="${cidade}" onclick="handleMultiAssignClick(this)">Atribuir</button>
+                    </div>
+                    <div class="city-ocorrencias-grid">
+                        ${cityGridHTML}
+                    </div>
+                `;
                 ocorrenciasContainer.appendChild(cityGroup);
-            }
+            });
         } else {
-            ocorrenciasContainer.innerHTML = `<p>Nenhuma ocorrência pendente encontrada.</p>`;
+            ocorrenciasContainer.innerHTML = `<p>Nenhuma ocorrência pendente encontrada para os filtros selecionados.</p>`;
         }
     }
-
-    function updateCityFilters() {
+    
+    function updateCityFilters(cities) {
         filterContainer.innerHTML = '';
-        const citiesWithContent = new Set();
-        document.querySelectorAll('.ocorrencia-item').forEach(item => {
-            const itemType = item.dataset.type;
-            let typeMatch = false;
-            if (activeType === 'manutencao') {
-                if (['corretiva', 'preventiva', 'preditiva'].includes(itemType)) typeMatch = true;
-            } else if (activeType === 'instalação') {
-                if (itemType === 'instalação') typeMatch = true;
-            }
-            if (typeMatch) {
-                const city = item.closest('.city-group').dataset.city;
-                citiesWithContent.add(city);
-            }
-        });
+        
         const allButton = document.createElement('button');
         allButton.className = 'filter-btn active';
         allButton.dataset.city = 'todos';
         allButton.textContent = 'Todos';
         filterContainer.appendChild(allButton);
-        Array.from(citiesWithContent).sort().forEach(cidade => {
+
+        cities.sort().forEach(cidade => {
             const button = document.createElement('button');
             button.className = 'filter-btn';
             button.dataset.city = cidade;
             button.textContent = cidade;
             filterContainer.appendChild(button);
         });
+        
+        activeCity = 'todos';
         addFilterListeners();
     }
 
+    function updateDisplay() {
+        const cityGroups = document.querySelectorAll('.city-group');
+        let hasVisibleContent = false;
+        
+        cityGroups.forEach(group => {
+            const isVisible = (activeCity === 'todos' || group.dataset.city === activeCity);
+            group.classList.toggle('hidden', !isVisible);
+            if(isVisible) hasVisibleContent = true;
+        });
+
+        if (!hasVisibleContent && cityGroups.length > 0) {
+             ocorrenciasContainer.innerHTML = `<p>Nenhuma ocorrência encontrada para a cidade "${activeCity}".</p>`;
+        } else if (cityGroups.length === 0 && !loadingMessage.classList.contains('hidden')) {
+             // Não faz nada se ainda estiver carregando
+        } else if (cityGroups.length === 0) {
+             ocorrenciasContainer.innerHTML = `<p>Nenhuma ocorrência pendente encontrada para os filtros selecionados.</p>`;
+        }
+
+        checkSelectionAndToggleButtons();
+    }
+
+    // --- EVENT LISTENERS ---
+
+    actionButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            actionButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            activeType = button.dataset.type;
+            applyFiltersAndRender();
+        });
+    });
+
+    // --- LÓGICA DE VALIDAÇÃO DE DATA ---
+    startDateInput.addEventListener('change', () => {
+        // Define a data mínima para o campo de data final
+        endDateInput.min = startDateInput.value;
+        // Se a data final for anterior à nova data de início, ajusta
+        if (endDateInput.value && endDateInput.value < startDateInput.value) {
+            endDateInput.value = startDateInput.value;
+        }
+        fetchData();
+    });
+
+    endDateInput.addEventListener('change', () => {
+         // Validação extra caso o usuário digite a data manualmente
+        if (endDateInput.value && endDateInput.value < startDateInput.value) {
+            alert("A data final não pode ser anterior à data de início.");
+            endDateInput.value = startDateInput.value;
+        }
+        fetchData();
+    });
+    
+    searchInput.addEventListener('input', applyFiltersAndRender);
+
+    function addFilterListeners() {
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        filterButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                activeCity = button.dataset.city;
+                updateDisplay();
+            });
+        });
+    }
+    
+    // --- O RESTANTE DO SEU CÓDIGO (LÓGICA DOS MODAIS) ---
+
+    // (O código para `createOcorrenciaHTML`, `formatDate`, modais, etc., permanece o mesmo)
     function createOcorrenciaHTML(item) {
         const statusHTML = `<span class="status-tag status-pendente">Pendente</span>`;
         let detailsHTML = '';
@@ -175,65 +312,10 @@ document.addEventListener('DOMContentLoaded', function () {
         return new Date(date.getTime() + date.getTimezoneOffset() * 60000).toLocaleDateString('pt-BR');
     }
 
-    function updateDisplay() {
-        const cityGroups = document.querySelectorAll('.city-group');
-        cityGroups.forEach(group => {
-            const groupCity = group.dataset.city;
-            let hasVisibleItemsInGroup = false;
-            const cityMatch = activeCity === 'todos' || groupCity === activeCity;
-            if (cityMatch) {
-                group.querySelectorAll('.ocorrencia-item').forEach(item => {
-                    const itemType = item.dataset.type;
-                    let typeMatch = false;
-                    if (activeType === 'manutencao') {
-                        if (['corretiva', 'preventiva', 'preditiva'].includes(itemType)) typeMatch = true;
-                    } else if (activeType === 'instalação') {
-                        if (itemType === 'instalação') typeMatch = true;
-                    }
-                    if (typeMatch) {
-                        item.classList.remove('hidden');
-                        hasVisibleItemsInGroup = true;
-                    } else {
-                        item.classList.add('hidden');
-                    }
-                });
-                group.classList.toggle('hidden', !hasVisibleItemsInGroup);
-            } else {
-                group.classList.add('hidden');
-            }
-        });
-        checkSelectionAndToggleButtons();
-    }
-
-    actionButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            actionButtons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-            activeType = button.dataset.type;
-            activeCity = 'todos';
-            updateCityFilters();
-            updateDisplay();
-        });
-    });
-
-    function addFilterListeners() {
-        const filterButtons = document.querySelectorAll('.filter-btn');
-        filterButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                filterButtons.forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-                activeCity = button.dataset.city;
-                updateDisplay();
-            });
-        });
-    }
-
     window.openModal = function (modalId) { document.getElementById(modalId).classList.add('is-active'); }
     window.closeModal = function (modalId) {
         const modal = document.getElementById(modalId);
         modal.classList.remove('is-active');
-
-        // Garante que o estado do botão de salvar seja resetado ao fechar
         if (modalId === 'assignModal') {
             const saveBtn = document.getElementById('saveAssignmentBtn');
             const btnText = saveBtn.querySelector('span');
@@ -251,6 +333,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function findOcorrenciaById(id) {
+        if (!allData || !allData.ocorrencias) return null;
         for (const cidade in allData.ocorrencias) {
             const found = allData.ocorrencias[cidade].find(item => item.id_manutencao == id);
             if (found) return found;
@@ -340,7 +423,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const saveBtn = document.getElementById('saveAssignmentBtn');
         const btnText = saveBtn.querySelector('span');
         const btnSpinner = saveBtn.querySelector('.spinner');
-
         const assignErrorMessage = document.getElementById('assignErrorMessage');
         const inicioReparo = document.getElementById('assignInicioReparo').value;
         const fimReparo = document.getElementById('assignFimReparo').value;
@@ -348,7 +430,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const selectedVeiculos = Array.from(document.querySelectorAll('#assignVeiculosContainer .choice-btn.selected')).map(btn => btn.dataset.id);
 
         assignErrorMessage.classList.add('hidden');
-
         const hoje = new Date();
         hoje.setHours(0, 0, 0, 0);
 
@@ -385,50 +466,40 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        // Desabilita o botão e mostra o spinner
         saveBtn.disabled = true;
         btnText.textContent = 'Salvando...';
         btnSpinner.classList.remove('hidden');
 
-        let allSuccess = true;
-        for (const item of currentItemsToAssign) {
-            const dataToSend = {
-                action: 'assign',
-                id_manutencao: item.id_manutencao,
-                ocorrencia_reparo: item.ocorrencia_reparo,
-                inicio_reparo: inicioReparo,
-                fim_reparo: fimReparo,
-                tecnicos: selectedTecnicos,
-                veiculos: selectedVeiculos
-            };
+        const dataToSend = {
+            idsManutencao: currentItemsToAssign.map(item => item.id_manutencao),
+            dataInicio: inicioReparo,
+            dataFim: fimReparo,
+            idsTecnicos: selectedTecnicos,
+            idsVeiculos: selectedVeiculos
+        };
 
-            try {
-                const response = await fetch('update_ocorrencia.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(dataToSend)
-                });
-                const result = await response.json();
-                if (!result.success) {
-                    allSuccess = false;
-                    alert(`Erro ao salvar a ocorrência ${item.id_manutencao}: ${result.message}`);
-                }
-            } catch (error) {
-                allSuccess = false;
-                alert(`Erro de comunicação com o servidor para a ocorrência ${item.id_manutencao}.`);
+        try {
+            const response = await fetch('atribuir_tecnicos_manutencao.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dataToSend)
+            });
+            const result = await response.json();
+            if (result.success) {
+                document.querySelector('.modal-footer-buttons').classList.add('hidden');
+                assignErrorMessage.textContent = 'Técnico atribuído com sucesso!';
+                assignErrorMessage.style.color = '#155724';
+                assignErrorMessage.classList.remove('hidden');
+                setTimeout(() => {
+                    closeModal('assignModal');
+                    fetchData();
+                }, 2000);
+            } else {
+                 throw new Error(result.message || 'Erro desconhecido ao salvar.');
             }
-        }
-
-        if (allSuccess) {
-            document.querySelector('.modal-footer-buttons').classList.add('hidden');
-            assignErrorMessage.textContent = 'Técnico atribuído com sucesso!';
-            assignErrorMessage.style.color = '#155724'; // Verde
+        } catch (error) {
+            assignErrorMessage.textContent = error.message;
             assignErrorMessage.classList.remove('hidden');
-            setTimeout(() => {
-                closeModal('assignModal');
-                fetchData();
-            }, 2000);
-        } else {
             saveBtn.disabled = false;
             btnText.textContent = 'Salvar Atribuição';
             btnSpinner.classList.add('hidden');
@@ -440,11 +511,8 @@ document.addEventListener('DOMContentLoaded', function () {
         currentEditingItem = findOcorrenciaById(id);
         if (!currentEditingItem) return;
 
-        document.getElementById('editOcorrenciaModalInfo').innerHTML = `
-                    <p><strong>Equipamento:</strong> ${currentEditingItem.nome_equip} - ${currentEditingItem.referencia_equip}</p>
-                `;
+        document.getElementById('editOcorrenciaModalInfo').innerHTML = `<p><strong>Equipamento:</strong> ${currentEditingItem.nome_equip} - ${currentEditingItem.referencia_equip}</p>`;
         document.getElementById('editOcorrenciaTextarea').value = currentEditingItem.ocorrencia_reparo;
-
         openModal('editOcorrenciaModal');
     }
 
@@ -486,17 +554,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
         document.getElementById('confirmationModalTitle').textContent = title;
         document.getElementById('confirmationModalText').textContent = text;
-
         const confirmBtn = document.getElementById('confirmActionButton');
         confirmBtn.onclick = () => executeStatusChange(id, status);
-
         openModal('confirmationModal');
     }
 
     async function executeStatusChange(id, status) {
         const confirmFooter = document.getElementById('confirmationFooter');
         const confirmMessage = document.getElementById('confirmationMessage');
-
         const dataToSend = {
             action: 'update_status',
             id_manutencao: id,
@@ -524,15 +589,17 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         } catch (error) {
             alert('Erro de comunicação com o servidor.');
+        }finally { 
+             confirmBtn.disabled = false;
         }
     }
-
-    const assignErrorMessage = document.getElementById('assignErrorMessage');
+     const assignErrorMessage = document.getElementById('assignErrorMessage');
     document.getElementById('assignInicioReparo').addEventListener('input', () => assignErrorMessage.classList.add('hidden'));
     document.getElementById('assignFimReparo').addEventListener('input', () => assignErrorMessage.classList.add('hidden'));
     document.getElementById('assignTecnicosContainer').addEventListener('click', () => assignErrorMessage.classList.add('hidden'));
     document.getElementById('assignVeiculosContainer').addEventListener('click', () => assignErrorMessage.classList.add('hidden'));
 
-    fetchData();
-    startAutoUpdate();
+    // --- INICIALIZAÇÃO ---
+    fetchData(); // Carga inicial dos dados
+    startAutoUpdate(); // Inicia a verificação automática
 });

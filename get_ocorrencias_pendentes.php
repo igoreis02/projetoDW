@@ -40,7 +40,7 @@ try {
             JOIN cidades AS c ON m.id_cidade = c.id_cidade
             LEFT JOIN endereco AS en ON e.id_endereco = en.id_endereco
             LEFT JOIN usuario AS u ON m.id_usuario = u.id_usuario
-            WHERE m.status_reparo = 'pendente'";
+            WHERE m.status_reparo = 'pendente' and m.id_provedor IS NULL";
 
     $params = [];
     $types = "";
