@@ -15,8 +15,8 @@ $nome_equip = $data['nome_equip'] ?? null;
 $referencia_equip = $data['referencia_equip'] ?? null;
 $id_cidade = $data['id_cidade'] ?? null;
 $id_endereco = $data['id_endereco'] ?? null;
-$tipo_equip = $data['tipo_equip'] ?? null; // NOVO CAMPO
-$qtd_faixa = $data['qtd_faixa'] ?? null;   // NOVO CAMPO
+$tipo_equip = $data['tipo_equip'] ?? null;
+$qtd_faixa = $data['qtd_faixa'] ?? null;
 
 // Validação básica
 if (empty($nome_equip) || empty($referencia_equip) || empty($id_cidade) || empty($id_endereco) || empty($tipo_equip)) {
@@ -24,13 +24,13 @@ if (empty($nome_equip) || empty($referencia_equip) || empty($id_cidade) || empty
     exit();
 }
 
-// Se a quantidade de faixas não for enviada (tipos que não a exigem), define como NULL
 if (empty($qtd_faixa)) {
     $qtd_faixa = null;
 }
 
-$status = 'instalacao'; // Define o status padrão como 'instalacao'
-// Prepara a instrução SQL para inserção
+// *** ALTERAÇÃO PRINCIPAL AQUI ***
+$status = 'inativo'; // Define o status padrão como 'inativo' para novas instalações
+
 $sql = "INSERT INTO equipamentos (nome_equip, referencia_equip, id_cidade, id_endereco, tipo_equip, qtd_faixa, status) VALUES (?, ?, ?, ?, ?, ?, ?)";
 $stmt = $conn->prepare($sql);
 
@@ -39,13 +39,10 @@ if ($stmt === false) {
     exit();
 }
 
-// Vincula os parâmetros
-// 'ssiisi' -> s(string), s(string), i(integer), i(integer), s(string), i(integer), s(string)
 $stmt->bind_param("ssiisis", $nome_equip, $referencia_equip, $id_cidade, $id_endereco, $tipo_equip, $qtd_faixa, $status);
 
-// Executa a instrução
 if ($stmt->execute()) {
-    $last_id = $conn->insert_id; // Obtém o ID do equipamento recém-inserido
+    $last_id = $conn->insert_id;
     echo json_encode(['success' => true, 'message' => 'Equipamento cadastrado com sucesso!', 'id_equipamento' => $last_id]);
 } else {
     echo json_encode(['success' => false, 'message' => 'Erro ao cadastrar equipamento: ' . $stmt->error]);

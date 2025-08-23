@@ -499,7 +499,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
         </div>
     </div>
 
-    <div id="confirmationModal" class="modal">
+   <div id="confirmationModal" class="modal">
         <div class="modal-content">
             <span class="close-button" onclick="closeConfirmationModal()">&times;</span>
             <h3 id="modalTitleConfirm">Confirmação da Operação</h3>
@@ -517,6 +517,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
                     <p><strong>Tipo:</strong> <span id="confirmEquipmentType"></span></p>
                     <p><strong>Nome:</strong> <span id="confirmNewEquipmentName"></span></p>
                     <p><strong>Referência:</strong> <span id="confirmNewEquipmentRef"></span></p>
+                    
                     <p id="confirmQuantityContainer" class="hidden"><strong>Qtd. Faixas:</strong> <span id="confirmEquipmentQuantity"></span></p>
                     <p><strong>Logradouro:</strong> <span id="confirmAddressLogradouro"></span></p>
                     <p><strong>Bairro:</strong> <span id="confirmAddressBairro"></span></p>
