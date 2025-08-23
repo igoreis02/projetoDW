@@ -10,12 +10,10 @@ document.addEventListener('DOMContentLoaded', function () {
     let allData = null;
     let activeCity = 'todos';
     let activeStatus = 'todos';
+    let totalSolicitacoes = 0; // Variável para rastrear o número de solicitações
 
     // --- FUNÇÕES DE LÓGICA PRINCIPAL ---
     async function fetchData() {
-        loadingMessage.style.display = 'block';
-        solicitacoesContainer.innerHTML = ''; 
-
         const searchTerm = campoPesquisa.value;
         const startDate = startDateInput.value;
         const endDate = endDateInput.value;
@@ -30,13 +28,15 @@ document.addEventListener('DOMContentLoaded', function () {
             const response = await fetch(`API/get_solicitacoes.php?${params.toString()}`);
             const result = await response.json();
             
-            loadingMessage.style.display = 'none';
             if (result.success) {
+                loadingMessage.style.display = 'none';
                 allData = result.data;
+                totalSolicitacoes = result.total_count; // Atualiza a contagem total
                 renderAllSolicitacoes(allData);
                 updateCityFilters(allData.cidades || []);
                 updateDisplay();
             } else {
+                loadingMessage.style.display = 'none';
                 solicitacoesContainer.innerHTML = `<p class="mensagem erro">${result.message || 'Nenhuma solicitação encontrada.'}</p>`;
                 updateCityFilters([]);
             }
@@ -44,6 +44,19 @@ document.addEventListener('DOMContentLoaded', function () {
             loadingMessage.style.display = 'none';
             console.error('Erro ao buscar dados:', error);
             solicitacoesContainer.innerHTML = `<p class="mensagem erro">Ocorreu um erro ao carregar os dados.</p>`;
+        }
+    }
+
+    async function checkForUpdates() {
+        try {
+            const response = await fetch('API/get_solicitacoes_count.php');
+            const result = await response.json();
+            if (result.success && result.total_count !== totalSolicitacoes) {
+                console.log('Novas atualizações encontradas, atualizando a lista...');
+                fetchData();
+            }
+        } catch (error) {
+            console.error('Erro ao verificar atualizações:', error);
         }
     }
 
@@ -55,11 +68,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 const cityGroup = document.createElement('div');
                 cityGroup.className = 'city-group';
                 cityGroup.dataset.city = cidade;
+
                 let cityGridHTML = '';
                 solicitacoes[cidade].forEach(item => {
                     cityGridHTML += createSolicitacaoHTML(item);
                 });
-                cityGroup.innerHTML = `<h2 class="city-group-title">${cidade}</h2><div class="solicitacoes-grid">${cityGridHTML}</div>`;
+
+                cityGroup.innerHTML = `
+                    <h2 class="city-group-title">${cidade}</h2>
+                    <div class="solicitacoes-grid">${cityGridHTML}</div>
+                `;
+                
                 solicitacoesContainer.appendChild(cityGroup);
             });
         } else {
@@ -70,17 +89,27 @@ document.addEventListener('DOMContentLoaded', function () {
     function createSolicitacaoHTML(item) {
         const statusClass = item.status_solicitacao.replace(' ', '-');
         const statusText = item.status_solicitacao.charAt(0).toUpperCase() + item.status_solicitacao.slice(1);
-        const isConcluido = item.status_solicitacao === 'concluido';
-        const isPendente = item.status_solicitacao === 'pendente';
         const desdobramentoHTML = item.desdobramento_soli ? `<div class="detail-item"><strong>Desdobramento:</strong> <span>${item.desdobramento_soli}</span></div>
         <div class="detail-item"><strong>Data conclusão:</strong> <span>${item.data_conclusao || 'N/A'}</span></div>` : '';
 
-        const actionsHTML = `
-            <div class="item-actions">
-                ${!isConcluido ? `<button class="item-btn concluir-btn" onclick="abrirModalConcluirSolicitacao(${item.id_solicitacao})">Concluir</button>` : ''}
-                ${!isConcluido ? `<button class="item-btn edit-btn" onclick="abrirModalEdicaoSolicitacao(${item.id_solicitacao})">Editar</button>` : ''}
-                ${isPendente ? `<button class="item-btn cancel-btn" onclick="excluirSolicitacao(${item.id_solicitacao})">Excluir</button>` : ''}
-            </div>`;
+        let actionsHTML = '';
+        const isConcluido = item.status_solicitacao === 'concluido';
+        const isCancelado = item.status_solicitacao === 'cancelado';
+
+        if (isConcluido || isCancelado) {
+            actionsHTML = `
+                <div class="item-actions">
+                    <button class="item-btn edit-btn" onclick="abrirModalEdicaoSolicitacao(${item.id_solicitacao})">Editar</button>
+                </div>`;
+        } else {
+            const isPendente = item.status_solicitacao === 'pendente';
+            actionsHTML = `
+                <div class="item-actions">
+                    <button class="item-btn concluir-btn" onclick="abrirModalConcluirSolicitacao(${item.id_solicitacao})">Concluir</button>
+                    <button class="item-btn edit-btn" onclick="abrirModalEdicaoSolicitacao(${item.id_solicitacao})">Editar</button>
+                    ${isPendente ? `<button class="item-btn cancel-btn" onclick="excluirSolicitacao(${item.id_solicitacao})">Excluir</button>` : ''}
+                </div>`;
+        }
 
         return `
             <div class="item-solicitacao status-${statusClass}">
@@ -135,18 +164,8 @@ document.addEventListener('DOMContentLoaded', function () {
         elemento.style.display = 'block';
     }
 
-    function alternarCarregamento(botao, spinner, mostrar) {
-        const botaoTexto = botao.querySelector('span:not(.carregando)');
-        spinner = botao.querySelector('.carregando');
-        if (mostrar) {
-            botao.disabled = true;
-            if(spinner) spinner.style.display = 'block';
-            if (botaoTexto) botaoTexto.style.display = 'none';
-        } else {
-            botao.disabled = false;
-            if(spinner) spinner.style.display = 'none';
-            if (botaoTexto) botaoTexto.style.display = 'flex';
-        }
+    function alternarCarregamento(botao, mostrar) {
+        botao.disabled = mostrar;
     }
 
     window.fecharModalAdicionarSolicitacao = () => document.getElementById('modalAdicionarSolicitacao').classList.remove('esta-ativo');
@@ -154,23 +173,14 @@ document.addEventListener('DOMContentLoaded', function () {
     window.fecharModalConcluirSolicitacao = () => document.getElementById('modalConcluirSolicitacao').classList.remove('esta-ativo');
 
     async function carregarDropdowns(tipoModal) {
-        const selectUsuarios = document.getElementById(`idUsuario${tipoModal}`);
         const selectCidades = document.getElementById(`idCidade${tipoModal}`);
-        if (selectUsuarios) selectUsuarios.innerHTML = '<option value="">Carregando...</option>';
         if (selectCidades) selectCidades.innerHTML = '<option value="">Carregando...</option>';
         try {
-            const [usuariosRes, cidadesRes] = await Promise.all([ fetch('API/get_usuario.php'), fetch('get_cidades.php') ]);
-            const usuariosData = await usuariosRes.json();
-            const cidadesData = await cidadesRes.json();
-            if (selectUsuarios && usuariosData.success) {
-                selectUsuarios.innerHTML = '<option value="">Selecione o Usuário</option>';
-                usuariosData.users.forEach(user => {
-                    selectUsuarios.innerHTML += `<option value="${user.id_usuario}">${user.nome}</option>`;
-                });
-            }
-            if (selectCidades && cidadesData.success) {
+            const res = await fetch('get_cidades.php');
+            const data = await res.json();
+            if (selectCidades && data.success) {
                 selectCidades.innerHTML = '<option value="">Selecione a Cidade</option>';
-                cidadesData.cidades.forEach(cidade => {
+                data.cidades.forEach(cidade => {
                     selectCidades.innerHTML += `<option value="${cidade.id_cidade}">${cidade.nome}</option>`;
                 });
             }
@@ -180,13 +190,25 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     window.abrirModalAdicionarSolicitacao = function() {
+        const modal = document.getElementById('modalAdicionarSolicitacao');
         const formulario = document.getElementById('formularioAdicionarSolicitacao');
-        const botao = formulario.querySelector('.botao-salvar');
+        const botao = document.getElementById('botaoSalvarAdicionar');
+        const desdobramentoContainer = document.getElementById('desdobramentoContainerAdicionar');
+        const statusInput = document.getElementById('statusSolicitacaoAdicionar');
+        
         formulario.reset();
         document.getElementById('mensagemAdicionarSolicitacao').style.display = 'none';
         botao.style.display = 'flex';
-        alternarCarregamento(botao, null, false);
-        document.getElementById('modalAdicionarSolicitacao').classList.add('esta-ativo');
+        
+        desdobramentoContainer.style.display = 'none';
+        document.getElementById('desdobramentoSoliAdicionar').required = false;
+        botao.querySelector('span').textContent = 'Adicionar';
+        statusInput.value = 'pendente';
+        modal.querySelectorAll('.status-btn').forEach(btn => btn.classList.remove('active'));
+        modal.querySelector('.status-btn[data-status="pendente"]').classList.add('active');
+        
+        alternarCarregamento(botao, false);
+        modal.classList.add('esta-ativo');
         carregarDropdowns('Adicionar'); 
     }
 
@@ -195,20 +217,20 @@ document.addEventListener('DOMContentLoaded', function () {
         const solicitacao = cidadeEncontrada ? allData.solicitacoes[cidadeEncontrada].find(s => s.id_solicitacao == id) : null;
         if (solicitacao) {
             const formulario = document.getElementById('formularioEdicaoSolicitacao');
-            const botao = formulario.querySelector('.botao-salvar');
+            const botao = document.getElementById('botaoSalvarEdicao');
+            
             document.getElementById('idSolicitacaoEdicao').value = solicitacao.id_solicitacao;
+            document.getElementById('usuarioEdicao').value = solicitacao.nome_usuario;
+            document.getElementById('cidadeEdicao').value = solicitacao.nome_cidade;
             document.getElementById('solicitanteEdicao').value = solicitacao.solicitante;
             document.getElementById('tipoSolicitacaoEdicao').value = solicitacao.tipo_solicitacao || '';
             document.getElementById('descSolicitacaoEdicao').value = solicitacao.desc_solicitacao || '';
             document.getElementById('statusSolicitacaoEdicao').value = solicitacao.status_solicitacao;
+            
             document.getElementById('mensagemEdicaoSolicitacao').style.display = 'none';
             botao.style.display = 'flex';
-            alternarCarregamento(botao, null, false);
+            alternarCarregamento(botao, false);
             document.getElementById('modalEdicaoSolicitacao').classList.add('esta-ativo');
-            carregarDropdowns('Edicao').then(() => {
-                document.getElementById('idUsuarioEdicao').value = solicitacao.id_usuario;
-                document.getElementById('idCidadeEdicao').value = solicitacao.id_cidade;
-            });
         }
     }
 
@@ -224,7 +246,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('desdobramentoSoliConcluir').value = solicitacao.desdobramento_soli || '';
             document.getElementById('mensagemConcluirSolicitacao').style.display = 'none';
             botao.style.display = 'flex';
-            alternarCarregamento(botao, null, false);
+            alternarCarregamento(botao, false);
             document.getElementById('modalConcluirSolicitacao').classList.add('esta-ativo');
         }
     }
@@ -240,7 +262,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const result = await response.json();
                 if (result.success) {
                     alert('Solicitação excluída com sucesso!');
-                    fetchData(campoPesquisa.value, startDateInput.value, endDateInput.value);
+                    fetchData();
                 } else {
                     alert(result.message || 'Erro ao excluir solicitação.');
                 }
@@ -253,18 +275,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- EVENT LISTENERS ---
     function handleFilterChange() {
-        const searchTerm = campoPesquisa.value;
-        const startDate = startDateInput.value;
-        let endDate = endDateInput.value;
-
-        if (startDate && endDate && endDate < startDate) {
-            alert('A data final não pode ser anterior à data inicial.');
-            endDateInput.value = '';
-            return;
-        }
-        fetchData(searchTerm, startDate, endDate);
+        fetchData();
     }
-
+    
     campoPesquisa.addEventListener('input', handleFilterChange);
     startDateInput.addEventListener('change', handleFilterChange);
     endDateInput.addEventListener('change', handleFilterChange);
@@ -278,11 +291,36 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    document.querySelectorAll('#modalAdicionarSolicitacao .status-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            document.querySelectorAll('#modalAdicionarSolicitacao .status-btn').forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+
+            const status = this.dataset.status;
+            const statusInput = document.getElementById('statusSolicitacaoAdicionar');
+            const desdobramentoContainer = document.getElementById('desdobramentoContainerAdicionar');
+            const desdobramentoInput = document.getElementById('desdobramentoSoliAdicionar');
+            const submitButtonText = document.querySelector('#formularioAdicionarSolicitacao .botao-salvar span');
+
+            statusInput.value = status;
+
+            if (status === 'concluido') {
+                desdobramentoContainer.style.display = 'block';
+                desdobramentoInput.required = true;
+                submitButtonText.textContent = 'Concluir Solicitação';
+            } else {
+                desdobramentoContainer.style.display = 'none';
+                desdobramentoInput.required = false;
+                submitButtonText.textContent = 'Adicionar';
+            }
+        });
+    });
+
     document.getElementById('formularioAdicionarSolicitacao').addEventListener('submit', async function(e) {
         e.preventDefault();
         const mensagem = document.getElementById('mensagemAdicionarSolicitacao');
         const botao = this.querySelector('.botao-salvar');
-        alternarCarregamento(botao, null, true);
+        alternarCarregamento(botao, true);
         const formData = new FormData(this);
         const data = Object.fromEntries(formData.entries());
         try {
@@ -293,15 +331,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 botao.style.display = 'none';
                 setTimeout(() => {
                     fecharModalAdicionarSolicitacao();
-                    fetchData(campoPesquisa.value, startDateInput.value, endDateInput.value);
+                    fetchData();
                 }, 1500);
             } else {
                 exibirMensagem(mensagem, result.message || 'Erro ao adicionar.', 'erro');
-                alternarCarregamento(botao, null, false);
+                alternarCarregamento(botao, false);
             }
         } catch (error) {
             exibirMensagem(mensagem, 'Ocorreu um erro. Tente novamente.', 'erro');
-            alternarCarregamento(botao, null, false);
+            alternarCarregamento(botao, false);
         }
     });
 
@@ -309,10 +347,13 @@ document.addEventListener('DOMContentLoaded', function () {
         e.preventDefault();
         const mensagem = document.getElementById('mensagemEdicaoSolicitacao');
         const botao = this.querySelector('.botao-salvar');
-        alternarCarregamento(botao, null, true);
+        alternarCarregamento(botao, true);
         const formData = new FormData(this);
         const data = Object.fromEntries(formData.entries());
-        data.action = 'editar';
+        
+        delete data.nome_usuario;
+        delete data.nome_cidade;
+
         try {
             const response = await fetch('API/update_solicitacao.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
             const result = await response.json();
@@ -321,15 +362,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 botao.style.display = 'none';
                 setTimeout(() => {
                     fecharModalEdicaoSolicitacao();
-                    fetchData(campoPesquisa.value, startDateInput.value, endDateInput.value);
+                    fetchData();
                 }, 1500);
             } else {
                 exibirMensagem(mensagem, result.message || 'Erro ao atualizar.', 'erro');
-                alternarCarregamento(botao, null, false);
+                alternarCarregamento(botao, false);
             }
         } catch (error) {
             exibirMensagem(mensagem, 'Ocorreu um erro. Tente novamente.', 'erro');
-            alternarCarregamento(botao, null, false);
+            alternarCarregamento(botao, false);
         }
     });
 
@@ -343,7 +384,7 @@ document.addEventListener('DOMContentLoaded', function () {
             exibirMensagem(mensagem, 'O campo de desdobramento é obrigatório.', 'erro');
             return;
         }
-        alternarCarregamento(botao, null, true);
+        alternarCarregamento(botao, true);
         const formData = new FormData(this);
         const data = Object.fromEntries(formData.entries());
         data.action = 'concluir';
@@ -356,15 +397,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 botao.style.display = 'none';
                 setTimeout(() => {
                     fecharModalConcluirSolicitacao();
-                    fetchData(campoPesquisa.value, startDateInput.value, endDateInput.value);
+                    fetchData();
                 }, 1500);
             } else {
                 exibirMensagem(mensagem, result.message || 'Erro ao concluir.', 'erro');
-                alternarCarregamento(botao, null, false);
+                alternarCarregamento(botao, false);
             }
         } catch (error) {
             exibirMensagem(mensagem, 'Ocorreu um erro. Tente novamente.', 'erro');
-            alternarCarregamento(botao, null, false);
+            alternarCarregamento(botao, false);
         }
     });
 
@@ -374,5 +415,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
-    fetchData(); // Carga inicial
+     fetchData(); // Carga inicial
+    setInterval(checkForUpdates, 15000); // Verifica atualizações a cada 15 segundos
 });

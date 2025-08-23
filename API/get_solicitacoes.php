@@ -8,16 +8,23 @@ $solicitacoes_por_cidade = [];
 $cidades_com_solicitacoes = [];
 $response_data = [];
 
-// Pega os novos parâmetros da URL
 $search_term = $_GET['search'] ?? '';
 $data_inicio = $_GET['data_inicio'] ?? null;
 $data_fim = $_GET['data_fim'] ?? null;
-$status_filtro = $_GET['status'] ?? 'todos'; // Novo filtro de status
+$status_filtro = $_GET['status'] ?? 'todos';
 
 try {
+    // Primeiro, pega a contagem total de todas as solicitações
+    $count_result = $conn->query("SELECT COUNT(*) as total_count FROM solicitacao_cliente");
+    $total_count = $count_result->fetch_assoc()['total_count'];
+    $response['total_count'] = $total_count;
+
+    // Continua com a lógica de busca filtrada
     $sql = "SELECT
                 s.id_solicitacao, s.solicitante, s.tipo_solicitacao, s.desc_solicitacao, s.desdobramento_soli,
-                s.data_solicitacao, s.data_conclusao, s.status_solicitacao,
+                DATE_FORMAT(s.data_solicitacao, '%d/%m/%Y') AS data_solicitacao, 
+                DATE_FORMAT(s.data_conclusao, '%d/%m/%Y') AS data_conclusao, 
+                s.status_solicitacao,
                 u.id_usuario, u.nome AS nome_usuario,
                 c.id_cidade, c.nome AS nome_cidade
             FROM solicitacao_cliente AS s
@@ -30,7 +37,6 @@ try {
     $param = "%" . $search_term . "%";
     array_push($params, $param, $param, $param, $param);
 
-    // Adiciona filtros de data
     if ($data_inicio) {
         $sql .= " AND DATE(s.data_solicitacao) >= ?";
         $types .= "s";
@@ -41,8 +47,6 @@ try {
         $types .= "s";
         $params[] = $data_fim;
     }
-
-    // Adiciona o novo filtro de STATUS
     if ($status_filtro && $status_filtro !== 'todos') {
         $sql .= " AND s.status_solicitacao = ?";
         $types .= "s";
@@ -53,7 +57,6 @@ try {
 
     $stmt = $conn->prepare($sql);
     $stmt->bind_param($types, ...$params);
-    
     $stmt->execute();
     $result = $stmt->get_result();
     

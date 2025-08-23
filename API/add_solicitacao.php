@@ -1,38 +1,61 @@
 <?php
 session_start();
 header('Content-Type: application/json');
-require_once 'conexao_bd.php';
+require_once 'conexao_bd.php'; 
+
+$response = ['success' => false, 'message' => ''];
 
 if (!isset($_SESSION['user_id'])) {
-    echo json_encode(['success' => false, 'message' => 'Usuário não autenticado.']);
+    $response['message'] = 'Usuário não autenticado.';
+    echo json_encode($response);
     exit();
 }
 
-$input = file_get_contents('php://input');
-$data = json_decode($input, true);
+$data = json_decode(file_get_contents('php://input'), true);
 
-$id_usuario_logado = $_SESSION['user_id'];
+$id_usuario = $_SESSION['user_id'];
+$id_cidade = $data['id_cidade'] ?? null;
+$solicitante = $data['solicitante'] ?? '';
+$tipo_solicitacao = $data['tipo_solicitacao'] ?? '';
+$desc_solicitacao = $data['desc_solicitacao'] ?? '';
+$status_solicitacao = $data['status_solicitacao'] ?? 'pendente';
+$desdobramento_soli = $data['desdobramento_soli'] ?? null;
 
-if (!isset($data['id_cidade']) || !isset($data['solicitante']) || !isset($data['tipo_solicitacao']) || !isset($data['desc_solicitacao'])) {
-    echo json_encode(['success' => false, 'message' => 'Dados incompletos para adicionar a solicitação.']);
+if (empty($id_cidade) || empty($solicitante) || empty($tipo_solicitacao) || empty($desc_solicitacao)) {
+    $response['message'] = 'Todos os campos obrigatórios devem ser preenchidos.';
+    echo json_encode($response);
+    exit();
+}
+
+if ($status_solicitacao === 'concluido' && empty($desdobramento_soli)) {
+    $response['message'] = 'O desdobramento é obrigatório para solicitações concluídas.';
+    echo json_encode($response);
     exit();
 }
 
 try {
-    // A query agora insere o tipo_solicitacao e o status_solicitacao padrão é 'pendente' (definido no DB)
-    $stmt = $conn->prepare("INSERT INTO solicitacao_cliente (id_usuario, id_cidade, solicitante, tipo_solicitacao, desc_solicitacao, desdobramento_soli) VALUES (?, ?, ?, ?, ?, ?)");
-    
-    $stmt->bind_param("iissss", $id_usuario_logado, $data['id_cidade'], $data['solicitante'], $data['tipo_solicitacao'], $data['desc_solicitacao'], $data['desdobramento_soli']);
+    if ($status_solicitacao === 'concluido') {
+        $sql = "INSERT INTO solicitacao_cliente (id_usuario, id_cidade, solicitante, tipo_solicitacao, desc_solicitacao, status_solicitacao, desdobramento_soli, data_conclusao) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("iisssss", $id_usuario, $id_cidade, $solicitante, $tipo_solicitacao, $desc_solicitacao, $status_solicitacao, $desdobramento_soli);
+    } else {
+        $sql = "INSERT INTO solicitacao_cliente (id_usuario, id_cidade, solicitante, tipo_solicitacao, desc_solicitacao, status_solicitacao) VALUES (?, ?, ?, ?, ?, ?)";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("iissss", $id_usuario, $id_cidade, $solicitante, $tipo_solicitacao, $desc_solicitacao, $status_solicitacao);
+    }
     
     if ($stmt->execute()) {
-        echo json_encode(['success' => true, 'message' => 'Solicitação adicionada com sucesso!']);
+        $response['success'] = true;
+        $response['message'] = 'Solicitação adicionada com sucesso!';
     } else {
-        throw new Exception($stmt->error);
+        throw new Exception('Erro ao inserir no banco de dados.');
     }
     $stmt->close();
+
 } catch (Exception $e) {
-    echo json_encode(['success' => false, 'message' => 'Erro ao adicionar solicitação: ' . $e->getMessage()]);
+    $response['message'] = 'Erro no servidor: ' . $e->getMessage();
 }
 
 $conn->close();
+echo json_encode($response);
 ?>
