@@ -82,6 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const dataLacoInput = document.getElementById('dataLaco');
     const dataInfraInput = document.getElementById('dataInfra');
     const dataEnergiaInput = document.getElementById('dataEnergia');
+    const lacoChecklistItem = document.querySelector('#dataLaco').closest('.item-checklist');
 
     // Modal de Devolução
     const devolucaoModal = document.getElementById('devolucaoModal');
@@ -111,9 +112,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const isInstalacao = manutencao.tipo_manutencao.toLowerCase() === 'instalação';
 
         modalConcluirTitulo.textContent = isInstalacao ? 'Registrar Progresso da Instalação' : 'Concluir Reparo';
-        confirmConcluirReparoBtn.textContent = isInstalacao ? 'Confirmar Etapas' : 'Confirmar Reparo';
+        confirmConcluirReparoBtn.querySelector('span').textContent = isInstalacao ? 'Confirmar Etapas' : 'Confirmar Reparo';
         
-        // CORREÇÃO: Garante que o botão esteja visível ao abrir
         confirmConcluirReparoBtn.classList.remove('oculto');
         
         camposReparo.classList.toggle('oculto', isInstalacao);
@@ -123,6 +123,17 @@ document.addEventListener('DOMContentLoaded', () => {
         referenciaEquipamentoModal.textContent = manutencao.referencia_equip;
 
         if (isInstalacao) {
+            // --- INÍCIO DA ALTERAÇÃO ---
+            if (lacoChecklistItem) {
+                const tipoEquip = manutencao.tipo_equip?.toUpperCase();
+                if (tipoEquip === 'DOME' || tipoEquip === 'CCO') {
+                    lacoChecklistItem.style.display = 'none';
+                } else {
+                    lacoChecklistItem.style.display = 'block';
+                }
+            }
+            // --- FIM DA ALTERAÇÃO ---
+            
             dataBaseInput.value = manutencao.dt_base || '';
             dataBaseInput.disabled = !!manutencao.dt_base;
             dataLacoInput.value = manutencao.dt_laco || '';
@@ -154,8 +165,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (nomeEquipamentoDevolucaoModal) nomeEquipamentoDevolucaoModal.textContent = manutencao.nome_equip;
         if (referenciaEquipamentoDevolucaoModal) referenciaEquipamentoDevolucaoModal.textContent = manutencao.referencia_equip;
         if (ocorrenciaReparoDevolucaoModal) ocorrenciaReparoDevolucaoModal.textContent = manutencao.ocorrencia_reparo || 'N/A';
-
-        // CORREÇÃO: Garante que o botão esteja visível ao abrir
         if (botaoConfirmarDevolucao) botaoConfirmarDevolucao.classList.remove('oculto');
 
         const isInstalacao = manutencao.tipo_manutencao.toLowerCase() === 'instalação';
@@ -179,12 +188,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // CORREÇÃO: Filtro de 'corretiva' agora inclui todos os tipos de manutenção
         const manutencoesFiltradas = todasAsManutencoes.filter(m => {
             const tipo = m.tipo_manutencao.toLowerCase();
             if (filtroAtual === 'instalação') {
                 return tipo === 'instalação';
-            } else { // O botão "Corretiva" agora mostra todos os outros tipos
+            } else { 
                 return tipo !== 'instalação';
             }
         });
@@ -322,6 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function salvarInstalacao() {
+        // --- INÍCIO DA ALTERAÇÃO ---
         const payload = {
             id_manutencao: currentManutencao.id_manutencao,
             is_installation: true,
@@ -329,7 +338,10 @@ document.addEventListener('DOMContentLoaded', () => {
             dt_laco: !dataLacoInput.disabled ? dataLacoInput.value : null,
             data_infra: !dataInfraInput.disabled ? dataInfraInput.value : null,
             dt_energia: !dataEnergiaInput.disabled ? dataEnergiaInput.value : null,
+            tipo_equip: currentManutencao.tipo_equip,
+            id_cidade: currentManutencao.id_cidade 
         };
+        // --- FIM DA ALTERAÇÃO ---
         atualizarStatusManutencao(payload);
     }
 
@@ -420,20 +432,27 @@ document.addEventListener('DOMContentLoaded', () => {
             const isInstalacao = currentManutencao.tipo_manutencao.toLowerCase() === 'instalação';
 
             if (isInstalacao) {
+                // --- INÍCIO DA ALTERAÇÃO ---
+                const tipoEquip = currentManutencao.tipo_equip?.toUpperCase();
+                const isLacoRequired = tipoEquip !== 'DOME' && tipoEquip !== 'CCO';
+
                 const datas = [
                     { nome: 'Base', valor: dataBaseInput.value, desabilitado: dataBaseInput.disabled },
-                    { nome: 'Laço', valor: dataLacoInput.value, desabilitado: dataLacoInput.disabled },
+                    ...(isLacoRequired ? [{ nome: 'Laço', valor: dataLacoInput.value, desabilitado: dataLacoInput.disabled }] : []),
                     { nome: 'Infraestrutura', valor: dataInfraInput.value, desabilitado: dataInfraInput.disabled },
                     { nome: 'Energia', valor: dataEnergiaInput.value, desabilitado: dataEnergiaInput.disabled },
                 ];
+                // --- FIM DA ALTERAÇÃO ---
+
                 const novasDatasPreenchidas = datas.filter(d => d.valor && !d.desabilitado);
                 const totalConcluido = datas.filter(d => d.valor || d.desabilitado).length;
+                const totalEtapas = datas.length;
 
                 if (novasDatasPreenchidas.length === 0) {
                     showMessage(concluirReparoMessage, 'Selecione a data para pelo menos uma nova etapa.', 'erro');
                     return;
                 }
-                if (totalConcluido < 4) {
+                if (totalConcluido < totalEtapas) {
                     listaItensConcluidos.innerHTML = '';
                     novasDatasPreenchidas.forEach(item => {
                         const li = document.createElement('li');

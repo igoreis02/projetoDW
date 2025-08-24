@@ -20,13 +20,13 @@ if (empty($id_manutencao)) {
 
 // --- LÓGICA SEPARADA PARA INSTALAÇÕES ---
 if ($is_installation) {
-    // 1. Pega os dados de data
     $dt_base = $data['dt_base'] ?? null;
     $dt_laco = $data['dt_laco'] ?? null;
     $data_infra = $data['data_infra'] ?? null;
     $dt_energia = $data['dt_energia'] ?? null;
+    $tipo_equip = $data['tipo_equip'] ?? null;
+    $id_cidade = $data['id_cidade'] ?? null; // Recebe o ID da cidade
 
-    // 2. Busca o estado atual dos flags 'inst_'
     $stmt_check = $conn->prepare("SELECT inst_base, inst_laco, inst_infra, inst_energia FROM manutencoes WHERE id_manutencao = ?");
     $stmt_check->bind_param("i", $id_manutencao);
     $stmt_check->execute();
@@ -36,9 +36,7 @@ if ($is_installation) {
     $updates = [];
     $params = [];
     $types = "";
-    $completed_count = 0;
 
-    // 3. Monta a query de UPDATE dinamicamente
     if ($dt_base) { $updates[] = "inst_base = 1"; $updates[] = "dt_base = ?"; $params[] = $dt_base; $types .= "s"; }
     if ($dt_laco) { $updates[] = "inst_laco = 1"; $updates[] = "dt_laco = ?"; $params[] = $dt_laco; $types .= "s"; }
     if ($data_infra) { $updates[] = "inst_infra = 1"; $updates[] = "data_infra = ?"; $params[] = $data_infra; $types .= "s"; }
@@ -49,13 +47,35 @@ if ($is_installation) {
         exit();
     }
     
-    // 4. Calcula o novo status geral da manutenção
+    // --- INÍCIO DA LÓGICA ATUALIZADA ---
+    $completed_count = 0;
+    $is_dome_or_cco = ($tipo_equip === 'DOME' || $tipo_equip === 'CCO');
+    $total_steps = $is_dome_or_cco ? 3 : 4;
+
     $completed_count += ($current_status['inst_base'] || $dt_base) ? 1 : 0;
-    $completed_count += ($current_status['inst_laco'] || $dt_laco) ? 1 : 0;
     $completed_count += ($current_status['inst_infra'] || $data_infra) ? 1 : 0;
     $completed_count += ($current_status['inst_energia'] || $dt_energia) ? 1 : 0;
+    if (!$is_dome_or_cco) {
+        $completed_count += ($current_status['inst_laco'] || $dt_laco) ? 1 : 0;
+    }
+
+    // Se todas as etapas foram concluídas, busca o provedor e adiciona ao update
+    if ($completed_count >= $total_steps && !empty($id_cidade)) {
+        $stmt_prov = $conn->prepare("SELECT id_provedor FROM provedor WHERE id_cidade = ? LIMIT 1");
+        $stmt_prov->bind_param("i", $id_cidade);
+        $stmt_prov->execute();
+        $result_prov = $stmt_prov->get_result();
+        if ($prov_row = $result_prov->fetch_assoc()) {
+            $id_provedor_encontrado = $prov_row['id_provedor'];
+            $updates[] = "id_provedor = ?";
+            $params[] = $id_provedor_encontrado;
+            $types .= "i";
+        }
+        $stmt_prov->close();
+    }
+    // --- FIM DA LÓGICA ATUALIZADA ---
     
-    $novo_status_geral = ($completed_count == 4) ? 'pendente' : 'pendente';
+    $novo_status_geral = 'pendente'; 
     $updates[] = "status_reparo = ?";
     $params[] = $novo_status_geral;
     $types .= "s";
@@ -67,7 +87,7 @@ if ($is_installation) {
     $stmt = $conn->prepare($sql);
     $stmt->bind_param($types, ...$params);
 
-} else { // --- LÓGICA ANTIGA PARA MANUTENÇÕES CORRETIVAS ---
+} else { // --- LÓGICA PARA MANUTENÇÕES CORRETIVAS (SEM ALTERAÇÃO) ---
     $reparo_finalizado = $data['reparo_finalizado'] ?? null;
     $materiais_utilizados = $data['materiais_utilizados'] ?? null;
     $motivo_devolucao = $data['motivo_devolucao'] ?? null;
@@ -111,9 +131,8 @@ if ($is_installation) {
     $stmt->bind_param($types, ...$params);
 }
 
-// Executa a query principal (seja de instalação ou corretiva)
+// Executa a query principal
 if ($stmt->execute()) {
-    // Independentemente do tipo, remove a OS da lista do técnico
     $sql_update_tecnicos = "UPDATE manutencoes_tecnicos SET status_tecnico = 'concluido' WHERE id_manutencao = ?";
     $stmt_tecnicos = $conn->prepare($sql_update_tecnicos);
     $stmt_tecnicos->bind_param("i", $id_manutencao);

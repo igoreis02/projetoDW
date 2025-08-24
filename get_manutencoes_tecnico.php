@@ -14,15 +14,18 @@ if (empty($user_id)) {
 
 $manutencoes = [];
 
+// --- INÍCIO DA ALTERAÇÃO ---
+// Adicionado m.id_cidade à consulta
 $sql = "SELECT DISTINCT
             m.id_manutencao, m.inicio_reparo, e.nome_equip, e.referencia_equip,
             m.ocorrencia_reparo, m.tipo_manutencao, m.status_reparo,
             m.observacao_instalacao,
-            c.nome AS cidade_nome, a.latitude, a.longitude, a.logradouro,
+            c.nome AS cidade_nome, m.id_cidade, -- Adicionado id_cidade aqui
+            a.latitude, a.longitude, a.logradouro,
             mt.inicio_reparoTec, mt.fim_reparoT,
             m.inst_laco, m.inst_base, m.inst_infra, m.inst_energia,
-            -- DATAS DE INSTALAÇÃO ADICIONADAS AQUI --
-            m.dt_laco, m.dt_base, m.data_infra, m.dt_energia
+            m.dt_laco, m.dt_base, m.data_infra, m.dt_energia,
+            e.tipo_equip, e.id_provedor
         FROM manutencoes m
         JOIN manutencoes_tecnicos mt ON m.id_manutencao = mt.id_manutencao
         JOIN equipamentos e ON m.id_equipamento = e.id_equipamento
@@ -30,6 +33,7 @@ $sql = "SELECT DISTINCT
         LEFT JOIN endereco a ON e.id_endereco = a.id_endereco
         WHERE mt.id_tecnico = ? AND m.status_reparo = 'em andamento'
         ORDER BY c.nome DESC";
+// --- FIM DA ALTERAÇÃO ---
 
 $stmt = $conn->prepare($sql);
 if ($stmt === false) {
