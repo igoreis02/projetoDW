@@ -29,7 +29,7 @@ function abrirModalCidades(flow_type) {
     botaoVoltar.style.display = 'none';
     botaoAtribuirTecnico.style.display = 'none';
 
-    fetch(`get_cidades_com_pendencias.php?flow_type=${flow_type}`)
+    fetch(`API/get_cidades_com_pendencias.php?flow_type=${flow_type}`)
         .then(response => response.json())
         .then(data => {
             if (data.success && data.cidades && data.cidades.length > 0) {
@@ -56,7 +56,7 @@ function abrirModalCidades(flow_type) {
 
 // Busca os itens pendentes (manutenções ou instalações)
 function buscarItensPendentes(id_cidade, nome_cidade) {
-    fetch(`get_atribuicoes_pendentes.php?city_id=${id_cidade}&flow_type=${currentFlowType}`)
+    fetch(`API/get_atribuicoes_pendentes.php?city_id=${id_cidade}&flow_type=${currentFlowType}`)
         .then(response => response.json())
         .then(data => {
             manutencoesPendentes = data.items;
@@ -154,7 +154,7 @@ function atribuirTecnico() {
         const tecnicosContainer = document.createElement('div');
         tecnicosContainer.classList.add('tecnicos-container');
         listaCidades.appendChild(tecnicosContainer);
-        fetch('get_tecnicos.php').then(response => response.json()).then(data => {
+        fetch('API/get_tecnicos.php').then(response => response.json()).then(data => {
             if (data.success && data.tecnicos && data.tecnicos.length > 0) {
                 data.tecnicos.forEach(tecnico => {
                     const botaoTecnico = document.createElement('button');
@@ -178,7 +178,7 @@ function atribuirTecnico() {
         const veiculosContainer = document.createElement('div');
         veiculosContainer.classList.add('veiculos-container');
         listaCidades.appendChild(veiculosContainer);
-        fetch('get_veiculos.php').then(response => response.json()).then(data => {
+        fetch('API/get_veiculos.php').then(response => response.json()).then(data => {
             if (data && data.length > 0) {
                 data.forEach(veiculo => {
                     const botaoVeiculo = document.createElement('button');
@@ -250,7 +250,7 @@ function atribuirManutencaoCompleto() {
         return;
     }
     const dataToSend = { idsManutencao, dataInicio, dataFim, idsTecnicos, idsVeiculos };
-    fetch('atribuir_tecnicos_manutencao.php', {
+    fetch('API/atribuir_tecnicos_manutencao.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dataToSend)

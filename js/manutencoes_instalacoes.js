@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         cityButtonsContainer.innerHTML = '<p id="loadingCitiesMessage">Carregando cidades...</p>';
         try {
-            const response = await fetch('get_cidades.php');
+            const response = await fetch('API/get_cidades.php');
             const data = await response.json();
             if (data.success && data.cidades.length > 0) {
                 cityButtonsContainer.innerHTML = '';
@@ -155,7 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadEquipamentos(cityId, searchTerm = '') {
         equipmentSelect.innerHTML = '<option>Carregando...</option>';
         try {
-            const url = `get_equipamentos.php?city_id=${cityId}&search_term=${encodeURIComponent(searchTerm)}`;
+            const url = `API/get_equipamentos.php?city_id=${cityId}&search_term=${encodeURIComponent(searchTerm)}`;
             const response = await fetch(url);
             const data = await response.json();
 
@@ -312,7 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (currentFlow === 'maintenance' && currentMaintenanceType === 'corretiva') {
             try {
-                const response = await fetch(`check_pending_maintenance.php?equipment_id=${equipId}`);
+                const response = await fetch(`API/check_pending_maintenance.php?equipment_id=${equipId}`);
                 const data = await response.json();
 
                 if (data.found) {
@@ -399,7 +399,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     latitude: document.getElementById('addressLatitude').value || null,
                     longitude: document.getElementById('addressLongitude').value || null,
                 };
-                const addressResponse = await fetch('save_endereco.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(addressPayload) });
+                const addressResponse = await fetch('API/save_endereco.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(addressPayload) });
                 const addressData = await addressResponse.json();
                 if (!addressData.success) throw new Error(addressData.message || 'Falha ao salvar endereço.');
                 
@@ -411,7 +411,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     id_cidade: selectedCityId,
                     id_endereco: addressData.id_endereco
                 };
-                const equipmentResponse = await fetch('save_equipamento.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(equipmentPayload) });
+                const equipmentResponse = await fetch('API/save_equipamento.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(equipmentPayload) });
                 const equipmentData = await equipmentResponse.json();
                 if (!equipmentData.success) throw new Error(equipmentData.message || 'Falha ao salvar equipamento.');
                 
@@ -424,7 +424,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     observacao_instalacao: document.getElementById('installationNotes').value.trim()
                 };
 
-                 const maintenanceResponse = await fetch('save_manutencao.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(maintenancePayload) });
+                 const maintenanceResponse = await fetch('API/save_manutencao.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(maintenancePayload) });
                  const maintenanceData = await maintenanceResponse.json();
                  if (!maintenanceData.success) throw new Error(maintenanceData.message || 'Falha ao criar registro de instalação.');
 
@@ -453,7 +453,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     };
                 }
     
-                const response = await fetch('save_manutencao.php', {
+                const response = await fetch('API/save_manutencao.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)

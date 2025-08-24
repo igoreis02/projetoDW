@@ -94,7 +94,7 @@ let dadosCidades = [];
             containerListaCidades.innerHTML = 'Carregando cidades...';
 
             try {
-                const response = await fetch('get_cidades.php');
+                const response = await fetch('API/get_cidades.php');
                 const data = await response.json();
                 
                 if (data.success) {

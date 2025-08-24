@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         try {
-            const response = await fetch(`get_ocorrencias_pendentes.php?${params.toString()}`);
+            const response = await fetch(`API/get_ocorrencias_pendentes.php?${params.toString()}`);
             const result = await response.json();
 
             // Gera uma "assinatura" dos dados para comparar se houve mudança
@@ -390,7 +390,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         openModal('assignModal');
 
-        const [tecnicosRes, veiculosRes] = await Promise.all([fetch('get_tecnicos.php'), fetch('get_veiculos.php')]);
+        const [tecnicosRes, veiculosRes] = await Promise.all([fetch('API/get_tecnicos.php'), fetch('API/get_veiculos.php')]);
         const tecnicosData = await tecnicosRes.json();
         const veiculosData = await veiculosRes.json();
 
@@ -479,7 +479,7 @@ document.addEventListener('DOMContentLoaded', function () {
         };
 
         try {
-            const response = await fetch('atribuir_tecnicos_manutencao.php', {
+            const response = await fetch('API/atribuir_tecnicos_manutencao.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(dataToSend)
@@ -530,7 +530,7 @@ document.addEventListener('DOMContentLoaded', function () {
         };
 
         try {
-            const response = await fetch('update_ocorrencia.php', {
+            const response = await fetch('API/update_ocorrencia.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(dataToSend)
@@ -569,7 +569,7 @@ document.addEventListener('DOMContentLoaded', function () {
         };
 
         try {
-            const response = await fetch('update_ocorrencia.php', {
+            const response = await fetch('API/update_ocorrencia.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(dataToSend)

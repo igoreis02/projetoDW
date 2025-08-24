@@ -35,7 +35,7 @@
             ];
 
             try {
-                const response = await fetch('get_cidades.php');
+                const response = await fetch('API/get_cidades.php');
                 const data = await response.json();
                 
                 selects.forEach(select => {
@@ -96,7 +96,7 @@
             containerListaProvedores.innerHTML = 'Carregando provedores...';
 
             try {
-                const url = new URL('get_provedor.php', window.location.href);
+                const url = new URL('API/get_provedor.php', window.location.href);
                 url.searchParams.set('search', termoPesquisa);
                 
                 const response = await fetch(url);

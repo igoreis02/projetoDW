@@ -75,7 +75,7 @@
             container.innerHTML = 'Carregando veículos...';
 
             try {
-                const response = await fetch('get_veiculos.php');
+                const response = await fetch('API/get_veiculos.php');
                 const data = await response.json();
                 
                 // Assumindo que get_veiculos.php retorna um array diretamente

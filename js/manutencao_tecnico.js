@@ -306,7 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleSpinner(botao, spinner, true);
 
         try {
-            const response = await fetch('update_manutencao_status.php', {
+            const response = await fetch('API/update_manutencao_status.php', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
             });
             const data = await response.json();
@@ -354,7 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function checkForUpdates() {
         try {
-            const response = await fetch(`get_manutencoes_tecnico.php?user_id=${userId}`);
+            const response = await fetch(`API/get_manutencoes_tecnico.php?user_id=${userId}`);
             const newData = await response.json();
 
             if (newData.success && newData.manutencoes) {
@@ -374,7 +374,7 @@ document.addEventListener('DOMContentLoaded', () => {
         mensagemCarregamento.classList.remove('oculto');
         hideMessage(mensagemErro);
         try {
-            const response = await fetch(`get_manutencoes_tecnico.php?user_id=${userId}`);
+            const response = await fetch(`API/get_manutencoes_tecnico.php?user_id=${userId}`);
             const data = await response.json();
 
             todasAsManutencoes = (data.success && data.manutencoes) ? data.manutencoes : [];
