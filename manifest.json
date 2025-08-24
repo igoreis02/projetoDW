@@ -1,0 +1,22 @@
+{
+  "name": "Deltaway Manutenções",
+  "short_name": "Deltaway",
+  "description": "Sistema de Gerenciamento de Manutenções da Deltaway.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#0d6efd",
+  "icons": [
+    {
+      "src": "imagens/favicon.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "imagens/logo.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}

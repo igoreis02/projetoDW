@@ -176,7 +176,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const selectCidades = document.getElementById(`idCidade${tipoModal}`);
         if (selectCidades) selectCidades.innerHTML = '<option value="">Carregando...</option>';
         try {
-            const res = await fetch('get_cidades.php');
+            const res = await fetch('API/get_cidades.php');
             const data = await res.json();
             if (selectCidades && data.success) {
                 selectCidades.innerHTML = '<option value="">Selecione a Cidade</option>';

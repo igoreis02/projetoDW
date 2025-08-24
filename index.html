@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" href="imagens/favicon.png">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="manifest" href="manifest.json">
   <title>Acesso ao Sistema</title>
   <style>
     /* Estilos existentes */
@@ -378,7 +379,16 @@
       if (event.target == passwordChangeModal) {
         closeModal();
       }
-    }
+    };
+    if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').then(registration => {
+        console.log('Service Worker registrado com sucesso:', registration);
+      }).catch(error => {
+        console.log('Falha ao registrar Service Worker:', error);
+      });
+    });
+  }
   </script>
 </body>
 
