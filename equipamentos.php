@@ -9,7 +9,7 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-require_once 'conexao_bd.php';
+require_once 'API/conexao_bd.php';
 
 $cities = []; // Array para armazenar as cidades
 
@@ -336,11 +336,20 @@ try {
             text-align: left;
             margin-top: 5%;
         }
-
-        .modal-content h3 {
-            text-align: center;
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
             margin-bottom: 1.5rem;
+        }
+
+        .modal-header h3 {
+            margin: 0;
             color: #333333;
+            flex-grow: 1;
+            text-align: center;
         }
 
         .modal-content label {
@@ -402,19 +411,16 @@ try {
 
         .close-button {
             color: #aaa;
-            position: absolute;
-            top: 10px;
-            right: 15px;
             font-size: 28px;
             font-weight: bold;
             cursor: pointer;
+            background: none;
+            border: none;
         }
 
         .close-button:hover,
         .close-button:focus {
             color: black;
-            text-decoration: none;
-            cursor: pointer;
         }
 
         .loading-spinner {
@@ -526,8 +532,10 @@ try {
 
     <div id="addEquipmentModal" class="modal">
         <div class="modal-content">
-            <span class="close-button" id="closeAddEquipmentModal">&times;</span>
-            <h3>Adicionar Novo Equipamento</h3>
+            <div class="modal-header">
+                <h3>Adicionar Novo Equipamento</h3>
+                <button class="close-button" id="closeAddEquipmentModal">&times;</button>
+            </div>
             <form id="addEquipmentForm">
                 <label for="equipmentType">Tipo de Equipamento:</label>
                 <select id="equipmentType" name="tipo_equip" required>
@@ -536,7 +544,8 @@ try {
                     <option value="RADAR FIXO">RADAR FIXO</option>
                     <option value="DOME">DOME</option>
                     <option value="EDUCATIVO">EDUCATIVO</option>
-                    <option value="LOMBADA">LÔMBADA</option>
+                    <option value="LOMBADA">LOMBADA</option>
+                    <option value="LAP">LAP</option>
                 </select>
 
                 <label for="equipmentName">Nome:</label>
@@ -552,9 +561,15 @@ try {
                     <option value="remanejado">Remanejado</option>
                 </select>
 
-                <div id="add-qtd-faixa-container" class="hidden">
+                <div id="add-specific-fields-container" class="hidden">
                     <label for="equipmentQtdFaixa">Quantidade de Faixas:</label>
                     <input type="number" id="equipmentQtdFaixa" name="qtd_faixa">
+                    
+                    <label for="equipmentKm">KM da via:</label>
+                    <input type="text" id="equipmentKm" name="km">
+
+                    <label for="equipmentSentido">Sentido:</label>
+                    <input type="text" id="equipmentSentido" name="sentido">
                 </div>
 
                 <label for="equipmentCity">Cidade:</label>
@@ -601,8 +616,10 @@ try {
 
     <div id="editEquipmentModal" class="modal">
         <div class="modal-content">
-            <span class="close-button" id="closeEditEquipmentModal">&times;</span>
-            <h3>Editar Equipamento</h3>
+            <div class="modal-header">
+                <h3>Editar Equipamento</h3>
+                <button class="close-button" id="closeEditEquipmentModal">&times;</button>
+            </div>
             <form id="editEquipmentForm">
                 <input type="hidden" id="editEquipmentId" name="id_equipamento">
                 <input type="hidden" id="editEnderecoId" name="id_endereco">
@@ -613,7 +630,8 @@ try {
                     <option value="RADAR FIXO">RADAR FIXO</option>
                     <option value="DOME">DOME</option>
                     <option value="EDUCATIVO">EDUCATIVO</option>
-                    <option value="LOMBADA">LÔMBADA</option>
+                    <option value="LOMBADA">LOMBADA</option>
+                    <option value="LAP">LAP</option>
                 </select>
 
                 <label for="editEquipmentName">Nome:</label>
@@ -628,10 +646,16 @@ try {
                     <option value="inativo">Inativo</option>
                     <option value="remanejado">Remanejado</option>
                 </select>
-
-                <div id="edit-qtd-faixa-container" class="hidden">
+                
+                <div id="edit-specific-fields-container" class="hidden">
                     <label for="editEquipmentQtdFaixa">Quantidade de Faixas:</label>
                     <input type="number" id="editEquipmentQtdFaixa" name="qtd_faixa">
+
+                    <label for="editEquipmentKm">KM da via:</label>
+                    <input type="text" id="editEquipmentKm" name="km">
+
+                    <label for="editEquipmentSentido">Sentido:</label>
+                    <input type="text" id="editEquipmentSentido" name="sentido">
                 </div>
 
                 <label for="editEquipmentCity">Cidade:</label>

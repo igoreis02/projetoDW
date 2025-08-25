@@ -9,11 +9,9 @@ if (!isset($_SESSION['user_id'])) {
 
 require_once 'conexao_bd.php';
 
-// Recebe os dados do corpo da requisição JSON
 $input = file_get_contents('php://input');
 $data = json_decode($input, true);
 
-// Validação básica dos dados
 if (!isset($data['id_equipamento']) || !isset($data['id_endereco']) || !isset($data['tipo_equip']) ||
     !isset($data['nome_equip']) || !isset($data['status']) || !isset($data['id_cidade']) ||
     !isset($data['logradouro']) || !isset($data['bairro']) || !isset($data['id_provedor'])) {
@@ -24,7 +22,6 @@ if (!isset($data['id_equipamento']) || !isset($data['id_endereco']) || !isset($d
 $conn->begin_transaction();
 
 try {
-    // 1. Atualizar a tabela `endereco`
     $stmt_endereco = $conn->prepare("UPDATE endereco SET logradouro = ?, bairro = ?, cep = ?, latitude = ?, longitude = ? WHERE id_endereco = ?");
     $cep = $data['cep'] ?? null;
     $latitude = $data['latitude'] ?? null;
@@ -33,12 +30,25 @@ try {
     $stmt_endereco->execute();
     $stmt_endereco->close();
 
-    // 2. Atualizar a tabela `equipamentos`
-    // Adicionada a coluna id_provedor
-    $stmt_equipamento = $conn->prepare("UPDATE equipamentos SET tipo_equip = ?, nome_equip = ?, referencia_equip = ?, status = ?, qtd_faixa = ?, id_cidade = ?, id_provedor = ? WHERE id_equipamento = ?");
+    $stmt_equipamento = $conn->prepare("UPDATE equipamentos SET tipo_equip = ?, nome_equip = ?, referencia_equip = ?, status = ?, qtd_faixa = ?, km = ?, sentido = ?, id_cidade = ?, id_provedor = ? WHERE id_equipamento = ?");
+    
     $referencia_equip = $data['referencia_equip'] ?? null;
-    $data['qtd_faixa'] = $data['qtd_faixa'] ?? null; // Garantir que qtd_faixa esteja definido
-    $stmt_equipamento->bind_param("ssssiiii", $data['tipo_equip'], $data['nome_equip'], $referencia_equip, $data['status'], $data['qtd_faixa'], $data['id_cidade'], $data['id_provedor'], $data['id_equipamento']);
+    $data['qtd_faixa'] = $data['qtd_faixa'] ?? null;
+    $km = $data['km'] ?? null;
+    $sentido = $data['sentido'] ?? null;
+    
+    $stmt_equipamento->bind_param("ssssissiii", 
+        $data['tipo_equip'], 
+        $data['nome_equip'], 
+        $referencia_equip, 
+        $data['status'], 
+        $data['qtd_faixa'], 
+        $km,
+        $sentido,
+        $data['id_cidade'], 
+        $data['id_provedor'], 
+        $data['id_equipamento']
+    );
     $stmt_equipamento->execute();
     $stmt_equipamento->close();
 
@@ -51,3 +61,4 @@ try {
 }
 
 $conn->close();
+?>

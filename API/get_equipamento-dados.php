@@ -2,10 +2,8 @@
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 
-// Inclui a conexão com o banco de dados (ajuste o caminho se necessário)
 require_once 'conexao_bd.php';
 
-// Verifica a conexão
 if ($conn->connect_error) {
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'Erro de conexão com o banco de dados: ' . $conn->connect_error]);
@@ -16,8 +14,6 @@ $search_term = $_GET['search_term'] ?? '';
 $equipamentos = [];
 
 try {
-    // Consulta SQL completa com JOINs para obter todas as informações necessárias
-    // CORREÇÃO: Adicionada a junção com a tabela provedor e a seleção do nome_prov e id_provedor
     $sql = "SELECT
                 e.id_equipamento,
                 e.tipo_equip,
@@ -25,6 +21,8 @@ try {
                 e.referencia_equip,
                 e.status,
                 e.qtd_faixa,
+                e.km,
+                e.sentido,
                 c.nome AS cidade,
                 e.id_cidade,
                 p.nome_prov,
@@ -41,7 +39,6 @@ try {
             LEFT JOIN provedor AS p ON e.id_provedor = p.id_provedor
             WHERE 1=1";
 
-    // Prepara a consulta para incluir a pesquisa
     $params = [];
     $types = '';
 
