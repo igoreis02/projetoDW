@@ -30,14 +30,30 @@ try {
     $stmt_endereco->execute();
     $stmt_endereco->close();
 
-    $stmt_equipamento = $conn->prepare("UPDATE equipamentos SET tipo_equip = ?, nome_equip = ?, referencia_equip = ?, status = ?, qtd_faixa = ?, km = ?, sentido = ?, id_cidade = ?, id_provedor = ? WHERE id_equipamento = ?");
+    // LÓGICA ADICIONADA PARA CALCULAR A DATA DE VENCIMENTO
+    $dt_afericao = $data['dt_afericao'] ?? null;
+    $dt_vencimento = null;
+    if (!empty($dt_afericao)) {
+        try {
+            $date = new DateTime($dt_afericao);
+            $date->modify('+1 year');
+            $date->modify('-1 day');
+            $dt_vencimento = $date->format('Y-m-d');
+        } catch (Exception $e) {
+            $dt_vencimento = null;
+        }
+    }
+
+    // QUERY E BIND_PARAM ATUALIZADOS
+    $stmt_equipamento = $conn->prepare("UPDATE equipamentos SET tipo_equip = ?, nome_equip = ?, referencia_equip = ?, status = ?, qtd_faixa = ?, km = ?, sentido = ?, num_instrumento = ?, dt_afericao = ?, dt_vencimento = ?, id_cidade = ?, id_provedor = ? WHERE id_equipamento = ?");
     
     $referencia_equip = $data['referencia_equip'] ?? null;
     $data['qtd_faixa'] = $data['qtd_faixa'] ?? null;
     $km = $data['km'] ?? null;
     $sentido = $data['sentido'] ?? null;
+    $num_instrumento = $data['num_instrumento'] ?? null;
     
-    $stmt_equipamento->bind_param("ssssissiii", 
+    $stmt_equipamento->bind_param("ssssissssssii", 
         $data['tipo_equip'], 
         $data['nome_equip'], 
         $referencia_equip, 
@@ -45,6 +61,9 @@ try {
         $data['qtd_faixa'], 
         $km,
         $sentido,
+        $num_instrumento,
+        $dt_afericao,
+        $dt_vencimento,
         $data['id_cidade'], 
         $data['id_provedor'], 
         $data['id_equipamento']

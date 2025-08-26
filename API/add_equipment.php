@@ -19,7 +19,8 @@ if (
     !isset($data['tipo_equip']) || !isset($data['nome_equip']) ||
     !isset($data['status']) || !isset($data['id_cidade']) ||
     !isset($data['logradouro']) || !isset($data['bairro']) ||
-    !isset($data['id_provedor'])
+    !isset($data['id_provedor']) || 
+    empty($data['num_instrumento']) || empty($data['dt_afericao'])
 ) {
     echo json_encode(['success' => false, 'message' => 'Dados incompletos.']);
     exit();
@@ -38,8 +39,28 @@ try {
     $id_endereco = $conn->insert_id;
     $stmt_endereco->close();
 
-    // 2. Inserir na tabela `equipamentos`
-    $stmt_equipamento = $conn->prepare("INSERT INTO equipamentos (tipo_equip, nome_equip, referencia_equip, status, qtd_faixa, km, sentido, id_cidade, id_endereco, id_provedor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    // --- LÓGICA ADICIONADA ---
+    // Pega os novos campos e calcula a data de vencimento
+    $num_instrumento = $data['num_instrumento'] ?? null;
+    $dt_afericao = $data['dt_afericao'] ?? null;
+    $dt_vencimento = null;
+
+    if (!empty($dt_afericao)) {
+        try {
+            $date = new DateTime($dt_afericao);
+            $date->modify('+1 year');
+            $date->modify('-1 day');
+            $dt_vencimento = $date->format('Y-m-d');
+        } catch (Exception $e) {
+            // Se a data for inválida, o vencimento permanece nulo
+            $dt_vencimento = null;
+        }
+    }
+    // --- FIM DA LÓGICA ADICIONADA ---
+
+
+    // 2. Inserir na tabela `equipamentos` (com os novos campos)
+    $stmt_equipamento = $conn->prepare("INSERT INTO equipamentos (tipo_equip, nome_equip, referencia_equip, status, qtd_faixa, km, sentido, num_instrumento, dt_afericao, dt_vencimento, id_cidade, id_endereco, id_provedor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     
     $referencia_equip = $data['referencia_equip'] ?? null;
     $qtd_faixa = !empty($data['qtd_faixa']) ? (int)$data['qtd_faixa'] : null;
@@ -48,7 +69,8 @@ try {
     $id_provedor = (int)$data['id_provedor'];
     $id_cidade = (int)$data['id_cidade'];
     
-    $stmt_equipamento->bind_param("ssssisssii", 
+    // bind_param atualizado para incluir os novos campos
+    $stmt_equipamento->bind_param("ssssissssssii", 
         $data['tipo_equip'], 
         $data['nome_equip'], 
         $referencia_equip, 
@@ -56,6 +78,9 @@ try {
         $qtd_faixa,
         $km,
         $sentido,
+        $num_instrumento,      // Novo
+        $dt_afericao,          // Novo
+        $dt_vencimento,        // Novo
         $id_cidade, 
         $id_endereco, 
         $id_provedor

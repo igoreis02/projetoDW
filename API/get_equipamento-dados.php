@@ -32,7 +32,10 @@ try {
                 en.bairro,
                 en.cep,
                 en.latitude,
-                en.longitude
+                en.longitude,
+                e.num_instrumento,
+                e.dt_afericao,
+                e.dt_vencimento
             FROM equipamentos AS e
             JOIN cidades AS c ON e.id_cidade = c.id_cidade
             LEFT JOIN endereco AS en ON e.id_endereco = en.id_endereco

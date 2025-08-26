@@ -549,7 +549,7 @@ try {
                 </select>
 
                 <label for="equipmentName">Nome:</label>
-                <input type="text" id="equipmentName" name="nome_equip" required>
+                <input type="text" id="equipmentName" name="nome_equip" >
 
                 <label for="equipmentReference">Referência:</label>
                 <input type="text" id="equipmentReference" name="referencia_equip">
@@ -573,7 +573,7 @@ try {
                 </div>
 
                 <label for="equipmentCity">Cidade:</label>
-                <select id="equipmentCity" name="id_cidade" required>
+                <select id="equipmentCity" name="id_cidade" >
                     <option value="">Selecione a Cidade</option>
                     <?php foreach ($cities as $city): ?>
                         <option value="<?php echo htmlspecialchars($city['id_cidade']); ?>">
@@ -583,25 +583,32 @@ try {
                 </select>
 
                 <label for="equipmentLogradouro">Logradouro:</label>
-                <input type="text" id="equipmentLogradouro" name="logradouro" required>
+                <input type="text" id="equipmentLogradouro" name="logradouro" >
 
                 <label for="equipmentBairro">Bairro:</label>
-                <input type="text" id="equipmentBairro" name="bairro" required>
+                <input type="text" id="equipmentBairro" name="bairro">
 
                 <label for="equipmentProvider">Provedor:</label>
-                <select id="equipmentProvider" name="id_provedor" required>
+                <select id="equipmentProvider" name="id_provedor">
                     <option value="">Carregando provedores...</option>
                 </select>
 
                 <label for="equipmentCep">CEP:</label>
                 <input type="text" id="equipmentCep" name="cep">
 
+                <label for="numInstrumento">Nº Instrumento:</label>
+                <input type="text" id="numInstrumento" name="num_instrumento">
+
+                <label for="dtAfericao">Data Aferição:</label>
+                <input type="date" id="dtAfericao" name="dt_afericao">
+
                 <label for="equipmentLatitude">Latitude:</label>
                 <input type="number" step="any" id="equipmentLatitude" name="latitude">
 
                 <label for="equipmentLongitude">Longitude:</label>
                 <input type="number" step="any" id="equipmentLongitude" name="longitude">
-
+                    
+                <p id="addEquipmentMessage" class="message hidden"></p>
                 <div class="form-buttons" id="add-form-buttons">
                     <button type="submit" class="save-button" id="saveAddEquipmentButton">
                         Salvar Equipamento
@@ -609,7 +616,7 @@ try {
                     </button>
                     <button type="button" class="cancel-button" id="cancelAddEquipmentButton">Cancelar</button>
                 </div>
-                <p id="addEquipmentMessage" class="message hidden"></p>
+                
             </form>
         </div>
     </div>
@@ -625,7 +632,7 @@ try {
                 <input type="hidden" id="editEnderecoId" name="id_endereco">
 
                 <label for="editEquipmentType">Tipo de Equipamento:</label>
-                <select id="editEquipmentType" name="tipo_equip" required>
+                <select id="editEquipmentType" name="tipo_equip" >
                     <option value="CCO">CCO</option>
                     <option value="RADAR FIXO">RADAR FIXO</option>
                     <option value="DOME">DOME</option>
@@ -635,13 +642,13 @@ try {
                 </select>
 
                 <label for="editEquipmentName">Nome:</label>
-                <input type="text" id="editEquipmentName" name="nome_equip" required>
+                <input type="text" id="editEquipmentName" name="nome_equip" >
 
                 <label for="editEquipmentReference">Referência:</label>
                 <input type="text" id="editEquipmentReference" name="referencia_equip">
 
                 <label for="editEquipmentStatus">Status:</label>
-                <select id="editEquipmentStatus" name="status" required>
+                <select id="editEquipmentStatus" name="status" >
                     <option value="ativo">Ativo</option>
                     <option value="inativo">Inativo</option>
                     <option value="remanejado">Remanejado</option>
@@ -659,7 +666,7 @@ try {
                 </div>
 
                 <label for="editEquipmentCity">Cidade:</label>
-                <select id="editEquipmentCity" name="id_cidade" required>
+                <select id="editEquipmentCity" name="id_cidade" >
                     <?php foreach ($cities as $city): ?>
                         <option value="<?php echo htmlspecialchars($city['id_cidade']); ?>">
                             <?php echo htmlspecialchars($city['nome']); ?>
@@ -668,18 +675,24 @@ try {
                 </select>
 
                 <label for="editEquipmentLogradouro">Logradouro:</label>
-                <input type="text" id="editEquipmentLogradouro" name="logradouro" required>
+                <input type="text" id="editEquipmentLogradouro" name="logradouro" >
 
                 <label for="editEquipmentBairro">Bairro:</label>
-                <input type="text" id="editEquipmentBairro" name="bairro" required>
+                <input type="text" id="editEquipmentBairro" name="bairro" >
 
                 <label for="editEquipmentProvider">Provedor:</label>
-                <select id="editEquipmentProvider" name="id_provedor" required>
+                <select id="editEquipmentProvider" name="id_provedor" >
                     <option value="">Carregando provedores...</option>
                 </select>
 
                 <label for="editEquipmentCep">CEP:</label>
                 <input type="text" id="editEquipmentCep" name="cep">
+
+                <label for="editNumInstrumento">Nº Instrumento:</label>
+                <input type="text" id="editNumInstrumento" name="num_instrumento" >
+
+                <label for="editDtAfericao">Data Aferição:</label>
+                <input type="date" id="editDtAfericao" name="dt_afericao" >
 
                 <label for="editEquipmentLatitude">Latitude:</label>
                 <input type="number" step="any" id="editEquipmentLatitude" name="latitude">
@@ -687,6 +700,7 @@ try {
                 <label for="editEquipmentLongitude">Longitude:</label>
                 <input type="number" step="any" id="editEquipmentLongitude" name="longitude">
 
+                <p id="editEquipmentMessage" class="message hidden"></p>
                 <div class="form-buttons" id="edit-form-buttons">
                     <button type="submit" class="save-button" id="saveEditEquipmentButton">
                         Salvar Alterações
@@ -694,7 +708,7 @@ try {
                     </button>
                     <button type="button" class="cancel-button" id="cancelEditEquipmentButton">Cancelar</button>
                 </div>
-                <p id="editEquipmentMessage" class="message hidden"></p>
+                
             </form>
         </div>
     </div>

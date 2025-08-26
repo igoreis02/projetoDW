@@ -490,9 +490,7 @@ if (isset($user_id)) {
             const lacresImetroBtn = document.getElementById('lacresImetroBtn');
             if (lacresImetroBtn) {
                 lacresImetroBtn.addEventListener('click', function() {
-                    // Redireciona para a nova página de lacres do IMETRO
-                    // window.location.href = 'lacresImetro'; // Substitua pelo nome correto da página
-                    alert('Funcionalidade "Lacres IMETRO" ainda não implementada.');
+                    window.location.href = 'lacresImetro';
                 });
             }
 

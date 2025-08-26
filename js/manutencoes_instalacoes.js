@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const confirmEquipmentNameSpan = document.getElementById('confirmEquipmentName');
     const confirmProblemDescriptionSpan = document.getElementById('confirmProblemDescription');
     const confirmRepairDescriptionContainer = document.getElementById('confirmRepairDescriptionContainer');
-    const confirmRepairDescriptionSpan = document.getElementById('confirmRepairDescription');
+    const confirmRepairDescription = document.getElementById('confirmRepairDescription');
     const confirmMaintenanceTypeSpan = document.getElementById('confirmMaintenanceType');
     const confirmRepairStatusSpan = document.getElementById('confirmRepairStatus');
     const confirmTecnicoInLocoContainer = document.getElementById('confirmTecnicoInLocoContainer');
@@ -287,7 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('confirmEquipmentName').textContent = `${selectedEquipment.nome_equip} - ${selectedEquipment.referencia_equip}`;
             document.getElementById('confirmProblemDescription').textContent = selectedProblemDescription;
             if (repairDesc) {
-                document.getElementById('confirmRepairDescriptionSpan').textContent = repairDesc;
+                document.getElementById('confirmRepairDescription').textContent = repairDesc;
                 document.getElementById('confirmRepairDescriptionContainer').classList.remove('hidden');
             } else {
                  document.getElementById('confirmRepairDescriptionContainer').classList.add('hidden');
