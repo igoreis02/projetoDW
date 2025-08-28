@@ -314,6 +314,17 @@ if (!isset($_SESSION['user_id'])) {
             background-color: #fee2e2;
             color: #b91c1c;
         }
+        
+        /* NOVO: Estilo para a tag de conclusão */
+        .completion-tag {
+            font-size: 0.85em;
+            font-weight: 500;
+            color: #4b5563;
+            background-color: #e5e7eb;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-left: 5px;
+        }
 
         .item-actions {
             display: flex;
@@ -476,6 +487,30 @@ if (!isset($_SESSION['user_id'])) {
             background-color: #f3f4f6;
         }
 
+        /* NOVO: Estilos para botões de opção */
+        .conclusion-options {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .option-btn {
+            flex: 1;
+            padding: 10px 15px;
+            border-radius: 6px;
+            border: 1px solid #d1d5db;
+            background-color: #f9fafb;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .option-btn.active {
+            background-color: #4f46e5;
+            color: white;
+            border-color: #4f46e5;
+        }
+        
         .modal-footer {
             display: flex;
             flex-direction: column;
@@ -608,25 +643,41 @@ if (!isset($_SESSION['user_id'])) {
     <div id="concluirModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Concluir Ocorrência</h3><button class="modal-close"
-                    onclick="closeModal('concluirModal')">&times;</button>
+                <h3>Concluir Ocorrência</h3>
+                <button class="modal-close" onclick="closeModal('concluirModal')">&times;</button>
             </div>
             <div class="modal-body">
                 <h4 id="concluirModalEquipName" style="font-size: 1.2em; text-align: center;"></h4>
-                <div class="form-group"><label>Problema Reportado</label>
+                <div class="form-group">
+                    <label>Problema Reportado</label>
                     <p id="concluirOcorrenciaText"></p>
                 </div>
-                <div class="form-group"><label for="reparoRealizadoTextarea">Descrição do Reparo</label><textarea
-                        id="reparoRealizadoTextarea" placeholder="Descreva o serviço que foi realizado..."></textarea>
+                
+                <div class="conclusion-options">
+                    <button id="btnInLoco" class="option-btn active">Técnico inLoco</button>
+                    <button id="btnSemIntervencao" class="option-btn">Sem Intervenção</button>
+                    <button id="btnTecnicoDw" class="option-btn">Técnico DW</button>
                 </div>
-            </div>
+
+                <div id="reparoRealizadoContainer" class="form-group">
+                    <label for="reparoRealizadoTextarea">Descrição do Reparo</label>
+                    <textarea id="reparoRealizadoTextarea" placeholder="Descreva o serviço que foi realizado..."></textarea>
+                </div>
+                
+                <div id="problemaTecnicoDwContainer" class="form-group hidden">
+                    <label for="problemaTecnicoDwTextarea">Reportar Problema para Técnico DW</label>
+                    <textarea id="problemaTecnicoDwTextarea" placeholder="Descreva o problema a ser resolvido pelo técnico..."></textarea>
+                </div>
+                </div>
             <div class="modal-footer">
-                <div class="modal-footer-buttons"><button class="modal-btn btn-secondary"
-                        onclick="closeModal('concluirModal')">Cancelar</button><button class="modal-btn btn-primary"
-                        onclick="openConfirmationModal('concluir')">Confirmar Reparo</button></div>
+                <div class="modal-footer-buttons">
+                    <button class="modal-btn btn-secondary" onclick="closeModal('concluirModal')">Cancelar</button>
+                    <button class="modal-btn btn-primary" onclick="openConfirmationModal('concluir')">Confirmar</button>
+                </div>
             </div>
         </div>
     </div>
+
 
     <div id="editModal" class="modal">
         <div class="modal-content">

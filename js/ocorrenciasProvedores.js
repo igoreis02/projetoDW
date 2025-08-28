@@ -1,13 +1,22 @@
-// O JAVASCRIPT PERMANECE O MESMO, MAS O EVENT LISTENER FOI AJUSTADO
 document.addEventListener('DOMContentLoaded', function () {
-    const typeFilterContainer = document.getElementById('typeFilterContainer'); // Novo ID para o container
+    const typeFilterContainer = document.getElementById('typeFilterContainer'); 
     const statusFilterContainer = document.getElementById('statusFilterContainer');
     const cityFilterContainer = document.getElementById('cityFilterContainer');
     const ocorrenciasContainer = document.getElementById('ocorrenciasContainer');
     const loadingMessage = document.getElementById('loadingMessage');
 
+    const concluirModal = document.getElementById('concluirModal');
+    const btnInLoco = document.getElementById('btnInLoco');
+    const btnSemIntervencao = document.getElementById('btnSemIntervencao');
+    const btnTecnicoDw = document.getElementById('btnTecnicoDw');
+    const reparoRealizadoContainer = document.getElementById('reparoRealizadoContainer');
+    const problemaTecnicoDwContainer = document.getElementById('problemaTecnicoDwContainer');
+    const reparoRealizadoTextarea = document.getElementById('reparoRealizadoTextarea');
+    const problemaTecnicoDwTextarea = document.getElementById('problemaTecnicoDwTextarea');
+
     let filters = { type: 'manutencao', status: 'todos', startDate: '', endDate: '', city: 'todos' };
     let allData = null, currentItem = null, currentPendentIds = new Set(), updateInterval;
+    let conclusionType = null;
 
     async function fetchData(isUpdateCheck = false) {
         if (!isUpdateCheck) {
@@ -55,34 +64,145 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function createOcorrenciaHTML(item) {
-        const statusClass = item.status_reparo || 'pendente';
-        const statusHTML = `<span class="status-tag ${statusClass}">${statusClass}</span>`;
-        const inicioReparoFormatted = item.inicio_reparo ? new Date(item.inicio_reparo).toLocaleString('pt-BR') : 'Data não informada';
+        const statusClass = item.status || 'pendente';
+        const inicioReparoFormatted = item.inicio_reparo ? new Date(item.inicio_reparo).toLocaleString('pt-BR') : 'N/A';
+        const fimReparoFormatted = item.fim_reparo ? new Date(item.fim_reparo).toLocaleString('pt-BR') : 'N/A';
         let atribuidoPorHTML = item.atribuido_por ? `<div class="detail-item"><strong>Reportado por</strong> <span>${item.atribuido_por}</span></div>` : '';
-        let reparoFinalizadoHTML = '';
-        if (item.status_reparo === 'concluido' && item.reparo_finalizado) {
-            reparoFinalizadoHTML = `<div class="detail-item reparo-info"><strong>Reparo Realizado</strong> <span>${item.reparo_finalizado}</span></div>`;
+        let statusHTML = `<span class="status-tag ${statusClass}">${statusClass}</span>`;
+
+        let completionDetails = '';
+        if (statusClass === 'concluido') {
+            if (item.inLoco == 1) completionDetails = '<span class="completion-tag">Realizado por Provedor</span>';
+            else if (item.sem_intervencao == 1) completionDetails = '<span class="completion-tag">Sem Intervenção Técnica</span>';
+            else if (item.tecnico_dw == 1) completionDetails = '<span class="completion-tag">Reparo Deltaway</span>';
+            statusHTML += completionDetails;
         }
+
+        let reparoFinalizadoHTML = '';
+        if (item.status === 'concluido' && (item.reparo_finalizado || item.des_reparo)) {
+            reparoFinalizadoHTML = `<div class="detail-item reparo-info"><strong>Reparo Realizado</strong> <span>${item.reparo_finalizado || item.des_reparo}</span></div>`;
+        }
+        
         const detailsHTML = `
-                    <div class="detail-item"><strong>Provedor</strong> <span>${item.nome_prov || 'Não especificado'}</span></div>
-                    <div class="detail-item"><strong>Problema</strong> <span>${item.ocorrencia_reparo || 'Não especificado'}</span></div>
-                    ${reparoFinalizadoHTML}
-                    <div class="detail-item"><strong>Início Ocorrência</strong> <span>${inicioReparoFormatted}</span></div>
-                    ${atribuidoPorHTML}
-                    <div class="detail-item"><strong>Status</strong> ${statusHTML}</div>
-                    <div class="detail-item"><strong>Local</strong> <span>${item.local_completo || ''}</span></div>`;
+            <div class="detail-item"><strong>Provedor</strong> <span>${item.nome_prov || 'N/A'}</span></div>
+            <div class="detail-item"><strong>Problema</strong> <span>${item.ocorrencia_reparo || 'N/A'}</span></div>
+            ${reparoFinalizadoHTML}
+            <div class="detail-item"><strong>Início Ocorrência</strong> <span>${inicioReparoFormatted}</span></div>
+            ${statusClass === 'concluido' ? `<div class="detail-item"><strong>Fim Ocorrência</strong> <span>${fimReparoFormatted}</span></div>` : ''}
+            ${atribuidoPorHTML}
+            <div class="detail-item"><strong>Status</strong> ${statusHTML}</div>
+            <div class="detail-item"><strong>Local</strong> <span>${item.local_completo || 'N/A'}</span></div>
+        `;
 
         let actionsContent = '';
         if (statusClass === 'pendente') {
-            actionsContent = `<button class="item-btn concluir-btn" onclick="openConcluirModal(${item.id_manutencao})">Concluir</button><button class="item-btn edit-btn" onclick="openEditModal(${item.id_manutencao})">Editar</button><button class="item-btn cancel-btn" onclick="openConfirmationModal('cancelar', ${item.id_manutencao})">Cancelar</button>`;
+            actionsContent = `<button class="item-btn concluir-btn" onclick="openConcluirModal(${item.id}, '${item.origem}')">Concluir</button><button class="item-btn edit-btn" onclick="openEditModal(${item.id}, '${item.origem}')">Editar</button><button class="item-btn cancel-btn" onclick="openConfirmationModal('cancelar', ${item.id}, '${item.origem}')">Cancelar</button>`;
         } else if (statusClass === 'concluido') {
-            actionsContent = `<button class="item-btn edit-btn" onclick="openEditModal(${item.id_manutencao})">Editar</button>`;
+            actionsContent = `<button class="item-btn edit-btn" onclick="openEditModal(${item.id}, '${item.origem}')">Editar</button>`;
         }
         const actionsHTML = actionsContent ? `<div class="item-actions">${actionsContent}</div>` : `<div class="item-actions" style="min-height: 40px;"></div>`;
 
-        return `<div class="ocorrencia-item status-${statusClass}" data-id="${item.id_manutencao}"><div class="ocorrencia-header"><h3>${item.nome_equip} - ${item.referencia_equip}</h3></div><div class="ocorrencia-details">${detailsHTML}</div>${actionsHTML}</div>`;
+        return `<div class="ocorrencia-item status-${statusClass}" data-id="${item.id}" data-origem="${item.origem}"><div class="ocorrencia-header"><h3>${item.nome_equip} - ${item.referencia_equip}</h3></div><div class="ocorrencia-details">${detailsHTML}</div>${actionsHTML}</div>`;
+    }
+    
+    function setupConclusionModalListeners() {
+        const optionButtons = [btnInLoco, btnSemIntervencao, btnTecnicoDw];
+        optionButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const wasActive = btn.classList.contains('active');
+                optionButtons.forEach(b => b.classList.remove('active'));
+
+                if (wasActive) {
+                    conclusionType = null;
+                    reparoRealizadoContainer.classList.add('hidden');
+                    problemaTecnicoDwContainer.classList.add('hidden');
+                } else {
+                    btn.classList.add('active');
+                    conclusionType = btn.id.replace('btn', '').toLowerCase();
+                    const showReparo = conclusionType === 'inloco' || conclusionType === 'semintervencao';
+                    reparoRealizadoContainer.classList.toggle('hidden', !showReparo);
+                    problemaTecnicoDwContainer.classList.toggle('hidden', showReparo);
+                }
+            });
+        });
     }
 
+    window.openConcluirModal = (id, origem) => {
+        currentItem = findOcorrenciaById(id, origem);
+        if (!currentItem) return;
+
+        if (currentItem.origem !== 'ocorrencia_provedor') {
+            alert('Esta ocorrência (antiga) não pode ser concluída por este novo fluxo.');
+            return;
+        }
+
+        conclusionType = null;
+        [btnInLoco, btnSemIntervencao, btnTecnicoDw].forEach(b => b.classList.remove('active'));
+        reparoRealizadoContainer.classList.add('hidden');
+        problemaTecnicoDwContainer.classList.add('hidden');
+        reparoRealizadoTextarea.value = '';
+        problemaTecnicoDwTextarea.value = '';
+
+        document.getElementById('concluirModalEquipName').textContent = `${currentItem.nome_equip} - ${currentItem.referencia_equip}`;
+        document.getElementById('concluirOcorrenciaText').textContent = currentItem.ocorrencia_reparo;
+        openModal('concluirModal');
+    }
+
+    async function saveConclusion() {
+        if (!conclusionType) {
+            alert('É obrigatório selecionar uma das opções de conclusão (Técnico inLoco, Sem Intervenção ou Técnico DW).');
+            return;
+        }
+
+        let reparoFinalizado = '';
+        let inLoco = 0, semIntervencao = 0, tecnicoDw = 0;
+
+        if (conclusionType === 'inloco' || conclusionType === 'semintervencao') {
+            reparoFinalizado = reparoRealizadoTextarea.value.trim();
+            if (!reparoFinalizado) { alert('A descrição do reparo é obrigatória.'); return; }
+            if (conclusionType === 'inloco') inLoco = 1; else semIntervencao = 1;
+        } else if (conclusionType === 'tecnicodw') {
+            reparoFinalizado = problemaTecnicoDwTextarea.value.trim();
+            if (!reparoFinalizado) { alert('A descrição do problema para o técnico DW é obrigatória.'); return; }
+            tecnicoDw = 1;
+        }
+
+        const confirmButton = document.getElementById('confirmActionButton');
+        const spinner = document.getElementById('confirmSpinner');
+        const messageEl = document.getElementById('confirmationMessage');
+        spinner.classList.add('is-active');
+        confirmButton.disabled = true;
+
+        try {
+            const response = await fetch('API/update_ocorrencia.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'concluir_ocorrencia_provedor',
+                    id: currentItem.id,
+                    reparo_finalizado: reparoFinalizado,
+                    inLoco: inLoco,
+                    sem_intervencao: semIntervencao,
+                    tecnico_dw: tecnicoDw
+                })
+            });
+            const result = await response.json();
+            if (result.success) {
+                document.getElementById('confirmationButtons').style.display = 'none';
+                messageEl.textContent = 'Ocorrência concluída com sucesso!';
+                messageEl.className = 'message success';
+                messageEl.classList.remove('hidden');
+                setTimeout(() => { closeModal('confirmationModal'); closeModal('concluirModal'); fetchData(); }, 2000);
+            } else { throw new Error(result.message || 'Erro desconhecido.'); }
+        } catch (error) {
+            messageEl.textContent = `Erro: ${error.message}`;
+            messageEl.className = 'message error';
+            messageEl.classList.remove('hidden');
+            confirmButton.disabled = false;
+            spinner.classList.remove('is-active');
+        }
+    }
+    
     function updateCityFilters() {
         cityFilterContainer.innerHTML = '';
         const cities = allData.cidades || [];
@@ -109,7 +229,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function initializeFilters() {
-        // <<< JS ATUALIZADO PARA O NOVO LAYOUT
         typeFilterContainer.addEventListener('click', (e) => {
             if (e.target.matches('.action-btn')) {
                 document.querySelectorAll('#typeFilterContainer .action-btn').forEach(btn => btn.classList.remove('active'));
@@ -136,16 +255,15 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         const startDateInput = document.getElementById('startDate');
         const endDateInput = document.getElementById('endDate');
-        startDateInput.addEventListener('change', (e) => {
-            filters.startDate = e.target.value;
-            if (filters.endDate && filters.endDate < filters.startDate) {
-                filters.endDate = filters.startDate;
-                endDateInput.value = filters.startDate;
+        startDateInput.addEventListener('change', () => {
+            filters.startDate = startDateInput.value;
+            if (endDateInput.value && endDateInput.value < startDateInput.value) {
+                endDateInput.value = startDateInput.value;
             }
-            endDateInput.min = filters.startDate;
+            endDateInput.min = startDateInput.value;
             fetchData();
         });
-        endDateInput.addEventListener('change', (e) => { filters.endDate = e.target.value; fetchData(); });
+        endDateInput.addEventListener('change', () => { filters.endDate = endDateInput.value; fetchData(); });
     }
 
     function updatePendentIds(data) {
@@ -154,8 +272,8 @@ document.addEventListener('DOMContentLoaded', function () {
         if (sourceData && sourceData.ocorrencias) {
             for (const city in sourceData.ocorrencias) {
                 sourceData.ocorrencias[city].forEach(item => {
-                    if (item.status_reparo === 'pendente') {
-                        currentPendentIds.add(item.id_manutencao);
+                    if (item.status === 'pendente') {
+                        currentPendentIds.add(item.id);
                     }
                 });
             }
@@ -173,7 +291,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (result.data.ocorrencias) {
             for (const city in result.data.ocorrencias) {
                 result.data.ocorrencias[city].forEach(item => {
-                    if (item.status_reparo === 'pendente') newPendentIds.add(item.id_manutencao);
+                    if (item.status === 'pendente') newPendentIds.add(item.id);
                 });
             }
         }
@@ -186,46 +304,36 @@ document.addEventListener('DOMContentLoaded', function () {
     window.closeModal = (modalId) => {
         const modal = document.getElementById(modalId);
         modal.classList.remove('is-active');
-        if (modalId === 'confirmationModal') {
-            document.getElementById('confirmationButtons').style.display = 'flex';
-            document.getElementById('confirmationMessage').classList.add('hidden');
-            document.getElementById('confirmActionButton').disabled = false;
-            document.getElementById('confirmSpinner').classList.remove('is-active');
-        }
-        if (modalId === 'editModal') {
-            document.getElementById('editButtons').style.display = 'flex';
-            document.getElementById('editMessage').classList.add('hidden');
-            document.getElementById('saveEditBtn').disabled = false;
-            document.getElementById('saveEditBtn').querySelector('.spinner').classList.remove('is-active');
+        if (modalId === 'confirmationModal' || modalId === 'editModal') {
+            const buttonsDiv = modal.querySelector('.modal-footer-buttons');
+            const messageEl = modal.querySelector('.message');
+            const saveBtn = modal.querySelector('.modal-btn');
+            const spinner = modal.querySelector('.spinner');
+
+            if(buttonsDiv) buttonsDiv.style.display = 'flex';
+            if(messageEl) messageEl.classList.add('hidden');
+            if(saveBtn) saveBtn.disabled = false;
+            if(spinner) spinner.classList.remove('is-active');
         }
     };
 
-    function findOcorrenciaById(id) {
+    function findOcorrenciaById(id, origem) {
         for (const city in allData.ocorrencias) {
-            const found = allData.ocorrencias[city].find(item => item.id_manutencao == id);
+            const found = allData.ocorrencias[city].find(item => item.id == id && item.origem == origem);
             if (found) return found;
         }
         return null;
     }
 
-    window.openConcluirModal = (id) => {
-        currentItem = findOcorrenciaById(id);
-        if (!currentItem) return;
-        document.getElementById('concluirModalEquipName').textContent = `${currentItem.nome_equip} - ${currentItem.referencia_equip}`;
-        document.getElementById('concluirOcorrenciaText').textContent = currentItem.ocorrencia_reparo;
-        document.getElementById('reparoRealizadoTextarea').value = '';
-        openModal('concluirModal');
-    }
-
-    window.openEditModal = (id) => {
-        currentItem = findOcorrenciaById(id);
+    window.openEditModal = (id, origem) => {
+        currentItem = findOcorrenciaById(id, origem);
         if (!currentItem) return;
         const reparoGroup = document.getElementById('editReparoGroup');
         const reparoTextarea = document.getElementById('editReparoTextarea');
         document.getElementById('editModalEquipName').textContent = `${currentItem.nome_equip} - ${currentItem.referencia_equip}`;
         document.getElementById('editOcorrenciaTextarea').value = currentItem.ocorrencia_reparo;
-        if (currentItem.status_reparo === 'concluido') {
-            reparoTextarea.value = currentItem.reparo_finalizado || '';
+        if (currentItem.status === 'concluido') {
+            reparoTextarea.value = currentItem.reparo_finalizado || currentItem.des_reparo || '';
             reparoGroup.classList.remove('hidden');
         } else {
             reparoTextarea.value = '';
@@ -240,51 +348,73 @@ document.addEventListener('DOMContentLoaded', function () {
         const messageEl = document.getElementById('editMessage');
         const newProblemText = document.getElementById('editOcorrenciaTextarea').value.trim();
         if (!newProblemText) { alert('A descrição do problema não pode ser vazia.'); return; }
+        
         saveButton.disabled = true;
         spinner.classList.add('is-active');
         messageEl.classList.add('hidden');
+        
         const dataToSend = {
             action: 'edit_ocorrencia',
-            id_manutencao: currentItem.id_manutencao,
+            id: currentItem.id,
+            origem: currentItem.origem, 
             ocorrencia_reparo: newProblemText
         };
-        if (currentItem.status_reparo === 'concluido') {
+
+        if (currentItem.status === 'concluido') {
             dataToSend.reparo_finalizado = document.getElementById('editReparoTextarea').value.trim();
         }
+
         try {
             const response = await fetch('API/update_ocorrencia.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dataToSend) });
-            const result = await response.json();
-            if (result.success) {
-                document.getElementById('editButtons').style.display = 'none';
-                messageEl.textContent = 'Ocorrência atualizada com sucesso!';
-                messageEl.className = 'message success';
-                messageEl.classList.remove('hidden');
-                setTimeout(() => { closeModal('editModal'); fetchData(); }, 3000);
-            } else { throw new Error(result.message || 'Erro desconhecido.'); }
+            
+            const contentType = response.headers.get("content-type");
+            if (response.ok && contentType && contentType.indexOf("application/json") !== -1) {
+                const result = await response.json();
+                if (result.success) {
+                    document.getElementById('editButtons').style.display = 'none';
+                    messageEl.textContent = 'Ocorrência atualizada com sucesso!';
+                    messageEl.className = 'message success';
+                    messageEl.classList.remove('hidden');
+                    setTimeout(() => { closeModal('editModal'); fetchData(); }, 2000);
+                } else { throw new Error(result.message || 'Erro desconhecido.'); }
+            } else {
+                const errorText = await response.text();
+                throw new Error(`Resposta inesperada do servidor: ${errorText}`);
+            }
         } catch (error) {
-            alert(`Erro ao salvar: ${error.message}`);
+            messageEl.textContent = `Erro ao salvar: ${error.message}`;
+            messageEl.className = 'message error';
+            messageEl.classList.remove('hidden');
             saveButton.disabled = false;
             spinner.classList.remove('is-active');
         }
     }
 
-    window.openConfirmationModal = (type, id) => {
-        if (id) currentItem = findOcorrenciaById(id);
+    window.openConfirmationModal = (type, id, origem) => {
+        if (id) currentItem = findOcorrenciaById(id, origem);
         if (!currentItem) return;
         const titleEl = document.getElementById('confirmationModalTitle');
         const textEl = document.getElementById('confirmationModalText');
-        const reparoTextEl = document.getElementById('confirmReparoText');
         const actionButton = document.getElementById('confirmActionButton');
         const actionText = document.getElementById('confirmActionText');
-        reparoTextEl.classList.add('hidden');
         actionButton.className = 'modal-btn btn-primary';
+        
         if (type === 'concluir') {
-            const reparoDesc = document.getElementById('reparoRealizadoTextarea').value;
-            if (!reparoDesc.trim()) { alert('A descrição do reparo é obrigatória.'); return; }
+            if (!conclusionType) {
+                alert('É obrigatório selecionar uma das opções de conclusão.');
+                return;
+            }
+            if ( (conclusionType === 'inloco' || conclusionType === 'semintervencao') && !reparoRealizadoTextarea.value.trim() ) {
+                alert('A descrição do reparo é obrigatória.');
+                return;
+            }
+            if ( conclusionType === 'tecnicodw' && !problemaTecnicoDwTextarea.value.trim() ) {
+                alert('A descrição do problema para o técnico DW é obrigatória.');
+                return;
+            }
+
             titleEl.textContent = 'Confirmar Conclusão';
             textEl.textContent = 'Deseja marcar esta ocorrência como concluída?';
-            reparoTextEl.textContent = `Reparo: "${reparoDesc}"`;
-            reparoTextEl.classList.remove('hidden');
             actionText.textContent = "Sim, Concluir";
             actionButton.onclick = () => saveConclusion();
         } else if (type === 'cancelar') {
@@ -292,52 +422,36 @@ document.addEventListener('DOMContentLoaded', function () {
             textEl.textContent = 'Tem certeza que deseja cancelar esta ocorrência?';
             actionText.textContent = "Sim, Cancelar";
             actionButton.classList.add('cancel');
-            actionButton.onclick = () => executeStatusChange(currentItem.id_manutencao, 'cancelado');
+            actionButton.onclick = () => executeStatusChange(currentItem.id, 'cancelado', currentItem.origem);
         }
         openModal('confirmationModal');
     }
 
-    async function executeStatusChange(id, status) {
+    async function executeStatusChange(id, status, origem) {
         const confirmButton = document.getElementById('confirmActionButton');
         const spinner = document.getElementById('confirmSpinner');
         const messageEl = document.getElementById('confirmationMessage');
         spinner.classList.add('is-active');
         confirmButton.disabled = true;
+
         try {
-            const response = await fetch('API/update_ocorrencia.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update_status', id_manutencao: id, status: status }) });
+            const response = await fetch('API/update_ocorrencia.php', { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ 
+                    action: 'update_status', 
+                    id: id, 
+                    status: status,
+                    origem: origem 
+                }) 
+            });
             const result = await response.json();
             if (result.success) {
                 document.getElementById('confirmationButtons').style.display = 'none';
                 messageEl.textContent = 'Status atualizado com sucesso!';
                 messageEl.className = 'message success';
                 messageEl.classList.remove('hidden');
-                setTimeout(() => { closeModal('confirmationModal'); closeModal('concluirModal'); fetchData(); }, 3000);
-            } else { throw new Error(result.message || 'Erro desconhecido.'); }
-        } catch (error) {
-            messageEl.textContent = `Erro: ${error.message}`;
-            messageEl.className = 'message error';
-            messageEl.classList.remove('hidden');
-            confirmButton.disabled = false;
-            spinner.classList.remove('is-active');
-        }
-    }
-
-    window.saveConclusion = async () => {
-        const reparoFinalizado = document.getElementById('reparoRealizadoTextarea').value.trim();
-        const confirmButton = document.getElementById('confirmActionButton');
-        const spinner = document.getElementById('confirmSpinner');
-        const messageEl = document.getElementById('confirmationMessage');
-        spinner.classList.add('is-active');
-        confirmButton.disabled = true;
-        try {
-            const response = await fetch('API/update_ocorrencia.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'concluir_provedor', id_manutencao: currentItem.id_manutencao, reparo_finalizado: reparoFinalizado }) });
-            const result = await response.json();
-            if (result.success) {
-                document.getElementById('confirmationButtons').style.display = 'none';
-                messageEl.textContent = 'Ocorrência concluída com sucesso!';
-                messageEl.className = 'message success';
-                messageEl.classList.remove('hidden');
-                setTimeout(() => { closeModal('confirmationModal'); closeModal('concluirModal'); fetchData(); }, 3000);
+                setTimeout(() => { closeModal('confirmationModal'); fetchData(); }, 2000);
             } else { throw new Error(result.message || 'Erro desconhecido.'); }
         } catch (error) {
             messageEl.textContent = `Erro: ${error.message}`;
@@ -349,6 +463,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     initializeFilters();
+    setupConclusionModalListeners();
     fetchData();
-    startUpdatePolling();
+    startUpdatePolling(); // Adicionado de volta
 });
