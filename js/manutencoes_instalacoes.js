@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const cityButtonsContainer = document.getElementById('cityButtonsContainer');
     const equipmentSelectionSection = document.getElementById('equipmentSelectionSection');
     const equipmentSelect = document.getElementById('equipmentSelect');
-    const equipmentSearchInput = document.getElementById('equipmentSearchInput'); 
+    const equipmentSearchInput = document.getElementById('equipmentSearchInput');
     const problemDescriptionSection = document.getElementById('problemDescriptionSection');
     const problemDescriptionInput = document.getElementById('problemDescription');
     const realizadoPorSection = document.getElementById('realizadoPorSection');
@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const equipmentSelectionErrorMessage = document.getElementById('equipmentSelectionErrorMessage');
     const installEquipmentAndAddressSection = document.getElementById('installEquipmentAndAddressSection');
     const confirmInstallEquipmentBtn = document.getElementById('confirmInstallEquipment');
-    
+
     // --- INÍCIO DA CORREÇÃO ---
     const newEquipmentTypeSelect = document.getElementById('newEquipmentType');
     const quantitySection = document.getElementById('quantitySection');
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const pendingMaintenanceModal = document.getElementById('pendingMaintenanceModal');
     const confirmAppendProblemBtn = document.getElementById('confirmAppendProblem');
     const cancelAppendProblemBtn = document.getElementById('cancelAppendProblem');
-    
+
     // --- SEÇÃO DE VARIÁVEIS DE ESTADO ---
     let allEquipments = [];
     let selectedCityId = null, selectedCityName = '';
@@ -63,13 +63,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let selectedProblemDescription = '', selectedRepairDescription = '';
     let currentMaintenanceType = '', currentRepairStatus = '', currentFlow = '';
     let realizadoPor = '', tecnicoInLoco = null;
-    let existingMaintenanceData = null; 
+    let existingMaintenanceData = null;
 
     // --- SEÇÃO DE FUNÇÕES ---
 
     // --- INÍCIO DA CORREÇÃO ---
     // Adiciona o event listener para mostrar/ocultar a seção de quantidade de faixas
-    newEquipmentTypeSelect.addEventListener('change', function() {
+    newEquipmentTypeSelect.addEventListener('change', function () {
         const selectedType = this.value;
         const typesWithOptions = ['RADAR FIXO', 'EDUCATIVO', 'LOMBADA'];
         if (typesWithOptions.includes(selectedType)) {
@@ -128,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (section) section.querySelectorAll('input, select, textarea').forEach(el => el.value = '');
         });
         [realizadoPorSection, tecnicoInLocoSection, repairDescriptionSection, problemDescriptionSection].forEach(el => el.style.display = 'none');
-        
+
         quantitySection.classList.add('hidden'); // Garante que a seção de faixas seja ocultada ao fechar
 
         equipmentSelectionErrorMessage.classList.add('hidden');
@@ -148,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
             installEquipmentAndAddressSection.style.display = 'flex';
         } else {
             equipmentSelectionSection.style.display = 'flex';
-            loadEquipamentos(selectedCityId, ''); 
+            loadEquipamentos(selectedCityId, '');
         }
     }
 
@@ -184,7 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
         installEquipmentAndAddressSection.style.display = 'none';
     }
 
-   
+
     equipmentSearchInput.addEventListener('input', () => {
         if (selectedCityId) {
             loadEquipamentos(selectedCityId, equipmentSearchInput.value.trim());
@@ -201,11 +201,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     problemDescriptionInput.addEventListener('input', () => {
         equipmentSelectionErrorMessage.classList.add('hidden');
+        // A lógica de "Controle de Ocorrência" sempre mostra a próxima etapa
         if (currentMaintenanceType === 'preditiva' && problemDescriptionInput.value.trim() !== '') {
             realizadoPorSection.style.display = 'flex';
         } else {
+            // Para outros tipos como "Matriz Técnica", esconde as opções extras
             realizadoPorSection.style.display = 'none';
-             resetarBotoesDeEscolha(); 
+            resetarBotoesDeEscolha();
         }
         repairDescriptionSection.style.display = 'none';
         tecnicoInLocoSection.style.display = 'none';
@@ -243,7 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
         repairDescriptionSection.style.display = 'flex';
     });
 
-     async function proceedToConfirmation() {
+    async function proceedToConfirmation() {
         const equipId = equipmentSelect.value;
         const problemDesc = problemDescriptionInput.value.trim();
         const repairDesc = repairDescriptionInput.value.trim();
@@ -252,6 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!equipId) errorMessage = 'Por favor, selecione um equipamento.';
         else if (!problemDesc) errorMessage = 'A descrição do problema é obrigatória.';
 
+        // Validação específica para o fluxo de "Controle de Ocorrência"
         if (currentMaintenanceType === 'preditiva') {
             if (!realizadoPor) errorMessage = 'Selecione quem realizou o reparo (Processamento ou Provedor).';
             else if (realizadoPor === 'processamento' && !repairDesc) errorMessage = 'Descreva o reparo realizado pelo Processamento.';
@@ -268,41 +271,48 @@ document.addEventListener('DOMContentLoaded', () => {
         equipmentSelectionErrorMessage.classList.add('hidden');
         selectedEquipment = allEquipments.find(e => e.id_equipamento == equipId);
         selectedProblemDescription = problemDesc;
-        
+
         document.getElementById('confirmCityName').textContent = selectedCityName;
         document.getElementById('confirmMaintenanceType').textContent = currentMaintenanceType.charAt(0).toUpperCase() + currentMaintenanceType.slice(1);
-        
+
         let finalStatus = currentRepairStatus;
-        
+
         document.getElementById('installConfirmationDetails').classList.add('hidden');
         document.getElementById('maintenanceConfirmationDetails').classList.add('hidden');
         document.getElementById('confirmProviderContainer').classList.add('hidden');
-        
+
+        // Lógica para o fluxo de PROVEDOR
         if (currentMaintenanceType === 'preditiva' && realizadoPor === 'provedor' && tecnicoInLoco) {
             finalStatus = 'pendente';
             document.getElementById('confirmProviderProblem').textContent = selectedProblemDescription;
             document.getElementById('confirmProviderName').textContent = selectedEquipment.nome_prov || 'Não especificado';
+
+            // *** AQUI ESTÁ A CORREÇÃO ***
+            // Adicionamos a verificação para ter certeza que o elemento existe antes de tentar usá-lo
+            if (confirmTecnicoInLocoContainer) {
+                confirmTecnicoInLocoContainer.textContent = tecnicoInLoco ? 'Sim' : 'Não';
+            }
+
             document.getElementById('confirmProviderContainer').classList.remove('hidden');
-        } else {
+        } else { // Lógica para os outros fluxos
             document.getElementById('confirmEquipmentName').textContent = `${selectedEquipment.nome_equip} - ${selectedEquipment.referencia_equip}`;
             document.getElementById('confirmProblemDescription').textContent = selectedProblemDescription;
             if (repairDesc) {
                 document.getElementById('confirmRepairDescription').textContent = repairDesc;
                 document.getElementById('confirmRepairDescriptionContainer').classList.remove('hidden');
             } else {
-                 document.getElementById('confirmRepairDescriptionContainer').classList.add('hidden');
+                document.getElementById('confirmRepairDescriptionContainer').classList.add('hidden');
             }
             document.getElementById('maintenanceConfirmationDetails').classList.remove('hidden');
         }
-        
+
         document.getElementById('confirmRepairStatus').textContent = finalStatus.charAt(0).toUpperCase() + finalStatus.slice(1);
         confirmationModal.classList.add('is-active');
     }
-
     confirmEquipmentSelectionBtn.addEventListener('click', async () => {
         const equipId = equipmentSelect.value;
         const problemDesc = problemDescriptionInput.value.trim();
-        
+
         if (!equipId || !problemDesc) {
             equipmentSelectionErrorMessage.textContent = 'Por favor, selecione um equipamento e descreva o problema.';
             equipmentSelectionErrorMessage.classList.remove('hidden');
@@ -321,13 +331,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         ocorrencia: data.ocorrencia_existente
                     };
                     pendingMaintenanceModal.classList.add('is-active');
-                    return; 
+                    return;
                 }
             } catch (error) {
                 console.error("Erro ao verificar manutenção pendente:", error);
             }
         }
-        
+
         proceedToConfirmation();
     });
 
@@ -345,7 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Por favor, preencha todos os campos obrigatórios.');
             return;
         }
-        
+
         maintenanceConfirmationDetails.classList.add('hidden');
         installConfirmationDetails.classList.remove('hidden');
 
@@ -359,9 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('confirmInstallationNotes').textContent = installationNotes || 'Nenhuma.';
         document.getElementById('confirmMaintenanceType').textContent = 'Instalação';
         document.getElementById('confirmRepairStatus').textContent = 'Pendente';
-        
-        // --- INÍCIO DA CORREÇÃO ---
-        // Lógica para exibir a quantidade de faixas na confirmação
+
         const confirmQuantityContainer = document.getElementById('confirmQuantityContainer');
         if (newEquipmentQuantity && newEquipmentQuantity > 0) {
             document.getElementById('confirmEquipmentQuantity').textContent = newEquipmentQuantity;
@@ -369,14 +377,13 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             confirmQuantityContainer.classList.add('hidden');
         }
-        // --- FIM DA CORREÇÃO ---
-        
+
         confirmationModal.classList.add('is-active');
     });
-    
+
     confirmAppendProblemBtn.addEventListener('click', () => {
         pendingMaintenanceModal.classList.remove('is-active');
-        proceedToConfirmation(); 
+        proceedToConfirmation();
     });
 
     cancelAppendProblemBtn.addEventListener('click', () => {
@@ -384,12 +391,12 @@ document.addEventListener('DOMContentLoaded', () => {
         existingMaintenanceData = null;
     });
 
-    confirmSaveButton.addEventListener('click', async function() {
+    confirmSaveButton.addEventListener('click', async function () {
         confirmSpinner.classList.remove('hidden');
         confirmSaveButton.disabled = true;
         cancelSaveButton.disabled = true;
         confirmMessage.classList.add('hidden');
-    
+
         try {
             if (currentFlow === 'installation') {
                 const addressPayload = {
@@ -402,7 +409,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const addressResponse = await fetch('API/save_endereco.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(addressPayload) });
                 const addressData = await addressResponse.json();
                 if (!addressData.success) throw new Error(addressData.message || 'Falha ao salvar endereço.');
-                
+
                 const equipmentPayload = {
                     nome_equip: document.getElementById('newEquipmentName').value.trim(),
                     referencia_equip: document.getElementById('newEquipmentReference').value.trim(),
@@ -414,7 +421,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const equipmentResponse = await fetch('API/save_equipamento.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(equipmentPayload) });
                 const equipmentData = await equipmentResponse.json();
                 if (!equipmentData.success) throw new Error(equipmentData.message || 'Falha ao salvar equipamento.');
-                
+
                 const maintenancePayload = {
                     city_id: selectedCityId,
                     equipment_id: equipmentData.id_equipamento,
@@ -424,59 +431,77 @@ document.addEventListener('DOMContentLoaded', () => {
                     observacao_instalacao: document.getElementById('installationNotes').value.trim()
                 };
 
-                 const maintenanceResponse = await fetch('API/save_manutencao.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(maintenancePayload) });
-                 const maintenanceData = await maintenanceResponse.json();
-                 if (!maintenanceData.success) throw new Error(maintenanceData.message || 'Falha ao criar registro de instalação.');
+                const maintenanceResponse = await fetch('API/save_manutencao.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(maintenancePayload) });
+                const maintenanceData = await maintenanceResponse.json();
+                if (!maintenanceData.success) throw new Error(maintenanceData.message || 'Falha ao criar registro de instalação.');
 
             } else {
+                // *** INÍCIO DA LÓGICA ALTERADA ***
+                let endpoint = 'API/save_manutencao.php';
                 let payload = {};
-                if (existingMaintenanceData) {
+
+                // Se for PROVEDOR, muda o endpoint e o payload
+                if (realizadoPor === 'provedor') {
+                    endpoint = 'API/save_ocorrencia_provedor.php';
                     payload = {
-                        id_manutencao_existente: existingMaintenanceData.id,
-                        ocorrencia_concatenada: `${existingMaintenanceData.ocorrencia}, ${problemDescriptionInput.value.trim()}`,
+                        city_id: selectedCityId,
                         equipment_id: selectedEquipment.id_equipamento,
-                        city_id: selectedCityId,
-                        problem_description: problemDescriptionInput.value.trim(),
-                        tipo_manutencao: 'corretiva'
-                    };
-                } else {
-                     payload = {
-                        city_id: selectedCityId,
-                        equipment_id: selectedEquipment.id_equipamento, 
                         id_provedor: selectedEquipment.id_provedor,
                         problem_description: selectedProblemDescription,
-                        reparo_finalizado: repairDescriptionInput.value.trim(),
-                        tipo_manutencao: currentMaintenanceType,
-                        status_reparo: currentRepairStatus,
-                        realizado_por: realizadoPor,
+                        reparo_finalizado: selectedRepairDescription,
                         tecnico_in_loco: tecnicoInLoco
                     };
+                } else {
+                    // Lógica original para PROCESSAMENTO ou MATRIZ TÉCNICA
+                    if (existingMaintenanceData) {
+                        payload = {
+                            id_manutencao_existente: existingMaintenanceData.id,
+                            ocorrencia_concatenada: `${existingMaintenanceData.ocorrencia}, ${problemDescriptionInput.value.trim()}`,
+                            equipment_id: selectedEquipment.id_equipamento,
+                            city_id: selectedCityId,
+                            problem_description: problemDescriptionInput.value.trim(),
+                            tipo_manutencao: 'corretiva'
+                        };
+                    } else {
+                        payload = {
+                            city_id: selectedCityId,
+                            equipment_id: selectedEquipment.id_equipamento,
+                            id_provedor: selectedEquipment.id_provedor,
+                            problem_description: selectedProblemDescription,
+                            reparo_finalizado: selectedRepairDescription,
+                            tipo_manutencao: currentMaintenanceType,
+                            status_reparo: currentRepairStatus,
+                            realizado_por: realizadoPor,
+                            tecnico_in_loco: tecnicoInLoco
+                        };
+                    }
                 }
-    
-                const response = await fetch('API/save_manutencao.php', {
+
+                const response = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
                 const data = await response.json();
                 if (!data.success) throw new Error(data.message || 'Ocorreu um erro.');
+                // *** FIM DA LÓGICA ALTERADA ***
             }
-            
+
             confirmMessage.textContent = 'Operação realizada com sucesso!';
             confirmMessage.className = 'message success';
             confirmMessage.classList.remove('hidden');
             confirmSpinner.classList.add('hidden');
-            confirmationButtonsDiv.style.display = 'none'; 
-    
+            confirmationButtonsDiv.style.display = 'none';
+
             setTimeout(() => {
                 closeCadastroManutencaoModal();
             }, 2000);
-    
+
         } catch (error) {
             confirmMessage.textContent = error.message;
             confirmMessage.className = 'message error';
             confirmMessage.classList.remove('hidden');
-    
+
             confirmSpinner.classList.add('hidden');
             confirmSaveButton.disabled = false;
             cancelSaveButton.disabled = false;

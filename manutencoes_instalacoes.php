@@ -416,11 +416,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
                     </div>
                 </div>
 
-                <div id="repairDescriptionSection" class="problem-description-container">
-                    <label for="repairDescription">Descrição do reparo:</label>
-                    <textarea id="repairDescription" rows="4" placeholder="Descreva o reparo realizado..."></textarea>
-                </div>
-
+                
                 <div id="tecnicoInLocoSection" class="choice-container">
                     <label>Precisa de técnico In Loco:</label>
                     <div class="choice-buttons">
@@ -429,6 +425,11 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
                     </div>
                 </div>
 
+                <div id="repairDescriptionSection" class="problem-description-container">
+                    <label for="repairDescription">Descrição do reparo:</label>
+                    <textarea id="repairDescription" rows="4" placeholder="Descreva o reparo realizado..."></textarea>
+                </div>
+                
                 <span id="equipmentSelectionErrorMessage" class="selection-error-message hidden"></span>
                 <button id="confirmEquipmentSelection" class="page-button" style="margin-top: 1rem;">
                     Avançar <span id="selectionSpinner" class="loading-spinner hidden"></span>
