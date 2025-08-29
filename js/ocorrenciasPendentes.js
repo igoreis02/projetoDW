@@ -3,11 +3,19 @@ document.addEventListener('DOMContentLoaded', function () {
     const actionButtons = document.querySelectorAll('.action-btn');
     const filterContainer = document.getElementById('filterContainer');
     const ocorrenciasContainer = document.getElementById('ocorrenciasContainer');
-    const pageLoader = document.getElementById('pageLoader'); // CORREÇÃO: Referência correta para o novo spinner
+    const pageLoader = document.getElementById('pageLoader');
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');
     const searchInput = document.getElementById('searchInput');
-    const clearFiltersBtn = document.getElementById('clearFiltersBtn'); // MUDANÇA: Nova referência para o botão
+    const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+
+    // --- [NOVO] REFERÊNCIAS PARA A VISÃO SIMPLIFICADA ---
+    const btnSimplificado = document.getElementById('btnSimplificado');
+    const simplifiedView = document.getElementById('simplifiedView');
+    const mainControls = document.querySelector('.main-controls-container');
+    const voltarBtnFooter = document.querySelector('.voltar-btn');
+    // --- FIM [NOVO] ---
+
 
     // --- VARIÁVEIS DE ESTADO ---
     let activeType = 'manutencao';
@@ -15,12 +23,17 @@ document.addEventListener('DOMContentLoaded', function () {
     let allData = null; 
     let currentItemsToAssign = [];
     let currentEditingItem = null;
-    let updateInterval; 
+    let updateInterval;
+    
+    // --- [NOVO] VARIÁVEL DE ESTADO PARA A VISÃO SIMPLIFICADA ---
+    let isSimplifiedViewActive = false;
+    // --- FIM [NOVO] ---
+
 
     // --- LÓGICA DE BUSCA E RENDERIZAÇÃO ---
     async function fetchData(isUpdate = false) {
         if (!isUpdate) {
-            pageLoader.style.display = 'flex'; // Controla o novo spinner
+            pageLoader.style.display = 'flex';
             ocorrenciasContainer.innerHTML = ''; 
         }
         
@@ -175,8 +188,91 @@ document.addEventListener('DOMContentLoaded', function () {
         checkSelectionAndToggleButtons();
     }
 
+    // --- [MODIFICADO] LÓGICA PARA A VISÃO SIMPLIFICADA ---
+
+    function generateSimplifiedView() {
+        if (!allData || !allData.ocorrencias || Object.keys(allData.ocorrencias).length === 0) {
+            simplifiedView.innerHTML = '<p>Não há dados para exibir no resumo.</p>';
+            return;
+        }
+
+        let corretivasPorCidade = {};
+        
+        // 1. Filtra APENAS manutenções 'corretiva' e agrupa por cidade
+        for (const cidade in allData.ocorrencias) {
+            const corretivas = allData.ocorrencias[cidade].filter(item => 
+                item.tipo_manutencao === 'corretiva'
+            );
+            if (corretivas.length > 0) {
+                corretivasPorCidade[cidade] = corretivas;
+            }
+        }
+
+        // Constrói o HTML do resumo
+        let html = '<h2>MANUTENÇÕES CORRETIVAS PENDENTES:</h2>';
+        const sortedCities = Object.keys(corretivasPorCidade).sort();
+        
+        if (sortedCities.length === 0) {
+            html += '<p>Nenhuma manutenção corretiva pendente encontrada.</p>';
+        } else {
+            for (const city of sortedCities) {
+                html += `<h3>${city}</h3>`;
+                html += `<ul>`;
+                for (const item of corretivasPorCidade[city]) {
+                    // 2. Lógica para extrair o nome antes do "-"
+                    let displayName = item.nome_equip;
+                    if (displayName && displayName.includes('-')) {
+                        displayName = displayName.split('-')[0].trim();
+                    }
+                    
+                    // 3. Monta o novo formato do item da lista
+                    html += `<li><strong>${displayName}</strong> - ${item.referencia_equip}: ${item.ocorrencia_reparo}</li>`;
+                }
+                html += `</ul>`;
+            }
+        }
+
+        simplifiedView.innerHTML = html;
+    }
+
+    function toggleView(showSimplified) {
+        isSimplifiedViewActive = showSimplified;
+
+        // Elementos principais que são escondidos/mostrados
+        searchInput.parentElement.classList.toggle('hidden', showSimplified); // O .search-container
+        filterContainer.classList.toggle('hidden', showSimplified);
+        ocorrenciasContainer.classList.toggle('hidden', showSimplified);
+        voltarBtnFooter.classList.toggle('hidden', showSimplified);
+        simplifiedView.classList.toggle('hidden', !showSimplified);
+        
+        // Esconde os botões de data e tipo (Manutenção/Instalação)
+        mainControls.querySelector('.action-buttons').classList.toggle('hidden', showSimplified);
+        mainControls.querySelector('.date-filter-container').classList.toggle('hidden', showSimplified);
+        
+        // Atualiza o estado visual do botão "Simplificado"
+        btnSimplificado.classList.toggle('active', showSimplified);
+
+        if (showSimplified) {
+            generateSimplifiedView();
+            // Desativa os outros botões de tipo
+            document.getElementById('btnManutencoes').classList.remove('active');
+            document.getElementById('btnInstalacoes').classList.remove('active');
+        } else {
+            // Garante que o botão de manutenção volte a ser o ativo padrão
+            document.getElementById('btnManutencoes').classList.add('active');
+            activeType = 'manutencao'; // Restaura o tipo ativo
+            applyFiltersAndRender(); // Re-renderiza a visão detalhada
+        }
+    }
+
+    // --- FIM DA MODIFICAÇÃO ---
+
+
     // --- EVENT LISTENERS E LÓGICA DE AÇÕES ---
     clearFiltersBtn.addEventListener('click', () => {
+        if (isSimplifiedViewActive) {
+            toggleView(false);
+        }
         searchInput.value = '';
         startDateInput.value = '';
         endDateInput.value = '';
@@ -191,11 +287,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
     actionButtons.forEach(button => {
         button.addEventListener('click', () => {
-            actionButtons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-            activeType = button.dataset.type;
-            applyFiltersAndRender();
+            if (isSimplifiedViewActive && button.id !== 'btnSimplificado') {
+                toggleView(false);
+            }
+
+            if (button.id !== 'btnSimplificado') {
+                actionButtons.forEach(btn => {
+                    if(btn.id !== 'btnSimplificado') btn.classList.remove('active');
+                });
+                button.classList.add('active');
+                activeType = button.dataset.type;
+                applyFiltersAndRender();
+            }
         });
+    });
+    
+    btnSimplificado.addEventListener('click', () => {
+        toggleView(!isSimplifiedViewActive);
     });
 
     startDateInput.addEventListener('change', fetchData);

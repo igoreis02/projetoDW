@@ -627,6 +627,67 @@ if (!isset($_SESSION['user_id'])) {
         #clearFiltersBtn:hover {
             background-color: #e5e7eb;
         }
+
+        #btnSimplificado {
+            position: absolute;
+            /* Posiciona o botão de forma absoluta */
+            left: 0;
+            /* Alinha no canto esquerdo */
+            top: 50%;
+            /* Alinha verticalmente com os outros botões */
+            transform: translateY(-50%);
+            background-color: #f9fafb;
+            /* Cor de fundo diferente para destaque */
+            border: 1px solid #d1d5db;
+            color: #374151;
+        }
+
+        #btnSimplificado.active {
+            background-color: #112058;
+            color: white;
+        }
+
+        /* Estilos para a área do resumo */
+        #simplifiedView {
+            text-align: left;
+            padding: 1rem 0;
+            border-top: 1px solid #e5e7eb;
+            border-bottom: 1px solid #e5e7eb;
+            margin-bottom: 2rem;
+        }
+
+        #simplifiedView h2 {
+            font-size: 1.5em;
+            color: black;
+            margin-bottom: 1.5rem;
+        }
+
+        #simplifiedView h3 {
+            font-size: 1.2em;
+            color: #374151;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        #simplifiedView ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        #simplifiedView li {
+            font-family: 'Courier New', Courier, monospace;
+            /* Fonte monoespaçada para melhor alinhamento */
+            font-size: 1.1em;
+            padding: 0.4rem 0.2rem;
+            border-radius: 4px;
+        }
+
+        #simplifiedView li:nth-child(odd) {
+            background-color: #f9fafb;
+            /* Cor de fundo alternada para melhor leitura */
+        }
     </style>
 </head>
 
@@ -641,6 +702,7 @@ if (!isset($_SESSION['user_id'])) {
 
         <div class="controls-wrapper">
             <div class="main-controls-container">
+                <button id="btnSimplificado" class="action-btn">Simplificado</button>
                 <div class="action-buttons">
                     <button id="btnManutencoes" class="action-btn active" data-type="manutencao">Manutenções</button>
                     <button id="btnInstalacoes" class="action-btn" data-type="instalação">Instalações</button>
@@ -661,6 +723,8 @@ if (!isset($_SESSION['user_id'])) {
         </div>
 
         <div id="filterContainer" class="filter-container"></div>
+        <div id="simplifiedView" class="hidden">
+        </div>
         <div id="ocorrenciasContainer" class="ocorrencias-container">
             <div id="pageLoader">
                 <div class="page-spinner"></div>
