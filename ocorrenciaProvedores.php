@@ -78,7 +78,6 @@ if (!isset($_SESSION['user_id'])) {
             color: #333;
         }
 
-        /* --- ESTILOS DE FILTROS ATUALIZADOS (COMO OCORRENCIASPENDENTES.PHP) --- */
         .main-controls-container {
             display: flex;
             justify-content: center;
@@ -139,7 +138,54 @@ if (!isset($_SESSION['user_id'])) {
             font-family: 'Inter', sans-serif;
         }
         
-        /* --- FIM DOS ESTILOS ATUALIZADOS --- */
+        /* ALTERADO: Estilos para o container de pesquisa com centralização do campo */
+        .search-container {
+            display: flex;
+            justify-content: center; /* Centraliza o conjunto de itens */
+            align-items: center;
+            gap: 1rem;
+            width: 100%;
+            margin-bottom: 1.5rem;
+        }
+
+        #searchInput {
+            width: 100%; /* Ocupa o espaço disponível */
+            max-width: 500px; /* Limita a largura máxima em telas grandes */
+            padding: 10px 15px;
+            font-size: 1em;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        #searchInput:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+
+        #clearFiltersBtn {
+            padding: 10px 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            color: #374151;
+            background-color: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        
+        #clearFiltersBtn:hover {
+            background-color: #e5e7eb;
+        }
+        
+        /* NOVO: Estilo para o espaçador invisível que garante a centralização */
+        .search-spacer {
+            visibility: hidden; /* Ocupa espaço mas não é visível */
+        }
+
 
         .filter-container {
             margin-bottom: 1.5rem;
@@ -195,7 +241,6 @@ if (!isset($_SESSION['user_id'])) {
             border-color: #6366f1;
         }
 
-        /* Ocorrências */
         .ocorrencias-container {
             width: 100%;
         }
@@ -218,7 +263,7 @@ if (!isset($_SESSION['user_id'])) {
             grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
             gap: 1.5rem;
         }
-
+        
         .ocorrencia-item {
             background-color: #ffffff;
             border: 1px solid #e5e7eb;
@@ -229,6 +274,8 @@ if (!isset($_SESSION['user_id'])) {
             display: flex;
             flex-direction: column;
             align-items: flex-start;
+            height: 100%; 
+            box-sizing: border-box; 
         }
 
         .ocorrencia-item:hover {
@@ -315,7 +362,6 @@ if (!isset($_SESSION['user_id'])) {
             color: #b91c1c;
         }
         
-        /* NOVO: Estilo para a tag de conclusão */
         .completion-tag {
             font-size: 0.85em;
             font-weight: 500;
@@ -401,7 +447,6 @@ if (!isset($_SESSION['user_id'])) {
             display: none !important;
         }
 
-        /* Estilos para Modais */
         .modal {
             display: none;
             position: fixed;
@@ -487,16 +532,14 @@ if (!isset($_SESSION['user_id'])) {
             background-color: #f3f4f6;
         }
         
-        /* NOVO: Estilo para mensagem de erro no formulário */
         .error-message {
             color: #ef4444;
             font-size: 0.875em;
             font-weight: 500;
             margin-top: 5px;
-            display: none; /* Começa escondido */
+            display: none; 
         }
         
-        /* NOVO: Estilos para botões de opção */
         .conclusion-options {
             display: flex;
             gap: 10px;
@@ -633,6 +676,11 @@ if (!isset($_SESSION['user_id'])) {
             </div>
         </div>
 
+        <div class="search-container">
+            <div class="search-spacer"></div> <input type="text" id="searchInput" placeholder="Pesquisar por nome, referência, problema ou endereço...">
+            <button id="clearFiltersBtn">Limpar Filtros</button>
+        </div>
+
         <div id="statusFilterContainer" class="filter-container">
             <button class="filter-btn active todos" data-status="todos">Todos</button>
             <button class="filter-btn pendente" data-status="pendente">Pendente</button>
@@ -648,7 +696,6 @@ if (!isset($_SESSION['user_id'])) {
 
         <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
     </div>
-
     <div id="concluirModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">

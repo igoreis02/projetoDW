@@ -31,7 +31,7 @@ $sql = "SELECT
         JOIN
             cidades c ON m.id_cidade = c.id_cidade
         WHERE
-            m.id_cidade = ? AND m.status_reparo = 'pendente' and m.tipo_manutencao = 'corretiva'";
+            m.id_cidade = ? AND m.status_reparo = 'pendente'";
 
 $params = [(int)$city_id];
 $types = "i";

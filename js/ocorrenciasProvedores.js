@@ -1,11 +1,17 @@
 document.addEventListener('DOMContentLoaded', function () {
+    // --- Referências aos Elementos do DOM ---
     const typeFilterContainer = document.getElementById('typeFilterContainer');
     const statusFilterContainer = document.getElementById('statusFilterContainer');
     const cityFilterContainer = document.getElementById('cityFilterContainer');
     const ocorrenciasContainer = document.getElementById('ocorrenciasContainer');
     const loadingMessage = document.getElementById('loadingMessage');
+    
+    const searchInput = document.getElementById('searchInput');
+    const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+    const searchSpacer = document.querySelector('.search-spacer');
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
 
-    const concluirModal = document.getElementById('concluirModal');
     const btnInLoco = document.getElementById('btnInLoco');
     const btnSemIntervencao = document.getElementById('btnSemIntervencao');
     const btnTecnicoDw = document.getElementById('btnTecnicoDw');
@@ -13,15 +19,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const problemaTecnicoDwContainer = document.getElementById('problemaTecnicoDwContainer');
     const reparoRealizadoTextarea = document.getElementById('reparoRealizadoTextarea');
     const problemaTecnicoDwTextarea = document.getElementById('problemaTecnicoDwTextarea');
-    
-    // NOVO: Referências para as mensagens de erro
     const reparoRealizadoError = document.getElementById('reparoRealizadoError');
     const problemaTecnicoDwError = document.getElementById('problemaTecnicoDwError');
 
-
+    // --- Variáveis de Estado ---
     let filters = { type: 'manutencao', status: 'todos', startDate: '', endDate: '', city: 'todos' };
-    let allData = null, currentItem = null, currentPendentIds = new Set(), updateInterval;
+    let allData = null, currentItem = null;
     let conclusionType = null;
+    let currentPendentIds = new Set(), updateInterval;
+
+    // --- Funções Principais ---
 
     async function fetchData(isUpdateCheck = false) {
         if (!isUpdateCheck) {
@@ -33,7 +40,10 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             const response = await fetch(`API/get_ocorrencias_provedores.php?${params.toString()}`);
             const result = await response.json();
-            if (isUpdateCheck) { handleUpdateCheck(result); return; }
+            if (isUpdateCheck) { 
+                handleUpdateCheck(result); 
+                return; 
+            }
             loadingMessage.classList.add('hidden');
             if (result.success) {
                 allData = result.data;
@@ -41,6 +51,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 updateCityFilters();
                 updateDisplay();
                 updatePendentIds(result.data);
+                adjustSearchSpacer(); // Ajusta o espaçador após renderizar
             } else {
                 ocorrenciasContainer.innerHTML = `<p style="text-align: center; padding: 2rem;">${result.message || 'Nenhuma ocorrência encontrada.'}</p>`;
             }
@@ -59,7 +70,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 cityGroup.className = 'city-group';
                 cityGroup.dataset.city = cidade;
                 let cityGridHTML = '';
-                data.ocorrencias[cidade].forEach(item => { cityGridHTML += createOcorrenciaHTML(item); });
+                data.ocorrencias[cidade].forEach(item => {
+                    cityGridHTML += `<div class="ocorrencia-item-wrapper">${createOcorrenciaHTML(item)}</div>`;
+                });
                 cityGroup.innerHTML = `<h2 class="city-group-title">${cidade}</h2><div class="city-ocorrencias-grid">${cityGridHTML}</div>`;
                 ocorrenciasContainer.appendChild(cityGroup);
             }
@@ -74,7 +87,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const fimReparoFormatted = item.fim_reparo ? new Date(item.fim_reparo).toLocaleString('pt-BR') : 'N/A';
         let atribuidoPorHTML = item.atribuido_por ? `<div class="detail-item"><strong>Reportado por</strong> <span>${item.atribuido_por}</span></div>` : '';
         let statusHTML = `<span class="status-tag ${statusClass}">${statusClass}</span>`;
-
         let completionDetails = '';
         if (statusClass === 'concluido') {
             if (item.inLoco == 1) completionDetails = '<span class="completion-tag">Realizado por Provedor</span>';
@@ -82,23 +94,20 @@ document.addEventListener('DOMContentLoaded', function () {
             else if (item.tecnico_dw == 1) completionDetails = '<span class="completion-tag">Reparo Deltaway</span>';
             statusHTML += completionDetails;
         }
-
         let reparoFinalizadoHTML = '';
         if (item.status === 'concluido' && (item.reparo_finalizado || item.des_reparo)) {
             reparoFinalizadoHTML = `<div class="detail-item reparo-info"><strong>Reparo Realizado</strong> <span>${item.reparo_finalizado || item.des_reparo}</span></div>`;
         }
-
         const detailsHTML = `
-            <div class="detail-item"><strong>Provedor</strong> <span>${item.nome_prov || 'N/A'}</span></div>
-            <div class="detail-item"><strong>Problema</strong> <span>${item.ocorrencia_reparo || 'N/A'}</span></div>
+            <div class="detail-item"><strong>Provedor</strong> <span class="searchable">${item.nome_prov || 'N/A'}</span></div>
+            <div class="detail-item"><strong>Problema</strong> <span class="searchable">${item.ocorrencia_reparo || 'N/A'}</span></div>
             ${reparoFinalizadoHTML}
             <div class="detail-item"><strong>Início Ocorrência</strong> <span>${inicioReparoFormatted}</span></div>
             ${statusClass === 'concluido' ? `<div class="detail-item"><strong>Fim Ocorrência</strong> <span>${fimReparoFormatted}</span></div>` : ''}
             ${atribuidoPorHTML}
             <div class="detail-item"><strong>Status</strong> ${statusHTML}</div>
-            <div class="detail-item"><strong>Local</strong> <span>${item.local_completo || 'N/A'}</span></div>
+            <div class="detail-item"><strong>Local</strong> <span class="searchable">${item.local_completo || 'N/A'}</span></div>
         `;
-
         let actionsContent = '';
         if (statusClass === 'pendente') {
             actionsContent = `<button class="item-btn concluir-btn" onclick="openConcluirModal(${item.id}, '${item.origem}')">Concluir</button><button class="item-btn edit-btn" onclick="openEditModal(${item.id}, '${item.origem}')">Editar</button><button class="item-btn cancel-btn" onclick="openConfirmationModal('cancelar', ${item.id}, '${item.origem}')">Cancelar</button>`;
@@ -106,10 +115,135 @@ document.addEventListener('DOMContentLoaded', function () {
             actionsContent = `<button class="item-btn edit-btn" onclick="openEditModal(${item.id}, '${item.origem}')">Editar</button>`;
         }
         const actionsHTML = actionsContent ? `<div class="item-actions">${actionsContent}</div>` : `<div class="item-actions" style="min-height: 40px;"></div>`;
-
-        return `<div class="ocorrencia-item status-${statusClass}" data-id="${item.id}" data-origem="${item.origem}"><div class="ocorrencia-header"><h3>${item.nome_equip} - ${item.referencia_equip}</h3></div><div class="ocorrencia-details">${detailsHTML}</div>${actionsHTML}</div>`;
+        return `<div class="ocorrencia-item status-${statusClass}" data-id="${item.id}" data-origem="${item.origem}">
+                    <div class="ocorrencia-header"><h3><span class="searchable">${item.nome_equip}</span> - <span class="searchable">${item.referencia_equip}</span></h3></div>
+                    <div class="ocorrencia-details">${detailsHTML}</div>
+                    ${actionsHTML}
+                </div>`;
     }
 
+    function updateDisplay() {
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        const currentCity = filters.city;
+        document.querySelectorAll('.city-group').forEach(group => {
+            let hasVisibleItemsInGroup = false;
+            const groupCity = group.dataset.city;
+            const isCityVisible = currentCity === 'todos' || groupCity === currentCity;
+            if (isCityVisible) {
+                group.querySelectorAll('.ocorrencia-item-wrapper').forEach(wrapper => {
+                    const item = wrapper.querySelector('.ocorrencia-item');
+                    const searchableSpans = item.querySelectorAll('.searchable');
+                    let searchableText = '';
+                    searchableSpans.forEach(span => {
+                        searchableText += (span.textContent || span.innerText) + ' ';
+                    });
+                    searchableText = searchableText.toLowerCase();
+                    const isSearchMatch = searchTerm === '' || searchableText.includes(searchTerm);
+                    if (isSearchMatch) {
+                        wrapper.style.display = 'block';
+                        hasVisibleItemsInGroup = true;
+                    } else {
+                        wrapper.style.display = 'none';
+                    }
+                });
+            }
+            group.style.display = isCityVisible && hasVisibleItemsInGroup ? 'block' : 'none';
+        });
+    }
+    
+    function adjustSearchSpacer() {
+        if (clearFiltersBtn && searchSpacer) {
+            const buttonWidth = clearFiltersBtn.offsetWidth;
+            searchSpacer.style.width = `${buttonWidth}px`;
+        }
+    }
+
+    function updatePendentIds(data) {
+        currentPendentIds.clear();
+        const sourceData = data || allData;
+        if (sourceData && sourceData.ocorrencias) {
+            for (const city in sourceData.ocorrencias) {
+                sourceData.ocorrencias[city].forEach(item => {
+                    if (item.status === 'pendente') {
+                        currentPendentIds.add(item.id);
+                    }
+                });
+            }
+        }
+    }
+
+    function startUpdatePolling() {
+        if (updateInterval) clearInterval(updateInterval);
+        updateInterval = setInterval(() => { fetchData(true); }, 30000);
+    }
+
+    function handleUpdateCheck(result) {
+        if (!result.success) return;
+        const newPendentIds = new Set();
+        if (result.data.ocorrencias) {
+            for (const city in result.data.ocorrencias) {
+                result.data.ocorrencias[city].forEach(item => {
+                    if (item.status === 'pendente') newPendentIds.add(item.id);
+                });
+            }
+        }
+        if (newPendentIds.size !== currentPendentIds.size || [...newPendentIds].some(id => !currentPendentIds.has(id))) {
+            if (filters.status === 'pendente' || filters.status === 'todos') {
+                fetchData();
+            }
+        }
+    }
+
+    function initializeFilters() {
+        typeFilterContainer.addEventListener('click', (e) => {
+            if (e.target.matches('.action-btn')) {
+                document.querySelectorAll('#typeFilterContainer .action-btn').forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+                filters.type = e.target.dataset.type;
+                fetchData();
+            }
+        });
+        statusFilterContainer.addEventListener('click', (e) => {
+            if (e.target.matches('.filter-btn[data-status]')) {
+                document.querySelectorAll('#statusFilterContainer .filter-btn').forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+                filters.status = e.target.dataset.status;
+                fetchData();
+            }
+        });
+        cityFilterContainer.addEventListener('click', (e) => {
+            if (e.target.matches('.filter-btn[data-city]')) {
+                document.querySelectorAll('#cityFilterContainer .filter-btn').forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+                filters.city = e.target.dataset.city;
+                updateDisplay();
+            }
+        });
+        startDateInput.addEventListener('change', () => {
+            filters.startDate = startDateInput.value;
+            if (endDateInput.value && endDateInput.value < startDateInput.value) {
+                endDateInput.value = startDateInput.value;
+            }
+            endDateInput.min = startDateInput.value;
+            fetchData();
+        });
+        endDateInput.addEventListener('change', () => { filters.endDate = endDateInput.value; fetchData(); });
+        searchInput.addEventListener('input', updateDisplay);
+        clearFiltersBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            startDateInput.value = '';
+            endDateInput.value = '';
+            filters = { type: 'manutencao', status: 'todos', startDate: '', endDate: '', city: 'todos' };
+            document.querySelectorAll('#statusFilterContainer .filter-btn, #cityFilterContainer .filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector('.filter-btn[data-status="todos"]').classList.add('active');
+            const allCitiesBtn = document.querySelector('.filter-btn[data-city="todos"]');
+            if (allCitiesBtn) allCitiesBtn.classList.add('active');
+            fetchData();
+        });
+    }
+    
     function setupConclusionModalListeners() {
         const optionButtons = [btnInLoco, btnSemIntervencao, btnTecnicoDw];
         optionButtons.forEach(btn => {
@@ -117,7 +251,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 optionButtons.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 conclusionType = btn.id.replace('btn', '').toLowerCase();
-                
                 const showReparo = conclusionType === 'inloco' || conclusionType === 'semintervencao';
                 reparoRealizadoContainer.classList.toggle('hidden', !showReparo);
                 problemaTecnicoDwContainer.classList.toggle('hidden', showReparo);
@@ -128,32 +261,25 @@ document.addEventListener('DOMContentLoaded', function () {
     window.openConcluirModal = (id, origem) => {
         currentItem = findOcorrenciaById(id, origem);
         if (!currentItem) return;
-
         [btnInLoco, btnSemIntervencao, btnTecnicoDw].forEach(b => b.classList.remove('active'));
         reparoRealizadoContainer.classList.add('hidden');
         problemaTecnicoDwContainer.classList.add('hidden');
         reparoRealizadoTextarea.value = '';
         problemaTecnicoDwTextarea.value = '';
-        // Esconde as mensagens de erro ao abrir o modal
         reparoRealizadoError.style.display = 'none';
         problemaTecnicoDwError.style.display = 'none';
-
         btnInLoco.classList.add('active');
         conclusionType = 'inloco';
         reparoRealizadoContainer.classList.remove('hidden');
-
         document.getElementById('concluirModalEquipName').textContent = `${currentItem.nome_equip} - ${currentItem.referencia_equip}`;
         document.getElementById('concluirOcorrenciaText').textContent = currentItem.ocorrencia_reparo;
         openModal('concluirModal');
     }
 
-    // NOVA FUNÇÃO: Valida o formulário de conclusão
     function validateConclusionForm() {
         let isValid = true;
-        // Reseta as mensagens de erro
         reparoRealizadoError.style.display = 'none';
         problemaTecnicoDwError.style.display = 'none';
-
         if (conclusionType === 'inloco' || conclusionType === 'semintervencao') {
             if (reparoRealizadoTextarea.value.trim() === '') {
                 reparoRealizadoError.textContent = 'A descrição do reparo é obrigatória.';
@@ -179,7 +305,6 @@ document.addEventListener('DOMContentLoaded', function () {
     async function saveConclusion() {
         let reparoFinalizado = '';
         let inLoco = 0, semIntervencao = 0, tecnicoDw = 0;
-
         if (conclusionType === 'inloco' || conclusionType === 'semintervencao') {
             reparoFinalizado = reparoRealizadoTextarea.value.trim();
             if (conclusionType === 'inloco') inLoco = 1; else semIntervencao = 1;
@@ -187,26 +312,16 @@ document.addEventListener('DOMContentLoaded', function () {
             reparoFinalizado = problemaTecnicoDwTextarea.value.trim();
             tecnicoDw = 1;
         }
-
         const confirmButton = document.getElementById('confirmActionButton');
         const spinner = document.getElementById('confirmSpinner');
         const messageEl = document.getElementById('confirmationMessage');
         spinner.classList.add('is-active');
         confirmButton.disabled = true;
-
         try {
             const response = await fetch('API/update_ocorrencia.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'concluir_ocorrencia_provedor',
-                    id: currentItem.id,
-                    origem: currentItem.origem,
-                    reparo_finalizado: reparoFinalizado,
-                    inLoco: inLoco,
-                    sem_intervencao: semIntervencao,
-                    tecnico_dw: tecnicoDw
-                })
+                body: JSON.stringify({ action: 'concluir_ocorrencia_provedor', id: currentItem.id, origem: currentItem.origem, reparo_finalizado: reparoFinalizado, inLoco: inLoco, sem_intervencao: semIntervencao, tecnico_dw: tecnicoDw })
             });
             const result = await response.json();
             if (result.success) {
@@ -224,8 +339,6 @@ document.addEventListener('DOMContentLoaded', function () {
             spinner.classList.remove('is-active');
         }
     }
-    
-    // As demais funções permanecem inalteradas, apenas colei para garantir a integridade do arquivo.
 
     function findOcorrenciaById(id, origem) {
         for (const city in allData.ocorrencias) {
@@ -258,22 +371,13 @@ document.addEventListener('DOMContentLoaded', function () {
         const messageEl = document.getElementById('editMessage');
         const newProblemText = document.getElementById('editOcorrenciaTextarea').value.trim();
         if (!newProblemText) { alert('A descrição do problema não pode ser vazia.'); return; }
-
         saveButton.disabled = true;
         spinner.classList.add('is-active');
         messageEl.classList.add('hidden');
-
-        const dataToSend = {
-            action: 'edit_ocorrencia',
-            id: currentItem.id,
-            origem: currentItem.origem,
-            ocorrencia_reparo: newProblemText
-        };
-
+        const dataToSend = { action: 'edit_ocorrencia', id: currentItem.id, origem: currentItem.origem, ocorrencia_reparo: newProblemText };
         if (currentItem.status === 'concluido') {
             dataToSend.reparo_finalizado = document.getElementById('editReparoTextarea').value.trim();
         }
-
         try {
             const response = await fetch('API/update_ocorrencia.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dataToSend) });
             const result = await response.json();
@@ -301,7 +405,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const actionButton = document.getElementById('confirmActionButton');
         const actionText = document.getElementById('confirmActionText');
         actionButton.className = 'modal-btn btn-primary';
-
         if (type === 'concluir') {
             titleEl.textContent = 'Confirmar Conclusão';
             textEl.textContent = 'Deseja marcar esta ocorrência como concluída?';
@@ -323,7 +426,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const messageEl = document.getElementById('confirmationMessage');
         spinner.classList.add('is-active');
         confirmButton.disabled = true;
-
         try {
             const response = await fetch('API/update_ocorrencia.php', {
                 method: 'POST',
@@ -346,53 +448,15 @@ document.addEventListener('DOMContentLoaded', function () {
             spinner.classList.remove('is-active');
         }
     }
-
-    // --- Funções que não precisam de alteração ---
-    function initializeFilters() {
-        typeFilterContainer.addEventListener('click', (e) => {
-            if (e.target.matches('.action-btn')) {
-                document.querySelectorAll('#typeFilterContainer .action-btn').forEach(btn => btn.classList.remove('active'));
-                e.target.classList.add('active');
-                filters.type = e.target.dataset.type;
-                fetchData();
-            }
-        });
-        statusFilterContainer.addEventListener('click', (e) => {
-            if (e.target.matches('.filter-btn[data-status]')) {
-                document.querySelectorAll('#statusFilterContainer .filter-btn').forEach(btn => btn.classList.remove('active'));
-                e.target.classList.add('active');
-                filters.status = e.target.dataset.status;
-                fetchData();
-            }
-        });
-        cityFilterContainer.addEventListener('click', (e) => {
-            if (e.target.matches('.filter-btn[data-city]')) {
-                document.querySelectorAll('#cityFilterContainer .filter-btn').forEach(btn => btn.classList.remove('active'));
-                e.target.classList.add('active');
-                filters.city = e.target.dataset.city;
-                updateDisplay();
-            }
-        });
-        const startDateInput = document.getElementById('startDate');
-        const endDateInput = document.getElementById('endDate');
-        startDateInput.addEventListener('change', () => {
-            filters.startDate = startDateInput.value;
-            if (endDateInput.value && endDateInput.value < startDateInput.value) {
-                endDateInput.value = startDateInput.value;
-            }
-            endDateInput.min = startDateInput.value;
-            fetchData();
-        });
-        endDateInput.addEventListener('change', () => { filters.endDate = endDateInput.value; fetchData(); });
-    }
+    
     function updateCityFilters() {
         cityFilterContainer.innerHTML = '';
         const cities = allData.cidades || [];
         if (cities.length > 0) {
             const allButton = document.createElement('button');
-            allButton.className = 'filter-btn active city';
+            allButton.className = 'filter-btn active todos';
             allButton.dataset.city = 'todos';
-            allButton.textContent = 'Todos';
+            allButton.textContent = 'Todas';
             cityFilterContainer.appendChild(allButton);
             cities.sort().forEach(cidade => {
                 const button = document.createElement('button');
@@ -403,42 +467,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
     }
-    function updateDisplay() {
-        document.querySelectorAll('.city-group').forEach(group => {
-            group.style.display = (filters.city === 'todos' || group.dataset.city === filters.city) ? 'block' : 'none';
-        });
-    }
-    function updatePendentIds(data) {
-        currentPendentIds.clear();
-        const sourceData = data || allData;
-        if (sourceData && sourceData.ocorrencias) {
-            for (const city in sourceData.ocorrencias) {
-                sourceData.ocorrencias[city].forEach(item => {
-                    if (item.status === 'pendente') {
-                        currentPendentIds.add(item.id);
-                    }
-                });
-            }
-        }
-    }
-    function startUpdatePolling() {
-        if (updateInterval) clearInterval(updateInterval);
-        updateInterval = setInterval(() => { fetchData(true); }, 30000);
-    }
-    function handleUpdateCheck(result) {
-        if (!result.success) return;
-        const newPendentIds = new Set();
-        if (result.data.ocorrencias) {
-            for (const city in result.data.ocorrencias) {
-                result.data.ocorrencias[city].forEach(item => {
-                    if (item.status === 'pendente') newPendentIds.add(item.id);
-                });
-            }
-        }
-        if (newPendentIds.size !== currentPendentIds.size || [...newPendentIds].some(id => !currentPendentIds.has(id))) {
-            if (filters.status === 'pendente' || filters.status === 'todos') fetchData();
-        }
-    }
+    
     window.openModal = (modalId) => document.getElementById(modalId).classList.add('is-active');
     window.closeModal = (modalId) => {
         const modal = document.getElementById(modalId);
@@ -449,28 +478,22 @@ document.addEventListener('DOMContentLoaded', function () {
             const buttonsDiv = modalElement.querySelector('#editButtons, #confirmationButtons');
             const actionButton = modalElement.querySelector('#saveEditBtn, #confirmActionButton');
             const spinner = modalElement.querySelector('.spinner');
-            if (messageEl) {
-                messageEl.classList.add('hidden');
-                messageEl.textContent = '';
-            }
-            if (buttonsDiv) {
-                buttonsDiv.style.display = 'flex';
-            }
-            if (actionButton) {
-                actionButton.disabled = false;
-            }
-            if (spinner && spinner.classList.contains('is-active')) {
-                spinner.classList.remove('is-active');
-            }
+            if (messageEl) { messageEl.classList.add('hidden'); messageEl.textContent = ''; }
+            if (buttonsDiv) { buttonsDiv.style.display = 'flex'; }
+            if (actionButton) { actionButton.disabled = false; }
+            if (spinner && spinner.classList.contains('is-active')) { spinner.classList.remove('is-active'); }
         };
         if (modalId === 'editModal' || modalId === 'confirmationModal') {
             resetModalState(modal);
         }
     };
     
-    // Inicia tudo
+    // --- Inicialização da Página ---
     initializeFilters();
     setupConclusionModalListeners();
     fetchData();
     startUpdatePolling();
+
+    // Ajusta o espaçador também em caso de redimensionamento da janela
+    window.addEventListener('resize', adjustSearchSpacer);
 });
