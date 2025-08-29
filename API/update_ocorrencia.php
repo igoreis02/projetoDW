@@ -95,8 +95,55 @@ try {
         }
 
         echo json_encode(['success' => true, 'message' => 'Ocorrência concluída e registrada com sucesso!']);
+    } elseif ($action === 'validar_reparo') {
+        // 1. Mudar status da manutenção para 'concluido'
+        $stmt_update = $conn->prepare("UPDATE manutencoes SET status_reparo = 'concluido' WHERE id_manutencao = ?");
+        $stmt_update->bind_param('i', $id);
+        if (!$stmt_update->execute()) {
+            throw new Exception('Falha ao validar a manutenção.');
+        }
+        $stmt_update->close();
+
+        // 2. Obter dados da manutenção para criar a ocorrência de processamento
+        $stmt_get = $conn->prepare("SELECT id_usuario, tipo_manutencao, ocorrencia_reparo FROM manutencoes WHERE id_manutencao = ?");
+        $stmt_get->bind_param('i', $id);
+        $stmt_get->execute();
+        $manut_data = $stmt_get->get_result()->fetch_assoc();
+        $stmt_get->close();
+
+        if ($manut_data) {
+            // 3. Inserir novo registro na tabela de ocorrência de processamento
+            $stmt_insert = $conn->prepare("INSERT INTO ocorrencia_processamento (id_manutencao, id_usuario_registro, tipo_ocorrencia, descricao, status, dt_resolucao) VALUES (?, ?, ?, ?, 'concluido', NOW())");
+            // Usamos o tipo da manutenção original (corretiva/preditiva) como tipo_ocorrencia
+            $stmt_insert->bind_param('isss', $id, $id_usuario_logado, $manut_data['tipo_manutencao'], $manut_data['ocorrencia_reparo']);
+            if (!$stmt_insert->execute()) {
+                throw new Exception('Falha ao criar o registro de processamento.');
+            }
+            $stmt_insert->close();
+        } else {
+            throw new Exception('Manutenção original não encontrada para criar a ocorrência.');
+        }
+
+        echo json_encode(['success' => true, 'message' => 'Reparo validado e ocorrência criada com sucesso.']);
+
+        // <-- MUDANÇA AQUI: Adicionada a nova ação 'retornar_manutencao' -->
+    } elseif ($action === 'retornar_manutencao') {
+        $nova_ocorrencia = $input['nova_ocorrencia'] ?? null;
+        if (empty($nova_ocorrencia)) {
+            throw new Exception('O motivo do retorno é obrigatório.');
+        }
+
+        // Atualiza a manutenção: status para 'pendente', nova descrição, e limpa os campos de conclusão.
+        $stmt = $conn->prepare("UPDATE manutencoes SET status_reparo = 'pendente', ocorrencia_reparo = ?, fim_reparo = NULL, reparo_finalizado = NULL, tempo_reparo = NULL WHERE id_manutencao = ?");
+        $stmt->bind_param('si', $nova_ocorrencia, $id);
+        if (!$stmt->execute()) {
+            throw new Exception('Falha ao retornar a ocorrência.');
+        }
+        $stmt->close();
+
+        echo json_encode(['success' => true, 'message' => 'Ocorrência retornada para "Pendente" com sucesso.']);
     } elseif ($action === 'concluir_ocorrencia_processamento') {
-       $reparo_finalizado = $input['reparo_finalizado'] ?? null;
+        $reparo_finalizado = $input['reparo_finalizado'] ?? null;
         if (empty($reparo_finalizado)) {
             throw new Exception('A descrição da solução é obrigatória.');
         }
@@ -120,7 +167,7 @@ try {
         if ($manut_data) {
             $id_manutencao = $manut_data['id_manutencao'];
             $inicio_reparo = $manut_data['inicio_reparo'];
-            
+
             $sql_update_manut = "UPDATE manutencoes SET status_reparo = 'concluido', fim_reparo = NOW(), reparo_finalizado = ?, tempo_reparo = TIMEDIFF(NOW(), ?) WHERE id_manutencao = ?";
             $stmt_update_manut = $conn->prepare($sql_update_manut);
             $stmt_update_manut->bind_param('ssi', $reparo_finalizado, $inicio_reparo, $id_manutencao);
@@ -129,8 +176,6 @@ try {
         }
 
         echo json_encode(['success' => true, 'message' => 'Ocorrência de processamento concluída com sucesso.']);
-
-
     } elseif ($action === 'update_status') {
         $new_status = $input['status'] ?? null;
         $origem = $input['origem'] ?? null; // Adicionado para saber qual tabela atualizar
@@ -281,7 +326,9 @@ try {
             $sql = "UPDATE ocorrencia_provedor SET des_ocorrencia = ?, des_reparo = ? WHERE id_ocorrencia_provedor = ?";
             $stmt = $conn->prepare($sql);
             $stmt->bind_param('ssi', $ocorrencia, $reparo_finalizado, $id);
-             if (!$stmt->execute()) { throw new Exception('Falha ao atualizar a ocorrência do provedor: ' . $stmt->error); }
+            if (!$stmt->execute()) {
+                throw new Exception('Falha ao atualizar a ocorrência do provedor: ' . $stmt->error);
+            }
             $stmt->close();
         } elseif ($origem === 'ocorrencia_processamento') {
             $stmt_proc = $conn->prepare("UPDATE ocorrencia_processamento SET descricao = ? WHERE id_ocorrencia_processamento = ?");
@@ -299,7 +346,9 @@ try {
                 $id_manutencao = $manut_id_result['id_manutencao'];
                 $stmt_manut = $conn->prepare("UPDATE manutencoes SET ocorrencia_reparo = ?, reparo_finalizado = ? WHERE id_manutencao = ?");
                 $stmt_manut->bind_param('ssi', $ocorrencia, $reparo_finalizado, $id_manutencao);
-                if (!$stmt_manut->execute()) { throw new Exception('Falha ao sincronizar edição com a manutenção.'); }
+                if (!$stmt_manut->execute()) {
+                    throw new Exception('Falha ao sincronizar edição com a manutenção.');
+                }
                 $stmt_manut->close();
             }
         } else {
@@ -316,12 +365,13 @@ try {
             $params[] = $id;
             $stmt = $conn->prepare($sql);
             $stmt->bind_param($types, ...$params);
-            if (!$stmt->execute()) { throw new Exception('Falha ao atualizar a ocorrência: ' . $stmt->error); }
+            if (!$stmt->execute()) {
+                throw new Exception('Falha ao atualizar a ocorrência: ' . $stmt->error);
+            }
             $stmt->close();
         }
 
         echo json_encode(['success' => true, 'message' => 'Ocorrência atualizada com sucesso.']);
-
     } elseif ($action === 'assign') {
         $inicio_reparo = $input['inicio_reparo'] ?? null;
         $fim_reparo = $input['fim_reparo'] ?? null;

@@ -432,7 +432,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const isInstalacao = currentManutencao.tipo_manutencao.toLowerCase() === 'instalação';
 
             if (isInstalacao) {
-                // --- INÍCIO DA ALTERAÇÃO ---
+                
                 const tipoEquip = currentManutencao.tipo_equip?.toUpperCase();
                 const isLacoRequired = tipoEquip !== 'DOME' && tipoEquip !== 'CCO';
 
@@ -442,7 +442,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     { nome: 'Infraestrutura', valor: dataInfraInput.value, desabilitado: dataInfraInput.disabled },
                     { nome: 'Energia', valor: dataEnergiaInput.value, desabilitado: dataEnergiaInput.disabled },
                 ];
-                // --- FIM DA ALTERAÇÃO ---
+                
 
                 const novasDatasPreenchidas = datas.filter(d => d.valor && !d.desabilitado);
                 const totalConcluido = datas.filter(d => d.valor || d.desabilitado).length;
@@ -490,7 +490,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const payload = {
                     id_manutencao: currentManutencao.id_manutencao,
                     is_installation: false,
-                    status_reparo: 'concluido',
+                    status_reparo: 'validação',
                     reparo_finalizado: reparoRealizado,
                     materiais_utilizados: materiaisUtilizados,
                     rompimento_lacre: rompimentoLacre ? 1 : 0,

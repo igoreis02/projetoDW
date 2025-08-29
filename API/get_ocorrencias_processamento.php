@@ -3,68 +3,93 @@ header('Content-Type: application/json');
 require_once 'conexao_bd.php';
 
 // Parâmetros de filtro
-$tipo_filter = $_GET['tipo'] ?? 'manutencao'; // <-- MUDANÇA AQUI: Captura o novo filtro, com 'manutencao' como padrão
+$tipo_filter = $_GET['tipo'] ?? 'manutencao';
 $status_filter = $_GET['status'] ?? 'todos';
 $data_inicio = $_GET['data_inicio'] ?? '';
 $data_fim = $_GET['data_fim'] ?? '';
 
-// Construção da Query
-$sql = "
-    SELECT
-        op.id_ocorrencia_processamento AS id,
-        'processamento' AS origem,
-        op.descricao AS ocorrencia_reparo,
-        m.reparo_finalizado AS reparo_finalizado,
-        op.status,
-        op.dt_ocorrencia AS inicio_reparo,
-        op.dt_resolucao AS fim_reparo,
-        e.nome_equip,
-        e.referencia_equip,
-        c.nome AS nome_cidade,
-        CONCAT(e.referencia_equip, ', ', en.logradouro, ', ', en.bairro) AS local_completo,
-        u.nome AS atribuido_por
-    FROM
-        ocorrencia_processamento op
-    JOIN
-        manutencoes m ON op.id_manutencao = m.id_manutencao
-    JOIN
-        equipamentos e ON m.id_equipamento = e.id_equipamento
-    JOIN
-        cidades c ON e.id_cidade = c.id_cidade
-    JOIN
-        endereco en ON e.id_endereco = en.id_endereco
-    LEFT JOIN
-        usuario u ON op.id_usuario_registro = u.id_usuario
-    WHERE 1=1
-";
-
-// <-- MUDANÇA AQUI: Adicionada a lógica de filtro por tipo_ocorrencia
-if ($tipo_filter === 'manutencao') {
-    $sql .= " AND op.tipo_ocorrencia IN ('preditiva', 'corretiva')";
-} elseif ($tipo_filter === 'instalacao') {
-    $sql .= " AND op.tipo_ocorrencia = 'instalacao'";
-}
-
-// Aplicando filtros de status e data
+$sql = "";
 $params = [];
 $types = '';
-if ($status_filter !== 'todos') {
-    $sql .= " AND op.status = ?";
-    $params[] = $status_filter;
-    $types .= 's';
-}
-if (!empty($data_inicio)) {
-    $sql .= " AND DATE(op.dt_ocorrencia) >= ?";
-    $params[] = $data_inicio;
-    $types .= 's';
-}
-if (!empty($data_fim)) {
-    $sql .= " AND DATE(op.dt_ocorrencia) <= ?";
-    $params[] = $data_fim;
-    $types .= 's';
+
+// <-- MUDANÇA AQUI: Lógica condicional para a consulta SQL
+if ($status_filter === 'validacao') {
+    // Se o status for 'validação', buscamos direto da tabela de manutenções
+    $sql = "
+        SELECT
+            m.id_manutencao AS id,
+            'manutencao' AS origem, -- Origem é a própria manutenção
+            m.ocorrencia_reparo,
+            m.reparo_finalizado,
+            m.status_reparo AS status,
+            m.inicio_reparo,
+            m.fim_reparo,
+            e.nome_equip,
+            e.referencia_equip,
+            c.nome AS nome_cidade,
+            CONCAT(e.referencia_equip, ', ', en.logradouro, ', ', en.bairro) AS local_completo,
+            u.nome AS atribuido_por
+        FROM
+            manutencoes m
+        JOIN
+            equipamentos e ON m.id_equipamento = e.id_equipamento
+        JOIN
+            cidades c ON e.id_cidade = c.id_cidade
+        JOIN
+            endereco en ON e.id_endereco = en.id_endereco
+        LEFT JOIN
+            usuario u ON m.id_usuario = u.id_usuario
+        WHERE m.status_reparo = 'validacao'
+    ";
+    // Adiciona filtros de data se existirem
+    if (!empty($data_inicio)) { $sql .= " AND DATE(m.inicio_reparo) >= ?"; $params[] = $data_inicio; $types .= 's'; }
+    if (!empty($data_fim)) { $sql .= " AND DATE(m.inicio_reparo) <= ?"; $params[] = $data_fim; $types .= 's'; }
+
+} else {
+    // Lógica existente para os outros status
+    $sql = "
+        SELECT
+            op.id_ocorrencia_processamento AS id,
+            'processamento' AS origem,
+            op.descricao AS ocorrencia_reparo,
+            m.reparo_finalizado,
+            op.status,
+            op.dt_ocorrencia AS inicio_reparo,
+            op.dt_resolucao AS fim_reparo,
+            e.nome_equip,
+            e.referencia_equip,
+            c.nome AS nome_cidade,
+            CONCAT(e.referencia_equip, ', ', en.logradouro, ', ', en.bairro) AS local_completo,
+            u.nome AS atribuido_por
+        FROM
+            ocorrencia_processamento op
+        JOIN
+            manutencoes m ON op.id_manutencao = m.id_manutencao
+        JOIN
+            equipamentos e ON m.id_equipamento = e.id_equipamento
+        JOIN
+            cidades c ON e.id_cidade = c.id_cidade
+        JOIN
+            endereco en ON e.id_endereco = en.id_endereco
+        LEFT JOIN
+            usuario u ON op.id_usuario_registro = u.id_usuario
+        WHERE 1=1
+    ";
+    if ($tipo_filter === 'manutencao') {
+        $sql .= " AND m.tipo_manutencao IN ('preditiva', 'corretiva')";
+    } elseif ($tipo_filter === 'instalacao') {
+        $sql .= " AND m.tipo_manutencao = 'instalacao'";
+    }
+    if ($status_filter !== 'todos') {
+        $sql .= " AND op.status = ?";
+        $params[] = $status_filter;
+        $types .= 's';
+    }
+    if (!empty($data_inicio)) { $sql .= " AND DATE(op.dt_ocorrencia) >= ?"; $params[] = $data_inicio; $types .= 's'; }
+    if (!empty($data_fim)) { $sql .= " AND DATE(op.dt_ocorrencia) <= ?"; $params[] = $data_fim; $types .= 's'; }
 }
 
-$sql .= " ORDER BY c.nome, op.dt_ocorrencia DESC";
+$sql .= " ORDER BY nome_cidade, inicio_reparo DESC";
 
 try {
     $stmt = $conn->prepare($sql);
