@@ -3,64 +3,43 @@ document.addEventListener('DOMContentLoaded', function () {
     const actionButtons = document.querySelectorAll('.action-btn');
     const filterContainer = document.getElementById('filterContainer');
     const ocorrenciasContainer = document.getElementById('ocorrenciasContainer');
-    const loadingMessage = document.getElementById('loadingMessage');
+    const pageLoader = document.getElementById('pageLoader'); // CORREÇÃO: Referência correta para o novo spinner
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');
     const searchInput = document.getElementById('searchInput');
+    const clearFiltersBtn = document.getElementById('clearFiltersBtn'); // MUDANÇA: Nova referência para o botão
 
     // --- VARIÁVEIS DE ESTADO ---
     let activeType = 'manutencao';
     let activeCity = 'todos';
-    let allData = null; // Armazena todos os dados vindos do backend
+    let allData = null; 
     let currentItemsToAssign = [];
     let currentEditingItem = null;
-    let updateInterval; // Variável para o intervalo de atualização
+    let updateInterval; 
 
     // --- LÓGICA DE BUSCA E RENDERIZAÇÃO ---
-
-    /**
-     * Busca os dados no backend. Pode ser uma carga inicial ou uma verificação de atualização.
-     * @param {boolean} isUpdate - Se true, a função age como uma verificação silenciosa.
-     */
     async function fetchData(isUpdate = false) {
-        // Mostra o spinner apenas na carga inicial, não nas atualizações em segundo plano
         if (!isUpdate) {
-            loadingMessage.classList.remove('hidden');
+            pageLoader.style.display = 'flex'; // Controla o novo spinner
+            ocorrenciasContainer.innerHTML = ''; 
         }
         
         const startDate = startDateInput.value;
         const endDate = endDateInput.value;
-        
-        // Validação para garantir que a data final não é anterior à inicial
-        if (endDate && startDate && endDate < startDate) {
-            console.warn("A data final não pode ser anterior à data de início. Ajustando...");
-            endDateInput.value = startDate;
-            // A busca de dados continuará com a data corrigida na próxima chamada.
-            // Para uma resposta imediata, poderíamos chamar fetchData() novamente aqui, mas vamos deixar o fluxo natural.
-        }
-
-        const params = new URLSearchParams({
-            data_inicio: startDate,
-            data_fim: endDate || startDate // Garante que a data fim seja enviada mesmo que vazia
-        });
+        const params = new URLSearchParams({ data_inicio: startDate, data_fim: endDate || startDate });
 
         try {
             const response = await fetch(`API/get_ocorrencias_pendentes.php?${params.toString()}`);
             const result = await response.json();
-
-            // Gera uma "assinatura" dos dados para comparar se houve mudança
             const newSignature = JSON.stringify(result.data);
             const oldSignature = JSON.stringify(allData);
             
-            // Se for uma atualização e os dados mudaram, atualiza a tela
             if (isUpdate) {
                 if (newSignature !== oldSignature) {
-                    console.log("Novas ocorrências detectadas. Atualizando a lista.");
                     allData = result.data;
-                    applyFiltersAndRender(); // Re-renderiza com os novos dados e filtros atuais
+                    applyFiltersAndRender();
                 }
-            } else { // Se for a carga inicial
-                loadingMessage.classList.add('hidden');
+            } else {
                 if (result.success) {
                     allData = result.data;
                     applyFiltersAndRender();
@@ -72,25 +51,21 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         } catch (error) {
             if (!isUpdate) {
-                loadingMessage.classList.add('hidden');
                 console.error('Erro ao buscar dados:', error);
                 ocorrenciasContainer.innerHTML = `<p>Ocorreu um erro ao carregar os dados. Tente novamente.</p>`;
             }
+        } finally {
+            if (!isUpdate) {
+                pageLoader.style.display = 'none'; 
+            }
         }
     }
-
-    /**
-     * NOVA FUNÇÃO: Inicia a verificação automática de novas ocorrências.
-     */
+    
     function startAutoUpdate() {
-        if (updateInterval) clearInterval(updateInterval); // Limpa qualquer intervalo anterior
-        // A cada 30 segundos, chama fetchData no modo de atualização (silencioso)
+        if (updateInterval) clearInterval(updateInterval);
         updateInterval = setInterval(() => fetchData(true), 30000); 
     }
 
-    /**
-     * Aplica os filtros de tipo, pesquisa e cidade sobre os dados já carregados.
-     */
     function applyFiltersAndRender() {
         if (!allData || !allData.ocorrencias) {
             ocorrenciasContainer.innerHTML = `<p>Nenhuma ocorrência pendente encontrada.</p>`;
@@ -193,8 +168,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (!hasVisibleContent && cityGroups.length > 0) {
              ocorrenciasContainer.innerHTML = `<p>Nenhuma ocorrência encontrada para a cidade "${activeCity}".</p>`;
-        } else if (cityGroups.length === 0 && !loadingMessage.classList.contains('hidden')) {
-             // Não faz nada se ainda estiver carregando
         } else if (cityGroups.length === 0) {
              ocorrenciasContainer.innerHTML = `<p>Nenhuma ocorrência pendente encontrada para os filtros selecionados.</p>`;
         }
@@ -202,7 +175,19 @@ document.addEventListener('DOMContentLoaded', function () {
         checkSelectionAndToggleButtons();
     }
 
-    // --- EVENT LISTENERS ---
+    // --- EVENT LISTENERS E LÓGICA DE AÇÕES ---
+    clearFiltersBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        startDateInput.value = '';
+        endDateInput.value = '';
+        activeType = 'manutencao';
+        activeCity = 'todos';
+        
+        actionButtons.forEach(btn => btn.classList.remove('active'));
+        document.getElementById('btnManutencoes').classList.add('active');
+        
+        fetchData();
+    });
 
     actionButtons.forEach(button => {
         button.addEventListener('click', () => {
@@ -213,26 +198,8 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // --- LÓGICA DE VALIDAÇÃO DE DATA ---
-    startDateInput.addEventListener('change', () => {
-        // Define a data mínima para o campo de data final
-        endDateInput.min = startDateInput.value;
-        // Se a data final for anterior à nova data de início, ajusta
-        if (endDateInput.value && endDateInput.value < startDateInput.value) {
-            endDateInput.value = startDateInput.value;
-        }
-        fetchData();
-    });
-
-    endDateInput.addEventListener('change', () => {
-         // Validação extra caso o usuário digite a data manualmente
-        if (endDateInput.value && endDateInput.value < startDateInput.value) {
-            alert("A data final não pode ser anterior à data de início.");
-            endDateInput.value = startDateInput.value;
-        }
-        fetchData();
-    });
-    
+    startDateInput.addEventListener('change', fetchData);
+    endDateInput.addEventListener('change', fetchData);
     searchInput.addEventListener('input', applyFiltersAndRender);
 
     function addFilterListeners() {
@@ -246,10 +213,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
     }
-    
-    // --- O RESTANTE DO SEU CÓDIGO (LÓGICA DOS MODAIS) ---
 
-    // (O código para `createOcorrenciaHTML`, `formatDate`, modais, etc., permanece o mesmo)
     function createOcorrenciaHTML(item) {
         const statusHTML = `<span class="status-tag status-pendente">Pendente</span>`;
         let detailsHTML = '';
@@ -263,47 +227,47 @@ document.addEventListener('DOMContentLoaded', function () {
             const provStatus = item.inst_prov == 1 ? `<span class="status-value instalado">Instalado ${formatDate(item.data_provedor)}</span>` : `<span class="status-value aguardando">Aguardando instalação</span>`;
 
             detailsHTML = `
-                        <div class="detail-item"><strong>Laço</strong> <span>${lacoStatus}</span></div>
-                        <div class="detail-item"><strong>Base</strong> <span>${baseStatus}</span></div>
-                        <div class="detail-item"><strong>Infra</strong> <span>${infraStatus}</span></div>
-                        <div class="detail-item"><strong>Energia</strong> <span>${energiaStatus}</span></div>
-                        <div class="detail-item"><strong>Provedor</strong> <span>${provStatus}</span></div>
-                        <div class="detail-item"><strong>Início Ocorrência</strong> <span>${new Date(item.inicio_reparo).toLocaleString('pt-BR')}</span></div>
-                        ${atribuidoPorHTML}
-                        <div class="detail-item"><strong>Status</strong> ${statusHTML}</div>
-                        <div class="detail-item"><strong>Local</strong> <span>${item.local_completo || 'N/A'}</span></div>
-                        ${item.observacao_instalacao ? `<div class="detail-item"><strong>Observação</strong> <span>${item.observacao_instalacao}</span></div>` : ''}
-                    `;
+                <div class="detail-item"><strong>Laço</strong> <span>${lacoStatus}</span></div>
+                <div class="detail-item"><strong>Base</strong> <span>${baseStatus}</span></div>
+                <div class="detail-item"><strong>Infra</strong> <span>${infraStatus}</span></div>
+                <div class="detail-item"><strong>Energia</strong> <span>${energiaStatus}</span></div>
+                <div class="detail-item"><strong>Provedor</strong> <span>${provStatus}</span></div>
+                <div class="detail-item"><strong>Início Ocorrência</strong> <span>${new Date(item.inicio_reparo).toLocaleString('pt-BR')}</span></div>
+                ${atribuidoPorHTML}
+                <div class="detail-item"><strong>Status</strong> ${statusHTML}</div>
+                <div class="detail-item"><strong>Local</strong> <span>${item.local_completo || 'N/A'}</span></div>
+                ${item.observacao_instalacao ? `<div class="detail-item"><strong>Observação</strong> <span>${item.observacao_instalacao}</span></div>` : ''}
+            `;
         } else {
             detailsHTML = `
-                        <div class="detail-item"><strong>Ocorrência</strong> <span class="status-tag status-pendente">${item.ocorrencia_reparo || 'Não especificada'}</span></div>
-                        <div class="detail-item"><strong>Início Ocorrência</strong> <span>${new Date(item.inicio_reparo).toLocaleString('pt-BR')}</span></div>
-                        ${atribuidoPorHTML}
-                        <div class="detail-item"><strong>Status</strong> ${statusHTML}</div>
-                        <div class="detail-item"><strong>Local</strong> <span>${item.local_completo || 'N/A'}</span></div>
-                        ${item.motivo_devolucao ? `<div class="detail-item"><strong>Devolvida</strong> <span class="status-tag status-pendente">${item.motivo_devolucao}</span></div>` : ''}
-                    `;
+                <div class="detail-item"><strong>Ocorrência</strong> <span class="status-tag status-pendente">${item.ocorrencia_reparo || 'Não especificada'}</span></div>
+                <div class="detail-item"><strong>Início Ocorrência</strong> <span>${new Date(item.inicio_reparo).toLocaleString('pt-BR')}</span></div>
+                ${atribuidoPorHTML}
+                <div class="detail-item"><strong>Status</strong> ${statusHTML}</div>
+                <div class="detail-item"><strong>Local</strong> <span>${item.local_completo || 'N/A'}</span></div>
+                ${item.motivo_devolucao ? `<div class="detail-item"><strong>Devolvida</strong> <span class="status-tag status-pendente">${item.motivo_devolucao}</span></div>` : ''}
+            `;
         }
 
         const actionsHTML = `
-                    <div class="item-actions">
-                        <p style="margin-right: auto; font-size: 0.9em; color: #6b7280;">Clique no card para selecionar e atribuir</p>
-                        <button class="item-btn edit-btn" onclick="openEditOcorrenciaModal(${item.id_manutencao}, event)">Editar</button>
-                        <button class="item-btn cancel-btn" onclick="openConfirmationModal(${item.id_manutencao}, 'cancelado', event)">Cancelar</button>
-                    </div>
-                `;
+            <div class="item-actions">
+                <p style="margin-right: auto; font-size: 0.9em; color: #6b7280;">Clique no card para selecionar e atribuir</p>
+                <button class="item-btn edit-btn" onclick="openEditOcorrenciaModal(${item.id_manutencao}, event)">Editar</button>
+                <button class="item-btn cancel-btn" onclick="openConfirmationModal(${item.id_manutencao}, 'cancelado', event)">Cancelar</button>
+            </div>
+        `;
 
         return `
-                    <div class="ocorrencia-item" data-type="${item.tipo_manutencao}" data-id="${item.id_manutencao}">
-                        <div class="ocorrencia-header">
-                            <h3>${item.nome_equip} - ${item.referencia_equip}</h3>
-                        </div>
-                        <div class="ocorrencia-details">
-                            ${detailsHTML}
-                        </div>
-                        ${actionsHTML}
-                    </div>
-                `;
+            <div class="ocorrencia-item" data-type="${item.tipo_manutencao}" data-id="${item.id_manutencao}">
+                <div class="ocorrencia-header">
+                    <h3>${item.nome_equip} - ${item.referencia_equip}</h3>
+                </div>
+                <div class="ocorrencia-details">
+                    ${detailsHTML}
+                </div>
+                ${actionsHTML}
+            </div>
+        `;
     }
 
     function formatDate(dateString) {
@@ -562,10 +526,14 @@ document.addEventListener('DOMContentLoaded', function () {
     async function executeStatusChange(id, status) {
         const confirmFooter = document.getElementById('confirmationFooter');
         const confirmMessage = document.getElementById('confirmationMessage');
+        const confirmBtn = document.getElementById('confirmActionButton');
+        confirmBtn.disabled = true;
+
         const dataToSend = {
             action: 'update_status',
-            id_manutencao: id,
-            status: status
+            id: id,
+            status: status,
+            origem: 'manutencao'
         };
 
         try {
@@ -585,21 +553,28 @@ document.addEventListener('DOMContentLoaded', function () {
                     fetchData();
                 }, 2000);
             } else {
-                alert('Erro ao alterar o status: ' + result.message);
+                throw new Error(result.message || 'Erro desconhecido ao alterar o status.');
             }
         } catch (error) {
-            alert('Erro de comunicação com o servidor.');
-        }finally { 
-             confirmBtn.disabled = false;
+            console.error("Erro ao alterar status:", error);
+            confirmFooter.classList.add('hidden');
+            confirmMessage.textContent = `Erro: ${error.message}`;
+            confirmMessage.style.color = '#ef4444';
+            confirmMessage.classList.remove('hidden');
+        } finally {
+            if (document.getElementById('confirmationModal').classList.contains('is-active')) {
+                confirmBtn.disabled = false;
+            }
         }
     }
-     const assignErrorMessage = document.getElementById('assignErrorMessage');
+
+    const assignErrorMessage = document.getElementById('assignErrorMessage');
     document.getElementById('assignInicioReparo').addEventListener('input', () => assignErrorMessage.classList.add('hidden'));
     document.getElementById('assignFimReparo').addEventListener('input', () => assignErrorMessage.classList.add('hidden'));
     document.getElementById('assignTecnicosContainer').addEventListener('click', () => assignErrorMessage.classList.add('hidden'));
     document.getElementById('assignVeiculosContainer').addEventListener('click', () => assignErrorMessage.classList.add('hidden'));
 
     // --- INICIALIZAÇÃO ---
-    fetchData(); // Carga inicial dos dados
-    startAutoUpdate(); // Inicia a verificação automática
+    fetchData(); 
+    startAutoUpdate();
 });
