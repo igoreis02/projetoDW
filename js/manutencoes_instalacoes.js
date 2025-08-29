@@ -342,7 +342,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const response = await fetch(`API/check_pending_maintenance.php?equipment_id=${equipId}`);
                 const data = await response.json();
 
-                if (data.found) {
+                if (data.found && data.tipo_manutencao_existente === 'corretiva') {
                     existingMaintenanceData = {
                         id: data.id_manutencao,
                         ocorrencia: data.ocorrencia_existente

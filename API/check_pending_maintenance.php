@@ -10,8 +10,9 @@ if (empty($id_equipamento)) {
 }
 
 try {
+    // ALTERAÇÃO: Adicionado 'tipo_manutencao' na consulta SQL
     $stmt = $conn->prepare(
-        "SELECT id_manutencao, ocorrencia_reparo FROM manutencoes WHERE id_equipamento = ? AND status_reparo = 'pendente' LIMIT 1"
+        "SELECT id_manutencao, ocorrencia_reparo, tipo_manutencao FROM manutencoes WHERE id_equipamento = ? AND status_reparo = 'pendente' LIMIT 1"
     );
     $stmt->bind_param("i", $id_equipamento);
     $stmt->execute();
@@ -22,7 +23,8 @@ try {
         echo json_encode([
             'found' => true,
             'id_manutencao' => $maintenance['id_manutencao'],
-            'ocorrencia_existente' => $maintenance['ocorrencia_reparo']
+            'ocorrencia_existente' => $maintenance['ocorrencia_reparo'],
+            'tipo_manutencao_existente' => $maintenance['tipo_manutencao'] // ALTERAÇÃO: Enviando o tipo de manutenção na resposta
         ]);
     } else {
         echo json_encode(['found' => false]);
