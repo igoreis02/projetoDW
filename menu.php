@@ -372,10 +372,9 @@ if (isset($user_id)) {
                             <i class="fas fa-cogs"></i>
                             <span>Ocorrências Em Andamento</span>
                         </a>
-
-                        <a href="#" class="menu-button" id="gestaoOcorrencias">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            <span>Gestão de Ocorrências</span>
+                        <a href="#" class="menu-button" id="ocorrenciaProcessamento">
+                            <i class="fas fa-clipboard-check"></i>
+                            <span>Ocorrência Processamento</span>
                         </a>
                     </div>
                     <div class="menu-row">
@@ -390,6 +389,12 @@ if (isset($user_id)) {
                         <a href="#" class="menu-button" id="afericoesBtn">
                             <i class="fas fa-gauge-high"></i>
                             <span>Aferições</span>
+                        </a>
+                    </div>
+                    <div class="menu-row">
+                        <a href="#" class="menu-button" id="gestaoOcorrencias">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Gestão de Ocorrências</span>
                         </a>
                     </div>
                 </div>
@@ -468,6 +473,13 @@ if (isset($user_id)) {
             if (ocorrenciaProvedoresButton) {
                 ocorrenciaProvedoresButton.addEventListener('click', function() {
                     window.location.href = 'ocorrenciaProvedores';
+                });
+            }
+
+            const ocorrenciaProcessamentoButton = document.getElementById('ocorrenciaProcessamento');
+            if (ocorrenciaProcessamentoButton) {
+                ocorrenciaProcessamentoButton.addEventListener('click', function() {
+                    window.location.href = 'ocorrenciaProcessamento';
                 });
             }
 

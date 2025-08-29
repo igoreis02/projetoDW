@@ -34,7 +34,7 @@ $id_usuario_concluiu = $_SESSION['user_id'];
 $conn->begin_transaction();
 
 try {
-      if ($action === 'concluir_ocorrencia_provedor') {
+    if ($action === 'concluir_ocorrencia_provedor') {
         $reparo_finalizado = $input['reparo_finalizado'] ?? null;
         $inLoco = $input['inLoco'] ?? 0;
         $sem_intervencao = $input['sem_intervencao'] ?? 0;
@@ -55,20 +55,20 @@ try {
 
         if (!$ocorrencia_data) {
             // Se não encontrar na tabela nova, tentamos na antiga para não quebrar a funcionalidade de técnico DW
-             $stmt_get_old = $conn->prepare("SELECT id_equipamento, id_cidade, ocorrencia_reparo as des_ocorrencia FROM manutencoes WHERE id_manutencao = ?");
-             $stmt_get_old->bind_param('i', $id);
-             $stmt_get_old->execute();
-             $result_old = $stmt_get_old->get_result();
-             $ocorrencia_data = $result_old->fetch_assoc();
-             $stmt_get_old->close();
-             if(!$ocorrencia_data) throw new Exception("Ocorrência não encontrada em nenhuma das tabelas.");
+            $stmt_get_old = $conn->prepare("SELECT id_equipamento, id_cidade, ocorrencia_reparo as des_ocorrencia FROM manutencoes WHERE id_manutencao = ?");
+            $stmt_get_old->bind_param('i', $id);
+            $stmt_get_old->execute();
+            $result_old = $stmt_get_old->get_result();
+            $ocorrencia_data = $result_old->fetch_assoc();
+            $stmt_get_old->close();
+            if (!$ocorrencia_data) throw new Exception("Ocorrência não encontrada em nenhuma das tabelas.");
         }
-        
+
         // Agora, atualizamos a ocorrência na tabela 'ocorrencia_provedor'
         $sql_update = "UPDATE ocorrencia_provedor SET status = 'concluido', dt_fim_reparo = NOW(), id_usuario_concluiu = ?, des_reparo = ?, inLoco = ?, sem_intervencao = ?, tecnico_dw = ?, tempo_reparo = TIMEDIFF(NOW(), dt_inicio_reparo) WHERE id_ocorrencia_provedor = ?";
         $stmt_update = $conn->prepare($sql_update);
         $stmt_update->bind_param('isiiis', $id_usuario_concluiu, $reparo_finalizado, $inLoco, $sem_intervencao, $tecnico_dw, $id);
-        
+
         if (!$stmt_update->execute()) {
             throw new Exception('Falha ao concluir a ocorrência.');
         }
@@ -93,8 +93,43 @@ try {
             }
             $stmt_insert->close();
         }
-        
+
         echo json_encode(['success' => true, 'message' => 'Ocorrência concluída e registrada com sucesso!']);
+    } elseif ($action === 'concluir_ocorrencia_processamento') {
+       $reparo_finalizado = $input['reparo_finalizado'] ?? null;
+        if (empty($reparo_finalizado)) {
+            throw new Exception('A descrição da solução é obrigatória.');
+        }
+
+        // 1. Atualiza a tabela de ocorrência de processamento
+        $stmt = $conn->prepare("UPDATE ocorrencia_processamento SET status = 'concluido', dt_resolucao = NOW() WHERE id_ocorrencia_processamento = ?");
+        $stmt->bind_param('i', $id);
+        if (!$stmt->execute()) {
+            throw new Exception('Falha ao concluir a ocorrência de processamento.');
+        }
+        $stmt->close();
+
+        // 2. Busca o ID da manutenção e a data de início para calcular o tempo de reparo
+        // <-- CORREÇÃO: Especificando a tabela (m.id_manutencao e m.inicio_reparo) para evitar ambiguidade
+        $stmt_get_manut_id = $conn->prepare("SELECT m.id_manutencao, m.inicio_reparo FROM ocorrencia_processamento op JOIN manutencoes m ON op.id_manutencao = m.id_manutencao WHERE op.id_ocorrencia_processamento = ?");
+        $stmt_get_manut_id->bind_param('i', $id);
+        $stmt_get_manut_id->execute();
+        $manut_data = $stmt_get_manut_id->get_result()->fetch_assoc();
+        $stmt_get_manut_id->close();
+
+        if ($manut_data) {
+            $id_manutencao = $manut_data['id_manutencao'];
+            $inicio_reparo = $manut_data['inicio_reparo'];
+            
+            $sql_update_manut = "UPDATE manutencoes SET status_reparo = 'concluido', fim_reparo = NOW(), reparo_finalizado = ?, tempo_reparo = TIMEDIFF(NOW(), ?) WHERE id_manutencao = ?";
+            $stmt_update_manut = $conn->prepare($sql_update_manut);
+            $stmt_update_manut->bind_param('ssi', $reparo_finalizado, $inicio_reparo, $id_manutencao);
+            $stmt_update_manut->execute();
+            $stmt_update_manut->close();
+        }
+
+        echo json_encode(['success' => true, 'message' => 'Ocorrência de processamento concluída com sucesso.']);
+
 
     } elseif ($action === 'update_status') {
         $new_status = $input['status'] ?? null;
@@ -103,21 +138,46 @@ try {
         if (empty($new_status) || !in_array($new_status, ['pendente', 'cancelado'])) {
             throw new Exception('Status inválido fornecido.');
         }
-        
+
         if (empty($origem)) {
             throw new Exception('Origem da ocorrência não especificada.');
         }
 
         if ($origem === 'ocorrencia_provedor') {
             $stmt = $conn->prepare("UPDATE ocorrencia_provedor SET status = ? WHERE id_ocorrencia_provedor = ?");
-        } else { 
+        } elseif ($origem === 'ocorrencia_processamento') {
+            // 1. Atualiza o status na tabela de processamento
+            $stmt_proc = $conn->prepare("UPDATE ocorrencia_processamento SET status = ? WHERE id_ocorrencia_processamento = ?");
+            $stmt_proc->bind_param('si', $new_status, $id);
+            if (!$stmt_proc->execute()) {
+                throw new Exception('Falha ao atualizar status do processamento.');
+            }
+            $stmt_proc->close();
+
+            // 2. Busca o ID da manutenção para sincronizar
+            $stmt_get_manut_id = $conn->prepare("SELECT id_manutencao FROM ocorrencia_processamento WHERE id_ocorrencia_processamento = ?");
+            $stmt_get_manut_id->bind_param('i', $id);
+            $stmt_get_manut_id->execute();
+            $manut_id_result = $stmt_get_manut_id->get_result()->fetch_assoc();
+            $stmt_get_manut_id->close();
+
+            // 3. Atualiza o status na tabela de manutenções
+            if ($manut_id_result) {
+                $id_manutencao = $manut_id_result['id_manutencao'];
+                $stmt_manut = $conn->prepare("UPDATE manutencoes SET status_reparo = ? WHERE id_manutencao = ?");
+                $stmt_manut->bind_param('si', $new_status, $id_manutencao);
+                $stmt_manut->execute();
+                $stmt_manut->close();
+            }
+        } else { // Fallback para a tabela 'manutencoes'
             $stmt = $conn->prepare("UPDATE manutencoes SET status_reparo = ? WHERE id_manutencao = ?");
+            $stmt->bind_param('si', $new_status, $id);
+            if (!$stmt->execute()) {
+                throw new Exception('Falha ao atualizar o status.');
+            }
+            $stmt->close();
         }
 
-        $stmt->bind_param('si', $new_status, $id);
-        if (!$stmt->execute()) { throw new Exception('Falha ao atualizar o status.'); }
-        $stmt->close();
-        
         echo json_encode(['success' => true, 'message' => 'Status atualizado com sucesso para ' . $new_status]);
     } elseif ($action === 'concluir_provedor') {
         $reparo_finalizado = $input['reparo_finalizado'] ?? null;
@@ -138,7 +198,7 @@ try {
 
         $tipo_manutencao = $manutencao_data['tipo_manutencao'];
         $id_equipamento = $manutencao_data['id_equipamento'];
-        
+
         if ($tipo_manutencao === 'instalação') {
             $stmt_manutencao = $conn->prepare(
                 "UPDATE manutencoes SET status_reparo = 'concluido', fim_reparo = NOW(), reparo_finalizado = ?, inst_prov = 1, data_provedor = NOW(), tempo_reparo = TIMEDIFF(NOW(), inicio_reparo) WHERE id_manutencao = ?"
@@ -153,16 +213,15 @@ try {
             throw new Exception('Falha ao concluir a ocorrência do provedor.');
         }
         $stmt_manutencao->close();
-        
+
         if ($tipo_manutencao === 'instalação' && !empty($id_equipamento)) {
             $stmt_equip = $conn->prepare("UPDATE equipamentos SET status = 'ativo' WHERE id_equipamento = ?");
             $stmt_equip->bind_param('i', $id_equipamento);
             $stmt_equip->execute();
             $stmt_equip->close();
         }
-        
-        echo json_encode(['success' => true, 'message' => 'Ocorrência do provedor concluída com sucesso.']);
 
+        echo json_encode(['success' => true, 'message' => 'Ocorrência do provedor concluída com sucesso.']);
     } elseif ($action === 'concluir_reparo') {
         $reparo_finalizado = $input['reparo_finalizado'] ?? null;
         $inicio_reparo = $input['inicio_reparo'] ?? null;
@@ -177,16 +236,16 @@ try {
         if (empty($reparo_finalizado) || empty($inicio_reparo) || empty($fim_reparo) || empty($tecnicos) || empty($veiculos) || empty($materiais_utilizados)) {
             throw new Exception('Todos os campos são obrigatórios para concluir o reparo.');
         }
-        
+
         // CORREÇÃO: Usando a variável correta $id em vez de $id_manutencao
         $stmt = $conn->prepare("UPDATE manutencoes SET status_reparo = 'concluido', fim_reparo = NOW(), reparo_finalizado = ?, materiais_utilizados = ?, rompimento_lacre = ?, numero_lacre = ?, info_rompimento = ? WHERE id_manutencao = ?");
         $stmt->bind_param('ssissi', $reparo_finalizado, $materiais_utilizados, $rompimento_lacre, $numero_lacre, $info_rompimento, $id);
-        
+
         if (!$stmt->execute()) {
             throw new Exception('Falha ao concluir a manutenção principal.');
         }
         $stmt->close();
-        
+
         // CORREÇÃO: Usando a variável correta $id
         $stmt = $conn->prepare("DELETE FROM manutencoes_tecnicos WHERE id_manutencao = ?");
         $stmt->bind_param('i', $id);
@@ -196,7 +255,7 @@ try {
         $stmt->close();
 
         $stmt = $conn->prepare("INSERT INTO manutencoes_tecnicos (id_manutencao, id_tecnico, id_veiculo, inicio_reparoTec, fim_reparoT, status_tecnico) VALUES (?, ?, ?, ?, ?, 'concluido')");
-        
+
         $veiculos_count = count($veiculos);
         $i = 0;
         foreach ($tecnicos as $id_tecnico) {
@@ -211,44 +270,56 @@ try {
         $stmt->close();
 
         echo json_encode(['success' => true, 'message' => 'Reparo concluído e registrado com sucesso.']);
-    
     } elseif ($action === 'edit_ocorrencia') {
-       $ocorrencia = $input['ocorrencia_reparo'] ?? null;
+        $ocorrencia = $input['ocorrencia_reparo'] ?? null;
         $reparo_finalizado = $input['reparo_finalizado'] ?? null;
-        // CORREÇÃO CRÍTICA: Lendo a variável 'origem' que vem do Javascript
         $origem = $input['origem'] ?? null;
-
         if (empty($ocorrencia)) {
             throw new Exception('O texto da ocorrência não pode ser vazio.');
         }
-        
         if ($origem === 'ocorrencia_provedor') {
-             $sql = "UPDATE ocorrencia_provedor SET des_ocorrencia = ?, des_reparo = ? WHERE id_ocorrencia_provedor = ?";
-             $stmt = $conn->prepare($sql);
-             $stmt->bind_param('ssi', $ocorrencia, $reparo_finalizado, $id);
+            $sql = "UPDATE ocorrencia_provedor SET des_ocorrencia = ?, des_reparo = ? WHERE id_ocorrencia_provedor = ?";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param('ssi', $ocorrencia, $reparo_finalizado, $id);
+             if (!$stmt->execute()) { throw new Exception('Falha ao atualizar a ocorrência do provedor: ' . $stmt->error); }
+            $stmt->close();
+        } elseif ($origem === 'ocorrencia_processamento') {
+            $stmt_proc = $conn->prepare("UPDATE ocorrencia_processamento SET descricao = ? WHERE id_ocorrencia_processamento = ?");
+            $stmt_proc->bind_param('si', $ocorrencia, $id);
+            if (!$stmt_proc->execute()) {
+                throw new Exception('Falha ao editar a ocorrência de processamento.');
+            }
+            $stmt_proc->close();
+            $stmt_get_manut_id = $conn->prepare("SELECT id_manutencao FROM ocorrencia_processamento WHERE id_ocorrencia_processamento = ?");
+            $stmt_get_manut_id->bind_param('i', $id);
+            $stmt_get_manut_id->execute();
+            $manut_id_result = $stmt_get_manut_id->get_result()->fetch_assoc();
+            $stmt_get_manut_id->close();
+            if ($manut_id_result) {
+                $id_manutencao = $manut_id_result['id_manutencao'];
+                $stmt_manut = $conn->prepare("UPDATE manutencoes SET ocorrencia_reparo = ?, reparo_finalizado = ? WHERE id_manutencao = ?");
+                $stmt_manut->bind_param('ssi', $ocorrencia, $reparo_finalizado, $id_manutencao);
+                if (!$stmt_manut->execute()) { throw new Exception('Falha ao sincronizar edição com a manutenção.'); }
+                $stmt_manut->close();
+            }
         } else {
-            // Lógica para a tabela 'manutencoes'
             $params = [$ocorrencia];
             $types = 's';
             $sql = "UPDATE manutencoes SET ocorrencia_reparo = ?";
-
             if (isset($reparo_finalizado)) {
                 $sql .= ", reparo_finalizado = ?";
                 $types .= 's';
                 $params[] = $reparo_finalizado;
             }
-
             $sql .= " WHERE id_manutencao = ?";
             $types .= 'i';
             $params[] = $id;
-
             $stmt = $conn->prepare($sql);
             $stmt->bind_param($types, ...$params);
+            if (!$stmt->execute()) { throw new Exception('Falha ao atualizar a ocorrência: ' . $stmt->error); }
+            $stmt->close();
         }
-        
-        if (!$stmt->execute()) { throw new Exception('Falha ao atualizar a ocorrência: ' . $stmt->error);}
-        $stmt->close();
-        
+
         echo json_encode(['success' => true, 'message' => 'Ocorrência atualizada com sucesso.']);
 
     } elseif ($action === 'assign') {
@@ -275,7 +346,7 @@ try {
 
         if (!empty($tecnicos)) {
             $stmt = $conn->prepare("INSERT INTO manutencoes_tecnicos (id_manutencao, id_tecnico, id_veiculo, inicio_reparoTec, fim_reparoT, status_tecnico) VALUES (?, ?, ?, ?, ?, 'pendente')");
-            
+
             $veiculos_count = count($veiculos);
             $i = 0;
             foreach ($tecnicos as $id_tecnico) {
@@ -289,20 +360,18 @@ try {
             }
             $stmt->close();
         }
-        
+
         echo json_encode(['success' => true, 'message' => 'Ocorrência atribuída com sucesso.']);
     } else {
         throw new Exception('Ação desconhecida.');
     }
 
     $conn->commit();
-
 } catch (Exception $e) {
     $conn->rollback();
     // Definindo o código de status HTTP para erro, o que é uma boa prática
-    http_response_code(400); 
+    http_response_code(400);
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }
 
 $conn->close();
-?>
