@@ -34,8 +34,7 @@ $id_usuario_concluiu = $_SESSION['user_id'];
 $conn->begin_transaction();
 
 try {
-    // --- INÍCIO DA NOVA LÓGICA ---
-    if ($action === 'concluir_ocorrencia_provedor') {
+      if ($action === 'concluir_ocorrencia_provedor') {
         $reparo_finalizado = $input['reparo_finalizado'] ?? null;
         $inLoco = $input['inLoco'] ?? 0;
         $sem_intervencao = $input['sem_intervencao'] ?? 0;
@@ -45,37 +44,49 @@ try {
             throw new Exception('A descrição do reparo/problema é obrigatória.');
         }
 
-        $stmt_get_ocorrencia = $conn->prepare("SELECT * FROM ocorrencia_provedor WHERE id_ocorrencia_provedor = ?");
-        $stmt_get_ocorrencia->bind_param('i', $id);
-        $stmt_get_ocorrencia->execute();
-        $result_ocorrencia = $stmt_get_ocorrencia->get_result();
-        $ocorrencia_data = $result_ocorrencia->fetch_assoc();
-        $stmt_get_ocorrencia->close();
+        // LÓGICA SIMPLIFICADA: Conforme a nova regra, a conclusão SEMPRE afeta 'ocorrencia_provedor'
+        // Primeiro, buscamos os dados da ocorrência para o caso de precisar criar uma nova para o técnico DW
+        $stmt_get = $conn->prepare("SELECT id_equipamento, id_cidade, des_ocorrencia FROM ocorrencia_provedor WHERE id_ocorrencia_provedor = ?");
+        $stmt_get->bind_param('i', $id);
+        $stmt_get->execute();
+        $result = $stmt_get->get_result();
+        $ocorrencia_data = $result->fetch_assoc();
+        $stmt_get->close();
 
         if (!$ocorrencia_data) {
-            throw new Exception("Ocorrência de provedor não encontrada.");
+            // Se não encontrar na tabela nova, tentamos na antiga para não quebrar a funcionalidade de técnico DW
+             $stmt_get_old = $conn->prepare("SELECT id_equipamento, id_cidade, ocorrencia_reparo as des_ocorrencia FROM manutencoes WHERE id_manutencao = ?");
+             $stmt_get_old->bind_param('i', $id);
+             $stmt_get_old->execute();
+             $result_old = $stmt_get_old->get_result();
+             $ocorrencia_data = $result_old->fetch_assoc();
+             $stmt_get_old->close();
+             if(!$ocorrencia_data) throw new Exception("Ocorrência não encontrada em nenhuma das tabelas.");
         }
-
-        $inicio_reparo_dt = new DateTime($ocorrencia_data['dt_inicio_reparo']);
-        $fim_reparo_dt = new DateTime();
-        $intervalo = $fim_reparo_dt->diff($inicio_reparo_dt);
-        $tempo_reparo = $intervalo->format('%H:%I:%S');
-
-        $sql_update = "UPDATE ocorrencia_provedor SET status = 'concluido', dt_fim_reparo = NOW(), id_usuario_concluiu = ?, des_reparo = ?, inLoco = ?, sem_intervencao = ?, tecnico_dw = ?, tempo_reparo = ? WHERE id_ocorrencia_provedor = ?";
+        
+        // Agora, atualizamos a ocorrência na tabela 'ocorrencia_provedor'
+        $sql_update = "UPDATE ocorrencia_provedor SET status = 'concluido', dt_fim_reparo = NOW(), id_usuario_concluiu = ?, des_reparo = ?, inLoco = ?, sem_intervencao = ?, tecnico_dw = ?, tempo_reparo = TIMEDIFF(NOW(), dt_inicio_reparo) WHERE id_ocorrencia_provedor = ?";
         $stmt_update = $conn->prepare($sql_update);
-        // CORREÇÃO: Usando a variável correta $id_usuario_concluiu em vez de $id_usuario_sessao
-        $stmt_update->bind_param('isiiisi', $id_usuario_concluiu, $reparo_finalizado, $inLoco, $sem_intervencao, $tecnico_dw, $tempo_reparo, $id);
+        $stmt_update->bind_param('isiiis', $id_usuario_concluiu, $reparo_finalizado, $inLoco, $sem_intervencao, $tecnico_dw, $id);
         
         if (!$stmt_update->execute()) {
-            throw new Exception('Falha ao concluir a ocorrência do provedor.');
+            throw new Exception('Falha ao concluir a ocorrência.');
+        }
+        // Se a atualização afetou 0 linhas, pode ser um registro antigo. Vamos atualizá-lo também.
+        if ($stmt_update->affected_rows === 0) {
+            $sql_update_old = "UPDATE manutencoes SET status_reparo = 'concluido', fim_reparo = NOW(), reparo_finalizado = ? WHERE id_manutencao = ?";
+            $stmt_update_old = $conn->prepare($sql_update_old);
+            $stmt_update_old->bind_param('si', $reparo_finalizado, $id);
+            $stmt_update_old->execute();
+            $stmt_update_old->close();
         }
         $stmt_update->close();
 
-        if ($tecnico_dw == 1) {
+        // A lógica para criar uma nova manutenção para o técnico DW permanece
+        if ($tecnico_dw == 1 && $ocorrencia_data) {
             $sql_insert_manutencao = "INSERT INTO manutencoes (id_equipamento, id_usuario, id_cidade, status_reparo, tipo_manutencao, ocorrencia_reparo, inicio_reparo) VALUES (?, ?, ?, 'pendente', 'corretiva', ?, NOW())";
             $stmt_insert = $conn->prepare($sql_insert_manutencao);
-            $nova_ocorrencia =  $reparo_finalizado;
-            // CORREÇÃO: Usando a variável correta $id_usuario_concluiu
+            $nova_ocorrencia = $reparo_finalizado;
             $stmt_insert->bind_param("iiis", $ocorrencia_data['id_equipamento'], $id_usuario_concluiu, $ocorrencia_data['id_cidade'], $nova_ocorrencia);
             if (!$stmt_insert->execute()) {
                 throw new Exception('Falha ao criar a nova manutenção para o técnico DW.');

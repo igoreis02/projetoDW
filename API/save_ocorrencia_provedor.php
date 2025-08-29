@@ -41,9 +41,11 @@ try {
         }
         $tempo_reparo = "00:00:00"; // Define como instantâneo
 
-        $sql = "INSERT INTO ocorrencia_provedor (id_equipamento, id_usuario_iniciou, id_usuario_concluiu, id_provedor, id_cidade, dt_fim_reparo, tempo_reparo, des_ocorrencia, des_reparo, inLoco, sem_intervencao, tecnico_dw, status) VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?, 0, 0, 0, 'concluido')";
+        $sql = "INSERT INTO ocorrencia_provedor 
+                    (id_equipamento, id_usuario_iniciou, id_usuario_concluiu, id_provedor, id_cidade, dt_fim_reparo, tempo_reparo, des_ocorrencia, des_reparo, status) 
+                VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?, 'concluido')";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("iiiisss", $id_equipamento, $id_usuario_logado, $id_usuario_logado, $id_provedor, $id_cidade, $tempo_reparo, $ocorrencia_reparo, $reparo_realizado);
+        $stmt->bind_param("iiiissss", $id_equipamento, $id_usuario_logado, $id_usuario_logado, $id_provedor, $id_cidade, $tempo_reparo, $ocorrencia_reparo, $reparo_realizado);
     }
 
     $stmt->execute();

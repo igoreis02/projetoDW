@@ -94,7 +94,24 @@ try {
         $types .= 's';
     }
 
-    $final_sql = "SELECT * FROM ($sql) AS sub";
+    $final_sql = "SELECT 
+    sub.id,
+    sub.ocorrencia_reparo,
+    sub.inicio_reparo,
+    sub.fim_reparo,
+    sub.status,
+    sub.reparo_finalizado,
+    sub.inLoco,
+    sub.sem_intervencao,
+    sub.tecnico_dw,
+    sub.nome_equip,
+    sub.referencia_equip,
+    sub.cidade,
+    sub.nome_prov,
+    sub.local_completo,
+    sub.atribuido_por,
+    sub.origem
+FROM ($sql) AS sub";
     if (!empty($where_clauses)) {
         $final_sql .= " WHERE " . implode(' AND ', $where_clauses);
     }

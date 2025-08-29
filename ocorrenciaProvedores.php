@@ -486,7 +486,16 @@ if (!isset($_SESSION['user_id'])) {
         .form-group p {
             background-color: #f3f4f6;
         }
-
+        
+        /* NOVO: Estilo para mensagem de erro no formulário */
+        .error-message {
+            color: #ef4444;
+            font-size: 0.875em;
+            font-weight: 500;
+            margin-top: 5px;
+            display: none; /* Começa escondido */
+        }
+        
         /* NOVO: Estilos para botões de opção */
         .conclusion-options {
             display: flex;
@@ -662,17 +671,19 @@ if (!isset($_SESSION['user_id'])) {
                 <div id="reparoRealizadoContainer" class="form-group">
                     <label for="reparoRealizadoTextarea">Descrição do Reparo</label>
                     <textarea id="reparoRealizadoTextarea" placeholder="Descreva o serviço que foi realizado..."></textarea>
+                    <p class="error-message" id="reparoRealizadoError"></p>
                 </div>
                 
                 <div id="problemaTecnicoDwContainer" class="form-group hidden">
                     <label for="problemaTecnicoDwTextarea">Reportar Problema para Técnico DW</label>
                     <textarea id="problemaTecnicoDwTextarea" placeholder="Descreva o problema a ser resolvido pelo técnico..."></textarea>
+                     <p class="error-message" id="problemaTecnicoDwError"></p>
                 </div>
                 </div>
             <div class="modal-footer">
                 <div class="modal-footer-buttons">
                     <button class="modal-btn btn-secondary" onclick="closeModal('concluirModal')">Cancelar</button>
-                    <button class="modal-btn btn-primary" onclick="openConfirmationModal('concluir')">Confirmar</button>
+                    <button class="modal-btn btn-primary" onclick="handleConclusion()">Confirmar</button>
                 </div>
             </div>
         </div>

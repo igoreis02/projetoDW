@@ -416,6 +416,13 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
                     </div>
                 </div>
 
+                <div id="reparoConcluidoSection" class="choice-container">
+                    <label>Concluído o reparo?</label>
+                    <div class="choice-buttons">
+                        <button id="btnReparoSim" class="page-button">Sim</button>
+                        <button id="btnReparoNao" class="page-button">Não</button>
+                    </div>
+                </div>
                 
                 <div id="tecnicoInLocoSection" class="choice-container">
                     <label>Precisa de técnico In Loco:</label>
