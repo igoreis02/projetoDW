@@ -3,6 +3,7 @@ session_start();
 header('Content-Type: application/json');
 require_once 'conexao_bd.php';
 
+// Verifica se o usuário está autenticado na sessão
 if (!isset($_SESSION['user_id'])) {
     echo json_encode(['success' => false, 'message' => 'Usuário não autenticado.']);
     exit();
@@ -11,52 +12,62 @@ if (!isset($_SESSION['user_id'])) {
 $input = file_get_contents('php://input');
 $data = json_decode($input, true);
 
-// Dados essenciais
+// Coleta e validação dos dados recebidos do JavaScript
 $id_usuario_logado = $_SESSION['user_id'];
 $id_equipamento = $data['equipment_id'] ?? null;
 $id_cidade = $data['city_id'] ?? null;
 $id_provedor = $data['id_provedor'] ?? null;
-$ocorrencia_reparo = $data['problem_description'] ?? null;
-$tecnico_in_loco = $data['tecnico_in_loco'] ?? false;
+$des_ocorrencia = $data['problem_description'] ?? null;
+$tecnico_in_loco = $data['tecnico_in_loco'] ?? false; // true ou false
+$tipo_ocorrencia = $data['tipo_ocorrencia'] ?? 'manutencao'; // Fixo 'manutencao'
 
-// Validação
-if (empty($id_equipamento) || empty($id_cidade) || empty($id_provedor) || empty($ocorrencia_reparo)) {
-    echo json_encode(['success' => false, 'message' => 'Dados incompletos para registrar ocorrência de provedor.']);
+if (empty($id_equipamento) || empty($id_cidade) || empty($id_provedor) || empty($des_ocorrencia)) {
+    echo json_encode(['success' => false, 'message' => 'Dados essenciais estão faltando para registrar a ocorrência.']);
     exit();
 }
 
 $conn->begin_transaction();
 
 try {
+    // Cenário 1: Técnico In Loco "Sim" -> Ocorrência fica com status 'pendente'
     if ($tecnico_in_loco) {
-        // Cenário 1: Técnico "Sim" -> Ocorrência fica pendente
-        $sql = "INSERT INTO ocorrencia_provedor (id_equipamento, id_usuario_iniciou, id_provedor, id_cidade, des_ocorrencia, inLoco, status) VALUES (?, ?, ?, ?, ?, 1, 'pendente')";
+        $sql = "INSERT INTO ocorrencia_provedor 
+                    (id_equipamento, id_usuario_iniciou, id_provedor, id_cidade, des_ocorrencia, tipo_ocorrencia, inLoco, status) 
+                VALUES (?, ?, ?, ?, ?, ?, 1, 'pendente')";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("iiiis", $id_equipamento, $id_usuario_logado, $id_provedor, $id_cidade, $ocorrencia_reparo);
-    } else {
-        // Cenário 2: Técnico "Não" -> Ocorrência já é concluída
-        $reparo_realizado = $data['reparo_finalizado'] ?? null;
-        if (empty($reparo_realizado)) {
-            throw new Exception("A descrição do reparo é obrigatória quando não há técnico em loco.");
+        $stmt->bind_param("iiiiss", $id_equipamento, $id_usuario_logado, $id_provedor, $id_cidade, $des_ocorrencia, $tipo_ocorrencia);
+    } 
+    // Cenário 2: Técnico In Loco "Não" -> Ocorrência já é criada como 'concluida'
+    else {
+        $des_reparo = $data['reparo_finalizado'] ?? null;
+        if (empty($des_reparo)) {
+            // Importante: Lança uma exceção se a descrição do reparo não for enviada
+            throw new Exception("A descrição do reparo é obrigatória quando não há necessidade de técnico em loco.");
         }
-        $tempo_reparo = "00:00:00"; // Define como instantâneo
+        $tempo_reparo = "00:00:00"; // Como é instantâneo, o tempo de reparo é zero
 
         $sql = "INSERT INTO ocorrencia_provedor 
-                    (id_equipamento, id_usuario_iniciou, id_usuario_concluiu, id_provedor, id_cidade, dt_fim_reparo, tempo_reparo, des_ocorrencia, des_reparo, status) 
-                VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?, 'concluido')";
+                    (id_equipamento, id_usuario_iniciou, id_usuario_concluiu, id_provedor, id_cidade, dt_fim_reparo, tempo_reparo, des_ocorrencia, tipo_ocorrencia, des_reparo, inLoco, status) 
+                VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, 0, 'concluido')";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("iiiissss", $id_equipamento, $id_usuario_logado, $id_usuario_logado, $id_provedor, $id_cidade, $tempo_reparo, $ocorrencia_reparo, $reparo_realizado);
+        $stmt->bind_param("iiiissssss", $id_equipamento, $id_usuario_logado, $id_usuario_logado, $id_provedor, $id_cidade, $tempo_reparo, $des_ocorrencia, $tipo_ocorrencia, $des_reparo);
     }
 
     $stmt->execute();
-    $stmt->close();
+    
+    if ($stmt->affected_rows === 0) {
+        throw new Exception("Falha ao inserir o registro, nenhuma linha foi afetada.");
+    }
 
+    $stmt->close();
     $conn->commit();
+
     echo json_encode(['success' => true, 'message' => 'Ocorrência de provedor registrada com sucesso!']);
 
 } catch (Exception $e) {
     $conn->rollback();
-    echo json_encode(['success' => false, 'message' => 'Erro ao registrar ocorrência: ' . $e->getMessage()]);
+    http_response_code(400); // Define um código de erro apropriado
+    echo json_encode(['success' => false, 'message' => 'Erro no servidor: ' . $e->getMessage()]);
 }
 
 $conn->close();

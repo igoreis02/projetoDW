@@ -29,55 +29,37 @@ if (empty($id_equipamento) || empty($id_cidade) || empty($ocorrencia_reparo)) {
 
 try {
     $conn->begin_transaction();
-    $id_retorno = null; // Variável para armazenar o ID a ser retornado
+    $id_retorno = null;
 
     if ($id_manutencao_existente && $tipo_manutencao === 'corretiva') {
-        // FLUXO DE ATUALIZAÇÃO (Lógica original mantida)
+        // FLUXO DE ATUALIZAÇÃO PARA CONCATENAR PROBLEMAS 
         $ocorrencia_nova_concatenada = $data['ocorrencia_concatenada'] ?? $ocorrencia_reparo;
         $sql = "UPDATE manutencoes SET ocorrencia_reparo = ? WHERE id_manutencao = ?";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("si", $ocorrencia_nova_concatenada, $id_manutencao_existente);
-        $id_retorno = $id_manutencao_existente; // Define o ID de retorno
+        $id_retorno = $id_manutencao_existente;
 
     } else {
         // FLUXO DE INSERÇÃO
-        if ($tipo_manutencao === 'preditiva') {
-            if (($data['realizado_por'] ?? null) === 'provedor') {
-                if (($data['tecnico_in_loco'] ?? null) === true) {
-                     $status_reparo = 'pendente'; $reparo_finalizado = null;
-                     $sql = "INSERT INTO manutencoes (id_usuario, id_equipamento, id_cidade, id_provedor, status_reparo, tipo_manutencao, ocorrencia_reparo, reparo_finalizado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-                     $stmt = $conn->prepare($sql);
-                     $stmt->bind_param("iiiissss", $id_usuario_logado, $id_equipamento, $id_cidade, $id_provedor, $status_reparo, $tipo_manutencao, $ocorrencia_reparo, $reparo_finalizado);
-                } else {
-                     $status_reparo = 'concluido';
-                     if (empty($reparo_finalizado)) { throw new Exception('A descrição do reparo é obrigatória.'); }
-                     $sql = "INSERT INTO manutencoes (id_usuario, id_equipamento, id_cidade, id_provedor, status_reparo, tipo_manutencao, ocorrencia_reparo, reparo_finalizado, fim_reparo, tempo_reparo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP(), '00:00:00')";
-                     $stmt = $conn->prepare($sql);
-                     $stmt->bind_param("iiiissss", $id_usuario_logado, $id_equipamento, $id_cidade, $id_provedor, $status_reparo, $tipo_manutencao, $ocorrencia_reparo, $reparo_finalizado);
-                }
-            } 
-            // --- NOVA LÓGICA PARA PROCESSAMENTO ---
-            else if (($data['realizado_por'] ?? null) === 'processamento') {
-                // Se o status for 'concluido', salva com data de fim e descrição do reparo
-                if ($status_reparo === 'concluido') {
-                    if (empty($reparo_finalizado)) { throw new Exception('A descrição do reparo é obrigatória para concluir.'); }
-                    $sql = "INSERT INTO manutencoes (id_usuario, id_equipamento, id_cidade, status_reparo, tipo_manutencao, ocorrencia_reparo, reparo_finalizado, fim_reparo, tempo_reparo) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP(), '00:00:00')";
-                    $stmt = $conn->prepare($sql);
-                    $stmt->bind_param("iiissss", $id_usuario_logado, $id_equipamento, $id_cidade, $status_reparo, $tipo_manutencao, $ocorrencia_reparo, $reparo_finalizado);
-                } else { // Se for 'pendente', salva apenas a ocorrência inicial
-                    $sql = "INSERT INTO manutencoes (id_usuario, id_equipamento, id_cidade, status_reparo, tipo_manutencao, ocorrencia_reparo) VALUES (?, ?, ?, ?, ?, ?)";
-                    $stmt = $conn->prepare($sql);
-                    $stmt->bind_param("iiisss", $id_usuario_logado, $id_equipamento, $id_cidade, $status_reparo, $tipo_manutencao, $ocorrencia_reparo);
-                }
-            }
+        if ($tipo_manutencao === 'preditiva' && ($data['realizado_por'] ?? null) === 'processamento') {
             
+            if ($status_reparo === 'concluido') {
+                if (empty($reparo_finalizado)) { throw new Exception('A descrição do reparo é obrigatória para concluir.'); }
+                $sql = "INSERT INTO manutencoes (id_usuario, id_equipamento, id_cidade, status_reparo, tipo_manutencao, ocorrencia_reparo, reparo_finalizado, fim_reparo, tempo_reparo) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP(), '00:00:00')";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param("iiissss", $id_usuario_logado, $id_equipamento, $id_cidade, $status_reparo, $tipo_manutencao, $ocorrencia_reparo, $reparo_finalizado);
+            } else { // 'pendente'
+                $sql = "INSERT INTO manutencoes (id_usuario, id_equipamento, id_cidade, status_reparo, tipo_manutencao, ocorrencia_reparo) VALUES (?, ?, ?, ?, ?, ?)";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param("iiisss", $id_usuario_logado, $id_equipamento, $id_cidade, $status_reparo, $tipo_manutencao, $ocorrencia_reparo);
+            }
         } else if ($tipo_manutencao === 'instalação') {
-            // Lógica original mantida
+            
             $sql = "INSERT INTO manutencoes (id_usuario, id_equipamento, id_cidade, status_reparo, tipo_manutencao, ocorrencia_reparo, observacao_instalacao) VALUES (?, ?, ?, ?, ?, ?, ?)";
             $stmt = $conn->prepare($sql);
             $stmt->bind_param("iiissss", $id_usuario_logado, $id_equipamento, $id_cidade, $status_reparo, $tipo_manutencao, $ocorrencia_reparo, $observacao_instalacao);
         
-        } else { // Corretiva (lógica original mantida)
+        } else { 
             $sql = "INSERT INTO manutencoes (id_usuario, id_equipamento, id_cidade, status_reparo, tipo_manutencao, ocorrencia_reparo) VALUES (?, ?, ?, ?, ?, ?)";
             $stmt = $conn->prepare($sql);
             $stmt->bind_param("iiisss", $id_usuario_logado, $id_equipamento, $id_cidade, $status_reparo, $tipo_manutencao, $ocorrencia_reparo);
@@ -92,7 +74,6 @@ try {
         $conn->commit();
         $message = $id_manutencao_existente ? 'Problema adicionado com sucesso!' : 'Cadastrada com sucesso!';
         
-        // **ALTERAÇÃO CRÍTICA: Retorna o ID da manutenção no JSON**
         echo json_encode(['success' => true, 'message' => $message, 'id_manutencao' => $id_retorno]);
     } else {
         throw new Exception($stmt->error);
