@@ -16,7 +16,7 @@ if (!isset($_SESSION['user_id'])) {
     <link rel="icon" type="image/png" href="imagens/favicon.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
-        /* Estilos Gerais (sem alterações) */
+        /* Estilos (sem alterações) */
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f0f2f5;
@@ -54,14 +54,29 @@ if (!isset($_SESSION['user_id'])) {
             margin: 0;
         }
 
+        .close-btn,
         .back-btn-icon {
             position: absolute;
-            left: 0;
             top: 50%;
             transform: translateY(-50%);
             font-size: 2em;
+            font-weight: bold;
             color: #aaa;
             text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .close-btn {
+            right: 0;
+        }
+
+        .back-btn-icon {
+            left: 0;
+        }
+
+        .close-btn:hover,
+        .back-btn-icon:hover {
+            color: #333;
         }
 
         .main-controls-container {
@@ -150,8 +165,13 @@ if (!isset($_SESSION['user_id'])) {
             border: 1px solid #d1d5db;
             border-radius: 8px;
             cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
         }
-
+        
+        #clearFiltersBtn:hover {
+            background-color: #e5e7eb;
+        }
         .search-spacer {
             visibility: hidden;
         }
@@ -258,7 +278,6 @@ if (!isset($_SESSION['user_id'])) {
             border-left: 5px solid #f97316;
         }
 
-        /* <-- MUDANÇA AQUI: Estilo para o card de validação */
         .ocorrencia-item.status-pendente {
             border-left: 5px solid #3b82f6;
         }
@@ -281,17 +300,31 @@ if (!isset($_SESSION['user_id'])) {
 
         .ocorrencia-header h3 {
             font-size: 1.3em;
+            color: #111827;
             margin: 0;
         }
 
         .detail-item {
             font-size: 0.95em;
+            color: #374151;
+            line-height: 1.5;
             text-align: left;
+        }
+
+        .detail-item strong {
+            font-weight: 600;
+            color: #1f2937;
         }
 
         .detail-item strong::after {
             content: ": ";
         }
+
+        .detail-item.reparo-info span {
+            color: #15803d;
+            font-style: italic;
+        }
+
 
         .status-tag {
             padding: 3px 10px;
@@ -306,7 +339,6 @@ if (!isset($_SESSION['user_id'])) {
             color: #f97316;
         }
 
-        /* <-- MUDANÇA AQUI: Estilo para a tag de validação */
         .status-tag.pendente {
             background-color: #eff6ff;
             color: #3b82f6;
@@ -346,7 +378,6 @@ if (!isset($_SESSION['user_id'])) {
             color: white;
         }
 
-        /* <-- MUDANÇA AQUI: Estilo para o novo botão 'Validar' */
         .concluir-btn {
             background-color: #22c55e;
             color: white;
@@ -555,8 +586,9 @@ if (!isset($_SESSION['user_id'])) {
     <div class="background"></div>
     <div class="card">
         <div class="header-container">
-            <a href="menu.php" class="back-btn-icon" title="Voltar ao Menu"><i class="fas fa-arrow-left"></i></a>
+            <a href="menu.php" class="back-btn-icon" title="Voltar ao Menu">&larr;</a>
             <h2>Ocorrências de Processamento</h2>
+            <a href="menu.php" class="close-btn" title="Voltar ao Menu">&times;</a>
         </div>
 
         <div class="main-controls-container">
@@ -580,7 +612,7 @@ if (!isset($_SESSION['user_id'])) {
 
         <div id="statusFilterContainer" class="filter-container">
             <button class="filter-btn active todos" data-status="todos">Todos</button>
-            <button class="filter-btn validacao" data-status="validacao">Validação</button>
+            <button id="btnValidacao" class="filter-btn validacao" data-status="validacao" style="display: none;">Validação</button>
             <button class="filter-btn pendente" data-status="pendente">Pendente</button>
             <button class="filter-btn concluido" data-status="concluido">Concluído</button>
             <button class="filter-btn cancelado" data-status="cancelado">Cancelado</button>
@@ -594,6 +626,7 @@ if (!isset($_SESSION['user_id'])) {
 
         <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
     </div>
+
 
     <div id="concluirModal" class="modal">
         <div class="modal-content">
@@ -669,7 +702,7 @@ if (!isset($_SESSION['user_id'])) {
             </div>
         </div>
     </div>
-    <div id="validarModal" class="modal">
+ <div id="validarModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Validar Reparo Técnico</h3>
@@ -687,9 +720,13 @@ if (!isset($_SESSION['user_id'])) {
                 </div>
             </div>
             <div class="modal-footer">
-                <div class="modal-footer-buttons">
-                    <button class="modal-btn btn-secondary" onclick="openRetornarModal()">Não Validar</button>
-                    <button class="modal-btn btn-primary" onclick="handleValidar()">Validar</button>
+                <p id="validarMessage" class="message hidden"></p>
+                <div id="validarButtons" class="modal-footer-buttons">
+                    <button id="btnNaoValidar" class="modal-btn btn-secondary" onclick="openRetornarModal()">Não Validar</button>
+                    <button id="btnConfirmarValidacao" class="modal-btn btn-primary" onclick="handleValidar()">
+                        <span>Validar</span>
+                        <span class="spinner"></span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -710,9 +747,13 @@ if (!isset($_SESSION['user_id'])) {
                 </div>
             </div>
             <div class="modal-footer">
-                <div class="modal-footer-buttons">
-                    <button class="modal-btn btn-secondary" onclick="closeModal('retornarModal')">Cancelar</button>
-                    <button class="modal-btn btn-primary cancel" onclick="handleRetornar()">Confirmar Retorno</button>
+                <p id="retornarMessage" class="message hidden"></p>
+                <div id="retornarButtons" class="modal-footer-buttons">
+                    <button id="btnCancelarRetorno" class="modal-btn btn-secondary" onclick="closeModal('retornarModal')">Cancelar</button>
+                    <button id="btnConfirmarRetorno" class="modal-btn btn-primary cancel" onclick="handleRetornar()">
+                        <span>Confirmar Retorno</span>
+                        <span class="spinner"></span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -720,5 +761,4 @@ if (!isset($_SESSION['user_id'])) {
 
     <script src="js/ocorrenciaProcessamento.js"></script>
 </body>
-
 </html>

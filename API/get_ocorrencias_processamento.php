@@ -12,84 +12,90 @@ $sql = "";
 $params = [];
 $types = '';
 
-// <-- MUDANÇA AQUI: Lógica condicional para a consulta SQL
 if ($status_filter === 'validacao') {
-    // Se o status for 'validação', buscamos direto da tabela de manutenções
+    // Consulta específica para o status 'validação' (busca em 'manutencoes')
     $sql = "
         SELECT
-            m.id_manutencao AS id,
-            'manutencao' AS origem, -- Origem é a própria manutenção
-            m.ocorrencia_reparo,
-            m.reparo_finalizado,
-            m.status_reparo AS status,
-            m.inicio_reparo,
-            m.fim_reparo,
-            e.nome_equip,
-            e.referencia_equip,
-            c.nome AS nome_cidade,
+            m.id_manutencao AS id, 'manutencao' AS origem, m.ocorrencia_reparo,
+            m.reparo_finalizado, m.status_reparo AS status, m.inicio_reparo, m.fim_reparo,
+            e.nome_equip, e.referencia_equip, c.nome AS nome_cidade,
             CONCAT(e.referencia_equip, ', ', en.logradouro, ', ', en.bairro) AS local_completo,
             u.nome AS atribuido_por
-        FROM
-            manutencoes m
-        JOIN
-            equipamentos e ON m.id_equipamento = e.id_equipamento
-        JOIN
-            cidades c ON e.id_cidade = c.id_cidade
-        JOIN
-            endereco en ON e.id_endereco = en.id_endereco
-        LEFT JOIN
-            usuario u ON m.id_usuario = u.id_usuario
+        FROM manutencoes m
+        JOIN equipamentos e ON m.id_equipamento = e.id_equipamento
+        JOIN cidades c ON e.id_cidade = c.id_cidade
+        JOIN endereco en ON e.id_endereco = en.id_endereco
+        LEFT JOIN usuario u ON m.id_usuario = u.id_usuario
         WHERE m.status_reparo = 'validacao'
     ";
-    // Adiciona filtros de data se existirem
     if (!empty($data_inicio)) { $sql .= " AND DATE(m.inicio_reparo) >= ?"; $params[] = $data_inicio; $types .= 's'; }
     if (!empty($data_fim)) { $sql .= " AND DATE(m.inicio_reparo) <= ?"; $params[] = $data_fim; $types .= 's'; }
+    $sql .= " ORDER BY c.nome, m.inicio_reparo DESC";
 
-} else {
-    // Lógica existente para os outros status
+} elseif ($status_filter === 'todos') {
+    // <-- MUDANÇA AQUI: Consulta especial para "Todos" que une as duas fontes de dados
     $sql = "
-        SELECT
-            op.id_ocorrencia_processamento AS id,
-            'processamento' AS origem,
-            op.descricao AS ocorrencia_reparo,
-            m.reparo_finalizado,
-            op.status,
-            op.dt_ocorrencia AS inicio_reparo,
-            op.dt_resolucao AS fim_reparo,
-            e.nome_equip,
-            e.referencia_equip,
-            c.nome AS nome_cidade,
+        (SELECT
+            m.id_manutencao AS id, 'manutencao' AS origem, m.ocorrencia_reparo,
+            m.reparo_finalizado, m.status_reparo AS status, m.inicio_reparo, m.fim_reparo,
+            e.nome_equip, e.referencia_equip, c.nome AS nome_cidade,
             CONCAT(e.referencia_equip, ', ', en.logradouro, ', ', en.bairro) AS local_completo,
             u.nome AS atribuido_por
-        FROM
-            ocorrencia_processamento op
-        JOIN
-            manutencoes m ON op.id_manutencao = m.id_manutencao
-        JOIN
-            equipamentos e ON m.id_equipamento = e.id_equipamento
-        JOIN
-            cidades c ON e.id_cidade = c.id_cidade
-        JOIN
-            endereco en ON e.id_endereco = en.id_endereco
-        LEFT JOIN
-            usuario u ON op.id_usuario_registro = u.id_usuario
-        WHERE 1=1
+        FROM manutencoes m
+        JOIN equipamentos e ON m.id_equipamento = e.id_equipamento
+        JOIN cidades c ON e.id_cidade = c.id_cidade
+        JOIN endereco en ON e.id_endereco = en.id_endereco
+        LEFT JOIN usuario u ON m.id_usuario = u.id_usuario
+        WHERE m.status_reparo = 'validacao')
+        
+        UNION ALL
+        
+        (SELECT
+            op.id_ocorrencia_processamento AS id, 'processamento' AS origem, op.descricao AS ocorrencia_reparo,
+            m.reparo_finalizado, op.status, op.dt_ocorrencia AS inicio_reparo, op.dt_resolucao AS fim_reparo,
+            e.nome_equip, e.referencia_equip, c.nome AS nome_cidade,
+            CONCAT(e.referencia_equip, ', ', en.logradouro, ', ', en.bairro) AS local_completo,
+            u.nome AS atribuido_por
+        FROM ocorrencia_processamento op
+        JOIN manutencoes m ON op.id_manutencao = m.id_manutencao
+        JOIN equipamentos e ON m.id_equipamento = e.id_equipamento
+        JOIN cidades c ON e.id_cidade = c.id_cidade
+        JOIN endereco en ON e.id_endereco = en.id_endereco
+        LEFT JOIN usuario u ON op.id_usuario_registro = u.id_usuario
+        WHERE 1=1)
+
+        ORDER BY
+            FIELD(status, 'validação', 'pendente', 'concluido', 'cancelado'),
+            nome_cidade,
+            inicio_reparo DESC
     ";
-    if ($tipo_filter === 'manutencao') {
-        $sql .= " AND m.tipo_manutencao IN ('preditiva', 'corretiva')";
-    } elseif ($tipo_filter === 'instalacao') {
-        $sql .= " AND m.tipo_manutencao = 'instalacao'";
-    }
-    if ($status_filter !== 'todos') {
-        $sql .= " AND op.status = ?";
-        $params[] = $status_filter;
-        $types .= 's';
-    }
+} else {
+    // Lógica existente para os outros status ('pendente', 'concluido', 'cancelado')
+    $sql = "
+        SELECT
+            op.id_ocorrencia_processamento AS id, 'processamento' AS origem, op.descricao AS ocorrencia_reparo,
+            m.reparo_finalizado, op.status, op.dt_ocorrencia AS inicio_reparo, op.dt_resolucao AS fim_reparo,
+            e.nome_equip, e.referencia_equip, c.nome AS nome_cidade,
+            CONCAT(e.referencia_equip, ', ', en.logradouro, ', ', en.bairro) AS local_completo,
+            u.nome AS atribuido_por
+        FROM ocorrencia_processamento op
+        JOIN manutencoes m ON op.id_manutencao = m.id_manutencao
+        JOIN equipamentos e ON m.id_equipamento = e.id_equipamento
+        JOIN cidades c ON e.id_cidade = c.id_cidade
+        JOIN endereco en ON e.id_endereco = en.id_endereco
+        LEFT JOIN usuario u ON op.id_usuario_registro = u.id_usuario
+        WHERE 1=1 AND op.status = ?
+    ";
+    $params[] = $status_filter;
+    $types .= 's';
+
+    if ($tipo_filter === 'manutencao') { $sql .= " AND op.tipo_ocorrencia IN ('preditiva', 'corretiva')"; } 
+    elseif ($tipo_filter === 'instalacao') { $sql .= " AND op.tipo_ocorrencia = 'instalacao'"; }
     if (!empty($data_inicio)) { $sql .= " AND DATE(op.dt_ocorrencia) >= ?"; $params[] = $data_inicio; $types .= 's'; }
     if (!empty($data_fim)) { $sql .= " AND DATE(op.dt_ocorrencia) <= ?"; $params[] = $data_fim; $types .= 's'; }
+    $sql .= " ORDER BY c.nome, op.dt_ocorrencia DESC";
 }
 
-$sql .= " ORDER BY nome_cidade, inicio_reparo DESC";
 
 try {
     $stmt = $conn->prepare($sql);

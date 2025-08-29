@@ -47,7 +47,7 @@ if ($is_installation) {
         exit();
     }
     
-    // --- INÍCIO DA LÓGICA ATUALIZADA ---
+        
     $completed_count = 0;
     $is_dome_or_cco = ($tipo_equip === 'DOME' || $tipo_equip === 'CCO');
     $total_steps = $is_dome_or_cco ? 3 : 4;
@@ -73,7 +73,7 @@ if ($is_installation) {
         }
         $stmt_prov->close();
     }
-    // --- FIM DA LÓGICA ATUALIZADA ---
+    
     
     $novo_status_geral = 'pendente'; 
     $updates[] = "status_reparo = ?";
@@ -87,7 +87,7 @@ if ($is_installation) {
     $stmt = $conn->prepare($sql);
     $stmt->bind_param($types, ...$params);
 
-} else { // --- LÓGICA PARA MANUTENÇÕES CORRETIVAS (SEM ALTERAÇÃO) ---
+} else { // --- LÓGICA PARA MANUTENÇÕES ---
     $reparo_finalizado = $data['reparo_finalizado'] ?? null;
     $materiais_utilizados = $data['materiais_utilizados'] ?? null;
     $motivo_devolucao = $data['motivo_devolucao'] ?? null;
@@ -105,7 +105,7 @@ if ($is_installation) {
     $types = "s";
     $params = [$status_reparo];
 
-    if ($status_reparo === 'concluido') {
+    if ($status_reparo === 'concluido' || $status_reparo === 'validação') {
         $sql .= ", fim_reparo = NOW(), reparo_finalizado = ?, materiais_utilizados = ?, motivo_devolucao = NULL, tempo_reparo = TIMEDIFF(NOW(), inicio_reparo)";
         $types .= "ss";
         $params[] = $reparo_finalizado;
