@@ -5,13 +5,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const cityFilterContainer = document.getElementById('cityFilterContainer');
     const ocorrenciasContainer = document.getElementById('ocorrenciasContainer');
     const loadingMessage = document.getElementById('loadingMessage');
-    
+
     const searchInput = document.getElementById('searchInput');
     const clearFiltersBtn = document.getElementById('clearFiltersBtn');
     const searchSpacer = document.querySelector('.search-spacer');
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');
 
+    const btnProvedor = document.getElementById('btnProvedor');
     const btnInLoco = document.getElementById('btnInLoco');
     const btnSemIntervencao = document.getElementById('btnSemIntervencao');
     const btnTecnicoDw = document.getElementById('btnTecnicoDw');
@@ -21,6 +22,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const problemaTecnicoDwTextarea = document.getElementById('problemaTecnicoDwTextarea');
     const reparoRealizadoError = document.getElementById('reparoRealizadoError');
     const problemaTecnicoDwError = document.getElementById('problemaTecnicoDwError');
+    const concluirModalError = document.getElementById('concluirModalError');
 
     // --- Variáveis de Estado ---
     let filters = { type: 'manutencao', status: 'todos', startDate: '', endDate: '', city: 'todos' };
@@ -40,9 +42,9 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             const response = await fetch(`API/get_ocorrencias_provedores.php?${params.toString()}`);
             const result = await response.json();
-            if (isUpdateCheck) { 
-                handleUpdateCheck(result); 
-                return; 
+            if (isUpdateCheck) {
+                handleUpdateCheck(result);
+                return;
             }
             loadingMessage.classList.add('hidden');
             if (result.success) {
@@ -89,9 +91,15 @@ document.addEventListener('DOMContentLoaded', function () {
         let statusHTML = `<span class="status-tag ${statusClass}">${statusClass}</span>`;
         let completionDetails = '';
         if (statusClass === 'concluido') {
-            if (item.inLoco == 1) completionDetails = '<span class="completion-tag">Realizado por Provedor</span>';
-            else if (item.sem_intervencao == 1) completionDetails = '<span class="completion-tag">Sem Intervenção Técnica</span>';
-            else if (item.tecnico_dw == 1) completionDetails = '<span class="completion-tag">Reparo Deltaway</span>';
+            if (item.provedor == 1) {
+                completionDetails = '<span class="completion-tag">Provedor</span>';
+            } else if (item.inLoco == 1) {
+                completionDetails = '<span class="completion-tag">Técnico Provedor</span>';
+            } else if (item.sem_intervencao == 1) {
+                completionDetails = '<span class="completion-tag">Sem Intervenção Técnica</span>';
+            } else if (item.tecnico_dw == 1) {
+                completionDetails = '<span class="completion-tag">Reparo Deltaway</span>';
+            }
             statusHTML += completionDetails;
         }
         let reparoFinalizadoHTML = '';
@@ -150,7 +158,7 @@ document.addEventListener('DOMContentLoaded', function () {
             group.style.display = isCityVisible && hasVisibleItemsInGroup ? 'block' : 'none';
         });
     }
-    
+
     function adjustSearchSpacer() {
         if (clearFiltersBtn && searchSpacer) {
             const buttonWidth = clearFiltersBtn.offsetWidth;
@@ -243,34 +251,46 @@ document.addEventListener('DOMContentLoaded', function () {
             fetchData();
         });
     }
-    
+
     function setupConclusionModalListeners() {
-        const optionButtons = [btnInLoco, btnSemIntervencao, btnTecnicoDw];
+        const optionButtons = [btnInLoco, btnSemIntervencao, btnTecnicoDw, btnProvedor];
+
         optionButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
-                optionButtons.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                conclusionType = btn.id.replace('btn', '').toLowerCase();
-                const showReparo = conclusionType === 'inloco' || conclusionType === 'semintervencao';
-                reparoRealizadoContainer.classList.toggle('hidden', !showReparo);
-                problemaTecnicoDwContainer.classList.toggle('hidden', showReparo);
-            });
+            if (btn) { // Verifica se o botão existe antes de adicionar o listener
+
+                btn.addEventListener('click', () => {
+                    if (concluirModalError) {
+                        concluirModalError.style.display = 'none'; // Oculta a mensagem de erro
+                    }
+                    optionButtons.forEach(b => {
+                        if (b) b.classList.remove('active')
+                    });
+                    btn.classList.add('active');
+
+                    conclusionType = btn.id.replace('btn', '').toLowerCase();
+
+                    const showReparo = conclusionType === 'inloco' || conclusionType === 'semintervencao' || conclusionType === 'provedor';
+
+                    reparoRealizadoContainer.classList.toggle('hidden', !showReparo);
+                    problemaTecnicoDwContainer.classList.toggle('hidden', showReparo);
+                });
+            }
         });
     }
+
 
     window.openConcluirModal = (id, origem) => {
         currentItem = findOcorrenciaById(id, origem);
         if (!currentItem) return;
-        [btnInLoco, btnSemIntervencao, btnTecnicoDw].forEach(b => b.classList.remove('active'));
+        [btnInLoco, btnSemIntervencao, btnTecnicoDw, btnProvedor].forEach(b => b.classList.remove('active'));
         reparoRealizadoContainer.classList.add('hidden');
         problemaTecnicoDwContainer.classList.add('hidden');
         reparoRealizadoTextarea.value = '';
         problemaTecnicoDwTextarea.value = '';
         reparoRealizadoError.style.display = 'none';
         problemaTecnicoDwError.style.display = 'none';
-        btnInLoco.classList.add('active');
-        conclusionType = 'inloco';
-        reparoRealizadoContainer.classList.remove('hidden');
+        concluirModalError.style.display = 'none';
+        conclusionType = null;
         document.getElementById('concluirModalEquipName').textContent = `${currentItem.nome_equip} - ${currentItem.referencia_equip}`;
         document.getElementById('concluirOcorrenciaText').textContent = currentItem.ocorrencia_reparo;
         openModal('concluirModal');
@@ -280,7 +300,17 @@ document.addEventListener('DOMContentLoaded', function () {
         let isValid = true;
         reparoRealizadoError.style.display = 'none';
         problemaTecnicoDwError.style.display = 'none';
-        if (conclusionType === 'inloco' || conclusionType === 'semintervencao') {
+
+        if (!conclusionType) {
+            if (concluirModalError) {
+                concluirModalError.textContent = 'É obrigatório selecionar uma opção de conclusão.';
+                concluirModalError.style.display = 'block';
+            }
+            isValid = false;
+            // Não retorna aqui para permitir que outras validações de texto também apareçam, se necessário
+        }
+
+        if (conclusionType === 'inloco' || conclusionType === 'semintervencao' || conclusionType === 'provedor') {
             if (reparoRealizadoTextarea.value.trim() === '') {
                 reparoRealizadoError.textContent = 'A descrição do reparo é obrigatória.';
                 reparoRealizadoError.style.display = 'block';
@@ -304,24 +334,44 @@ document.addEventListener('DOMContentLoaded', function () {
 
     async function saveConclusion() {
         let reparoFinalizado = '';
-        let inLoco = 0, semIntervencao = 0, tecnicoDw = 0;
-        if (conclusionType === 'inloco' || conclusionType === 'semintervencao') {
+        let inLoco = 0, semIntervencao = 0, tecnicoDw = 0, provedor = 0;
+
+        if (!validateConclusionForm()) {
+            return; // Para a execução se o formulário for inválido
+        }
+
+        if (conclusionType === 'inloco' || conclusionType === 'semintervencao' || conclusionType === 'provedor') {
             reparoFinalizado = reparoRealizadoTextarea.value.trim();
-            if (conclusionType === 'inloco') inLoco = 1; else semIntervencao = 1;
+            if (conclusionType === 'inloco') inLoco = 1;
+            else if (conclusionType === 'semintervencao') semIntervencao = 1;
+            else if (conclusionType === 'provedor') provedor = 1;
+
         } else if (conclusionType === 'tecnicodw') {
             reparoFinalizado = problemaTecnicoDwTextarea.value.trim();
             tecnicoDw = 1;
         }
+
         const confirmButton = document.getElementById('confirmActionButton');
         const spinner = document.getElementById('confirmSpinner');
         const messageEl = document.getElementById('confirmationMessage');
+
         spinner.classList.add('is-active');
         confirmButton.disabled = true;
+
         try {
             const response = await fetch('API/update_ocorrencia.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'concluir_ocorrencia_provedor', id: currentItem.id, origem: currentItem.origem, reparo_finalizado: reparoFinalizado, inLoco: inLoco, sem_intervencao: semIntervencao, tecnico_dw: tecnicoDw })
+                body: JSON.stringify({
+                    action: 'concluir_ocorrencia_provedor',
+                    id: currentItem.id,
+                    origem: currentItem.origem,
+                    reparo_finalizado: reparoFinalizado,
+                    inLoco: inLoco,
+                    sem_intervencao: semIntervencao,
+                    tecnico_dw: tecnicoDw,
+                    provedor: provedor
+                })
             });
             const result = await response.json();
             if (result.success) {
@@ -448,7 +498,7 @@ document.addEventListener('DOMContentLoaded', function () {
             spinner.classList.remove('is-active');
         }
     }
-    
+
     function updateCityFilters() {
         cityFilterContainer.innerHTML = '';
         const cities = allData.cidades || [];
@@ -467,7 +517,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
     }
-    
+
     window.openModal = (modalId) => document.getElementById(modalId).classList.add('is-active');
     window.closeModal = (modalId) => {
         const modal = document.getElementById(modalId);
@@ -487,13 +537,24 @@ document.addEventListener('DOMContentLoaded', function () {
             resetModalState(modal);
         }
     };
-    
+
     // --- Inicialização da Página ---
     initializeFilters();
     setupConclusionModalListeners();
     fetchData();
     startUpdatePolling();
 
+    reparoRealizadoTextarea.addEventListener('input', () => {
+        if (reparoRealizadoTextarea.value.trim() !== '') {
+            reparoRealizadoError.style.display = 'none';
+        }
+    });
+
+    problemaTecnicoDwTextarea.addEventListener('input', () => {
+        if (problemaTecnicoDwTextarea.value.trim() !== '') {
+            problemaTecnicoDwError.style.display = 'none';
+        }
+    });
     // Ajusta o espaçador também em caso de redimensionamento da janela
     window.addEventListener('resize', adjustSearchSpacer);
 });

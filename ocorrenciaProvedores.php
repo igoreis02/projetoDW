@@ -533,10 +533,20 @@ if (!isset($_SESSION['user_id'])) {
         }
         
         .error-message {
-            color: #ef4444;
-            font-size: 0.875em;
-            font-weight: 500;
-            margin-top: 5px;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            text-align: center;
+            width: 100%;
+            box-sizing: border-box;
+             background-color: #f8d7da;
+            /* Caixa vermelha clara */
+            color: #721c24;
+            /* Letras vermelhas escuras */
+            border: 1px solid #f5c6cb;
+            /* Borda vermelha */
+            font-weight: bold;
+            /* Letras em negrito */
             display: none; 
         }
         
@@ -621,15 +631,34 @@ if (!isset($_SESSION['user_id'])) {
             width: 100%;
         }
 
+        .error-message {
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            width: 100%;
+            box-sizing: border-box;
+             background-color: #f8d7da;
+            /* Caixa vermelha clara */
+            color: #721c24;
+            /* Letras vermelhas escuras */
+            border: 1px solid #f5c6cb;
+            /* Borda vermelha */
+            font-weight: bold;
+            /* Letras em negrito */
+            display: none; 
+        }
         .message.success {
-            background-color: #dcfce7;
-            color: #16a34a;
+             background-color: #d4edda;
+            /* Caixa verde clara */
+            color: #155724;
+            /* Letras verdes escuras */
+            border: 1px solid #c3e6cb;
+            /* Borda verde */
+            font-weight: bold;
+            /* Letras em negrito */
         }
 
-        .message.error {
-            background-color: #fee2e2;
-            color: #ef4444;
-        }
+        
 
         .spinner {
             border: 4px solid rgba(255, 255, 255, 0.3);
@@ -710,22 +739,24 @@ if (!isset($_SESSION['user_id'])) {
                 </div>
                 
                 <div class="conclusion-options">
-                    <button id="btnInLoco" class="option-btn active">Técnico inLoco</button>
+                    <button id="btnProvedor" class="option-btn">Provedor</button>
+                    <button id="btnInLoco" class="option-btn">Técnico inLoco</button>
                     <button id="btnSemIntervencao" class="option-btn">Sem Intervenção</button>
                     <button id="btnTecnicoDw" class="option-btn">Técnico DW</button>
                 </div>
+                        <p class="error-message" id="concluirModalError"></p>
 
                 <div id="reparoRealizadoContainer" class="form-group">
                     <label for="reparoRealizadoTextarea">Descrição do Reparo</label>
                     <textarea id="reparoRealizadoTextarea" placeholder="Descreva o serviço que foi realizado..."></textarea>
-                    <p class="error-message" id="reparoRealizadoError"></p>
                 </div>
+                <p class="error-message" id="reparoRealizadoError"></p>
                 
                 <div id="problemaTecnicoDwContainer" class="form-group hidden">
                     <label for="problemaTecnicoDwTextarea">Reportar Problema para Técnico DW</label>
                     <textarea id="problemaTecnicoDwTextarea" placeholder="Descreva o problema a ser resolvido pelo técnico..."></textarea>
-                     <p class="error-message" id="problemaTecnicoDwError"></p>
                 </div>
+                <p class="error-message" id="problemaTecnicoDwError"></p>
                 </div>
             <div class="modal-footer">
                 <div class="modal-footer-buttons">

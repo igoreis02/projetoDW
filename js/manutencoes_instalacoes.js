@@ -91,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currentMaintenanceType = type;
         currentRepairStatus = status;
         currentFlow = flow;
-        document.getElementById('modalTitle').textContent = flow === 'installation' ? 'Cadastrar Instalação' : 'Cadastrar Manutenção';
+        document.getElementById('modalTitle').textContent = flow === 'installation' ? 'Cadastrar Instalação' : 'Cadastrar Ocorrência';
         cadastroManutencaoModal.classList.add('is-active');
         citySelectionSection.style.display = 'block';
         equipmentSelectionSection.style.display = 'none';
@@ -179,6 +179,54 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function resetForNewOperationInSameCity() {
+        // 1. Reseta e esconde o modal de confirmação
+        confirmationModal.classList.remove('is-active');
+        confirmMessage.classList.add('hidden');
+        confirmationButtonsDiv.style.display = 'flex';
+        confirmSaveButton.disabled = false;
+        cancelSaveButton.disabled = false;
+        confirmSpinner.classList.add('hidden');
+
+        // 2. Limpa variáveis de estado da última operação
+        selectedEquipment = null;
+        selectedProblemDescription = '';
+        selectedRepairDescription = '';
+        existingMaintenanceData = null;
+        resetarBotoesDeEscolha(); // Reutiliza sua função para limpar os botões
+
+        // 3. Verifica o fluxo atual para exibir a tela correta
+        if (currentFlow === 'installation') {
+            // Limpa todos os campos do formulário de instalação para um novo cadastro
+            installEquipmentAndAddressSection.querySelectorAll('input, select, textarea').forEach(el => el.value = '');
+            quantitySection.classList.add('hidden');
+            document.getElementById('newEquipmentType').value = '';
+
+            // Garante que a tela de instalação continue visível
+            installEquipmentAndAddressSection.style.display = 'flex';
+            equipmentSelectionSection.style.display = 'none';
+
+        } else { // Fluxo de 'maintenance'
+            // Limpa os campos específicos da manutenção
+            problemDescriptionInput.value = '';
+            repairDescriptionInput.value = '';
+            equipmentSearchInput.value = '';
+
+            // Esconde as seções condicionais para um formulário limpo
+            problemDescriptionSection.style.display = 'none';
+            realizadoPorSection.style.display = 'none';
+            reparoConcluidoSection.style.display = 'none';
+            tecnicoInLocoSection.style.display = 'none';
+            repairDescriptionSection.style.display = 'none';
+
+            // Garante que a tela de seleção de equipamento continue visível
+            equipmentSelectionSection.style.display = 'flex';
+            installEquipmentAndAddressSection.style.display = 'none';
+
+            // 4. Recarrega a lista de equipamentos da cidade que já estava selecionada
+            loadEquipamentos(selectedCityId, '');
+        }
+    }
     window.goBackToCitySelection = function () {
         citySelectionSection.style.display = 'block';
         equipmentSelectionSection.style.display = 'none';
@@ -577,7 +625,7 @@ document.addEventListener('DOMContentLoaded', () => {
             confirmationButtonsDiv.style.display = 'none';
 
             setTimeout(() => {
-                closeCadastroManutencaoModal();
+                 resetForNewOperationInSameCity();
             }, 2000);
 
         } catch (error) {

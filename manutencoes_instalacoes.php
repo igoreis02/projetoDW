@@ -193,7 +193,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             flex-direction: column;
             gap: 10px;
             margin-top: 20px;
-            max-height: 300px;
+            max-height: 400px;
             overflow-y: auto;
             padding-right: 10px;
         }

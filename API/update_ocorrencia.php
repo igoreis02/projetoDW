@@ -39,6 +39,8 @@ try {
         $inLoco = $input['inLoco'] ?? 0;
         $sem_intervencao = $input['sem_intervencao'] ?? 0;
         $tecnico_dw = $input['tecnico_dw'] ?? 0;
+        // --- IMPLEMENTAÇÃO ADICIONADA ---
+        $provedor = $input['provedor'] ?? 0; // Captura o novo campo 'provedor'
 
         if (empty($reparo_finalizado)) {
             throw new Exception('A descrição do reparo/problema é obrigatória.');
@@ -64,10 +66,22 @@ try {
             if (!$ocorrencia_data) throw new Exception("Ocorrência não encontrada em nenhuma das tabelas.");
         }
 
+        // --- IMPLEMENTAÇÃO ADICIONADA NA QUERY E NO BIND ---
         // Agora, atualizamos a ocorrência na tabela 'ocorrencia_provedor'
-        $sql_update = "UPDATE ocorrencia_provedor SET status = 'concluido', dt_fim_reparo = NOW(), id_usuario_concluiu = ?, des_reparo = ?, inLoco = ?, sem_intervencao = ?, tecnico_dw = ?, tempo_reparo = TIMEDIFF(NOW(), dt_inicio_reparo) WHERE id_ocorrencia_provedor = ?";
+        $sql_update = "UPDATE ocorrencia_provedor SET 
+                    status = 'concluido', 
+                    dt_fim_reparo = NOW(), 
+                    id_usuario_concluiu = ?, 
+                    des_reparo = ?, 
+                    inLoco = ?, 
+                    sem_intervencao = ?, 
+                    tecnico_dw = ?, 
+                    provedor = ?, -- Campo adicionado
+                    tempo_reparo = TIMEDIFF(NOW(), dt_inicio_reparo) 
+                   WHERE id_ocorrencia_provedor = ?";
         $stmt_update = $conn->prepare($sql_update);
-        $stmt_update->bind_param('isiiis', $id_usuario_concluiu, $reparo_finalizado, $inLoco, $sem_intervencao, $tecnico_dw, $id);
+        // Adicionado um 'i' para o novo campo $provedor (integer)
+        $stmt_update->bind_param('isiiiis', $id_usuario_concluiu, $reparo_finalizado, $inLoco, $sem_intervencao, $tecnico_dw, $provedor, $id);
 
         if (!$stmt_update->execute()) {
             throw new Exception('Falha ao concluir a ocorrência.');
