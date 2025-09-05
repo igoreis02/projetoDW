@@ -286,8 +286,8 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             max-width: 150px;
         }
 
-        .confirm-button{
-            
+        .confirm-button {
+
             color: white;
             border: none;
             border-radius: 8px;
@@ -295,6 +295,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             cursor: pointer;
             font-size: 1em;
         }
+
         .loading-spinner {
             border: 4px solid rgba(255, 255, 255, 0.3);
             border-top-color: #ffffff;
@@ -423,7 +424,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
                         <button id="btnReparoNao" class="page-button">Não</button>
                     </div>
                 </div>
-                
+
                 <div id="tecnicoInLocoSection" class="choice-container">
                     <label>Precisa de técnico In Loco:</label>
                     <div class="choice-buttons">
@@ -436,7 +437,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
                     <label for="repairDescription">Descrição do reparo:</label>
                     <textarea id="repairDescription" rows="4" placeholder="Descreva o reparo realizado..."></textarea>
                 </div>
-                
+
                 <span id="equipmentSelectionErrorMessage" class="selection-error-message hidden"></span>
                 <button id="confirmEquipmentSelection" class="page-button" style="margin-top: 1rem;">
                     Avançar <span id="selectionSpinner" class="loading-spinner hidden"></span>
@@ -507,7 +508,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
         </div>
     </div>
 
-   <div id="confirmationModal" class="modal">
+    <div id="confirmationModal" class="modal">
         <div class="modal-content">
             <span class="close-button" onclick="closeConfirmationModal()">&times;</span>
             <h3 id="modalTitleConfirm">Confirmação da Operação</h3>
@@ -525,7 +526,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
                     <p><strong>Tipo:</strong> <span id="confirmEquipmentType"></span></p>
                     <p><strong>Nome:</strong> <span id="confirmNewEquipmentName"></span></p>
                     <p><strong>Referência:</strong> <span id="confirmNewEquipmentRef"></span></p>
-                    
+
                     <p id="confirmQuantityContainer" class="hidden"><strong>Qtd. Faixas:</strong> <span id="confirmEquipmentQuantity"></span></p>
                     <p><strong>Logradouro:</strong> <span id="confirmAddressLogradouro"></span></p>
                     <p><strong>Bairro:</strong> <span id="confirmAddressBairro"></span></p>
@@ -535,7 +536,14 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
 
                 <div id="confirmProviderContainer" class="hidden">
                     <p><strong>Problema:</strong> <span id="confirmProviderProblem"></span></p>
-                    <p><strong>Ação:</strong> <span>Atribuído ao provedor <strong id="confirmProviderName"></strong>, aguardando manutenção.</span></p>
+
+                    <p id="confirmProviderAcao">
+                        <strong>Ação:</strong> <span>Atribuído ao provedor <strong id="confirmProviderName"></strong>, aguardando manutenção.</span>
+                    </p>
+
+                    <p id="confirmProviderReparo" class="hidden">
+                        <strong>Reparo Realizado:</strong> <span id="confirmProviderReparoText"></span>
+                    </p>
                 </div>
 
                 <p><strong>Tipo de Operação:</strong> <span id="confirmMaintenanceType"></span></p>
@@ -551,7 +559,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
         </div>
     </div>
 
-    
+
     <script src="js/manutencoes_instalacoes.js"></script>
 </body>
 

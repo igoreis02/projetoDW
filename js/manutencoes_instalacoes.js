@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const realizadoPorSection = document.getElementById('realizadoPorSection');
     const btnProcessamento = document.getElementById('btnProcessamento');
     const btnProvedor = document.getElementById('btnProvedor');
-    
+
     // --- NOVAS REFERÊNCIAS ---
     const reparoConcluidoSection = document.getElementById('reparoConcluidoSection');
     const btnReparoSim = document.getElementById('btnReparoSim');
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
             quantitySection.classList.remove('hidden');
         } else {
             quantitySection.classList.add('hidden');
-            document.getElementById('newEquipmentQuantity').value = ''; 
+            document.getElementById('newEquipmentQuantity').value = '';
         }
     });
 
@@ -127,12 +127,12 @@ document.addEventListener('DOMContentLoaded', () => {
         [installEquipmentAndAddressSection, equipmentSelectionSection].forEach(section => {
             if (section) section.querySelectorAll('input, select, textarea').forEach(el => el.value = '');
         });
-        
+
         [realizadoPorSection, tecnicoInLocoSection, repairDescriptionSection, problemDescriptionSection, reparoConcluidoSection].forEach(el => {
             if (el) el.style.display = 'none';
         });
 
-        quantitySection.classList.add('hidden'); 
+        quantitySection.classList.add('hidden');
         equipmentSelectionErrorMessage.classList.add('hidden');
         confirmMessage.classList.add('hidden');
         confirmationButtonsDiv.style.display = 'flex';
@@ -225,7 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     btnProcessamento.addEventListener('click', () => {
         handleButtonClick(btnProcessamento, 'realizadoPorSection');
-        reparoConcluidoSection.style.display = 'flex'; 
+        reparoConcluidoSection.style.display = 'flex';
         tecnicoInLocoSection.style.display = 'none';
         repairDescriptionSection.style.display = 'none';
         tecnicoInLoco = null;
@@ -266,9 +266,11 @@ document.addEventListener('DOMContentLoaded', () => {
     async function proceedToConfirmation() {
         const equipId = equipmentSelect.value;
         const problemDesc = problemDescriptionInput.value.trim();
+        // A descrição do reparo do input só é relevante para outros fluxos agora
         const repairDesc = repairDescriptionInput.value.trim();
         let errorMessage = '';
 
+        // --- BLOCO DE VALIDAÇÃO ATUALIZADO ---
         if (!equipId) errorMessage = 'Por favor, selecione um equipamento.';
         else if (!problemDesc) errorMessage = 'A descrição do problema é obrigatória.';
 
@@ -277,7 +279,8 @@ document.addEventListener('DOMContentLoaded', () => {
             else if (realizadoPor === 'processamento' && reparoConcluido === null) errorMessage = 'Informe se o reparo foi concluído (Sim ou Não).';
             else if (realizadoPor === 'processamento' && reparoConcluido === true && !repairDesc) errorMessage = 'Descreva o reparo realizado.';
             else if (realizadoPor === 'provedor' && tecnicoInLoco === null) errorMessage = 'Informe se precisa de técnico em campo.';
-            else if (realizadoPor === 'provedor' && !tecnicoInLoco && !repairDesc) errorMessage = 'Descreva o reparo realizado pelo Provedor.';
+            // A validação que pedia para descrever o reparo do provedor foi REMOVIDA,
+            // pois a descrição agora é gerada automaticamente no caso de "Não precisar de técnico".
         }
 
         if (errorMessage) {
@@ -289,7 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
         equipmentSelectionErrorMessage.classList.add('hidden');
         selectedEquipment = allEquipments.find(e => e.id_equipamento == equipId);
         selectedProblemDescription = problemDesc;
-        selectedRepairDescription = repairDesc;
+        selectedRepairDescription = repairDesc; // Armazena para outros usos, se houver
 
         document.getElementById('confirmCityName').textContent = selectedCityName;
         document.getElementById('confirmMaintenanceType').textContent = currentMaintenanceType.charAt(0).toUpperCase() + currentMaintenanceType.slice(1);
@@ -301,16 +304,40 @@ document.addEventListener('DOMContentLoaded', () => {
             finalStatus = 'concluido';
         }
 
-
+        // Reseta a visibilidade dos containers do modal
         document.getElementById('installConfirmationDetails').classList.add('hidden');
         document.getElementById('maintenanceConfirmationDetails').classList.add('hidden');
         document.getElementById('confirmProviderContainer').classList.add('hidden');
+        // Garante que os sub-containers do provedor também estejam resetados
+        if (document.getElementById('confirmProviderAcao')) document.getElementById('confirmProviderAcao').classList.add('hidden');
+        if (document.getElementById('confirmProviderReparo')) document.getElementById('confirmProviderReparo').classList.add('hidden');
 
-        if (currentMaintenanceType === 'preditiva' && realizadoPor === 'provedor') { 
+
+        // --- LÓGICA DE EXIBIÇÃO CORRIGIDA ---
+        if (currentMaintenanceType === 'preditiva' && realizadoPor === 'provedor') {
             document.getElementById('confirmProviderProblem').textContent = selectedProblemDescription;
-            document.getElementById('confirmProviderName').textContent = selectedEquipment.nome_prov || 'Não especificado';
+
+            if (tecnicoInLoco) {
+                // Cenário: SIM, precisa de técnico -> Mostra AÇÃO
+                const providerNameEl = document.getElementById('confirmProviderName');
+                const providerAcaoEl = document.getElementById('confirmProviderAcao');
+                if (providerNameEl) providerNameEl.textContent = selectedEquipment.nome_prov || 'Não especificado';
+                if (providerAcaoEl) providerAcaoEl.classList.remove('hidden');
+
+            } else {
+                // Cenário: NÃO, não precisa de técnico -> Mostra REPARO REALIZADO
+                const providerReparoTextEl = document.getElementById('confirmProviderReparoText');
+                const providerReparoEl = document.getElementById('confirmProviderReparo');
+                if (providerReparoTextEl) {
+                    providerReparoTextEl.textContent = selectedRepairDescription;
+                }
+                if (providerReparoEl) providerReparoEl.classList.remove('hidden');
+            }
+
             document.getElementById('confirmProviderContainer').classList.remove('hidden');
+
         } else {
+            // Lógica para todos os outros tipos de manutenção (continua a mesma)
             document.getElementById('confirmEquipmentName').textContent = `${selectedEquipment.nome_equip} - ${selectedEquipment.referencia_equip}`;
             document.getElementById('confirmProblemDescription').textContent = selectedProblemDescription;
             if (repairDesc) {
@@ -454,10 +481,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             } else {
                 // ### INÍCIO DA LÓGICA DE DIRECIONAMENTO ###
-                
+
                 // FLUXO 1: SE FOR "CONTROLE DE OCORRÊNCIA" (preditiva) E "PROVEDOR"
                 if (currentMaintenanceType === 'preditiva' && realizadoPor === 'provedor') {
-                    
+
                     const payload = {
                         city_id: selectedCityId,
                         equipment_id: selectedEquipment.id_equipamento,
@@ -467,7 +494,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         tecnico_in_loco: tecnicoInLoco,
                         tipo_ocorrencia: 'manutencao'
                     };
-                    
+
                     const response = await fetch('API/save_ocorrencia_provedor.php', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -478,10 +505,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 } else {
                     // FLUXO 2: PARA TODOS OS OUTROS CASOS (MATRIZ TÉCNICA E PROCESSAMENTO)
-                    
+
                     let endpoint = 'API/save_manutencao.php';
                     let payload = {};
-                    
+
                     if (existingMaintenanceData) {
                         payload = {
                             id_manutencao_existente: existingMaintenanceData.id,
@@ -498,7 +525,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         } else {
                             statusParaSalvar = currentRepairStatus; // Fallback para corretiva
                         }
-                        
+
                         payload = {
                             city_id: selectedCityId,
                             equipment_id: selectedEquipment.id_equipamento,
@@ -510,7 +537,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             realizado_por: realizadoPor
                         };
                     }
-                    
+
                     const response = await fetch(endpoint, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -518,14 +545,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                     const data = await response.json();
                     if (!data.success) throw new Error(data.message || 'Ocorreu um erro.');
-                    
+
                     // Se for "Processamento" e o reparo NÃO foi concluído, salva na tabela de processamento
                     if (realizadoPor === 'processamento' && !reparoConcluido) {
                         const idManutencaoSalva = data.id_manutencao;
                         if (!idManutencaoSalva) {
                             throw new Error('Não foi possível obter o ID da manutenção para registrar o processamento.');
                         }
-                        
+
                         const processamentoPayload = {
                             id_manutencao: idManutencaoSalva,
                             tipo_ocorrencia: 'preditiva',
@@ -540,7 +567,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const processamentoData = await processamentoResponse.json();
                         if (!processamentoData.success) throw new Error(processamentoData.message || 'Falha ao salvar na tabela de processamento.');
                     }
-                } 
+                }
             }
 
             confirmMessage.textContent = 'Operação realizada com sucesso!';
