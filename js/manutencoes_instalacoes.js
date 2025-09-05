@@ -475,7 +475,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                     const data = await response.json();
                     if (!data.success) throw new Error(data.message || 'Ocorreu um erro ao salvar a ocorrência do provedor.');
-                
+
                 } else {
                     // FLUXO 2: PARA TODOS OS OUTROS CASOS (MATRIZ TÉCNICA E PROCESSAMENTO)
                     
@@ -508,7 +508,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             tipo_manutencao: currentMaintenanceType,
                             status_reparo: statusParaSalvar,
                             realizado_por: realizadoPor
-                            // Removido tecnico_in_loco daqui para não enviar para a tabela errada
                         };
                     }
                     
@@ -541,7 +540,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const processamentoData = await processamentoResponse.json();
                         if (!processamentoData.success) throw new Error(processamentoData.message || 'Falha ao salvar na tabela de processamento.');
                     }
-                } // ### FIM DA LÓGICA DE DIRECIONAMENTO ###
+                } 
             }
 
             confirmMessage.textContent = 'Operação realizada com sucesso!';

@@ -80,6 +80,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function applyFiltersAndRender() {
+        if (isSimplifiedViewActive) return; // Não faz nada se a visão simplificada estiver ativa
         if (!allData || !allData.ocorrencias) {
             ocorrenciasContainer.innerHTML = `<p>Nenhuma ocorrência pendente encontrada.</p>`;
             updateCityFilters([]);
@@ -188,8 +189,7 @@ document.addEventListener('DOMContentLoaded', function () {
         checkSelectionAndToggleButtons();
     }
 
-    // --- [MODIFICADO] LÓGICA PARA A VISÃO SIMPLIFICADA ---
-
+    // --- LÓGICA PARA A VISÃO SIMPLIFICADA ---
     function generateSimplifiedView() {
         if (!allData || !allData.ocorrencias || Object.keys(allData.ocorrencias).length === 0) {
             simplifiedView.innerHTML = '<p>Não há dados para exibir no resumo.</p>';
@@ -198,7 +198,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         let corretivasPorCidade = {};
         
-        // 1. Filtra APENAS manutenções 'corretiva' e agrupa por cidade
         for (const cidade in allData.ocorrencias) {
             const corretivas = allData.ocorrencias[cidade].filter(item => 
                 item.tipo_manutencao === 'corretiva'
@@ -208,7 +207,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
-        // Constrói o HTML do resumo
         let html = '<h2>MANUTENÇÕES CORRETIVAS PENDENTES:</h2>';
         const sortedCities = Object.keys(corretivasPorCidade).sort();
         
@@ -219,53 +217,42 @@ document.addEventListener('DOMContentLoaded', function () {
                 html += `<h3>${city}</h3>`;
                 html += `<ul>`;
                 for (const item of corretivasPorCidade[city]) {
-                    // 2. Lógica para extrair o nome antes do "-"
                     let displayName = item.nome_equip;
                     if (displayName && displayName.includes('-')) {
                         displayName = displayName.split('-')[0].trim();
                     }
-                    
-                    // 3. Monta o novo formato do item da lista
                     html += `<li><strong>${displayName}</strong> - ${item.referencia_equip}: ${item.ocorrencia_reparo}</li>`;
                 }
                 html += `</ul>`;
             }
         }
-
         simplifiedView.innerHTML = html;
     }
 
     function toggleView(showSimplified) {
         isSimplifiedViewActive = showSimplified;
 
-        // Elementos principais que são escondidos/mostrados
-        searchInput.parentElement.classList.toggle('hidden', showSimplified); // O .search-container
+        searchInput.parentElement.classList.toggle('hidden', showSimplified);
         filterContainer.classList.toggle('hidden', showSimplified);
         ocorrenciasContainer.classList.toggle('hidden', showSimplified);
         voltarBtnFooter.classList.toggle('hidden', showSimplified);
         simplifiedView.classList.toggle('hidden', !showSimplified);
         
-        // Esconde os botões de data e tipo (Manutenção/Instalação)
         mainControls.querySelector('.action-buttons').classList.toggle('hidden', showSimplified);
         mainControls.querySelector('.date-filter-container').classList.toggle('hidden', showSimplified);
         
-        // Atualiza o estado visual do botão "Simplificado"
         btnSimplificado.classList.toggle('active', showSimplified);
 
         if (showSimplified) {
             generateSimplifiedView();
-            // Desativa os outros botões de tipo
             document.getElementById('btnManutencoes').classList.remove('active');
             document.getElementById('btnInstalacoes').classList.remove('active');
         } else {
-            // Garante que o botão de manutenção volte a ser o ativo padrão
             document.getElementById('btnManutencoes').classList.add('active');
-            activeType = 'manutencao'; // Restaura o tipo ativo
-            applyFiltersAndRender(); // Re-renderiza a visão detalhada
+            activeType = 'manutencao';
+            applyFiltersAndRender();
         }
     }
-
-    // --- FIM DA MODIFICAÇÃO ---
 
 
     // --- EVENT LISTENERS E LÓGICA DE AÇÕES ---
@@ -491,6 +478,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // --- [CORRIGIDO] LÓGICA DE SALVAR ATRIBUIÇÃO ---
     window.saveAssignment = async function () {
         const saveBtn = document.getElementById('saveAssignmentBtn');
         const btnText = saveBtn.querySelector('span');
@@ -588,12 +576,19 @@ document.addEventListener('DOMContentLoaded', function () {
         openModal('editOcorrenciaModal');
     }
 
+    // --- [CORRIGIDO] LÓGICA DE SALVAR EDIÇÃO ---
     window.saveOcorrenciaUpdate = async function () {
+        const saveBtn = document.querySelector('#editOcorrenciaModal .btn-primary');
+        const originalBtnText = saveBtn.textContent;
         const newOcorrenciaText = document.getElementById('editOcorrenciaTextarea').value;
+        
         if (!newOcorrenciaText.trim()) {
             alert('A descrição da ocorrência não pode ficar em branco.');
             return;
         }
+
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Salvando...';
 
         const dataToSend = {
             action: 'edit_ocorrencia',
@@ -609,13 +604,22 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             const result = await response.json();
             if (result.success) {
-                closeModal('editOcorrenciaModal');
-                fetchData();
+                saveBtn.textContent = 'Salvo!';
+                setTimeout(() => {
+                    closeModal('editOcorrenciaModal');
+                    fetchData();
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = originalBtnText;
+                }, 1500);
             } else {
                 alert('Erro ao salvar alteração: ' + result.message);
+                saveBtn.disabled = false;
+                saveBtn.textContent = originalBtnText;
             }
         } catch (error) {
             alert('Erro de comunicação com o servidor.');
+            saveBtn.disabled = false;
+            saveBtn.textContent = originalBtnText;
         }
     }
 
@@ -631,6 +635,7 @@ document.addEventListener('DOMContentLoaded', function () {
         openModal('confirmationModal');
     }
 
+    // --- [CORRIGIDO] LÓGICA DE CANCELAR OCORRÊNCIA ---
     async function executeStatusChange(id, status) {
         const confirmFooter = document.getElementById('confirmationFooter');
         const confirmMessage = document.getElementById('confirmationMessage');
@@ -670,6 +675,7 @@ document.addEventListener('DOMContentLoaded', function () {
             confirmMessage.style.color = '#ef4444';
             confirmMessage.classList.remove('hidden');
         } finally {
+            // Reabilita o botão apenas se o modal ainda estiver ativo (em caso de erro)
             if (document.getElementById('confirmationModal').classList.contains('is-active')) {
                 confirmBtn.disabled = false;
             }
