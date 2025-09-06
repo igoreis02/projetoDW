@@ -12,7 +12,8 @@ require_once 'conexao_bd.php';
 $input = file_get_contents('php://input');
 $data = json_decode($input, true);
 
-if (!isset($data['id_cidade']) || !isset($data['nome']) || !isset($data['sigla_cidade']) || !isset($data['cod_cidade'])) {
+// Validação atualizada para incluir o novo campo
+if (!isset($data['id_cidade']) || !isset($data['nome']) || !isset($data['sigla_cidade']) || !isset($data['cod_cidade']) || !isset($data['somente_semaforo'])) {
     echo json_encode(['success' => false, 'message' => 'Dados incompletos para a atualização.']);
     exit();
 }
@@ -20,8 +21,10 @@ if (!isset($data['id_cidade']) || !isset($data['nome']) || !isset($data['sigla_c
 $conn->begin_transaction();
 
 try {
-    $stmt = $conn->prepare("UPDATE cidades SET nome = ?, sigla_cidade = ?, cod_cidade = ? WHERE id_cidade = ?");
-    $stmt->bind_param("sssi", $data['nome'], $data['sigla_cidade'], $data['cod_cidade'], $data['id_cidade']);
+    // Query atualizada para incluir `somente_semaforo`
+    $stmt = $conn->prepare("UPDATE cidades SET nome = ?, sigla_cidade = ?, cod_cidade = ?, somente_semaforo = ? WHERE id_cidade = ?");
+    // Bind param atualizado
+    $stmt->bind_param("sssii", $data['nome'], $data['sigla_cidade'], $data['cod_cidade'], $data['somente_semaforo'], $data['id_cidade']);
     $stmt->execute();
     $stmt->close();
 

@@ -224,6 +224,26 @@ require_once 'conexao_bd.php';
             box-sizing: border-box;
         }
 
+        /* Estilo para container de botões de rádio */
+        .radio-container {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 0.5rem;
+            align-items: center;
+        }
+
+        .radio-container label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: normal;
+            margin-top: 0;
+        }
+
+        .radio-container input[type="radio"] {
+            width: auto;
+        }
+
         .formulario-modal button {
             width: 100%;
             padding: 1rem;
@@ -314,6 +334,16 @@ require_once 'conexao_bd.php';
 
                 <label for="codCidadeAdicionar">Código da Cidade:</label>
                 <input type="text" id="codCidadeAdicionar" name="cod_cidade" required>
+
+                <label>Somente semáforo:</label>
+                <div class="radio-container">
+                    <label>
+                        <input type="radio" name="somente_semaforo" value="1" required> Sim
+                    </label>
+                    <label>
+                        <input type="radio" name="somente_semaforo" value="0" checked required> Não
+                    </label>
+                </div>
                 
                 <div id="mensagemAdicionarCidade" class="mensagem" style="display: none;"></div>
                 <button type="submit" class="botao-salvar">
@@ -340,6 +370,16 @@ require_once 'conexao_bd.php';
                 <label for="codCidadeEdicao">Código da Cidade:</label>
                 <input type="text" id="codCidadeEdicao" name="cod_cidade" required>
                 
+                <label>Somente semáforo:</label>
+                <div class="radio-container">
+                    <label>
+                        <input type="radio" name="somente_semaforo" value="1" required> Sim
+                    </label>
+                    <label>
+                        <input type="radio" name="somente_semaforo" value="0" required> Não
+                    </label>
+                </div>
+
                 <div id="mensagemEdicaoCidade" class="mensagem" style="display: none;"></div>
                 <button type="submit" class="botao-salvar">
                     <span id="textoBotaoSalvarEdicao">Salvar Alterações</span>

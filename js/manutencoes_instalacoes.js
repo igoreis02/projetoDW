@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         cityButtonsContainer.innerHTML = '<p id="loadingCitiesMessage">Carregando cidades...</p>';
         try {
-            const response = await fetch('API/get_cidades.php');
+            const response = await fetch('API/get_cidades.php?context=manutencao');
             const data = await response.json();
             if (data.success && data.cidades.length > 0) {
                 cityButtonsContainer.innerHTML = '';

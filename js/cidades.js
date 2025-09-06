@@ -11,11 +11,14 @@ let dadosCidades = [];
             if (mostrar) {
                 botao.disabled = true;
                 if (spinner) spinner.style.display = 'block';
-                if (botaoTexto) botaoTexto.style.display = 'none';
+                // O seletor correto para o texto do botão
+                const textoBotao = botao.querySelector('span:not(.carregando)');
+                if (textoBotao) textoBotao.style.display = 'none';
             } else {
                 botao.disabled = false;
                 if (spinner) spinner.style.display = 'none';
-                if (botaoTexto) botaoTexto.style.display = 'block';
+                const textoBotao = botao.querySelector('span:not(.carregando)');
+                if (textoBotao) textoBotao.style.display = 'block';
             }
         }
         
@@ -38,6 +41,8 @@ let dadosCidades = [];
             const mensagem = document.getElementById('mensagemAdicionarCidade');
             
             formulario.reset();
+            // Garante que o botão 'Não' esteja selecionado por padrão
+            document.querySelector('input[name="somente_semaforo"][value="0"]').checked = true;
             alternarCarregamento(botao, spinner, false);
             mensagem.style.display = 'none';
             document.getElementById('modalAdicionarCidade').classList.add('esta-ativo');
@@ -60,13 +65,17 @@ let dadosCidades = [];
                 document.getElementById('siglaCidadeEdicao').value = cidade.sigla_cidade || '';
                 document.getElementById('codCidadeEdicao').value = cidade.cod_cidade || '';
 
+                // LÓGICA ATUALIZADA: Seleciona o botão de rádio correto
+                const valorSemaforo = cidade.somente_semaforo == 1 ? '1' : '0';
+                document.querySelector(`#formularioEdicaoCidade input[name="somente_semaforo"][value="${valorSemaforo}"]`).checked = true;
+
                 document.getElementById('modalEdicaoCidade').classList.add('esta-ativo');
             } else {
                 alert('Cidade não encontrada.');
             }
         }
         
-        // Função para renderizar a lista de cidades
+        // Função para renderizar a lista de cidades ATUALIZADA
         function exibirListaCidades(cidades) {
             const containerListaCidades = document.getElementById('containerListaCidades');
             if (cidades.length === 0) {
@@ -78,6 +87,7 @@ let dadosCidades = [];
                 <div class="item-cidade">
                     <h3>${cidade.nome} (${cidade.sigla_cidade || 'N/A'})</h3>
                     <p><strong>Código:</strong> ${cidade.cod_cidade || 'N/A'}</p>
+                    <p><strong>Somente Semáforo:</strong> ${cidade.somente_semaforo == 1 ? 'Sim' : 'Não'}</p>
                     <div class="btn-group">
                         <button class="botao-editar" onclick="abrirModalEdicaoCidade(${cidade.id_cidade})">Editar</button>
                         <button class="botao-excluir" onclick="excluirCidade(${cidade.id_cidade})">Excluir</button>
@@ -155,10 +165,11 @@ let dadosCidades = [];
 
                 if (result.success) {
                     exibirMensagem(mensagem, 'Cidade adicionada com sucesso!', 'sucesso');
-                    botao.style.display = 'none';
+                    botao.style.display = 'none'; // Esconde o botão após o sucesso
                     setTimeout(() => {
                         fecharModalAdicionarCidade();
                         buscarEExibirCidades();
+                        botao.style.display = 'flex'; // Reexibe o botão para o próximo uso
                     }, 1500);
                 } else {
                     exibirMensagem(mensagem, result.message || 'Erro ao adicionar cidade.', 'erro');
@@ -194,10 +205,11 @@ let dadosCidades = [];
                 
                 if (result.success) {
                     exibirMensagem(mensagem, 'Cidade atualizada com sucesso!', 'sucesso');
-                    botao.style.display = 'none';
+                    botao.style.display = 'none'; // Esconde o botão após o sucesso
                     setTimeout(() => {
                         fecharModalEdicaoCidade();
                         buscarEExibirCidades();
+                         botao.style.display = 'flex'; // Reexibe o botão para o próximo uso
                     }, 1500);
                 } else {
                     exibirMensagem(mensagem, result.message || 'Erro ao atualizar cidade.', 'erro');

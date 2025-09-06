@@ -12,7 +12,7 @@ require_once 'conexao_bd.php';
 $input = file_get_contents('php://input');
 $data = json_decode($input, true);
 
-if (!isset($data['nome']) || !isset($data['sigla_cidade']) || !isset($data['cod_cidade'])) {
+if (!isset($data['nome']) || !isset($data['sigla_cidade']) || !isset($data['cod_cidade']) || !isset($data['somente_semaforo'])) {
     echo json_encode(['success' => false, 'message' => 'Dados incompletos para adicionar a cidade.']);
     exit();
 }
@@ -20,8 +20,8 @@ if (!isset($data['nome']) || !isset($data['sigla_cidade']) || !isset($data['cod_
 $conn->begin_transaction();
 
 try {
-    $stmt = $conn->prepare("INSERT INTO cidades (nome, sigla_cidade, cod_cidade) VALUES (?, ?, ?)");
-    $stmt->bind_param("sss", $data['nome'], $data['sigla_cidade'], $data['cod_cidade']);
+    $stmt = $conn->prepare("INSERT INTO cidades (nome, sigla_cidade, cod_cidade, somente_semaforo) VALUES (?, ?, ?, ?)");
+    $stmt->bind_param("sssi", $data['nome'], $data['sigla_cidade'], $data['cod_cidade'], $data['somente_semaforo']);
     $stmt->execute();
     $stmt->close();
 
@@ -31,7 +31,13 @@ try {
 } catch (mysqli_sql_exception $e) {
     $conn->rollback();
     error_log("Erro ao adicionar cidade: " . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'Erro no banco de dados. Tente novamente.']);
+    
+    // Verifica se é um erro de entrada duplicada (código 1062)
+    if ($e->getCode() == 1062) {
+        echo json_encode(['success' => false, 'message' => 'Já existe uma cidade com este nome, sigla ou código.']);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Erro no banco de dados ao adicionar a cidade.']);
+    }
 }
 
 $conn->close();
