@@ -750,10 +750,10 @@ document.addEventListener('DOMContentLoaded', () => {
             confirmationModal.classList.add('is-active');
         });
     }
-    if (matrizManutencaoBtn) matrizManutencaoBtn.addEventListener('click', () => openMaintenanceModal('corretiva', 'pendente', 'maintenance'));
+    if (matrizManutencaoBtn) matrizManutencaoBtn.addEventListener('click', () => openMaintenanceModal('Ocorrência Técnica', 'pendente', 'maintenance'));
     if (matrizSemaforicaBtn) matrizSemaforicaBtn.addEventListener('click', () => openMaintenanceModal('Ocorrência Semafórica', 'pendente', 'semaforica', 'API/get_cidades.php'));
-    if (controleOcorrenciaBtn) controleOcorrenciaBtn.addEventListener('click', () => openMaintenanceModal('preditiva', 'concluido', 'maintenance'));
-    if (instalarEquipamentoBtn) instalarEquipamentoBtn.addEventListener('click', () => openMaintenanceModal('instalação', 'pendente', 'installation'));
+    if (controleOcorrenciaBtn) controleOcorrenciaBtn.addEventListener('click', () => openMaintenanceModal('Ocorrência de Controle', 'concluido', 'maintenance'));
+    if (instalarEquipamentoBtn) instalarEquipamentoBtn.addEventListener('click', () => openMaintenanceModal('Instalação', 'pendente', 'installation'));
 
     const semaforicaInputs = [
         document.getElementById('semaforicaTipo'),
