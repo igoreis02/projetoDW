@@ -61,10 +61,41 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             content: none;
         }
 
-        h2 {
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 2rem;
+        }
+
+        .header-container h2 {
+            font-size: 2.2em;
+            text-align: center;
+            flex-grow: 1;
+            color: black;
+            margin: 0;
+        }
+        .close-btn,
+        .back-btn-icon {
             font-size: 2em;
-            color: var(--cor-principal);
-            margin-bottom: 30px;
+            font-weight: bold;
+            color: #aaa;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .close-btn {
+            right: 0;
+        }
+
+        .back-btn-icon {
+            left: 0;
+        }
+
+        .close-btn:hover,
+        .back-btn-icon:hover {
+            color: #333;
         }
 
         .page-buttons-container {
@@ -360,7 +391,11 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
 <body>
     <div class="background"></div>
     <div class="card">
-        <h2>Manutenções e Instalações</h2>
+        <div class="header-container">
+        <a href="menu.php" class="back-btn-icon" title="Voltar ao Menu">&larr;</a>
+        <h2>Ocorrências e Instalações</h2>
+        <a href="menu.php" class="close-btn" title="Voltar ao Menu">&times;</a>
+        </div>
 
         <div class="page-buttons-container">
             <button id="matrizManutencaoBtn" class="page-button"><i class="fas fa-cogs"></i> Matriz Técnica</button>
@@ -386,7 +421,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
     <div id="cadastroManutencaoModal" class="modal">
         <div class="modal-content">
             <span class="close-button" onclick="closeCadastroManutencaoModal()">&times;</span>
-            <h3 id="modalTitle">Cadastrar Operação</h3>
+            <h3 id="modalTitle">Cadastrar Ocorrência</h3>
 
             <div id="citySelectionSection">
                 <p>Selecione a cidade:</p>
