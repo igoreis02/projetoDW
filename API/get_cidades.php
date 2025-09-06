@@ -1,20 +1,26 @@
 <?php
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *'); // Permite requisições de qualquer origem (para desenvolvimento)
+header('Access-Control-Allow-Origin: *');
 
 require_once 'conexao_bd.php';
 
+// Seleciona as novas colunas
+$sql = "SELECT c.id_cidade, c.nome, c.cod_cidade, c.sigla_cidade, c.semaforica, c.radares FROM cidades c";
 
-$sql = "SELECT c.id_cidade, c.nome, c.cod_cidade, c.sigla_cidade, c.somente_semaforo FROM cidades c";
+// Lógica de filtragem ATUALIZADA
+if (isset($_GET['context'])) {
+    $context = $_GET['context'];
+    
+    if ($context === 'manutencao') {
+        // Para Matriz Técnica, Controle de Ocorrência e Instalação, mostra cidades com RADARES = 1
+     $sql .= " WHERE c.radares = 1 AND EXISTS (SELECT 1 FROM equipamentos e WHERE e.id_cidade = c.id_cidade)";
 
-if (isset($_GET['context']) && $_GET['context'] === 'manutencao') {
-    // A cidade precisa atender a DUAS CONDIÇÕES ao mesmo tempo:
-    // 1. O campo 'somente_semaforo' deve ser 0.
-    // 2. A cidade deve ter pelo menos um equipamento cadastrado (EXISTS).
-    $sql .= " WHERE c.somente_semaforo = 0 AND EXISTS (SELECT 1 FROM equipamentos e WHERE e.id_cidade = c.id_cidade)";
+    } elseif ($context === 'semaforica') {
+        // Para Matriz Semafórica, mostra cidades com SEMAFORICA = 1
+        $sql .= " WHERE c.semaforica = 1";
+    }
 }
 
-// Adiciona a ordenação
 $sql .= " ORDER BY c.nome ASC";
 
 $cidades = [];
@@ -26,9 +32,14 @@ if ($result && $result->num_rows > 0) {
     }
     echo json_encode(['success' => true, 'cidades' => $cidades]);
 } else {
-    $message = (isset($_GET['context']) && $_GET['context'] === 'manutencao')
-        ? 'Nenhuma cidade aplicável (com equipamentos e não exclusiva de semáforo) foi encontrada.'
-        : 'Nenhuma cidade encontrada.';
+    $message = 'Nenhuma cidade encontrada.';
+    if (isset($_GET['context'])) {
+        if ($_GET['context'] === 'manutencao') {
+            $message = 'Nenhuma cidade com manutenção para radar encontrada.';
+        } elseif ($_GET['context'] === 'semaforica') {
+            $message = 'Nenhuma cidade com manutenção para semáforo encontrada.';
+        }
+    }
     echo json_encode(['success' => false, 'message' => $message]);
 }
 

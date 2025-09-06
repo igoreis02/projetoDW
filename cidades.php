@@ -20,6 +20,7 @@ require_once 'conexao_bd.php';
     <link rel="icon" type="image/png" href="imagens/favicon.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
+        /* Estilos gerais (sem alterações) */
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f0f2f5;
@@ -54,12 +55,6 @@ require_once 'conexao_bd.php';
             display: flex;
             align-items: center;
             justify-content: space-between;
-        }
-
-        .conteudo-cabecalho {
-            display: flex;
-            align-items: center;
-            width: 100%;
         }
 
         .titulo-cabecalho {
@@ -106,8 +101,7 @@ require_once 'conexao_bd.php';
         .botao-adicionar-cidade:hover {
             background-color: var(--cor-secundaria);
         }
-        
-        /* Novo estilo para a lista de cidades */
+
         .lista-cidades {
             list-style: none;
             padding: 0;
@@ -144,17 +138,7 @@ require_once 'conexao_bd.php';
             display: flex;
             gap: 5px;
         }
-        
-        .item-cidade .botao-editar,
-        .item-cidade .botao-excluir {
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-        
+
         .item-cidade .botao-editar {
             background-color: #ffc107;
             color: #333;
@@ -164,15 +148,24 @@ require_once 'conexao_bd.php';
             background-color: #dc3545;
         }
 
+        .item-cidade .botao-editar,
+        .item-cidade .botao-excluir {
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
         .item-cidade .botao-editar:hover {
             background-color: #e0a800;
         }
-        
+
         .item-cidade .botao-excluir:hover {
             background-color: #c82333;
         }
-        
-        /* Estilos do modal */
+
         .modal {
             display: none;
             position: fixed;
@@ -224,15 +217,15 @@ require_once 'conexao_bd.php';
             box-sizing: border-box;
         }
 
-        /* Estilo para container de botões de rádio */
-        .radio-container {
+        /* NOVO: Estilo para checkboxes */
+        .checkbox-container {
             display: flex;
             gap: 1.5rem;
             margin-top: 0.5rem;
             align-items: center;
         }
 
-        .radio-container label {
+        .checkbox-container label {
             display: flex;
             align-items: center;
             gap: 0.5rem;
@@ -240,9 +233,19 @@ require_once 'conexao_bd.php';
             margin-top: 0;
         }
 
-        .radio-container input[type="radio"] {
+        .checkbox-container input[type="checkbox"] {
             width: auto;
+            height: 1.2em;
+            width: 1.2em;
         }
+
+        .validation-message-cidades {
+            color: #721c24;
+            font-size: 0.9em;
+            margin-top: 5px;
+            display: none;
+        }
+
 
         .formulario-modal button {
             width: 100%;
@@ -296,8 +299,13 @@ require_once 'conexao_bd.php';
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
     </style>
 </head>
@@ -307,7 +315,8 @@ require_once 'conexao_bd.php';
     <main class="card">
         <header class="cabecalho">
             <a href="menu.php" class="botao-voltar">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M19 12H5"></path>
                     <path d="M12 19l-7-7 7-7"></path>
                 </svg>
@@ -317,8 +326,7 @@ require_once 'conexao_bd.php';
         <div class="container-botao-adicionar-cidade">
             <button class="botao-adicionar-cidade" onclick="abrirModalAdicionarCidade()">Adicionar Cidade</button>
         </div>
-        <div id="containerListaCidades">
-            </div>
+        <div id="containerListaCidades"></div>
     </main>
 
     <div id="modalAdicionarCidade" class="modal">
@@ -327,24 +335,25 @@ require_once 'conexao_bd.php';
             <h2>Adicionar Nova Cidade</h2>
             <form id="formularioAdicionarCidade" class="formulario-modal">
                 <label for="nomeCidadeAdicionar">Nome da Cidade:</label>
-                <input type="text" id="nomeCidadeAdicionar" name="nome" required>
-                
+                <input type="text" id="nomeCidadeAdicionar" required>
+
                 <label for="siglaCidadeAdicionar">Sigla da Cidade:</label>
-                <input type="text" id="siglaCidadeAdicionar" name="sigla_cidade" required>
+                <input type="text" id="siglaCidadeAdicionar" required>
 
                 <label for="codCidadeAdicionar">Código da Cidade:</label>
-                <input type="text" id="codCidadeAdicionar" name="cod_cidade" required>
+                <input type="text" id="codCidadeAdicionar" required>
 
-                <label>Somente semáforo:</label>
-                <div class="radio-container">
+                <label>Possui manutenção para:</label>
+                <div class="checkbox-container">
                     <label>
-                        <input type="radio" name="somente_semaforo" value="1" required> Sim
+                        <input type="checkbox" id="addSemaforica"> Semáforo
                     </label>
                     <label>
-                        <input type="radio" name="somente_semaforo" value="0" checked required> Não
+                        <input type="checkbox" id="addRadares"> Radar
                     </label>
                 </div>
-                
+                <div class="validation-message-cidades" id="addValidationMessage">Selecione ao menos uma opção.</div>
+
                 <div id="mensagemAdicionarCidade" class="mensagem" style="display: none;"></div>
                 <button type="submit" class="botao-salvar">
                     <span id="textoBotaoAdicionar">Adicionar</span>
@@ -359,26 +368,27 @@ require_once 'conexao_bd.php';
             <span class="fechar-modal" onclick="fecharModalEdicaoCidade()">&times;</span>
             <h2>Editar Cidade</h2>
             <form id="formularioEdicaoCidade" class="formulario-modal">
-                <input type="hidden" id="idCidadeEdicao" name="id_cidade">
-                
+                <input type="hidden" id="idCidadeEdicao">
+
                 <label for="nomeCidadeEdicao">Nome da Cidade:</label>
-                <input type="text" id="nomeCidadeEdicao" name="nome" required>
+                <input type="text" id="nomeCidadeEdicao" required>
 
                 <label for="siglaCidadeEdicao">Sigla da Cidade:</label>
-                <input type="text" id="siglaCidadeEdicao" name="sigla_cidade" required>
+                <input type="text" id="siglaCidadeEdicao" required>
 
                 <label for="codCidadeEdicao">Código da Cidade:</label>
-                <input type="text" id="codCidadeEdicao" name="cod_cidade" required>
-                
-                <label>Somente semáforo:</label>
-                <div class="radio-container">
+                <input type="text" id="codCidadeEdicao" required>
+
+                <label>Possui manutenção para:</label>
+                <div class="checkbox-container">
                     <label>
-                        <input type="radio" name="somente_semaforo" value="1" required> Sim
+                        <input type="checkbox" id="editSemaforica"> Semáforo
                     </label>
                     <label>
-                        <input type="radio" name="somente_semaforo" value="0" required> Não
+                        <input type="checkbox" id="editRadares"> Radar
                     </label>
                 </div>
+                <div class="validation-message-cidades" id="editValidationMessage">Selecione ao menos uma opção.</div>
 
                 <div id="mensagemEdicaoCidade" class="mensagem" style="display: none;"></div>
                 <button type="submit" class="botao-salvar">

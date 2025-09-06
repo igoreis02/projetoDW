@@ -97,10 +97,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     async function openMaintenanceModal(type, status, flow) {
-        currentMaintenanceType = type;
+        currentMaintenanceType = type; // Armazena o tipo interno (ex: 'preditiva')
         currentRepairStatus = status;
         currentFlow = flow;
-        document.getElementById('modalTitle').textContent = flow === 'installation' ? 'Cadastrar Instalação' : `Cadastrar ${type}`;
+
+        // --- LÓGICA DO TÍTULO CORRIGIDA ---
+        // Define um título amigável baseado no tipo interno
+        let modalTitleText = `Cadastrar ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+        if (type === 'corretiva') modalTitleText = 'Cadastrar Ocorrência Técnica';
+        if (type === 'preditiva') modalTitleText = 'Cadastrar Ocorrência de Controle';
+        document.getElementById('modalTitle').textContent = flow === 'installation' ? 'Cadastrar Instalação' : modalTitleText;
+        // --- FIM DA CORREÇÃO DO TÍTULO ---
 
         if (equipmentSelectionErrorMessage) equipmentSelectionErrorMessage.classList.add('hidden');
         if (semaforicaErrorMessage) semaforicaErrorMessage.classList.add('hidden');
@@ -109,7 +116,6 @@ document.addEventListener('DOMContentLoaded', () => {
         citySelectionSection.style.display = 'block';
         equipmentSelectionSection.style.display = 'none';
         installEquipmentAndAddressSection.style.display = 'none';
-        // Garante que a seção semafórica também esteja oculta ao iniciar
         if (document.getElementById('semaforicaSection')) {
             document.getElementById('semaforicaSection').style.display = 'none';
         }
@@ -118,17 +124,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         cityButtonsContainer.innerHTML = '<p id="loadingCitiesMessage">Carregando cidades...</p>';
         try {
-            
             let fetchUrl = 'API/get_cidades.php';
-
-            
-            if (flow !== 'semaforica') {
+            if (flow === 'semaforica') {
+                fetchUrl += '?context=semaforica';
+            } else {
                 fetchUrl += '?context=manutencao';
             }
-
             const response = await fetch(fetchUrl);
-           
-
             const data = await response.json();
             if (data.success && data.cidades.length > 0) {
                 cityButtonsContainer.innerHTML = '';
@@ -146,6 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
             cityButtonsContainer.innerHTML = `<p class="selection-error-message">Erro de conexão ao carregar cidades.</p>`;
         }
     }
+
     window.closeCadastroManutencaoModal = function () {
         cadastroManutencaoModal.classList.remove('is-active');
         confirmationModal.classList.remove('is-active');
@@ -173,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
         citySelectionSection.style.display = 'none';
         if (currentFlow === 'installation') {
             installEquipmentAndAddressSection.style.display = 'flex';
-        } else if (currentFlow === 'semaforica') { 
+        } else if (currentFlow === 'semaforica') {
             semaforicaSection.style.display = 'flex';
             semaforicaForm.reset();
         } else {
@@ -358,11 +361,11 @@ document.addEventListener('DOMContentLoaded', () => {
     async function proceedToConfirmation() {
         const equipId = equipmentSelect.value;
         const problemDesc = problemDescriptionInput.value.trim();
-        
+
         const repairDesc = repairDescriptionInput.value.trim();
         let errorMessage = '';
 
-        
+
         if (!equipId) errorMessage = 'Por favor, selecione um equipamento.';
         else if (!problemDesc) errorMessage = 'A descrição do problema é obrigatória.';
 
@@ -371,7 +374,7 @@ document.addEventListener('DOMContentLoaded', () => {
             else if (realizadoPor === 'processamento' && reparoConcluido === null) errorMessage = 'Informe se o reparo foi concluído (Sim ou Não).';
             else if (realizadoPor === 'processamento' && reparoConcluido === true && !repairDesc) errorMessage = 'Descreva o reparo realizado.';
             else if (realizadoPor === 'provedor' && tecnicoInLoco === null) errorMessage = 'Informe se precisa de técnico em campo.';
-            
+
         }
 
         if (errorMessage) {
@@ -383,7 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
         equipmentSelectionErrorMessage.classList.add('hidden');
         selectedEquipment = allEquipments.find(e => e.id_equipamento == equipId);
         selectedProblemDescription = problemDesc;
-        selectedRepairDescription = repairDesc; 
+        selectedRepairDescription = repairDesc;
 
         document.getElementById('confirmCityName').textContent = selectedCityName;
         document.getElementById('confirmMaintenanceType').textContent = currentMaintenanceType.charAt(0).toUpperCase() + currentMaintenanceType.slice(1);
@@ -395,16 +398,16 @@ document.addEventListener('DOMContentLoaded', () => {
             finalStatus = 'concluido';
         }
 
-      
+
         document.getElementById('installConfirmationDetails').classList.add('hidden');
         document.getElementById('maintenanceConfirmationDetails').classList.add('hidden');
         document.getElementById('confirmProviderContainer').classList.add('hidden');
-        
+
         if (document.getElementById('confirmProviderAcao')) document.getElementById('confirmProviderAcao').classList.add('hidden');
         if (document.getElementById('confirmProviderReparo')) document.getElementById('confirmProviderReparo').classList.add('hidden');
 
 
-        
+
         if (currentMaintenanceType === 'preditiva' && realizadoPor === 'provedor') {
             document.getElementById('confirmProviderProblem').textContent = selectedProblemDescription;
 
@@ -415,7 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (providerAcaoEl) providerAcaoEl.classList.remove('hidden');
 
             } else {
-                
+
                 const providerReparoTextEl = document.getElementById('confirmProviderReparoText');
                 const providerReparoEl = document.getElementById('confirmProviderReparo');
                 if (providerReparoTextEl) {
@@ -579,7 +582,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!maintenanceData.success) throw new Error(maintenanceData.message || 'Falha ao criar registro de instalação.');
 
             } else {
-                
+
                 if (currentMaintenanceType === 'preditiva' && realizadoPor === 'provedor') {
 
                     const payload = {
@@ -715,7 +718,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const observacao = document.getElementById('semaforicaObservacao').value.trim();
 
             let errorMessage = '';
-            
+
             if (!endereco) errorMessage = 'O campo "Endereço" é obrigatório.';
             else if (!qtd || qtd < 1) errorMessage = 'A "Quantidade" deve ser pelo menos 1.';
             else if (!descricao) errorMessage = 'A "Descrição do Problema" é obrigatória.';
@@ -750,10 +753,11 @@ document.addEventListener('DOMContentLoaded', () => {
             confirmationModal.classList.add('is-active');
         });
     }
-    if (matrizManutencaoBtn) matrizManutencaoBtn.addEventListener('click', () => openMaintenanceModal('Ocorrência Técnica', 'pendente', 'maintenance'));
-    if (matrizSemaforicaBtn) matrizSemaforicaBtn.addEventListener('click', () => openMaintenanceModal('Ocorrência Semafórica', 'pendente', 'semaforica', 'API/get_cidades.php'));
-    if (controleOcorrenciaBtn) controleOcorrenciaBtn.addEventListener('click', () => openMaintenanceModal('Ocorrência de Controle', 'concluido', 'maintenance'));
-    if (instalarEquipamentoBtn) instalarEquipamentoBtn.addEventListener('click', () => openMaintenanceModal('Instalação', 'pendente', 'installation'));
+    
+if (matrizManutencaoBtn) matrizManutencaoBtn.addEventListener('click', () => openMaintenanceModal('corretiva', 'pendente', 'maintenance'));
+if (matrizSemaforicaBtn) matrizSemaforicaBtn.addEventListener('click', () => openMaintenanceModal('Ocorrência Semafórica', 'pendente', 'semaforica'));
+if (controleOcorrenciaBtn) controleOcorrenciaBtn.addEventListener('click', () => openMaintenanceModal('preditiva', 'concluido', 'maintenance'));
+if (instalarEquipamentoBtn) instalarEquipamentoBtn.addEventListener('click', () => openMaintenanceModal('instalação', 'pendente', 'installation'));
 
     const semaforicaInputs = [
         document.getElementById('semaforicaTipo'),

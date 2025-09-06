@@ -12,7 +12,8 @@ require_once 'conexao_bd.php';
 $input = file_get_contents('php://input');
 $data = json_decode($input, true);
 
-if (!isset($data['nome']) || !isset($data['sigla_cidade']) || !isset($data['cod_cidade']) || !isset($data['somente_semaforo'])) {
+// Validação atualizada
+if (!isset($data['nome']) || !isset($data['sigla_cidade']) || !isset($data['cod_cidade']) || !isset($data['semaforica']) || !isset($data['radares'])) {
     echo json_encode(['success' => false, 'message' => 'Dados incompletos para adicionar a cidade.']);
     exit();
 }
@@ -20,8 +21,10 @@ if (!isset($data['nome']) || !isset($data['sigla_cidade']) || !isset($data['cod_
 $conn->begin_transaction();
 
 try {
-    $stmt = $conn->prepare("INSERT INTO cidades (nome, sigla_cidade, cod_cidade, somente_semaforo) VALUES (?, ?, ?, ?)");
-    $stmt->bind_param("sssi", $data['nome'], $data['sigla_cidade'], $data['cod_cidade'], $data['somente_semaforo']);
+    // Query atualizada
+    $stmt = $conn->prepare("INSERT INTO cidades (nome, sigla_cidade, cod_cidade, semaforica, radares) VALUES (?, ?, ?, ?, ?)");
+    // Bind param atualizado
+    $stmt->bind_param("sssii", $data['nome'], $data['sigla_cidade'], $data['cod_cidade'], $data['semaforica'], $data['radares']);
     $stmt->execute();
     $stmt->close();
 
@@ -32,7 +35,6 @@ try {
     $conn->rollback();
     error_log("Erro ao adicionar cidade: " . $e->getMessage());
     
-    // Verifica se é um erro de entrada duplicada (código 1062)
     if ($e->getCode() == 1062) {
         echo json_encode(['success' => false, 'message' => 'Já existe uma cidade com este nome, sigla ou código.']);
     } else {
