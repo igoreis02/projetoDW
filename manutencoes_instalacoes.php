@@ -76,6 +76,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             color: black;
             margin: 0;
         }
+
         .close-btn,
         .back-btn-icon {
             font-size: 2em;
@@ -392,16 +393,19 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
     <div class="background"></div>
     <div class="card">
         <div class="header-container">
-        <a href="menu.php" class="back-btn-icon" title="Voltar ao Menu">&larr;</a>
-        <h2>Ocorrências e Instalações</h2>
-        <a href="menu.php" class="close-btn" title="Voltar ao Menu">&times;</a>
+            <a href="menu.php" class="back-btn-icon" title="Voltar ao Menu">&larr;</a>
+            <h2>Ocorrências e Instalações</h2>
+            <a href="menu.php" class="close-btn" title="Voltar ao Menu">&times;</a>
         </div>
 
         <div class="page-buttons-container">
             <button id="matrizManutencaoBtn" class="page-button"><i class="fas fa-cogs"></i> Matriz Técnica</button>
-            <button id="matrizSemaforicaBtn" class="page-button"><i class="fas fa-traffic-light"></i> Matriz Semafórica</button>
-            <button id="controleOcorrenciaBtn" class="page-button"><i class="fas fa-clipboard-list"></i> Controle de Ocorrência</button>
-            <button id="instalarEquipamentoBtn" class="page-button"><i class="fas fa-tools"></i> Instalar equipamento</button>
+            <button id="matrizSemaforicaBtn" class="page-button"><i class="fas fa-traffic-light"></i> Matriz
+                Semafórica</button>
+            <button id="controleOcorrenciaBtn" class="page-button"><i class="fas fa-clipboard-list"></i> Controle de
+                Ocorrência</button>
+            <button id="instalarEquipamentoBtn" class="page-button"><i class="fas fa-tools"></i> Instalar
+                equipamento</button>
         </div>
 
         <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
@@ -412,7 +416,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
 
     <?php if ($redefinir_senha_obrigatoria): ?>
         <script>
-            document.addEventListener('DOMContentLoaded', function() {
+            document.addEventListener('DOMContentLoaded', function () {
                 window.location.href = 'index.html';
             });
         </script>
@@ -523,10 +527,57 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
                 <label for="installationNotes">Observação da Instalação (Opcional):</label>
                 <textarea id="installationNotes" rows="3" placeholder="Informação adicional..."></textarea>
 
-                <button id="confirmInstallEquipment" class="page-button" style="margin-top: 1rem;">Avançar para Confirmação</button>
+                <button id="confirmInstallEquipment" class="page-button" style="margin-top: 1rem;">Avançar para
+                    Confirmação</button>
+            </div>
+            <div id="semaforicaSection" class="install-equipment-section"
+                style="flex-direction: column; gap: 15px; margin-top: 20px; text-align: left;">
+                <button class="back-button" onclick="goBackToCitySelection()">&larr;</button>
+                <form id="semaforicaForm">
+                    <label for="semaforicaTipo">Tipo:</label>
+                    <select id="semaforicaTipo">
+                        <option value="">-- Selecione o Tipo --</option>
+                        <option value="troca_lampada">Troca de Lâmpada</option>
+                        <option value="reparo_controlador">Reparo no Controlador</option>
+                        <option value="sincronizacao">Sincronização</option>
+                        <option value="novo_ponto">Novo Ponto Semafórico</option>
+                    </select>
+
+                    <label for="semaforicaEndereco">Endereço:</label>
+                    <textarea id="semaforicaEndereco" rows="3" placeholder="Ex: Av. Brasil com Rua 10"></textarea>
+
+                    <label for="semaforicaReferencia">Referência (Opcional):</label>
+                    <input type="text" id="semaforicaReferencia" placeholder="Ex: Em frente ao supermercado">
+
+                    <label for="semaforicaQtd">Quantidade:</label>
+                    <input type="number" id="semaforicaQtd" value="1" min="1">
+
+                    <label for="semaforicaUnidade">Unidade:</label>
+                    <select id="semaforicaUnidade">
+                        <option value="unidade">Unidade</option>
+                        <option value="metros">Metros</option>
+                        <option value="kit">Kit</option>
+                    </select>
+
+                    <label for="semaforicaDescricao">Descrição do Problema:</label>
+                    <textarea id="semaforicaDescricao" rows="4"
+                        placeholder="Descreva o problema ou a necessidade..."></textarea>
+
+                    <label for="semaforicaGeo">Geolocalização (URL Google Maps - Opcional):</label>
+                    <input type="text" id="semaforicaGeo" placeholder="Cole a URL aqui">
+
+                    <label for="semaforicaObservacao">Observação (Opcional):</label>
+                    <textarea id="semaforicaObservacao" rows="3"
+                        placeholder="Insira qualquer observação adicional..."></textarea>
+
+                    <p id="semaforicaErrorMessage" class="message error hidden"></p>
+                    <button type="button" id="confirmSemaforicaBtn" class="page-button"
+                        style="margin-top: 1rem;">Avançar</button>
+                </form>
             </div>
         </div>
     </div>
+
 
     <div id="pendingMaintenanceModal" class="modal">
         <div class="modal-content">
@@ -553,7 +604,8 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
                 <div id="maintenanceConfirmationDetails" class="hidden">
                     <p><strong>Equipamento:</strong> <span id="confirmEquipmentName"></span></p>
                     <p><strong>Problema:</strong> <span id="confirmProblemDescription"></span></p>
-                    <p id="confirmRepairDescriptionContainer" class="hidden"><strong>Reparo Realizado:</strong> <span id="confirmRepairDescription"></span></p>
+                    <p id="confirmRepairDescriptionContainer" class="hidden"><strong>Reparo Realizado:</strong> <span
+                            id="confirmRepairDescription"></span></p>
                 </div>
 
                 <div id="installConfirmationDetails" class="hidden">
@@ -562,18 +614,33 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
                     <p><strong>Nome:</strong> <span id="confirmNewEquipmentName"></span></p>
                     <p><strong>Referência:</strong> <span id="confirmNewEquipmentRef"></span></p>
 
-                    <p id="confirmQuantityContainer" class="hidden"><strong>Qtd. Faixas:</strong> <span id="confirmEquipmentQuantity"></span></p>
+                    <p id="confirmQuantityContainer" class="hidden"><strong>Qtd. Faixas:</strong> <span
+                            id="confirmEquipmentQuantity"></span></p>
                     <p><strong>Logradouro:</strong> <span id="confirmAddressLogradouro"></span></p>
                     <p><strong>Bairro:</strong> <span id="confirmAddressBairro"></span></p>
                     <p><strong>CEP:</strong> <span id="confirmAddressCep"></span></p>
                     <p><strong>Observação:</strong> <span id="confirmInstallationNotes"></span></p>
                 </div>
 
+                <div id="semaforicaConfirmationDetails" class="hidden">
+                    <h4>Detalhes da Ocorrência Semafórica:</h4>
+                    <p><strong>Tipo:</strong> <span id="confirmSemaforicaTipo"></span></p>
+                    <p><strong>Endereço:</strong> <span id="confirmSemaforicaEndereco"></span></p>
+                    <p><strong>Referência:</strong> <span id="confirmSemaforicaReferencia"></span></p>
+                    <p><strong>Quantidade:</strong> <span id="confirmSemaforicaQtd"></span> (<span
+                            id="confirmSemaforicaUnidade"></span>)</p>
+                    <p><strong>Problema:</strong> <span id="confirmSemaforicaDescricao"></span></p>
+                    <p><strong>Geolocalização:</strong> <span id="confirmSemaforicaGeo"></span></p>
+                    <p><strong>Observação:</strong> <span id="confirmSemaforicaObservacao"></span></p>
+                </div>
+
+
                 <div id="confirmProviderContainer" class="hidden">
                     <p><strong>Problema:</strong> <span id="confirmProviderProblem"></span></p>
 
                     <p id="confirmProviderAcao">
-                        <strong>Ação:</strong> <span>Atribuído ao provedor <strong id="confirmProviderName"></strong>, aguardando manutenção.</span>
+                        <strong>Ação:</strong> <span>Atribuído ao provedor <strong id="confirmProviderName"></strong>,
+                            aguardando manutenção.</span>
                     </p>
 
                     <p id="confirmProviderReparo" class="hidden">
@@ -588,7 +655,8 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
                 <button class="confirm-button page-button" id="confirmSaveButton">
                     Confirmar <span id="confirmSpinner" class="loading-spinner hidden"></span>
                 </button>
-                <button class="cancel-button page-button" id="cancelSaveButton" onclick="cancelSaveManutencao()">Cancelar</button>
+                <button class="cancel-button page-button" id="cancelSaveButton"
+                    onclick="cancelSaveManutencao()">Cancelar</button>
             </div>
             <p id="confirmMessage" class="message hidden"></p>
         </div>

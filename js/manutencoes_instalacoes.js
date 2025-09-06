@@ -58,6 +58,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const confirmAppendProblemBtn = document.getElementById('confirmAppendProblem');
     const cancelAppendProblemBtn = document.getElementById('cancelAppendProblem');
 
+    // Adicione estas linhas
+    const semaforicaSection = document.getElementById('semaforicaSection');
+    const semaforicaForm = document.getElementById('semaforicaForm');
+    const confirmSemaforicaBtn = document.getElementById('confirmSemaforicaBtn');
+    const semaforicaErrorMessage = document.getElementById('semaforicaErrorMessage');
+    const semaforicaConfirmationDetails = document.getElementById('semaforicaConfirmationDetails');
+
     // --- SEÇÃO DE VARIÁVEIS DE ESTADO ---
     let allEquipments = [];
     let selectedCityId = null, selectedCityName = '';
@@ -67,6 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let realizadoPor = '', tecnicoInLoco = null;
     let reparoConcluido = null; // true para Sim, false para Não
     let existingMaintenanceData = null;
+    let semaforicaData = {};
 
     // --- SEÇÃO DE FUNÇÕES ---
     newEquipmentTypeSelect.addEventListener('change', function () {
@@ -87,21 +95,40 @@ document.addEventListener('DOMContentLoaded', () => {
         reparoConcluido = null; // Reseta a nova variável
     }
 
+
     async function openMaintenanceModal(type, status, flow) {
         currentMaintenanceType = type;
         currentRepairStatus = status;
         currentFlow = flow;
-        document.getElementById('modalTitle').textContent = flow === 'installation' ? 'Cadastrar Instalação' : 'Cadastrar Ocorrência';
+        document.getElementById('modalTitle').textContent = flow === 'installation' ? 'Cadastrar Instalação' : `Cadastrar ${type}`;
+
+        if (equipmentSelectionErrorMessage) equipmentSelectionErrorMessage.classList.add('hidden');
+        if (semaforicaErrorMessage) semaforicaErrorMessage.classList.add('hidden');
+
         cadastroManutencaoModal.classList.add('is-active');
         citySelectionSection.style.display = 'block';
         equipmentSelectionSection.style.display = 'none';
         installEquipmentAndAddressSection.style.display = 'none';
+        // Garante que a seção semafórica também esteja oculta ao iniciar
+        if (document.getElementById('semaforicaSection')) {
+            document.getElementById('semaforicaSection').style.display = 'none';
+        }
 
         resetarBotoesDeEscolha();
 
         cityButtonsContainer.innerHTML = '<p id="loadingCitiesMessage">Carregando cidades...</p>';
         try {
-            const response = await fetch('API/get_cidades.php?context=manutencao');
+            
+            let fetchUrl = 'API/get_cidades.php';
+
+            
+            if (flow !== 'semaforica') {
+                fetchUrl += '?context=manutencao';
+            }
+
+            const response = await fetch(fetchUrl);
+           
+
             const data = await response.json();
             if (data.success && data.cidades.length > 0) {
                 cityButtonsContainer.innerHTML = '';
@@ -119,7 +146,6 @@ document.addEventListener('DOMContentLoaded', () => {
             cityButtonsContainer.innerHTML = `<p class="selection-error-message">Erro de conexão ao carregar cidades.</p>`;
         }
     }
-
     window.closeCadastroManutencaoModal = function () {
         cadastroManutencaoModal.classList.remove('is-active');
         confirmationModal.classList.remove('is-active');
@@ -147,6 +173,9 @@ document.addEventListener('DOMContentLoaded', () => {
         citySelectionSection.style.display = 'none';
         if (currentFlow === 'installation') {
             installEquipmentAndAddressSection.style.display = 'flex';
+        } else if (currentFlow === 'semaforica') { 
+            semaforicaSection.style.display = 'flex';
+            semaforicaForm.reset();
         } else {
             equipmentSelectionSection.style.display = 'flex';
             loadEquipamentos(selectedCityId, '');
@@ -179,6 +208,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+
+    function resetAndGoBackToCitySelection() {
+        confirmationModal.classList.remove('is-active');
+        confirmMessage.classList.add('hidden');
+        confirmationButtonsDiv.style.display = 'flex';
+        confirmSaveButton.disabled = false;
+        cancelSaveButton.disabled = false;
+        confirmSpinner.classList.add('hidden');
+
+        semaforicaData = {};
+        if (semaforicaForm) semaforicaForm.reset();
+
+        semaforicaSection.style.display = 'none';
+        citySelectionSection.style.display = 'block';
+    }
     function resetForNewOperationInSameCity() {
         // 1. Reseta e esconde o modal de confirmação
         confirmationModal.classList.remove('is-active');
@@ -314,11 +358,11 @@ document.addEventListener('DOMContentLoaded', () => {
     async function proceedToConfirmation() {
         const equipId = equipmentSelect.value;
         const problemDesc = problemDescriptionInput.value.trim();
-        // A descrição do reparo do input só é relevante para outros fluxos agora
+        
         const repairDesc = repairDescriptionInput.value.trim();
         let errorMessage = '';
 
-        // --- BLOCO DE VALIDAÇÃO ATUALIZADO ---
+        
         if (!equipId) errorMessage = 'Por favor, selecione um equipamento.';
         else if (!problemDesc) errorMessage = 'A descrição do problema é obrigatória.';
 
@@ -327,8 +371,7 @@ document.addEventListener('DOMContentLoaded', () => {
             else if (realizadoPor === 'processamento' && reparoConcluido === null) errorMessage = 'Informe se o reparo foi concluído (Sim ou Não).';
             else if (realizadoPor === 'processamento' && reparoConcluido === true && !repairDesc) errorMessage = 'Descreva o reparo realizado.';
             else if (realizadoPor === 'provedor' && tecnicoInLoco === null) errorMessage = 'Informe se precisa de técnico em campo.';
-            // A validação que pedia para descrever o reparo do provedor foi REMOVIDA,
-            // pois a descrição agora é gerada automaticamente no caso de "Não precisar de técnico".
+            
         }
 
         if (errorMessage) {
@@ -340,7 +383,7 @@ document.addEventListener('DOMContentLoaded', () => {
         equipmentSelectionErrorMessage.classList.add('hidden');
         selectedEquipment = allEquipments.find(e => e.id_equipamento == equipId);
         selectedProblemDescription = problemDesc;
-        selectedRepairDescription = repairDesc; // Armazena para outros usos, se houver
+        selectedRepairDescription = repairDesc; 
 
         document.getElementById('confirmCityName').textContent = selectedCityName;
         document.getElementById('confirmMaintenanceType').textContent = currentMaintenanceType.charAt(0).toUpperCase() + currentMaintenanceType.slice(1);
@@ -352,28 +395,27 @@ document.addEventListener('DOMContentLoaded', () => {
             finalStatus = 'concluido';
         }
 
-        // Reseta a visibilidade dos containers do modal
+      
         document.getElementById('installConfirmationDetails').classList.add('hidden');
         document.getElementById('maintenanceConfirmationDetails').classList.add('hidden');
         document.getElementById('confirmProviderContainer').classList.add('hidden');
-        // Garante que os sub-containers do provedor também estejam resetados
+        
         if (document.getElementById('confirmProviderAcao')) document.getElementById('confirmProviderAcao').classList.add('hidden');
         if (document.getElementById('confirmProviderReparo')) document.getElementById('confirmProviderReparo').classList.add('hidden');
 
 
-        // --- LÓGICA DE EXIBIÇÃO CORRIGIDA ---
+        
         if (currentMaintenanceType === 'preditiva' && realizadoPor === 'provedor') {
             document.getElementById('confirmProviderProblem').textContent = selectedProblemDescription;
 
             if (tecnicoInLoco) {
-                // Cenário: SIM, precisa de técnico -> Mostra AÇÃO
                 const providerNameEl = document.getElementById('confirmProviderName');
                 const providerAcaoEl = document.getElementById('confirmProviderAcao');
                 if (providerNameEl) providerNameEl.textContent = selectedEquipment.nome_prov || 'Não especificado';
                 if (providerAcaoEl) providerAcaoEl.classList.remove('hidden');
 
             } else {
-                // Cenário: NÃO, não precisa de técnico -> Mostra REPARO REALIZADO
+                
                 const providerReparoTextEl = document.getElementById('confirmProviderReparoText');
                 const providerReparoEl = document.getElementById('confirmProviderReparo');
                 if (providerReparoTextEl) {
@@ -490,7 +532,16 @@ document.addEventListener('DOMContentLoaded', () => {
         confirmMessage.classList.add('hidden');
 
         try {
-            if (currentFlow === 'installation') {
+            if (currentFlow === 'semaforica') {
+                const response = await fetch('API/save_ocorrencia_semaforica.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(semaforicaData)
+                });
+                const data = await response.json();
+                if (!data.success) throw new Error(data.message || 'Falha ao salvar ocorrência semafórica.');
+
+            } else if (currentFlow === 'installation') {
                 const addressPayload = {
                     logradouro: document.getElementById('addressLogradouro').value.trim(),
                     bairro: document.getElementById('addressBairro').value.trim(),
@@ -528,9 +579,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!maintenanceData.success) throw new Error(maintenanceData.message || 'Falha ao criar registro de instalação.');
 
             } else {
-                // ### INÍCIO DA LÓGICA DE DIRECIONAMENTO ###
-
-                // FLUXO 1: SE FOR "CONTROLE DE OCORRÊNCIA" (preditiva) E "PROVEDOR"
+                
                 if (currentMaintenanceType === 'preditiva' && realizadoPor === 'provedor') {
 
                     const payload = {
@@ -625,7 +674,11 @@ document.addEventListener('DOMContentLoaded', () => {
             confirmationButtonsDiv.style.display = 'none';
 
             setTimeout(() => {
-                 resetForNewOperationInSameCity();
+                if (currentFlow === 'semaforica') {
+                    resetAndGoBackToCitySelection();
+                } else {
+                    resetForNewOperationInSameCity();
+                }
             }, 2000);
 
         } catch (error) {
@@ -647,8 +700,73 @@ document.addEventListener('DOMContentLoaded', () => {
         closeConfirmationModal();
     }
 
+
+    if (confirmSemaforicaBtn) {
+        confirmSemaforicaBtn.addEventListener('click', () => {
+            const tipoSelect = document.getElementById('semaforicaTipo');
+            const tipo = tipoSelect.value;
+            const tipoTexto = tipoSelect.options[tipoSelect.selectedIndex].text;
+            const endereco = document.getElementById('semaforicaEndereco').value.trim();
+            const referencia = document.getElementById('semaforicaReferencia').value.trim();
+            const qtd = document.getElementById('semaforicaQtd').value;
+            const unidade = document.getElementById('semaforicaUnidade').value;
+            const descricao = document.getElementById('semaforicaDescricao').value.trim();
+            const geo = document.getElementById('semaforicaGeo').value.trim();
+            const observacao = document.getElementById('semaforicaObservacao').value.trim();
+
+            let errorMessage = '';
+            
+            if (!endereco) errorMessage = 'O campo "Endereço" é obrigatório.';
+            else if (!qtd || qtd < 1) errorMessage = 'A "Quantidade" deve ser pelo menos 1.';
+            else if (!descricao) errorMessage = 'A "Descrição do Problema" é obrigatória.';
+
+            if (errorMessage) {
+                semaforicaErrorMessage.textContent = errorMessage;
+                semaforicaErrorMessage.classList.remove('hidden');
+                return;
+            }
+            semaforicaErrorMessage.classList.add('hidden');
+
+            semaforicaData = { id_cidade: selectedCityId, tipo, endereco, referencia, qtd, unidade, descricao, geo, observacao };
+
+            maintenanceConfirmationDetails.classList.add('hidden');
+            installConfirmationDetails.classList.add('hidden');
+            confirmProviderContainer.classList.add('hidden');
+            semaforicaConfirmationDetails.classList.remove('hidden');
+
+            document.getElementById('confirmSemaforicaTipo').textContent = tipo || 'Não especificado';
+            document.getElementById('confirmSemaforicaEndereco').textContent = endereco;
+            document.getElementById('confirmSemaforicaReferencia').textContent = referencia || 'Nenhuma';
+            document.getElementById('confirmSemaforicaQtd').textContent = qtd;
+            document.getElementById('confirmSemaforicaUnidade').textContent = unidade;
+            document.getElementById('confirmSemaforicaDescricao').textContent = descricao;
+            document.getElementById('confirmSemaforicaGeo').textContent = geo || 'Não informada';
+            document.getElementById('confirmSemaforicaObservacao').textContent = observacao || 'Nenhuma';
+
+            confirmCityNameSpan.textContent = selectedCityName;
+            confirmMaintenanceTypeSpan.textContent = 'Ocorrência Semafórica';
+            confirmRepairStatusSpan.textContent = 'Pendente';
+
+            confirmationModal.classList.add('is-active');
+        });
+    }
     if (matrizManutencaoBtn) matrizManutencaoBtn.addEventListener('click', () => openMaintenanceModal('corretiva', 'pendente', 'maintenance'));
-    if (matrizSemaforicaBtn) matrizSemaforicaBtn.addEventListener('click', () => alert('Funcionalidade ainda não implementada.'));
+    if (matrizSemaforicaBtn) matrizSemaforicaBtn.addEventListener('click', () => openMaintenanceModal('Ocorrência Semafórica', 'pendente', 'semaforica', 'API/get_cidades.php'));
     if (controleOcorrenciaBtn) controleOcorrenciaBtn.addEventListener('click', () => openMaintenanceModal('preditiva', 'concluido', 'maintenance'));
     if (instalarEquipamentoBtn) instalarEquipamentoBtn.addEventListener('click', () => openMaintenanceModal('instalação', 'pendente', 'installation'));
+
+    const semaforicaInputs = [
+        document.getElementById('semaforicaTipo'),
+        document.getElementById('semaforicaEndereco'),
+        document.getElementById('semaforicaQtd'),
+        document.getElementById('semaforicaDescricao')
+    ];
+
+    semaforicaInputs.forEach(input => {
+        if (input) {
+            input.addEventListener('input', () => {
+                if (semaforicaErrorMessage) semaforicaErrorMessage.classList.add('hidden');
+            });
+        }
+    });
 });
