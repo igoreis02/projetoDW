@@ -12,60 +12,51 @@ require_once 'conexao_bd.php';
 $input = file_get_contents('php://input');
 $data = json_decode($input, true);
 
-if (!isset($data['id_equipamento']) || !isset($data['id_endereco']) || !isset($data['tipo_equip']) ||
-    !isset($data['nome_equip']) || !isset($data['status']) || !isset($data['id_cidade']) ||
-    !isset($data['logradouro']) || !isset($data['bairro']) || !isset($data['id_provedor'])) {
-    echo json_encode(['success' => false, 'message' => 'Dados incompletos para atualização.']);
+if (!isset($data['id_equipamento']) || !isset($data['id_endereco'])) {
+    echo json_encode(['success' => false, 'message' => 'Dados incompletos.']);
     exit();
 }
+
+// **NOVO**: Converte o array de tipos em string
+$tipo_equip_str = is_array($data['tipo_equip']) ? implode(', ', $data['tipo_equip']) : $data['tipo_equip'];
 
 $conn->begin_transaction();
 
 try {
+    $coordenadas = explode(",", $data['coordenadas'] ?? '');
+    $latitude = isset($coordenadas[0]) ? trim($coordenadas[0]) : null;
+    $longitude = isset($coordenadas[1]) ? trim($coordenadas[1]) : null;
+
     $stmt_endereco = $conn->prepare("UPDATE endereco SET logradouro = ?, bairro = ?, cep = ?, latitude = ?, longitude = ? WHERE id_endereco = ?");
     $cep = $data['cep'] ?? null;
-    $latitude = $data['latitude'] ?? null;
-    $longitude = $data['longitude'] ?? null;
     $stmt_endereco->bind_param("sssddi", $data['logradouro'], $data['bairro'], $cep, $latitude, $longitude, $data['id_endereco']);
     $stmt_endereco->execute();
     $stmt_endereco->close();
 
-    // LÓGICA ADICIONADA PARA CALCULAR A DATA DE VENCIMENTO
-    $dt_afericao = $data['dt_afericao'] ?? null;
+    $dt_afericao = !empty($data['dt_afericao']) ? $data['dt_afericao'] : null;
     $dt_vencimento = null;
-    if (!empty($dt_afericao)) {
-        try {
-            $date = new DateTime($dt_afericao);
-            $date->modify('+1 year');
-            $date->modify('-1 day');
-            $dt_vencimento = $date->format('Y-m-d');
-        } catch (Exception $e) {
-            $dt_vencimento = null;
-        }
+    if ($dt_afericao) {
+        $date = new DateTime($dt_afericao);
+        $date->modify('+1 year')->modify('-1 day');
+        $dt_vencimento = $date->format('Y-m-d');
     }
 
-    // QUERY E BIND_PARAM ATUALIZADOS
-    $stmt_equipamento = $conn->prepare("UPDATE equipamentos SET tipo_equip = ?, nome_equip = ?, referencia_equip = ?, status = ?, qtd_faixa = ?, km = ?, sentido = ?, num_instrumento = ?, dt_afericao = ?, dt_vencimento = ?, id_cidade = ?, id_provedor = ? WHERE id_equipamento = ?");
+    $stmt_equipamento = $conn->prepare("UPDATE equipamentos SET tipo_equip = ?, nome_equip = ?, referencia_equip = ?, status = ?, qtd_faixa = ?, km = ?, sentido = ?, num_instrumento = ?, dt_afericao = ?, dt_vencimento = ?, id_cidade = ?, id_provedor = ?, dt_instalacao = ?, dt_estudoTec = ? WHERE id_equipamento = ?");
     
     $referencia_equip = $data['referencia_equip'] ?? null;
-    $data['qtd_faixa'] = $data['qtd_faixa'] ?? null;
+    $qtd_faixa = !empty($data['qtd_faixa']) ? (int)$data['qtd_faixa'] : null;
     $km = $data['km'] ?? null;
     $sentido = $data['sentido'] ?? null;
-    $num_instrumento = $data['num_instrumento'] ?? null;
+    $num_instrumento = !empty($data['num_instrumento']) ? $data['num_instrumento'] : null;
+    $dt_instalacao = !empty($data['dt_instalacao']) ? $data['dt_instalacao'] : null;
+    $dt_estudoTec = !empty($data['dt_estudoTec']) ? $data['dt_estudoTec'] : null;
     
-    $stmt_equipamento->bind_param("ssssissssssii", 
-        $data['tipo_equip'], 
-        $data['nome_equip'], 
-        $referencia_equip, 
-        $data['status'], 
-        $data['qtd_faixa'], 
-        $km,
-        $sentido,
-        $num_instrumento,
-        $dt_afericao,
-        $dt_vencimento,
-        $data['id_cidade'], 
-        $data['id_provedor'], 
+    // **MODIFICADO**: Passa a string de tipos para o banco
+    $stmt_equipamento->bind_param("ssssisssssiiiss", 
+        $tipo_equip_str, $data['nome_equip'], $referencia_equip, $data['status'], 
+        $qtd_faixa, $km, $sentido, $num_instrumento, $dt_afericao, $dt_vencimento,
+        $data['id_cidade'], $data['id_provedor'], 
+        $dt_instalacao, $dt_estudoTec,
         $data['id_equipamento']
     );
     $stmt_equipamento->execute();
@@ -76,7 +67,7 @@ try {
 } catch (mysqli_sql_exception $e) {
     $conn->rollback();
     error_log("Erro ao atualizar equipamento: " . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'Erro no banco de dados. Tente novamente.']);
+    echo json_encode(['success' => false, 'message' => 'Erro no banco de dados.']);
 }
 
 $conn->close();

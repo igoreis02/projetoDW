@@ -14,28 +14,14 @@ $search_term = $_GET['search_term'] ?? '';
 $equipamentos = [];
 
 try {
+    // **NOVO**: Adicionado e.dt_instalacao e e.dt_estudoTec
     $sql = "SELECT
-                e.id_equipamento,
-                e.tipo_equip,
-                e.nome_equip,
-                e.referencia_equip,
-                e.status,
-                e.qtd_faixa,
-                e.km,
-                e.sentido,
-                c.nome AS cidade,
-                e.id_cidade,
-                p.nome_prov,
-                e.id_provedor,
-                e.id_endereco,
-                en.logradouro,
-                en.bairro,
-                en.cep,
-                en.latitude,
-                en.longitude,
-                e.num_instrumento,
-                e.dt_afericao,
-                e.dt_vencimento
+                e.id_equipamento, e.tipo_equip, e.nome_equip, e.referencia_equip,
+                e.status, e.qtd_faixa, e.km, e.sentido,
+                c.nome AS cidade, e.id_cidade, p.nome_prov, e.id_provedor,
+                e.id_endereco, en.logradouro, en.bairro, en.cep, en.latitude, en.longitude,
+                e.num_instrumento, e.dt_afericao, e.dt_vencimento,
+                e.dt_instalacao, e.dt_estudoTec
             FROM equipamentos AS e
             JOIN cidades AS c ON e.id_cidade = c.id_cidade
             LEFT JOIN endereco AS en ON e.id_endereco = en.id_endereco

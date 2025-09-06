@@ -45,6 +45,7 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/style.css">
     <link rel="icon" type="image/png" href="imagens/favicon.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <title>Gerenciar Equipamentos</title>
     <style>
         body {
@@ -74,15 +75,20 @@ try {
             margin-bottom: 1.5rem;
         }
 
-        .cabecalho {
-            width: 90%;
-            max-width: 1000px;
-            margin-bottom: 1rem;
+    
+        .header-container {
             display: flex;
+            justify-content: center;
             align-items: center;
-            justify-content: space-between;
+            position: relative;
+            margin-bottom: 2rem;
         }
 
+        .header-container h2 {
+            font-size: 2.2em;
+            color: black;
+            margin: 0;
+        }
         .conteudo-cabecalho {
             display: flex;
             align-items: center;
@@ -120,7 +126,7 @@ try {
         }
 
         .botao-adicionar-equipamento {
-            background-color: var(--cor-principal);
+            background-color: #112058;
             color: white;
             padding: 12px 25px;
             font-size: 1.1em;
@@ -131,7 +137,7 @@ try {
         }
 
         .botao-adicionar-equipamento:hover {
-            background-color: var(--cor-secundaria);
+            background-color: #1a3684ff;
         }
 
         .container-pesquisa {
@@ -150,6 +156,64 @@ try {
             max-width: 400px;
         }
         
+        /* NOVO: Estilo para o botão Limpar Filtros */
+        .botao-limpar-filtros {
+            padding: 10px 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            color: #374151;
+            background-color: #f8f9fa;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.2s ease;
+        }
+        .botao-limpar-filtros:hover {
+            background-color: #e2e6ea;
+        }
+
+        .voltar-btn {
+            display: inline-block;
+            width: auto;
+            min-width: 200px;
+            padding: 15px 30px;
+            margin-top: 3rem;
+            text-align: center;
+            background-color: #112058;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            transition: background-color 0.3s ease;
+        }
+
+        .voltar-btn:hover {
+            background-color: #192e73ff;
+        }
+        .close-btn,
+        .back-btn-icon {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 2em;
+            font-weight: bold;
+            color: #aaa;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .close-btn {
+            right: 0;
+        }
+
+        .back-btn-icon {
+            left: 0;
+        }
+
+        .close-btn:hover,
+        .back-btn-icon:hover {
+            color: #333;
+        }
+
         .city-buttons-container {
             display: flex;
             flex-wrap: wrap;
@@ -160,7 +224,7 @@ try {
 
         .city-button {
             background-color: #e2e8f0;
-            color: #4a5568;
+            color: #112058;
             padding: 8px 16px;
             border: 1px solid #cbd5e0;
             border-radius: 9999px; /* rounded-full */
@@ -174,7 +238,7 @@ try {
         }
 
         .city-button.active {
-            background-color: var(--cor-principal);
+            background-color: #112058;
             color: white;
             border-color: var(--cor-principal);
         }
@@ -233,12 +297,18 @@ try {
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
             text-align: left;
             position: relative;
+            display: flex; /* Adicionado para layout flexível */
+            flex-direction: column; /* Organiza o conteúdo em coluna */
+        }
+        
+        .item-equipamento-conteudo {
+            flex-grow: 1; /* Faz o conteúdo crescer e empurrar o botão para baixo */
         }
 
         .item-equipamento h3 {
             margin-top: 0;
             margin-bottom: 0.5rem;
-            color: var(--cor-secundaria);
+            color: #112058;
         }
 
         .item-equipamento p {
@@ -246,10 +316,8 @@ try {
             color: #555;
         }
 
+        /* MODIFICADO: Estilo para o botão de editar */
         .item-equipamento .botao-editar {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
             background-color: #007bff;
             color: white;
             border: none;
@@ -257,6 +325,8 @@ try {
             border-radius: 0.5rem;
             cursor: pointer;
             transition: background-color 0.3s ease;
+            margin-top: 1rem; /* Espaço acima do botão */
+            align-self: flex-end; /* Alinha o botão à direita */
         }
 
         .item-equipamento .botao-editar:hover {
@@ -361,6 +431,7 @@ try {
 
         .modal-content input[type="text"],
         .modal-content input[type="number"],
+        .modal-content input[type="date"],
         .modal-content select {
             width: 100%;
             padding: 10px;
@@ -439,6 +510,32 @@ try {
             display: inline-block;
         }
 
+        .custom-date-input {
+            position: relative;
+            display: flex;
+            align-items: center;
+            width: 100%;
+            cursor: pointer; /* Adicionado para indicar que é clicável */
+        }
+        .custom-date-input::after {
+            font-family: "Font Awesome 5 Free";
+            content: '\f073'; /* Ícone de calendário */
+            font-weight: 900;
+            position: absolute;
+            right: 15px;
+            color: #888;
+            pointer-events: none; /* Permite clicar no campo de data através do ícone */
+        }
+        .custom-date-input input[type="date"] {
+            -webkit-appearance: none;
+            moz-appearance: none;
+            appearance: none;
+            padding-right: 35px; /* Espaço para o ícone */
+        }
+        /* Esconde o ícone de calendário padrão do Chrome/Edge */
+        .custom-date-input input[type="date"]::-webkit-calendar-picker-indicator {
+            display: none;
+        }
         @keyframes spin {
             0% {
                 transform: rotate(0deg);
@@ -460,6 +557,47 @@ try {
             width: 100%;
             text-align: center;
             padding-top: 20px;
+        }
+        
+        .equipment-type-group {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+        .equipment-type-group label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: normal;
+        }
+        
+        /* NOVO: Estilo para o botão Voltar ao Topo */
+        #backToTopBtn {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 30px;
+            z-index: 99;
+            border: none;
+            outline: none;
+            background-color: var(--cor-principal);
+            color: white;
+            cursor: pointer;
+            padding: 15px;
+            border-radius: 50%;
+            font-size: 18px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            width: 50px;
+            height: 50px;
+            line-height: 20px;
+            text-align: center;
+        }
+        #backToTopBtn:hover {
+            background-color: var(--cor-secundaria);
         }
 
         @media (max-width: 768px) {
@@ -495,21 +633,17 @@ try {
 <body>
     <div class="background"></div>
     <main class="card">
-        <header class="cabecalho">
-            <a href="menu.php" class="botao-voltar">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M19 12H5"></path>
-                    <path d="M12 19l-7-7 7-7"></path>
-                </svg>
-            </a>
+        <header class="header-container">
+            <a href="menu.php" class="back-btn-icon" title="Voltar ao Menu">&larr;</a>
             <h1 class="titulo-cabecalho">Gerenciar Equipamentos</h1>
+            <a href="menu.php" class="close-btn" title="Voltar ao Menu">&times;</a>
         </header>
         <div class="container-botao-adicionar-equipamento">
             <button class="botao-adicionar-equipamento" id="addEquipmentBtn">Adicionar Equipamento</button>
         </div>
         <div class="container-pesquisa">
             <input type="text" id="campoPesquisa" placeholder="Pesquisar por nome ou cidade...">
+            <button id="clearFiltersBtn" class="botao-limpar-filtros">Limpar filtros</button>
         </div>
         <div id="cityButtonsContainer" class="city-buttons-container">
             <button class="city-button active" data-city="all">Mostrar Todos</button>
@@ -525,10 +659,13 @@ try {
         </div>
         <div id="containerListaEquipamentos" class="equipment-list-container">
             </div>
+        <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
     </main>
     <div class="footer">
         <p>&copy; 2025 APsystem. Todos os direitos reservados.</p>
     </div>
+    
+    <button id="backToTopBtn" title="Voltar ao topo">&#8679;</button>
 
     <div id="addEquipmentModal" class="modal">
         <div class="modal-content">
@@ -538,15 +675,16 @@ try {
             </div>
             <form id="addEquipmentForm">
                 <label for="equipmentType">Tipo de Equipamento:</label>
-                <select id="equipmentType" name="tipo_equip" required>
-                    <option value="">Selecione o Tipo</option>
-                    <option value="CCO">CCO</option>
-                    <option value="RADAR FIXO">RADAR FIXO</option>
-                    <option value="DOME">DOME</option>
-                    <option value="EDUCATIVO">EDUCATIVO</option>
-                    <option value="LOMBADA">LOMBADA</option>
-                    <option value="LAP">LAP</option>
-                </select>
+                <div id="addEquipmentType" class="equipment-type-group">
+                    <label><input type="checkbox" name="tipo_equip[]" value="CCO"> CCO</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="RADAR FIXO"> RADAR FIXO</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="MONITOR DE SEMAFORO"> MONITOR DE SEMÁFORO</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="VIDEO MONITORAMENTO"> VÍDEO MONITORAMENTO</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="DOME"> DOME</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="LOMBADA ELETRONICA"> LOMBADA ELETRÔNICA</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="LAP"> LAP</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="EDUCATIVO"> EDUCATIVO</label>
+                </div>
 
                 <label for="equipmentName">Nome:</label>
                 <input type="text" id="equipmentName" name="nome_equip" >
@@ -565,11 +703,33 @@ try {
                     <label for="equipmentQtdFaixa">Quantidade de Faixas:</label>
                     <input type="number" id="equipmentQtdFaixa" name="qtd_faixa">
                     
-                    <label for="equipmentKm">KM da via:</label>
+                    <label for="equipmentKm">Velocidade (KM/h):</label>
                     <input type="text" id="equipmentKm" name="km">
 
                     <label for="equipmentSentido">Sentido:</label>
                     <input type="text" id="equipmentSentido" name="sentido">
+                </div>
+
+                <div id="add-afericao-fields-container" class="hidden">
+                    <label for="numInstrumento">Nº Instrumento:</label>
+                    <input type="text" id="numInstrumento" name="num_instrumento">
+
+                    <label for="dtAfericao">Data Aferição:</label>
+                    <div class="custom-date-input">
+                        <input type="date" id="dtAfericao" name="dt_afericao">
+                    </div>
+                </div>
+                
+                <div id="add-date-fields-container" class="hidden">
+                    <label for="dt_instalacao">Data de Instalação:</label>
+                    <div class="custom-date-input">
+                        <input type="date" id="dt_instalacao" name="dt_instalacao">
+                    </div>
+
+                    <label for="dt_estudoTec">Data de Estudo Técnico:</label>
+                    <div class="custom-date-input">
+                        <input type="date" id="dt_estudoTec" name="dt_estudoTec">
+                    </div>
                 </div>
 
                 <label for="equipmentCity">Cidade:</label>
@@ -596,17 +756,8 @@ try {
                 <label for="equipmentCep">CEP:</label>
                 <input type="text" id="equipmentCep" name="cep">
 
-                <label for="numInstrumento">Nº Instrumento:</label>
-                <input type="text" id="numInstrumento" name="num_instrumento">
-
-                <label for="dtAfericao">Data Aferição:</label>
-                <input type="date" id="dtAfericao" name="dt_afericao">
-
-                <label for="equipmentLatitude">Latitude:</label>
-                <input type="number" step="any" id="equipmentLatitude" name="latitude">
-
-                <label for="equipmentLongitude">Longitude:</label>
-                <input type="number" step="any" id="equipmentLongitude" name="longitude">
+                <label for="coordenadas">Coordenadas (Latitude, Longitude):</label>
+                <input type="text" id="coordenadas" name="coordenadas" placeholder="-17.726909, -48.567032">
                     
                 <p id="addEquipmentMessage" class="message hidden"></p>
                 <div class="form-buttons" id="add-form-buttons">
@@ -632,14 +783,16 @@ try {
                 <input type="hidden" id="editEnderecoId" name="id_endereco">
 
                 <label for="editEquipmentType">Tipo de Equipamento:</label>
-                <select id="editEquipmentType" name="tipo_equip" >
-                    <option value="CCO">CCO</option>
-                    <option value="RADAR FIXO">RADAR FIXO</option>
-                    <option value="DOME">DOME</option>
-                    <option value="EDUCATIVO">EDUCATIVO</option>
-                    <option value="LOMBADA">LOMBADA</option>
-                    <option value="LAP">LAP</option>
-                </select>
+                <div id="editEquipmentType" class="equipment-type-group">
+                    <label><input type="checkbox" name="tipo_equip[]" value="CCO"> CCO</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="RADAR FIXO"> RADAR FIXO</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="MONITOR DE SEMAFORO"> MONITOR DE SEMÁFORO</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="VIDEO MONITORAMENTO"> VÍDEO MONITORAMENTO</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="DOME"> DOME</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="LOMBADA ELETRONICA"> LOMBADA ELETRÔNICA</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="LAP"> LAP</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="EDUCATIVO"> EDUCATIVO</label>
+                </div>
 
                 <label for="editEquipmentName">Nome:</label>
                 <input type="text" id="editEquipmentName" name="nome_equip" >
@@ -658,11 +811,33 @@ try {
                     <label for="editEquipmentQtdFaixa">Quantidade de Faixas:</label>
                     <input type="number" id="editEquipmentQtdFaixa" name="qtd_faixa">
 
-                    <label for="editEquipmentKm">KM da via:</label>
+                    <label for="editEquipmentKm">Velocidade (KM/h):</label>
                     <input type="text" id="editEquipmentKm" name="km">
 
                     <label for="editEquipmentSentido">Sentido:</label>
                     <input type="text" id="editEquipmentSentido" name="sentido">
+                </div>
+
+                <div id="edit-afericao-fields-container" class="hidden">
+                    <label for="editNumInstrumento">Nº Instrumento:</label>
+                    <input type="text" id="editNumInstrumento" name="num_instrumento" >
+
+                    <label for="editDtAfericao">Data Aferição:</label>
+                    <div class="custom-date-input">
+                        <input type="date" id="editDtAfericao" name="dt_afericao" >
+                    </div>
+                </div>
+                
+                <div id="edit-date-fields-container" class="hidden">
+                    <label for="edit_dt_instalacao">Data de Instalação:</label>
+                    <div class="custom-date-input">
+                        <input type="date" id="edit_dt_instalacao" name="dt_instalacao">
+                    </div>
+
+                    <label for="edit_dt_estudoTec">Data de Estudo Técnico:</label>
+                    <div class="custom-date-input">
+                        <input type="date" id="edit_dt_estudoTec" name="dt_estudoTec">
+                    </div>
                 </div>
 
                 <label for="editEquipmentCity">Cidade:</label>
@@ -688,17 +863,8 @@ try {
                 <label for="editEquipmentCep">CEP:</label>
                 <input type="text" id="editEquipmentCep" name="cep">
 
-                <label for="editNumInstrumento">Nº Instrumento:</label>
-                <input type="text" id="editNumInstrumento" name="num_instrumento" >
-
-                <label for="editDtAfericao">Data Aferição:</label>
-                <input type="date" id="editDtAfericao" name="dt_afericao" >
-
-                <label for="editEquipmentLatitude">Latitude:</label>
-                <input type="number" step="any" id="editEquipmentLatitude" name="latitude">
-
-                <label for="editEquipmentLongitude">Longitude:</label>
-                <input type="number" step="any" id="editEquipmentLongitude" name="longitude">
+                <label for="editCoordenadas">Coordenadas (Latitude, Longitude):</label>
+                <input type="text" id="editCoordenadas" name="coordenadas" placeholder="-17.726909, -48.567032">
 
                 <p id="editEquipmentMessage" class="message hidden"></p>
                 <div class="form-buttons" id="edit-form-buttons">

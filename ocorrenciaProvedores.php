@@ -440,7 +440,7 @@ if (!isset($_SESSION['user_id'])) {
         }
 
         .voltar-btn:hover {
-            background-color: #0d1b2a;
+            background-color: #192e73ff;
         }
 
         .hidden {
