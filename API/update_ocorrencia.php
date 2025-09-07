@@ -19,7 +19,9 @@ $action = $input['action'] ?? null;
 $id = $input['id'] ?? $input['id_manutencao'] ?? null;
 
 
-if (empty($action) || empty($id)) {
+
+$acoes_sem_id_principal = ['edit_ocorrencia_batch', 'update_status_batch'];
+if (empty($action) || (!in_array($action, $acoes_sem_id_principal) && empty($id))) {
     echo json_encode(['success' => false, 'message' => 'Ação e ID são obrigatórios.']);
     exit();
 }
@@ -63,7 +65,8 @@ try {
             $result_old = $stmt_get_old->get_result();
             $ocorrencia_data = $result_old->fetch_assoc();
             $stmt_get_old->close();
-            if (!$ocorrencia_data) throw new Exception("Ocorrência não encontrada em nenhuma das tabelas.");
+            if (!$ocorrencia_data)
+                throw new Exception("Ocorrência não encontrada em nenhuma das tabelas.");
         }
 
         // --- IMPLEMENTAÇÃO ADICIONADA NA QUERY E NO BIND ---
@@ -190,6 +193,39 @@ try {
         }
 
         echo json_encode(['success' => true, 'message' => 'Ocorrência de processamento concluída com sucesso.']);
+    } elseif ($action === 'update_status_batch') {
+        $ids = $input['ids'] ?? [];
+        $new_status = $input['status'] ?? null;
+
+        if (empty($ids) || !is_array($ids) || empty($new_status)) {
+            throw new Exception('IDs e novo status são obrigatórios para a atualização em lote.');
+        }
+
+        // Garante que apenas status permitidos sejam usados
+        if (!in_array($new_status, ['pendente', 'cancelado'])) {
+            throw new Exception('Status inválido fornecido para o lote.');
+        }
+
+        // Cria a lista de placeholders para a cláusula IN (?, ?, ?)
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+
+        $stmt = $conn->prepare("UPDATE manutencoes SET status_reparo = ? WHERE id_manutencao IN ($placeholders)");
+
+        // Cria o array de tipos de parâmetros (ex: 'sii' para status, id, id)
+        $types = 's' . str_repeat('i', count($ids));
+
+        // Combina o status com os IDs para o bind_param
+        $params = array_merge([$new_status], $ids);
+
+        $stmt->bind_param($types, ...$params);
+
+        if (!$stmt->execute()) {
+            throw new Exception('Falha ao atualizar o status em lote.');
+        }
+        $stmt->close();
+
+        echo json_encode(['success' => true, 'message' => 'Status atualizado com sucesso para ' . count($ids) . ' ocorrências.']);
+
     } elseif ($action === 'update_status') {
         $new_status = $input['status'] ?? null;
         $origem = $input['origem'] ?? null; // Adicionado para saber qual tabela atualizar
@@ -386,6 +422,35 @@ try {
         }
 
         echo json_encode(['success' => true, 'message' => 'Ocorrência atualizada com sucesso.']);
+
+    } elseif ($action === 'edit_ocorrencia_batch') {
+        $updates = $input['updates'] ?? null;
+
+        if (empty($updates) || !is_array($updates)) {
+            throw new Exception('Dados para atualização em lote são inválidos.');
+        }
+
+        // Prepara a query uma vez para ser reutilizada no loop
+        $stmt = $conn->prepare("UPDATE manutencoes SET ocorrencia_reparo = ? WHERE id_manutencao = ?");
+
+        foreach ($updates as $update_item) {
+            $id_manutencao = $update_item['id_manutencao'] ?? null;
+            $ocorrencia_reparo = $update_item['ocorrencia_reparo'] ?? null;
+
+            if (empty($id_manutencao) || empty($ocorrencia_reparo)) {
+                // Se algum item for inválido, interrompe a transação
+                throw new Exception('Item inválido no lote de atualização. ID e ocorrência são obrigatórios.');
+            }
+
+            $stmt->bind_param('si', $ocorrencia_reparo, $id_manutencao);
+            if (!$stmt->execute()) {
+                throw new Exception('Falha ao atualizar a ocorrência ID: ' . $id_manutencao);
+            }
+        }
+        $stmt->close();
+
+        echo json_encode(['success' => true, 'message' => 'Ocorrências atualizadas com sucesso.']);
+
     } elseif ($action === 'assign') {
         $inicio_reparo = $input['inicio_reparo'] ?? null;
         $fim_reparo = $input['fim_reparo'] ?? null;

@@ -688,6 +688,23 @@ if (!isset($_SESSION['user_id'])) {
             background-color: #f9fafb;
             /* Cor de fundo alternada para melhor leitura */
         }
+
+        /* [NOVO] Estilo para a lista de ocorrências concatenadas */
+        .ocorrencia-list {
+            list-style: none;
+            padding-left: 0;
+            margin-top: 5px;
+            font-size: 0.95em;
+        }
+
+        .ocorrencia-list li {
+            padding: 4px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .ocorrencia-list li:last-child {
+            border-bottom: none;
+        }
     </style>
 </head>
 
@@ -716,7 +733,8 @@ if (!isset($_SESSION['user_id'])) {
             </div>
             <div class="search-container">
                 <div class="search-wrapper">
-                    <input type="text" id="searchInput" placeholder="Pesquisar por nome, referência, ocorrência ou usuário...">
+                    <input type="text" id="searchInput"
+                        placeholder="Pesquisar por nome, referência, ocorrência ou usuário...">
                     <button id="clearFiltersBtn">Limpar Filtros</button>
                 </div>
             </div>
@@ -733,7 +751,57 @@ if (!isset($_SESSION['user_id'])) {
         </div>
         <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
     </div>
-
+    <div id="cancelSelectionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="cancelSelectionModalTitle">Selecionar para Cancelar</h3>
+                <button class="modal-close" onclick="closeModal('cancelSelectionModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="cancelSelectionModalInfo"></div>
+                <p>Selecione uma ou mais ocorrências que deseja cancelar:</p>
+                <div id="cancelOcorrenciasContainer" class="choice-buttons"
+                    style="flex-direction: column; align-items: flex-start; gap: 0.8rem;">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div id="cancelSelectionError" class="modal-error-message hidden"></div>
+                <div id="cancelFooterButtons" class="modal-footer-buttons">
+                    <button class="modal-btn btn-secondary" onclick="closeModal('cancelSelectionModal')">Fechar</button>
+                    <button id="confirmCancelBtn" class="modal-btn btn-primary" style="background-color: #ef4444;"
+                        onclick="executeMultiCancel()">
+                        <span>Confirmar Cancelamento</span>
+                        <div class="spinner hidden"></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="selectOcorrenciasModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="selectOcorrenciasModalTitle">Selecionar Ocorrências</h3>
+                <button class="modal-close" onclick="closeAndCancelSelection()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="selectOcorrenciasModalInfo"></div>
+                <div class="form-group">
+                    <label>Selecione as ocorrências que deseja incluir na atribuição:</label>
+                    <div id="selectOcorrenciasContainer" class="choice-buttons"
+                        style="flex-direction: column; align-items: flex-start; gap: 0.8rem;">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div id="selectOcorrenciasError" class="modal-error-message hidden"></div>
+                <div class="modal-footer-buttons">
+                    <button class="modal-btn btn-secondary" onclick="closeAndCancelSelection()">Cancelar</button>
+                    <button class="modal-btn btn-primary" onclick="confirmOcorrenciaSelection()">Confirmar
+                        Seleção</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <div id="assignModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -791,7 +859,8 @@ if (!isset($_SESSION['user_id'])) {
             </div>
             <div class="modal-footer">
                 <div class="modal-footer-buttons">
-                    <button class="modal-btn btn-secondary" onclick="closeModal('editOcorrenciaModal')">Cancelar</button>
+                    <button class="modal-btn btn-secondary"
+                        onclick="closeModal('editOcorrenciaModal')">Cancelar</button>
                     <button class="modal-btn btn-primary" onclick="saveOcorrenciaUpdate()">Salvar Alteração</button>
                 </div>
             </div>
