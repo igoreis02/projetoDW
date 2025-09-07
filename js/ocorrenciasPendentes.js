@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // --- REFERÊNCIAS AOS ELEMENTOS ---
     const actionButtons = document.querySelectorAll('.action-btn');
     const filterContainer = document.getElementById('filterContainer');
@@ -259,17 +259,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- [ALTERADO] A função toggleView agora mantém os filtros de cidade visíveis ---
     function toggleView(showSimplified) {
         isSimplifiedViewActive = showSimplified;
-        
+
         // Esconde tudo, exceto o filtro de cidade
         searchInput.parentElement.classList.toggle('hidden', showSimplified);
         mainControls.querySelector('.action-buttons').classList.toggle('hidden', showSimplified);
         mainControls.querySelector('.date-filter-container').classList.toggle('hidden', showSimplified);
-        
+
         // Lógica de visualização principal vs. simplificada
         ocorrenciasContainer.classList.toggle('hidden', showSimplified);
         simplifiedView.classList.toggle('hidden', !showSimplified);
         voltarBtnFooter.classList.toggle('hidden', !showSimplified); // O botão de voltar aparece na visão de cards
-        
+
         btnSimplificado.classList.toggle('active', showSimplified);
 
         if (showSimplified) {
@@ -282,7 +282,7 @@ document.addEventListener('DOMContentLoaded', function() {
             applyFiltersAndRender();
         }
     }
-    
+
     // --- EVENT LISTENERS ---
     clearFiltersBtn.addEventListener('click', () => {
         if (isSimplifiedViewActive) toggleView(false);
@@ -332,13 +332,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    
+
     function createOcorrenciaHTML(item) {
         const firstOcorrencia = item.ocorrencias_detalhadas[0];
         let detailsHTML = '';
         const statusHTML = `<span class="status-tag status-pendente">Pendente</span>`;
         let atribuidoPorHTML = firstOcorrencia.atribuido_por ? `<div class="detail-item"><strong>Solicitado por</strong> <span>${firstOcorrencia.atribuido_por}</span></div>` : '';
 
+        // --- LÓGICA DE INSTALAÇÃO (sem alterações) ---
         if (item.tipo_manutencao === 'instalação') {
             const statusMap = { inst_laco: 'Laço', inst_base: 'Base', inst_infra: 'Infra', inst_energia: 'Energia', inst_prov: 'Provedor' };
             const dateMap = { inst_laco: 'dt_laco', inst_base: 'dt_base', inst_infra: 'data_infra', inst_energia: 'dt_energia', inst_prov: 'data_provedor' };
@@ -348,44 +349,64 @@ document.addEventListener('DOMContentLoaded', function() {
                     `<span class="status-value aguardando">Aguardando instalação</span>`;
                 return `<div class="detail-item"><strong>${label}</strong> <span>${status}</span></div>`;
             }).join('');
+
+            // --- [MUDANÇA AQUI] LÓGICA PARA MÚLTIPLAS OCORRÊNCIAS ---
         } else if (item.ocorrencias_detalhadas.length > 1) {
             let ocorrenciasListHTML = item.ocorrencias_detalhadas.map((ocor, index) =>
-                `<li><strong>${index + 1}.</strong> <span class="status-tag status-pendente">${ocor.ocorrencia_reparo.toUpperCase() || 'Não especificada'}</span> (Início: ${new Date(ocor.inicio_reparo).toLocaleString('pt-BR')})</li>`
+                `<li>
+                <strong>${index + 1}.</strong> <span class="status-tag status-pendente">${ocor.ocorrencia_reparo.toUpperCase() || 'Não especificada'}</span>
+                <div style="font-size: 0.9em; color: #6b7280; padding-left: 20px;">
+                    <strong>Data Ocorrência:</strong> ${new Date(ocor.inicio_reparo).toLocaleString('pt-BR')}
+                </div>
+            </li>`
             ).join('');
             detailsHTML = `<div class="detail-item"><strong>Ocorrências</strong><ul class="ocorrencia-list">${ocorrenciasListHTML}</ul></div>`;
+
+            // --- [MUDANÇA AQUI] LÓGICA PARA OCORRÊNCIA ÚNICA ---
         } else {
-            detailsHTML = `<div class="detail-item"><strong>Ocorrência</strong> <span class="status-tag status-pendente">${firstOcorrencia.ocorrencia_reparo.toUpperCase() || 'Não especificada'}</span></div>`;
+            detailsHTML = `
+            <div class="detail-item">
+                <strong>Ocorrência:</strong> <span class="status-tag status-pendente">${firstOcorrencia.ocorrencia_reparo.toUpperCase() || 'Não especificada'}</span>
+                <div style="font-size: 0.9em; color: #6b7280; padding-left: 0px; margin-top: 5px;">
+                    <strong>Data Ocorrência:</strong> ${new Date(firstOcorrencia.inicio_reparo).toLocaleString('pt-BR')}
+                </div>
+            </div>
+        `;
         }
 
+        // --- [MUDANÇA AQUI] `commonDetails` ATUALIZADO ---
+        // A linha "Início Ocorrência" foi removida daqui
         const commonDetails = `
-            ${item.tipo_manutencao !== 'instalação' ? `<div class="detail-item"><strong>Início Ocorrência</strong> <span>${new Date(firstOcorrencia.inicio_reparo).toLocaleString('pt-BR')}</span></div>` : ''}
-            ${atribuidoPorHTML}
-            <div class="detail-item"><strong>Status</strong> ${statusHTML}</div>
-            <div class="detail-item"><strong>Local</strong> <span>${firstOcorrencia.local_completo || 'N/A'}</span></div>
-            ${firstOcorrencia.motivo_devolucao ? `<div class="detail-item"><strong>Devolvida</strong> <span class="status-tag status-pendente">${firstOcorrencia.motivo_devolucao}</span></div>` : ''}
-        `;
+        ${atribuidoPorHTML}
+        <div class="detail-item"><strong>Status</strong> ${statusHTML}</div>
+        <div class="detail-item"><strong>Local</strong> <span>${firstOcorrencia.local_completo || 'N/A'}</span></div>
+        ${firstOcorrencia.motivo_devolucao ? `<div class="detail-item"><strong>Devolvida</strong> <span class="status-tag status-pendente">${firstOcorrencia.motivo_devolucao}</span></div>` : ''}
+    `;
+
+        // A lógica de adicionar os detalhes comuns permanece a mesma
         detailsHTML += commonDetails;
 
+        // --- LÓGICA RESTANTE (sem alterações) ---
         const allIdsInGroup = item.ocorrencias_detalhadas.map(o => o.id_manutencao).join(',');
         const isGrouped = item.tipo_manutencao !== 'instalação' && item.ocorrencias_detalhadas.length > 1;
 
         const actionsHTML = `
-            <div class="item-actions">
-                <p style="margin-right: auto; font-size: 0.9em; color: #6b7280;">Clique no card para selecionar</p>
-                <button class="item-btn edit-btn" onclick="openEditOcorrenciaModal('${allIdsInGroup}', event)">Editar</button>
-                <button class="item-btn cancel-btn" onclick="handleCancelClick('${allIdsInGroup}', ${isGrouped}, event)">Cancelar</button>
-            </div>
-        `;
+        <div class="item-actions">
+            <p style="margin-right: auto; font-size: 0.9em; color: #6b7280;">Clique no card para selecionar</p>
+            <button class="item-btn edit-btn" onclick="openEditOcorrenciaModal('${allIdsInGroup}', event)">Editar</button>
+            <button class="item-btn cancel-btn" onclick="handleCancelClick('${allIdsInGroup}', ${isGrouped}, event)">Cancelar</button>
+        </div>
+    `;
 
         const groupKey = `${item.nome_equip}|||${item.referencia_equip}`;
 
         return `
-            <div class="ocorrencia-item" data-type="${item.tipo_manutencao}" data-id="${allIdsInGroup}" data-group-key="${groupKey}" data-is-grouped="${isGrouped}">
-                <div class="ocorrencia-header"><h3>${item.nome_equip} - ${item.referencia_equip}</h3></div>
-                <div class="ocorrencia-details">${detailsHTML}</div>
-                ${actionsHTML}
-            </div>
-        `;
+        <div class="ocorrencia-item" data-type="${item.tipo_manutencao}" data-id="${allIdsInGroup}" data-group-key="${groupKey}" data-is-grouped="${isGrouped}">
+            <div class="ocorrencia-header"><h3>${item.nome_equip} - ${item.referencia_equip}</h3></div>
+            <div class="ocorrencia-details">${detailsHTML}</div>
+            ${actionsHTML}
+        </div>
+    `;
     }
 
     function formatDate(dateString) {
@@ -397,46 +418,46 @@ document.addEventListener('DOMContentLoaded', function() {
     window.openModal = (modalId) => document.getElementById(modalId).classList.add('is-active');
 
     window.closeModal = function (modalId) {
-    const modal = document.getElementById(modalId);
-    if(modal) modal.classList.remove('is-active'); // Adicionado verificação para segurança
+        const modal = document.getElementById(modalId);
+        if (modal) modal.classList.remove('is-active'); // Adicionado verificação para segurança
 
-    if (modalId === 'assignModal') {
-        const saveBtn = document.getElementById('saveAssignmentBtn');
-        const btnText = saveBtn.querySelector('span');
-        const btnSpinner = saveBtn.querySelector('.spinner');
-        const assignErrorMessage = document.getElementById('assignErrorMessage');
+        if (modalId === 'assignModal') {
+            const saveBtn = document.getElementById('saveAssignmentBtn');
+            const btnText = saveBtn.querySelector('span');
+            const btnSpinner = saveBtn.querySelector('.spinner');
+            const assignErrorMessage = document.getElementById('assignErrorMessage');
 
-        
-        saveBtn.disabled = false;
-        btnText.textContent = 'Salvar Atribuição';
-        btnSpinner.classList.add('hidden');
-        
-        
-        document.querySelector('#assignModal .modal-footer-buttons').classList.remove('hidden');
-        assignErrorMessage.style.color = '#ef4444'; 
-        
 
-        assignErrorMessage.classList.add('hidden');
-    }
+            saveBtn.disabled = false;
+            btnText.textContent = 'Salvar Atribuição';
+            btnSpinner.classList.add('hidden');
 
-    if (modalId === 'confirmationModal') {
-        document.getElementById('confirmationFooter').classList.remove('hidden');
-        document.getElementById('confirmationMessage').classList.add('hidden');
-    }
-    if (modalId === 'editOcorrenciaModal') {
-        document.getElementById('editOcorrenciaTextarea').parentElement.classList.remove('hidden');
-        const oldFormGroups = document.querySelectorAll('#editOcorrenciaModal .dynamic-form-group');
-        oldFormGroups.forEach(group => group.remove());
-    }
-    if (modalId === 'cancelSelectionModal') {
-        const btn = document.getElementById('confirmCancelBtn');
-        btn.disabled = false;
-        btn.querySelector('span').textContent = 'Confirmar Cancelamento';
-        btn.querySelector('.spinner').classList.add('hidden');
-        document.getElementById('cancelFooterButtons').classList.remove('hidden');
-        document.getElementById('cancelSelectionError').classList.add('hidden');
-    }
-};
+
+            document.querySelector('#assignModal .modal-footer-buttons').classList.remove('hidden');
+            assignErrorMessage.style.color = '#ef4444';
+
+
+            assignErrorMessage.classList.add('hidden');
+        }
+
+        if (modalId === 'confirmationModal') {
+            document.getElementById('confirmationFooter').classList.remove('hidden');
+            document.getElementById('confirmationMessage').classList.add('hidden');
+        }
+        if (modalId === 'editOcorrenciaModal') {
+            document.getElementById('editOcorrenciaTextarea').parentElement.classList.remove('hidden');
+            const oldFormGroups = document.querySelectorAll('#editOcorrenciaModal .dynamic-form-group');
+            oldFormGroups.forEach(group => group.remove());
+        }
+        if (modalId === 'cancelSelectionModal') {
+            const btn = document.getElementById('confirmCancelBtn');
+            btn.disabled = false;
+            btn.querySelector('span').textContent = 'Confirmar Cancelamento';
+            btn.querySelector('.spinner').classList.add('hidden');
+            document.getElementById('cancelFooterButtons').classList.remove('hidden');
+            document.getElementById('cancelSelectionError').classList.add('hidden');
+        }
+    };
 
     function findOcorrenciaById(id) {
         if (!allData || !allData.ocorrencias) return null;
@@ -465,7 +486,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return null;
     }
 
-    ocorrenciasContainer.addEventListener('click', function(e) {
+    ocorrenciasContainer.addEventListener('click', function (e) {
         if (e.target.closest('.item-btn')) return;
         const item = e.target.closest('.ocorrencia-item');
         if (item) {
@@ -511,7 +532,7 @@ document.addEventListener('DOMContentLoaded', function() {
         openModal('selectOcorrenciasModal');
     }
 
-    window.confirmOcorrenciaSelection = function() {
+    window.confirmOcorrenciaSelection = function () {
         const selectedBtns = document.querySelectorAll('#selectOcorrenciasContainer .choice-btn.selected');
         const errorEl = document.getElementById('selectOcorrenciasError');
         if (selectedBtns.length === 0) {
@@ -543,7 +564,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    window.handleMultiAssignClick = async function(button) {
+    window.handleMultiAssignClick = async function (button) {
         const city = button.dataset.city;
         const group = document.querySelector(`.city-group[data-city="${city}"]`);
         const selectedItemsElements = group.querySelectorAll('.ocorrencia-item.selected:not(.hidden)');
@@ -587,7 +608,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (veiculosData.length > 0) createChoiceButtons(veiculosContainer, veiculosData, 'id_veiculo', 'nome', 'placa');
     }
 
-    window.saveAssignment = async function() {
+    window.saveAssignment = async function () {
         const saveBtn = document.getElementById('saveAssignmentBtn');
         const assignErrorMessage = document.getElementById('assignErrorMessage');
         const inicioReparo = document.getElementById('assignInicioReparo').value;
@@ -630,7 +651,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    window.handleCancelClick = function(allIds, isGrouped, event) {
+    window.handleCancelClick = function (allIds, isGrouped, event) {
         event.stopPropagation();
         if (isGrouped) {
             openCancelSelectionModal(allIds);
@@ -661,7 +682,7 @@ document.addEventListener('DOMContentLoaded', function() {
         openModal('cancelSelectionModal');
     }
 
-    window.executeMultiCancel = async function() {
+    window.executeMultiCancel = async function () {
         const saveBtn = document.getElementById('confirmCancelBtn');
         const errorEl = document.getElementById('cancelSelectionError');
         const selectedBtns = document.querySelectorAll('#cancelOcorrenciasContainer .choice-btn.selected');
@@ -705,7 +726,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    window.openEditOcorrenciaModal = function(idsToEdit, event) {
+    window.openEditOcorrenciaModal = function (idsToEdit, event) {
         event.stopPropagation();
         const ids = idsToEdit.split(',');
         if (ids.length === 0) return;
@@ -748,7 +769,7 @@ document.addEventListener('DOMContentLoaded', function() {
         openModal('editOcorrenciaModal');
     }
 
-    window.saveOcorrenciaUpdate = async function() {
+    window.saveOcorrenciaUpdate = async function () {
         const saveBtn = document.querySelector('#editOcorrenciaModal .btn-primary');
         const originalBtnText = saveBtn.textContent;
         saveBtn.disabled = true;
@@ -810,7 +831,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    window.openConfirmationModal = function(id, status) {
+    window.openConfirmationModal = function (id, status) {
         document.getElementById('confirmationModalTitle').textContent = 'Cancelar Ocorrência';
         document.getElementById('confirmationModalText').textContent = 'Tem certeza que deseja cancelar esta ocorrência?';
         document.getElementById('confirmActionButton').onclick = () => executeStatusChange(id, status);
