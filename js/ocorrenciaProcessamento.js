@@ -270,6 +270,7 @@ document.addEventListener('DOMContentLoaded', function () {
             
             setTimeout(() => {
                 if (modalToClose) closeModal(modalToClose);
+                closeModal('confirmationModal');
                 initialLoad();
             }, 2000);
 

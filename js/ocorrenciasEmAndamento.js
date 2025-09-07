@@ -477,7 +477,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const dataToSend = {
             action: 'update_status',
             id_manutencao: id,
-            status: status
+            status: status,
+            origem: 'manutencao'
         };
 
         try {

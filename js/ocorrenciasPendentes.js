@@ -350,11 +350,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }).join('');
         } else if (item.ocorrencias_detalhadas.length > 1) {
             let ocorrenciasListHTML = item.ocorrencias_detalhadas.map((ocor, index) =>
-                `<li><strong>${index + 1}.</strong> <span class="status-tag status-pendente">${ocor.ocorrencia_reparo || 'Não especificada'}</span> (Início: ${new Date(ocor.inicio_reparo).toLocaleString('pt-BR')})</li>`
+                `<li><strong>${index + 1}.</strong> <span class="status-tag status-pendente">${ocor.ocorrencia_reparo.toUpperCase() || 'Não especificada'}</span> (Início: ${new Date(ocor.inicio_reparo).toLocaleString('pt-BR')})</li>`
             ).join('');
             detailsHTML = `<div class="detail-item"><strong>Ocorrências</strong><ul class="ocorrencia-list">${ocorrenciasListHTML}</ul></div>`;
         } else {
-            detailsHTML = `<div class="detail-item"><strong>Ocorrência</strong> <span class="status-tag status-pendente">${firstOcorrencia.ocorrencia_reparo || 'Não especificada'}</span></div>`;
+            detailsHTML = `<div class="detail-item"><strong>Ocorrência</strong> <span class="status-tag status-pendente">${firstOcorrencia.ocorrencia_reparo.toUpperCase() || 'Não especificada'}</span></div>`;
         }
 
         const commonDetails = `
@@ -396,22 +396,47 @@ document.addEventListener('DOMContentLoaded', function() {
 
     window.openModal = (modalId) => document.getElementById(modalId).classList.add('is-active');
 
-    window.closeModal = (modalId) => {
-        const modal = document.getElementById(modalId);
-        if (modal) modal.classList.remove('is-active');
-        if (modalId === 'editOcorrenciaModal') {
-            document.getElementById('editOcorrenciaTextarea').parentElement.classList.remove('hidden');
-            modal.querySelectorAll('.dynamic-form-group').forEach(group => group.remove());
-        }
-        if (modalId === 'cancelSelectionModal') {
-            const btn = document.getElementById('confirmCancelBtn');
-            btn.disabled = false;
-            btn.querySelector('span').textContent = 'Confirmar Cancelamento';
-            btn.querySelector('.spinner').classList.add('hidden');
-            document.getElementById('cancelFooterButtons').classList.remove('hidden');
-            document.getElementById('cancelSelectionError').classList.add('hidden');
-        }
-    };
+    window.closeModal = function (modalId) {
+    const modal = document.getElementById(modalId);
+    if(modal) modal.classList.remove('is-active'); // Adicionado verificação para segurança
+
+    if (modalId === 'assignModal') {
+        const saveBtn = document.getElementById('saveAssignmentBtn');
+        const btnText = saveBtn.querySelector('span');
+        const btnSpinner = saveBtn.querySelector('.spinner');
+        const assignErrorMessage = document.getElementById('assignErrorMessage');
+
+        
+        saveBtn.disabled = false;
+        btnText.textContent = 'Salvar Atribuição';
+        btnSpinner.classList.add('hidden');
+        
+        
+        document.querySelector('#assignModal .modal-footer-buttons').classList.remove('hidden');
+        assignErrorMessage.style.color = '#ef4444'; 
+        
+
+        assignErrorMessage.classList.add('hidden');
+    }
+
+    if (modalId === 'confirmationModal') {
+        document.getElementById('confirmationFooter').classList.remove('hidden');
+        document.getElementById('confirmationMessage').classList.add('hidden');
+    }
+    if (modalId === 'editOcorrenciaModal') {
+        document.getElementById('editOcorrenciaTextarea').parentElement.classList.remove('hidden');
+        const oldFormGroups = document.querySelectorAll('#editOcorrenciaModal .dynamic-form-group');
+        oldFormGroups.forEach(group => group.remove());
+    }
+    if (modalId === 'cancelSelectionModal') {
+        const btn = document.getElementById('confirmCancelBtn');
+        btn.disabled = false;
+        btn.querySelector('span').textContent = 'Confirmar Cancelamento';
+        btn.querySelector('.spinner').classList.add('hidden');
+        document.getElementById('cancelFooterButtons').classList.remove('hidden');
+        document.getElementById('cancelSelectionError').classList.add('hidden');
+    }
+};
 
     function findOcorrenciaById(id) {
         if (!allData || !allData.ocorrencias) return null;
