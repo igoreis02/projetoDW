@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function startAutoUpdate() {
         if (updateInterval) clearInterval(updateInterval);
-        updateInterval = setInterval(() => fetchData(true), 30000);
+        updateInterval = setInterval(() => fetchData(true), 5000);  // Atualiza a cada 5 segundos
     }
 
     function applyFiltersAndRender() {
@@ -194,8 +194,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         checkSelectionAndToggleButtons();
     }
-
-    // --- [ALTERADO] A função agora aceita um filtro de cidade ---
+    // --- GERAÇÃO DA VISÃO SIMPLIFICADA ---
     function generateSimplifiedView(cityFilter = 'todos') {
         if (!allData || !allData.ocorrencias || Object.keys(allData.ocorrencias).length === 0) {
             simplifiedView.innerHTML = '<p>Não há dados para exibir no resumo.</p>';
@@ -213,7 +212,6 @@ document.addEventListener('DOMContentLoaded', function () {
         let html = '<h2>MANUTENÇÕES CORRETIVAS PENDENTES:</h2>';
         const sortedCities = Object.keys(corretivasPorCidade).sort();
 
-        // --- [NOVO] Decide quais cidades renderizar com base no filtro ---
         const citiesToRender = cityFilter === 'todos' ? sortedCities : [cityFilter];
         let hasContentForFilter = false;
 
@@ -248,7 +246,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     html += `</ul>`;
                 }
             }
-            // --- [NOVO] Mensagem caso a cidade filtrada não tenha ocorrências ---
+    
             if (!hasContentForFilter && cityFilter !== 'todos') {
                 html += `<h3>${cityFilter}</h3><p>Nenhuma manutenção corretiva pendente para esta cidade.</p>`;
             }
@@ -256,7 +254,7 @@ document.addEventListener('DOMContentLoaded', function () {
         simplifiedView.innerHTML = html;
     }
 
-    // --- [ALTERADO] A função toggleView agora mantém os filtros de cidade visíveis ---
+   
     function toggleView(showSimplified) {
         isSimplifiedViewActive = showSimplified;
 
@@ -313,7 +311,6 @@ document.addEventListener('DOMContentLoaded', function () {
     endDateInput.addEventListener('change', fetchData);
     searchInput.addEventListener('input', applyFiltersAndRender);
 
-    // --- [ALTERADO] O listener do filtro agora sabe qual view atualizar ---
     function addFilterListeners() {
         filterContainer.addEventListener('click', (e) => {
             if (e.target.classList.contains('filter-btn')) {
@@ -339,7 +336,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const statusHTML = `<span class="status-tag status-pendente">Pendente</span>`;
         let atribuidoPorHTML = firstOcorrencia.atribuido_por ? `<div class="detail-item"><strong>Solicitado por</strong> <span>${firstOcorrencia.atribuido_por}</span></div>` : '';
 
-        // --- LÓGICA DE INSTALAÇÃO (sem alterações) ---
+        // --- LÓGICA PARA INSTALAÇÕES ---
         if (item.tipo_manutencao === 'instalação') {
             const statusMap = { inst_laco: 'Laço', inst_base: 'Base', inst_infra: 'Infra', inst_energia: 'Energia', inst_prov: 'Provedor' };
             const dateMap = { inst_laco: 'dt_laco', inst_base: 'dt_base', inst_infra: 'data_infra', inst_energia: 'dt_energia', inst_prov: 'data_provedor' };
@@ -350,7 +347,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 return `<div class="detail-item"><strong>${label}</strong> <span>${status}</span></div>`;
             }).join('');
 
-            // --- [MUDANÇA AQUI] LÓGICA PARA MÚLTIPLAS OCORRÊNCIAS ---
+            // --- LÓGICA PARA MÚLTIPLAS OCORRÊNCIAS ---
         } else if (item.ocorrencias_detalhadas.length > 1) {
             let ocorrenciasListHTML = item.ocorrencias_detalhadas.map((ocor, index) =>
                 `<li>
@@ -362,7 +359,7 @@ document.addEventListener('DOMContentLoaded', function () {
             ).join('');
             detailsHTML = `<div class="detail-item"><strong>Ocorrências</strong><ul class="ocorrencia-list">${ocorrenciasListHTML}</ul></div>`;
 
-            // --- [MUDANÇA AQUI] LÓGICA PARA OCORRÊNCIA ÚNICA ---
+            // --- LÓGICA PARA OCORRÊNCIA ÚNICA ---
         } else {
             detailsHTML = `
             <div class="detail-item">
@@ -374,8 +371,7 @@ document.addEventListener('DOMContentLoaded', function () {
         `;
         }
 
-        // --- [MUDANÇA AQUI] `commonDetails` ATUALIZADO ---
-        // A linha "Início Ocorrência" foi removida daqui
+        // --- DETALHES COMUNS A AMBAS AS SITUAÇÕES ---
         const commonDetails = `
         ${atribuidoPorHTML}
         <div class="detail-item"><strong>Status</strong> ${statusHTML}</div>
@@ -383,10 +379,10 @@ document.addEventListener('DOMContentLoaded', function () {
         ${firstOcorrencia.motivo_devolucao ? `<div class="detail-item"><strong>Devolvida</strong> <span class="status-tag status-pendente">${firstOcorrencia.motivo_devolucao}</span></div>` : ''}
     `;
 
-        // A lógica de adicionar os detalhes comuns permanece a mesma
+        // A lógica de adicionar os detalhes comuns 
         detailsHTML += commonDetails;
 
-        // --- LÓGICA RESTANTE (sem alterações) ---
+        // --- AÇÕES ---
         const allIdsInGroup = item.ocorrencias_detalhadas.map(o => o.id_manutencao).join(',');
         const isGrouped = item.tipo_manutencao !== 'instalação' && item.ocorrencias_detalhadas.length > 1;
 
@@ -419,7 +415,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     window.closeModal = function (modalId) {
         const modal = document.getElementById(modalId);
-        if (modal) modal.classList.remove('is-active'); // Adicionado verificação para segurança
+        if (modal) modal.classList.remove('is-active'); 
 
         if (modalId === 'assignModal') {
             const saveBtn = document.getElementById('saveAssignmentBtn');
@@ -881,4 +877,31 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- INICIALIZAÇÃO ---
     fetchData();
     startAutoUpdate();
+
+    // Primeiro, eu pego a referência do botão que criei no HTML.
+    const btnVoltarAoTopo = document.getElementById("btnVoltarAoTopo");
+
+    // Agora, eu digo à janela do navegador para "escutar" o evento de rolagem (scroll).
+    window.onscroll = function() {
+        // Chamo a minha função que decide se o botão deve aparecer ou não.
+        controlarVisibilidadeBotao();
+    };
+
+    function controlarVisibilidadeBotao() {
+        // Se eu rolei mais de 20px para baixo a partir do topo da página...
+        if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+            // ...eu mostro o botão.
+            btnVoltarAoTopo.style.display = "block";
+        } else {
+            // ...senão, eu escondo o botão.
+            btnVoltarAoTopo.style.display = "none";
+        }
+    }
+
+    // Por último, eu adiciono a ação que acontece quando eu clico no botão.
+    btnVoltarAoTopo.addEventListener('click', function() {
+        // Eu mando a página de volta para o topo de forma suave.
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    });
+
 });

@@ -13,6 +13,7 @@ if (!isset($_SESSION['user_id'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ocorrências Pendentes</title>
     <link rel="stylesheet" href="css/style.css">
+     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="icon" type="image/png" href="imagens/favicon.png">
     <style>
         /* SEU ESTILO ORIGINAL (INTACTO) */
@@ -549,6 +550,48 @@ if (!isset($_SESSION['user_id'])) {
             margin-left: 8px;
         }
 
+        #btnVoltarAoTopo {
+            display: none;
+            /* Eu começo com ele escondido */
+            position: fixed;
+            /* Fixo ele na tela, para que role junto com a página */
+            bottom: 20px;
+            /* Distância da parte de baixo da tela */
+            right: 30px;
+            /* Distância da parte direita da tela */
+            z-index: 99;
+            /* Garanto que ele fique acima de outros elementos */
+            border: none;
+            /* Tiro a borda padrão */
+            outline: none;
+            /* Tiro o contorno ao clicar */
+            background-color: #112058;
+            /* Uso a cor principal do meu projeto */
+            color: white;
+            /* Cor do ícone */
+            cursor: pointer;
+            /* Mudo o cursor para indicar que é clicável */
+            padding: 15px;
+            /* Espaçamento interno */
+            border-radius: 50%;
+            /* Deixo ele redondo */
+            font-size: 18px;
+            /* Tamanho do ícone */
+            width: 50px;
+            /* Largura fixa */
+            height: 50px;
+            /* Altura fixa */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            /* Adiciono uma sombra suave */
+            transition: background-color 0.3s, opacity 0.5s;
+            /* Adiciono transições suaves */
+        }
+
+        #btnVoltarAoTopo:hover {
+            background-color: #09143f;
+            /* Escureço a cor quando passo o mouse */
+        }
+
         @media (max-width: 1200px) {
             .city-ocorrencias-grid {
                 grid-template-columns: repeat(2, 1fr);
@@ -886,6 +929,9 @@ if (!isset($_SESSION['user_id'])) {
     </div>
 
     <script src="js/ocorrenciasPendentes.js"></script>
+
+    <button id="btnVoltarAoTopo" title="Voltar ao topo">
+        <i class="fas fa-arrow-up"></i> </button>
 </body>
 
 </html>
