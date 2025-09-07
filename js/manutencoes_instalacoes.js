@@ -65,6 +65,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const semaforicaErrorMessage = document.getElementById('semaforicaErrorMessage');
     const semaforicaConfirmationDetails = document.getElementById('semaforicaConfirmationDetails');
 
+    const assignTecnicoSemaforicaBtn = document.getElementById('assignTecnicoSemaforicaBtn');
+    const assignSemaforicaModal = document.getElementById('assignSemaforicaModal');
+
     // --- SEÇÃO DE VARIÁVEIS DE ESTADO ---
     let allEquipments = [];
     let selectedCityId = null, selectedCityName = '';
@@ -97,6 +100,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     async function openMaintenanceModal(type, status, flow) {
+        document.getElementById('confirmSaveButton').innerHTML = 'Confirmar <span id="confirmSpinner" class="loading-spinner hidden"></span>';
+        const assignBtn = document.getElementById('assignTecnicoSemaforicaBtn');
+        if (assignBtn) assignBtn.classList.add('hidden');
+        const semaforicaDetails = document.getElementById('semaforicaConfirmationDetails');
+        if (semaforicaDetails) semaforicaDetails.classList.add('hidden');
+
         currentMaintenanceType = type; // Armazena o tipo interno (ex: 'preditiva')
         currentRepairStatus = status;
         currentFlow = flow;
@@ -213,6 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     function resetAndGoBackToCitySelection() {
+        // 1. Reseta e esconde o modal de confirmação
         confirmationModal.classList.remove('is-active');
         confirmMessage.classList.add('hidden');
         confirmationButtonsDiv.style.display = 'flex';
@@ -220,11 +230,19 @@ document.addEventListener('DOMContentLoaded', () => {
         cancelSaveButton.disabled = false;
         confirmSpinner.classList.add('hidden');
 
+        // 2. Garante que os detalhes da atribuição e o botão de atribuir fiquem escondidos
+        const assignmentDetails = document.getElementById('confirmSemaforicaAssignmentDetails');
+        if (assignmentDetails) assignmentDetails.classList.add('hidden');
+        const assignBtn = document.getElementById('assignTecnicoSemaforicaBtn');
+        if (assignBtn) assignBtn.classList.add('hidden');
+
+        // 3. Limpa os dados e o formulário
         semaforicaData = {};
         if (semaforicaForm) semaforicaForm.reset();
 
-        semaforicaSection.style.display = 'none';
-        citySelectionSection.style.display = 'block';
+        // 4. Mostra a seção de cidades e recarrega a lista
+        showModalSection('citySelectionSection');
+        openMaintenanceModal('Ocorrência Semafórica', 'pendente', 'semaforica'); // Recarrega o fluxo do início
     }
     function resetForNewOperationInSameCity() {
         // 1. Reseta e esconde o modal de confirmação
@@ -274,11 +292,43 @@ document.addEventListener('DOMContentLoaded', () => {
             loadEquipamentos(selectedCityId, '');
         }
     }
+    // SUBSTITUA SUA FUNÇÃO goBackToCitySelection POR ESTA
     window.goBackToCitySelection = function () {
+        // Mostra a seção de cidades
         citySelectionSection.style.display = 'block';
+
+        // Garante que TODAS as outras seções de conteúdo estejam escondidas
         equipmentSelectionSection.style.display = 'none';
         installEquipmentAndAddressSection.style.display = 'none';
-    }
+
+        // --- LINHA ADICIONADA: Esconde o formulário da Matriz Semafórica ---
+        if (semaforicaSection) {
+            semaforicaSection.style.display = 'none';
+        }
+
+        // --- LINHA ADICIONADA: Limpa ("formata") os dados do formulário semafórico ---
+        if (semaforicaForm) {
+            semaforicaForm.reset();
+        }
+
+        // Reseta o estado da atribuição de técnicos para evitar vazamento para outros fluxos
+        if (typeof semaforicaData !== 'undefined') {
+            semaforicaData = {};
+        }
+        const assignBtn = document.getElementById('assignTecnicoSemaforicaBtn');
+        if (assignBtn) {
+            assignBtn.textContent = 'Atribuir Técnico';
+            assignBtn.classList.add('hidden');
+        }
+        const confirmBtn = document.getElementById('confirmSaveButton');
+        if (confirmBtn) {
+            confirmBtn.innerHTML = 'Confirmar <span id="confirmSpinner" class="loading-spinner hidden"></span>';
+        }
+        const assignmentDetails = document.getElementById('confirmSemaforicaAssignmentDetails');
+        if (assignmentDetails) {
+            assignmentDetails.classList.add('hidden');
+        }
+    };
 
     equipmentSearchInput.addEventListener('input', () => {
         if (selectedCityId) {
@@ -392,11 +442,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('confirmMaintenanceType').textContent = currentMaintenanceType.charAt(0).toUpperCase() + currentMaintenanceType.slice(1);
 
         let finalStatus = currentRepairStatus;
+        if (currentMaintenanceType === 'preditiva') {
         if ((realizadoPor === 'processamento' && reparoConcluido === false) || (realizadoPor === 'provedor' && tecnicoInLoco === true)) {
             finalStatus = 'pendente';
         } else {
             finalStatus = 'concluido';
         }
+    }
 
 
         document.getElementById('installConfirmationDetails').classList.add('hidden');
@@ -529,6 +581,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     confirmSaveButton.addEventListener('click', async function () {
+        if (currentFlow !== 'semaforica') assignTecnicoSemaforicaBtn.classList.add('hidden');
+
+        confirmSpinner.classList.remove('hidden');
         confirmSpinner.classList.remove('hidden');
         confirmSaveButton.disabled = true;
         cancelSaveButton.disabled = true;
@@ -750,14 +805,124 @@ document.addEventListener('DOMContentLoaded', () => {
             confirmMaintenanceTypeSpan.textContent = 'Ocorrência Semafórica';
             confirmRepairStatusSpan.textContent = 'Pendente';
 
+            assignTecnicoSemaforicaBtn.classList.remove('hidden');
+
             confirmationModal.classList.add('is-active');
         });
     }
-    
-if (matrizManutencaoBtn) matrizManutencaoBtn.addEventListener('click', () => openMaintenanceModal('corretiva', 'pendente', 'maintenance'));
-if (matrizSemaforicaBtn) matrizSemaforicaBtn.addEventListener('click', () => openMaintenanceModal('Ocorrência Semafórica', 'pendente', 'semaforica'));
-if (controleOcorrenciaBtn) controleOcorrenciaBtn.addEventListener('click', () => openMaintenanceModal('preditiva', 'concluido', 'maintenance'));
-if (instalarEquipamentoBtn) instalarEquipamentoBtn.addEventListener('click', () => openMaintenanceModal('instalação', 'pendente', 'installation'));
+    // Função para fechar qualquer modal
+    window.closeModal = function (modalId) {
+        document.getElementById(modalId).classList.remove('is-active');
+    }
+
+    // Abre o modal de atribuição
+    async function openAssignSemaforicaModal() {
+        const tecnicosContainer = document.getElementById('assignTecnicosContainer');
+        const veiculosContainer = document.getElementById('assignVeiculosContainer');
+
+        tecnicosContainer.innerHTML = 'Carregando...';
+        veiculosContainer.innerHTML = 'Carregando...';
+        document.getElementById('assignErrorMessage').classList.add('hidden');
+
+        assignSemaforicaModal.classList.add('is-active');
+
+        try {
+            // Busca técnicos e veículos em paralelo
+            const [tecnicosRes, veiculosRes] = await Promise.all([
+                fetch('API/get_tecnicos.php'),
+                fetch('API/get_veiculos.php')
+            ]);
+            const tecnicosData = await tecnicosRes.json();
+            const veiculosData = await veiculosRes.json();
+
+            // Popula os checkboxes de técnicos
+            tecnicosContainer.innerHTML = '';
+            if (tecnicosData.success) {
+                tecnicosData.tecnicos.forEach(tec => {
+                    const btn = document.createElement('button');
+                    btn.className = 'choice-btn';
+                    btn.dataset.id = tec.id_tecnico;
+                    btn.textContent = tec.nome;
+                    btn.onclick = () => btn.classList.toggle('selected');
+                    tecnicosContainer.appendChild(btn);
+                });
+            }
+
+            // Popula os checkboxes de veículos
+            veiculosContainer.innerHTML = '';
+            if (veiculosData.length > 0) {
+                veiculosData.forEach(vec => {
+                    const btn = document.createElement('button');
+                    btn.className = 'choice-btn';
+                    btn.dataset.id = vec.id_veiculo;
+                    btn.textContent = `${vec.nome} (${vec.placa})`;
+                    btn.onclick = () => btn.classList.toggle('selected');
+                    veiculosContainer.appendChild(btn);
+                });
+            }
+        } catch (error) {
+            tecnicosContainer.innerHTML = 'Erro ao carregar técnicos.';
+            veiculosContainer.innerHTML = 'Erro ao carregar veículos.';
+        }
+    }
+
+    // Salva a atribuição (ainda não envia, apenas anexa os dados)
+    window.saveSemaforicaAssignment = function () {
+        const assignErrorMessage = document.getElementById('assignErrorMessage');
+
+        const selectedTecnicosNodes = Array.from(document.querySelectorAll('#assignTecnicosContainer .choice-btn.selected'));
+        const selectedVeiculosNodes = Array.from(document.querySelectorAll('#assignVeiculosContainer .choice-btn.selected'));
+
+        const selectedTecnicosIds = selectedTecnicosNodes.map(btn => btn.dataset.id);
+        const selectedVeiculosIds = selectedVeiculosNodes.map(btn => btn.dataset.id);
+
+        if (selectedTecnicosIds.length === 0) {
+            assignErrorMessage.textContent = 'Por favor, selecione o(s) técnico(s).';
+            assignErrorMessage.classList.remove('hidden');
+            return;
+        }
+        if (selectedVeiculosIds.length === 0) {
+            assignErrorMessage.textContent = 'Por favor, selecione o(s) veículo(s).';
+            assignErrorMessage.classList.remove('hidden');
+            return;
+        }
+        assignErrorMessage.classList.add('hidden');
+
+        const hoje = new Date().toISOString().slice(0, 10);
+
+        semaforicaData.assignmentDetails = {
+            inicio_reparo: hoje,
+            fim_reparo: hoje,
+            tecnicos: selectedTecnicosIds,
+            veiculos: selectedVeiculosIds
+        };
+
+        // LÓGICA ADICIONADA PARA MOSTRAR OS SELECIONADOS
+        const nomesTecnicos = selectedTecnicosNodes.map(btn => btn.textContent.trim()).join(', ');
+        const nomesVeiculos = selectedVeiculosNodes.map(btn => btn.textContent.trim()).join(', ');
+
+        document.getElementById('confirmSemaforicaTecnicos').textContent = nomesTecnicos;
+        document.getElementById('confirmSemaforicaVeiculos').textContent = nomesVeiculos;
+        document.getElementById('confirmSemaforicaAssignmentDetails').classList.remove('hidden');
+
+        const confirmBtn = document.getElementById('confirmSaveButton');
+        confirmBtn.innerHTML = 'Confirmar C/Técnico <span id="confirmSpinner" class="loading-spinner hidden"></span>';
+        document.getElementById('assignTecnicoSemaforicaBtn').textContent = 'Substituir Técnico';
+
+
+        closeModal('assignSemaforicaModal');
+    }
+
+    // Adiciona o event listener para o novo botão
+    if (assignTecnicoSemaforicaBtn) {
+        assignTecnicoSemaforicaBtn.addEventListener('click', openAssignSemaforicaModal);
+    }
+
+
+    if (matrizManutencaoBtn) matrizManutencaoBtn.addEventListener('click', () => openMaintenanceModal('corretiva', 'pendente', 'maintenance'));
+    if (matrizSemaforicaBtn) matrizSemaforicaBtn.addEventListener('click', () => openMaintenanceModal('Ocorrência Semafórica', 'pendente', 'semaforica'));
+    if (controleOcorrenciaBtn) controleOcorrenciaBtn.addEventListener('click', () => openMaintenanceModal('preditiva', 'concluido', 'maintenance'));
+    if (instalarEquipamentoBtn) instalarEquipamentoBtn.addEventListener('click', () => openMaintenanceModal('instalação', 'pendente', 'installation'));
 
     const semaforicaInputs = [
         document.getElementById('semaforicaTipo'),

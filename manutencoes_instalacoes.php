@@ -386,6 +386,59 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
         .hidden {
             display: none !important;
         }
+
+        /* Estilo base para os botões de seleção */
+        .choice-btn {
+            padding: 0.75rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            /* Bordas um pouco menos arredondadas */
+            cursor: pointer;
+            background-color: #f9fafb;
+            font-size: 0.9em;
+            text-align: center;
+            /* Permite que o texto quebre a linha se for muito grande */
+            white-space: normal;
+            word-wrap: break-word;
+            line-height: 1.2;
+            min-height: 40px;
+            /* Garante altura mínima para alinhamento */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .choice-btn.selected {
+            background-color: #112058;
+            color: white;
+            border-color: #112058;
+        }
+
+        /* Container para a lista de TÉCNICOS (coluna única) */
+        .choice-buttons-column {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            /* Espaçamento entre os botões de técnico */
+            margin-top: 0.5rem;
+        }
+
+        /* Container para a grade de VEÍCULOS (múltiplas colunas) */
+        .choice-buttons-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            /* Espaçamento entre os botões de veículo */
+            margin-top: 0.5rem;
+        }
+
+        /* Define que os botões de VEÍCULO ocuparão espaço para formar 3 colunas */
+        .choice-buttons-grid .choice-btn {
+            flex: 1 1 calc(33.333% - 1rem);
+            /* Cálculo para 3 colunas com espaçamento */
+            min-width: 120px;
+            /* Largura mínima para botões */
+        }
     </style>
 </head>
 
@@ -536,11 +589,10 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
                 <form id="semaforicaForm">
                     <label for="semaforicaTipo">Tipo:</label>
                     <select id="semaforicaTipo">
-                        <option value="">-- Selecione o Tipo --</option>
-                        <option value="troca_lampada">Troca de Lâmpada</option>
-                        <option value="reparo_controlador">Reparo no Controlador</option>
-                        <option value="sincronizacao">Sincronização</option>
-                        <option value="novo_ponto">Novo Ponto Semafórico</option>
+                        <option value="Não_definido">-- Selecione o Tipo --</option>
+                        <option value="instalacao">Instalação</option>
+                        <option value="manutencao">Manutenção</option>
+                        <option value="retirada">Retirada</option>
                     </select>
 
                     <label for="semaforicaEndereco">Endereço:</label>
@@ -571,8 +623,9 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
                         placeholder="Insira qualquer observação adicional..."></textarea>
 
                     <p id="semaforicaErrorMessage" class="message error hidden"></p>
-                    <button type="button" id="confirmSemaforicaBtn" class="page-button"
-                        style="margin-top: 1rem;">Avançar</button>
+                    <button type="button" id="confirmSemaforicaBtn" class="page-button" style="margin-top: 1rem;">
+                        Avançar <span id="semaforicaSpinner" class="loading-spinner hidden"></span>
+                    </button>
                 </form>
             </div>
         </div>
@@ -632,6 +685,13 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
                     <p><strong>Problema:</strong> <span id="confirmSemaforicaDescricao"></span></p>
                     <p><strong>Geolocalização:</strong> <span id="confirmSemaforicaGeo"></span></p>
                     <p><strong>Observação:</strong> <span id="confirmSemaforicaObservacao"></span></p>
+                    <div id="confirmSemaforicaAssignmentDetails" class="hidden"
+                        style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed #ccc;">
+                        <p><strong>Técnicos Atribuídos:</strong> <span id="confirmSemaforicaTecnicos"
+                                style="font-weight: normal;"></span></p>
+                        <p><strong>Veículos Atribuídos:</strong> <span id="confirmSemaforicaVeiculos"
+                                style="font-weight: normal;"></span></p>
+                    </div>
                 </div>
 
 
@@ -652,6 +712,8 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
                 <p><strong>Status Inicial:</strong> <span id="confirmRepairStatus"></span></p>
             </div>
             <div class="confirmation-buttons">
+                <button class="page-button hidden" id="assignTecnicoSemaforicaBtn">Atribuir Técnico</button>
+
                 <button class="confirm-button page-button" id="confirmSaveButton">
                     Confirmar <span id="confirmSpinner" class="loading-spinner hidden"></span>
                 </button>
@@ -661,9 +723,43 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             <p id="confirmMessage" class="message hidden"></p>
         </div>
     </div>
+    <<div id="assignSemaforicaModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Atribuir Técnico à Ocorrência</h3>
+                <button class="close-button" onclick="closeModal('assignSemaforicaModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group" style="display: none;">
+                    <label>Período de Execução</label>
+                    <div>
+                        <input type="date" id="assignInicioReparo">
+                        <input type="date" id="assignFimReparo">
+                    </div>
+                </div>
 
+                <div class="form-group">
+                    <label>Técnicos (pode selecionar mais de um)</label>
+                    <div id="assignTecnicosContainer" class="choice-buttons-column"></div>
+                </div>
+                <div class="form-group">
+                    <label>Veículos (pode selecionar mais de um)</label>
+                    <div id="assignVeiculosContainer" class="choice-buttons-grid"></div>
+                </div>
+                <p id="assignErrorMessage" class="message error hidden"></p>
+            </div>
+            <div class="confirmation-buttons">
+                <button id="saveAssignmentBtn" class="page-button" onclick="saveSemaforicaAssignment()">
+                    <span>Confirmar Atribuição</span>
+                    <span class="loading-spinner hidden"></span>
+                </button>
+                <button class="cancel-button page-button"
+                    onclick="closeModal('assignSemaforicaModal')">Cancelar</button>
+            </div>
+        </div>
+        </div>
 
-    <script src="js/manutencoes_instalacoes.js"></script>
+        <script src="js/manutencoes_instalacoes.js"></script>
 </body>
 
 </html>
