@@ -443,12 +443,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let finalStatus = currentRepairStatus;
         if (currentMaintenanceType === 'preditiva') {
-        if ((realizadoPor === 'processamento' && reparoConcluido === false) || (realizadoPor === 'provedor' && tecnicoInLoco === true)) {
-            finalStatus = 'pendente';
-        } else {
-            finalStatus = 'concluido';
+            if ((realizadoPor === 'processamento' && reparoConcluido === false) || (realizadoPor === 'provedor' && tecnicoInLoco === true)) {
+                finalStatus = 'pendente';
+            } else {
+                finalStatus = 'concluido';
+            }
         }
-    }
 
 
         document.getElementById('installConfirmationDetails').classList.add('hidden');
@@ -660,40 +660,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 } else {
                     // FLUXO 2: PARA TODOS OS OUTROS CASOS (MATRIZ TÉCNICA E PROCESSAMENTO)
+                    let statusParaSalvar = (realizadoPor === 'processamento') ? (reparoConcluido ? 'concluido' : 'pendente') : currentRepairStatus;
 
-                    let endpoint = 'API/save_manutencao.php';
-                    let payload = {};
+                    const payload = {
+                        city_id: selectedCityId,
+                        equipment_id: selectedEquipment.id_equipamento,
+                        id_provedor: selectedEquipment.id_provedor,
+                        problem_description: selectedProblemDescription,
+                        reparo_finalizado: selectedRepairDescription,
+                        tipo_manutencao: currentMaintenanceType,
+                        status_reparo: statusParaSalvar,
+                        realizado_por: realizadoPor
+                        
+                    };
 
-                    if (existingMaintenanceData) {
-                        payload = {
-                            id_manutencao_existente: existingMaintenanceData.id,
-                            ocorrencia_concatenada: `${existingMaintenanceData.ocorrencia}, ${problemDescriptionInput.value.trim()}`,
-                            equipment_id: selectedEquipment.id_equipamento,
-                            city_id: selectedCityId,
-                            problem_description: problemDescriptionInput.value.trim(),
-                            tipo_manutencao: 'corretiva'
-                        };
-                    } else {
-                        let statusParaSalvar;
-                        if (realizadoPor === 'processamento') {
-                            statusParaSalvar = reparoConcluido ? 'concluido' : 'pendente';
-                        } else {
-                            statusParaSalvar = currentRepairStatus; // Fallback para corretiva
-                        }
-
-                        payload = {
-                            city_id: selectedCityId,
-                            equipment_id: selectedEquipment.id_equipamento,
-                            id_provedor: selectedEquipment.id_provedor,
-                            problem_description: selectedProblemDescription,
-                            reparo_finalizado: selectedRepairDescription,
-                            tipo_manutencao: currentMaintenanceType,
-                            status_reparo: statusParaSalvar,
-                            realizado_por: realizadoPor
-                        };
-                    }
-
-                    const response = await fetch(endpoint, {
+                    const response = await fetch('API/save_manutencao.php', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
@@ -701,24 +682,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     const data = await response.json();
                     if (!data.success) throw new Error(data.message || 'Ocorreu um erro.');
 
-                    // Se for "Processamento" e o reparo NÃO foi concluído, salva na tabela de processamento
                     if (realizadoPor === 'processamento' && !reparoConcluido) {
+                        // Sua lógica de Ocorrência de Processamento (permanece intacta)
                         const idManutencaoSalva = data.id_manutencao;
-                        if (!idManutencaoSalva) {
-                            throw new Error('Não foi possível obter o ID da manutenção para registrar o processamento.');
-                        }
-
-                        const processamentoPayload = {
-                            id_manutencao: idManutencaoSalva,
-                            tipo_ocorrencia: 'preditiva',
-                            descricao: selectedProblemDescription
-                        };
-
-                        const processamentoResponse = await fetch('API/save_ocorrencia_processamento.php', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(processamentoPayload)
-                        });
+                        if (!idManutencaoSalva) { throw new Error('Não foi possível obter o ID da manutenção para registrar o processamento.'); }
+                        const processamentoPayload = { id_manutencao: idManutencaoSalva, tipo_ocorrencia: 'preditiva', descricao: selectedProblemDescription };
+                        const processamentoResponse = await fetch('API/save_ocorrencia_processamento.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(processamentoPayload) });
                         const processamentoData = await processamentoResponse.json();
                         if (!processamentoData.success) throw new Error(processamentoData.message || 'Falha ao salvar na tabela de processamento.');
                     }
@@ -743,13 +712,11 @@ document.addEventListener('DOMContentLoaded', () => {
             confirmMessage.textContent = error.message;
             confirmMessage.className = 'message error';
             confirmMessage.classList.remove('hidden');
-
             confirmSpinner.classList.add('hidden');
             confirmSaveButton.disabled = false;
             cancelSaveButton.disabled = false;
         }
     });
-
     window.closeConfirmationModal = function () {
         if (confirmationModal) confirmationModal.classList.remove('is-active');
     }
