@@ -332,8 +332,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // --- TODO O RESTANTE DO SEU CÓDIGO PERMANECE IGUAL ---
-    // (createOcorrenciaHTML, findOcorrenciaById, handleCancelClick, openEditOcorrenciaModal, etc.)
     
     function createOcorrenciaHTML(item) {
         const firstOcorrencia = item.ocorrencias_detalhadas[0];
@@ -352,7 +350,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }).join('');
         } else if (item.ocorrencias_detalhadas.length > 1) {
             let ocorrenciasListHTML = item.ocorrencias_detalhadas.map((ocor, index) =>
-                `<li><strong>${index + 1}.</strong> ${ocor.ocorrencia_reparo || 'Não especificada'}</li>`
+                `<li><strong>${index + 1}.</strong> <span class="status-tag status-pendente">${ocor.ocorrencia_reparo || 'Não especificada'}</span> (Início: ${new Date(ocor.inicio_reparo).toLocaleString('pt-BR')})</li>`
             ).join('');
             detailsHTML = `<div class="detail-item"><strong>Ocorrências</strong><ul class="ocorrencia-list">${ocorrenciasListHTML}</ul></div>`;
         } else {
