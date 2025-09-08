@@ -1,6 +1,6 @@
 // Assim que a página carregar, eu começo a preparar minhas funções.
 document.addEventListener('DOMContentLoaded', () => {
-    // --- MINHAS VARIÁVEIS E REFERÊNCIAS ---
+    // --- MINHAS REFERÊNCIAS AOS ELEMENTOS DA PÁGINA ---
     const openReportModalBtn = document.getElementById('openReportModalBtn');
     const generateReportBtn = document.getElementById('generateReportBtn');
     const downloadExcelBtn = document.getElementById('downloadExcelBtn');
@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const statusSelect = document.getElementById('statusSelect');
     const modalErrorMessage = document.getElementById('modalErrorMessage');
 
+    // --- MINHAS VARIÁVEIS DE ESTADO ---
     let currentReportData = {};
     let currentReportHeaders = [];
     let currentReportType = 'matriz_tecnica';
@@ -72,14 +73,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (result.success && Object.keys(result.data).length > 0) {
                 currentReportData = result.data;
                 currentReportHeaders = result.headers;
-                
-                // Eu verifico o tipo de relatório para decidir como desenhar a tela
+
                 if (currentReportType === 'matriz_tecnica' || currentReportType === 'controle_ocorrencia') {
-                    renderReportList(result.data); // Chamo minha nova função de lista
+                    renderReportList(result.data);
                 } else {
-                    // Para os outros relatórios, eu transformo os dados agrupados de volta em uma lista simples
                     const flatData = Object.values(result.data).flat();
-                    renderReportTable(result.headers, flatData); // E chamo a função de tabela que eu havia apagado
+                    renderReportTable(result.headers, flatData);
                 }
 
                 reportResultContainer.classList.remove('hidden');
@@ -98,15 +97,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- [FUNÇÃO ATUALIZADA] Para renderizar o relatório no novo formato de lista ---
     function renderReportList(groupedData) {
-        reportContentContainer.innerHTML = ''; // Eu limpo a área de resultados
+        reportContentContainer.innerHTML = '';
         for (const city in groupedData) {
             const cityHeader = document.createElement('h2');
             cityHeader.className = 'report-city-header';
             cityHeader.textContent = city;
             reportContentContainer.appendChild(cityHeader);
-            
+
             const equipmentGroups = {};
             groupedData[city].forEach(record => {
                 const equipName = record.Equipamento;
@@ -157,24 +155,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
-    
-    // --- [FUNÇÃO RESTAURADA] A função para renderizar tabelas simples está de volta ---
+
     function renderReportTable(headers, data) {
-        // Eu começo a construir o HTML da minha tabela.
         let tableHTML = '<table class="maintenance-table">';
-
-        // Eu crio o cabeçalho (<thead>) da tabela.
         tableHTML += '<thead><tr>';
-        headers.forEach(header => {
-            tableHTML += `<th>${header}</th>`;
-        });
+        headers.forEach(header => { tableHTML += `<th>${header}</th>`; });
         tableHTML += '</tr></thead>';
-
-        // Agora, eu crio o corpo (<tbody>) da tabela, linha por linha.
         tableHTML += '<tbody>';
         data.forEach(row => {
             tableHTML += '<tr>';
-            // Para cada linha, eu pego os valores na mesma ordem dos cabeçalhos.
             headers.forEach(header => {
                 const value = row[header] !== null && row[header] !== undefined ? row[header] : '-';
                 tableHTML += `<td>${value}</td>`;
@@ -182,19 +171,16 @@ document.addEventListener('DOMContentLoaded', () => {
             tableHTML += '</tr>';
         });
         tableHTML += '</tbody></table>';
-        
-        // Eu coloco a tabela pronta dentro do container na página.
         reportContentContainer.innerHTML = tableHTML;
     }
 
-    // --- Função de download do Excel ---
+    // --- [FUNÇÃO ATUALIZADA] Lógica completa para gerar o Excel com bordas, quebra de linha e alinhamento ---
     function downloadExcel() {
         if (Object.keys(currentReportData).length === 0) {
             alert("Não há dados para exportar.");
             return;
         }
-        
-        // Se não for Matriz Técnica ou Controle, eu uso o download de tabela simples
+
         if (currentReportType !== 'matriz_tecnica' && currentReportType !== 'controle_ocorrencia') {
             const flatData = Object.values(currentReportData).flat();
             const worksheet = XLSX.utils.json_to_sheet(flatData);
@@ -204,14 +190,20 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Se for o relatório detalhado, eu continuo com a lógica complexa
         const wb = XLSX.utils.book_new();
+        
+        // --- Meus Estilos ---
+        // 1. Eu defino o estilo da borda que vou usar em todas as células.
         const borderAll = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } };
+        
+        // 2. Eu crio os estilos completos para cada tipo de célula, já incluindo a borda.
         const cityHeaderStyle = { font: { bold: true, sz: 14 }, alignment: { horizontal: "center", vertical: "center" }, border: borderAll };
         const equipmentHeaderStyle = { font: { bold: true, sz: 12 }, alignment: { horizontal: "left", vertical: "center" }, border: borderAll };
-        const tableHeaderStyle = { font: { bold: true }, alignment: { horizontal: "center", vertical: "center" }, border: borderAll };
-        const descriptionCellStyle = { border: borderAll, alignment: { horizontal: "center", vertical: "center", wrapText: true } };
-        const defaultDataCellStyle = { border: borderAll, alignment: { horizontal: "left", vertical: "center", wrapText: true } };
+        const tableHeaderStyle = { font: { bold: true }, alignment: { horizontal: "center", vertical: "center", wrapText: true }, border: borderAll };
+        
+        // 3. Eu crio os dois estilos para as células de dados, como você pediu.
+        const defaultDataCellStyle = { border: borderAll, alignment: { horizontal: "center", vertical: "center", wrapText: true } };
+        const descriptionDataCellStyle = { border: borderAll, alignment: { horizontal: "left", vertical: "top", wrapText: true } };
 
         for (const city in currentReportData) {
             let aoa = [];
@@ -227,20 +219,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
             aoa.push([city]);
             merges.push({ s: { r: 0, c: 0 }, e: { r: 0, c: 6 } });
-            aoa.push([]);
+            aoa.push([]); // Linha em branco para espaçamento
             rowIndex = 2;
 
             for (const equipmentName in equipmentGroups) {
                 aoa.push([`Equipamento: ${equipmentName}`]);
                 merges.push({ s: { r: rowIndex, c: 0 }, e: { r: rowIndex, c: 6 } });
                 rowIndex++;
+                
                 aoa.push(["Item", "OS - ORDEM DE SERVIÇO", null, "MANUTENÇÃO/REPARO", null, null, null]);
                 merges.push({ s: { r: rowIndex, c: 0 }, e: { r: rowIndex + 1, c: 0 } });
                 merges.push({ s: { r: rowIndex, c: 1 }, e: { r: rowIndex, c: 2 } });
                 merges.push({ s: { r: rowIndex, c: 3 }, e: { r: rowIndex, c: 6 } });
                 rowIndex++;
+
                 aoa.push([null, "Data", "DESCRIÇÃO PROBLEMA", "Data", "DESCRIÇÃO REPARO", "ATENDIDO EM (DIAS)", "Técnico"]);
                 rowIndex++;
+
                 equipmentGroups[equipmentName].forEach((record, index) => {
                     aoa.push([
                         index + 1,
@@ -253,40 +248,58 @@ document.addEventListener('DOMContentLoaded', () => {
                     ]);
                     rowIndex++;
                 });
-                aoa.push([]);
+                aoa.push([]); // Linha em branco entre equipamentos
                 rowIndex++;
             }
 
             const ws = XLSX.utils.aoa_to_sheet(aoa);
             ws['!merges'] = merges;
 
+            // --- Minha Lógica de Estilização Célula por Célula ---
+            // Eu passo por todas as linhas (R) e colunas (C) que eu adicionei no `aoa`.
             for (let R = 0; R < aoa.length; ++R) {
-                for (let C = 0; C < aoa[R].length; ++C) {
+                // Eu forço a passagem pelas 7 colunas para garantir a borda em células mescladas
+                for (let C = 0; C < 7; ++C) { 
                     const cell_address = { c: C, r: R };
                     const cell_ref = XLSX.utils.encode_cell(cell_address);
+                    
+                    // Se a célula não existir (como em células mescladas), eu a crio
                     if (!ws[cell_ref]) ws[cell_ref] = { t: 's', v: '' };
-                    let styleToApply;
-                    const cellValue = aoa[R][C];
+                    
+                    let styleToApply = {};
+                    const cellValue = (aoa[R] && aoa[R][C] !== undefined && aoa[R][C] !== null) ? aoa[R][C] : "";
+                    const isDataRow = aoa[R] && aoa[R].length > 1 && typeof aoa[R][0] === 'number';
+
+                    // Eu aplico o estilo com base na linha e no conteúdo
                     if (R === 0) {
                         styleToApply = cityHeaderStyle;
-                    } else if (cellValue && cellValue.toString().startsWith('Equipamento:')) {
+                    } else if (cellValue.toString().startsWith('Equipamento:')) {
                         styleToApply = equipmentHeaderStyle;
-                    } else if ((aoa[R] && aoa[R].includes("Item")) || (aoa[R - 1] && aoa[R - 1].includes("Item"))) {
+                    } else if ( (aoa[R] && aoa[R].includes("Item")) || (aoa[R-1] && aoa[R-1].includes("Item")) ) {
                         styleToApply = tableHeaderStyle;
-                    } else if (C === 2 || C === 4) {
-                        styleToApply = descriptionCellStyle;
-                    } else {
-                        styleToApply = defaultDataCellStyle;
+                    } else if (isDataRow) { // Se for uma linha de dados
+                        if (C === 2 || C === 4) { // Colunas de Descrição
+                            styleToApply = descriptionDataCellStyle; 
+                        } else { // Outras colunas de dados
+                            styleToApply = defaultDataCellStyle; 
+                        }
                     }
+                    
+                    // Eu aplico o estilo à célula
                     ws[cell_ref].s = styleToApply;
                 }
             }
-            ws['!cols'] = [{ wch: 5 }, { wch: 18 }, { wch: 45 }, { wch: 18 }, { wch: 45 }, { wch: 15 }, { wch: 30 }];
+            
+            // Definição da largura das colunas
+            ws['!cols'] = [{ wch: 5 }, { wch: 15 }, { wch: 45 }, { wch: 15 }, { wch: 45 }, { wch: 15 }, { wch: 25 }];
+            
+            // Adicionando a planilha ao Workbook
             XLSX.utils.book_append_sheet(wb, ws, city.substring(0, 31));
         }
 
         XLSX.writeFile(wb, "Relatorio_Detalhado_DeltaWay.xlsx");
     }
+    
 
     window.openModal = (modalId) => document.getElementById(modalId).classList.add('is-active');
     window.closeModal = (modalId) => document.getElementById(modalId).classList.remove('is-active');
