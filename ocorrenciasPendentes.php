@@ -13,7 +13,7 @@ if (!isset($_SESSION['user_id'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ocorrências Pendentes</title>
     <link rel="stylesheet" href="css/style.css">
-     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="icon" type="image/png" href="imagens/favicon.png">
     <style>
         /* SEU ESTILO ORIGINAL (INTACTO) */
@@ -487,18 +487,30 @@ if (!isset($_SESSION['user_id'])) {
             gap: 0.5rem;
         }
 
+        .choice-buttons-ocorrencias-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            max-height: 300px;
+            overflow-y: auto;
+            align-items: flex-start;
+            padding-top: 1rem;
+            
+        }
         .choice-btn {
-            padding: 0.5rem 1rem;
+            color: #112058;
+            font-weight: bold;
+            padding: 1rem;
             border: 1px solid #d1d5db;
-            border-radius: 20px;
+            border-radius: 8px;
             cursor: pointer;
             background-color: #f9fafb;
         }
 
         .choice-btn.selected {
-            background-color: var(--cor-principal);
+            background-color: #112058;
             color: white;
-            border-color: var(--cor-principal);
+            border-color: #112058;
         }
 
         .modal-footer {
@@ -534,12 +546,34 @@ if (!isset($_SESSION['user_id'])) {
             color: #374151;
         }
 
-        .modal-error-message {
-            color: #ef4444;
+        .modal-error-message.success {
+            color: #155724;
+            /* Letras verdes escuras */
+            background-color: #d4edda;
             font-weight: bold;
-            width: 100%;
+            width: 95%;
             text-align: center;
             margin-bottom: 1rem;
+            /* Fundo verde claro */
+            border: 1px solid #c3e6cb;
+            /* Borda verde */
+            padding: 0.75rem;
+            /* Adicionando um espaçamento interno para destaque */
+            border-radius: 8px;
+        }
+
+        .modal-error-message {
+            color: #ef4444;
+            background-color: #f8d7da;
+            font-weight: bold;
+            width: 95%;
+            text-align: center;
+            margin-bottom: 1rem;
+            border: 1px solid #f5c6cb;
+            /* Borda vermelha */
+            padding: 0.75rem;
+            /* Adicionando um espaçamento interno para destaque */
+            border-radius: 8px;
         }
 
         .modal-btn .spinner {
@@ -548,6 +582,19 @@ if (!isset($_SESSION['user_id'])) {
             border-width: 3px;
             border-left-color: #fff;
             margin-left: 8px;
+        }
+
+        .modal-info-message {
+            color: #112058;
+            background-color: #efeeeeff;
+            font-weight: bold;
+            width: 95%;
+            text-align: center;
+            border: 1px solid #efeeeeff;
+            /* Borda azul */
+            padding: 0.75rem;
+            /* Adicionando um espaçamento interno para destaque */
+            border-radius: 8px;
         }
 
         #btnVoltarAoTopo {
@@ -803,8 +850,7 @@ if (!isset($_SESSION['user_id'])) {
             <div class="modal-body">
                 <div id="cancelSelectionModalInfo"></div>
                 <p>Selecione uma ou mais ocorrências que deseja cancelar:</p>
-                <div id="cancelOcorrenciasContainer" class="choice-buttons"
-                    style="flex-direction: column; align-items: flex-start; gap: 0.8rem;">
+                <div id="cancelOcorrenciasContainer" class="choice-buttons-ocorrencias-container">
                 </div>
             </div>
             <div class="modal-footer">
@@ -827,11 +873,10 @@ if (!isset($_SESSION['user_id'])) {
                 <button class="modal-close" onclick="closeAndCancelSelection()">&times;</button>
             </div>
             <div class="modal-body">
-                <div id="selectOcorrenciasModalInfo"></div>
+                <div id="selectOcorrenciasModalInfo" class="modal-info-message"></div>
                 <div class="form-group">
                     <label>Selecione as ocorrências que deseja incluir na atribuição:</label>
-                    <div id="selectOcorrenciasContainer" class="choice-buttons"
-                        style="flex-direction: column; align-items: flex-start; gap: 0.8rem;">
+                    <div id="selectOcorrenciasContainer" class="choice-buttons-ocorrencias-container">
                     </div>
                 </div>
             </div>
@@ -854,24 +899,24 @@ if (!isset($_SESSION['user_id'])) {
             <div class="modal-body">
                 <div id="assignModalInfo"></div>
                 <div class="form-group">
-                    <label>Selecione a data para execução</label>
+                    <label>Selecione a data para execução:</label>
                     <div class="date-inputs">
                         <div class="form-group">
-                            <label for="assignInicioReparo">Início Reparo</label>
+                            <label for="assignInicioReparo">Data início</label>
                             <input type="date" id="assignInicioReparo">
                         </div>
                         <div class="form-group">
-                            <label for="assignFimReparo">Fim Reparo</label>
+                            <label for="assignFimReparo">Data fim</label>
                             <input type="date" id="assignFimReparo">
                         </div>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Técnicos</label>
+                    <label>Selecione o(os) Técnico(s):</label>
                     <div id="assignTecnicosContainer" class="choice-buttons"></div>
                 </div>
                 <div class="form-group">
-                    <label>Veículos</label>
+                    <label>Selecione o(os) Veículo(s):</label>
                     <div id="assignVeiculosContainer" class="choice-buttons"></div>
                 </div>
             </div>
@@ -917,7 +962,7 @@ if (!isset($_SESSION['user_id'])) {
             </div>
             <div class="modal-body">
                 <p id="confirmationModalText"></p>
-                <p id="confirmationMessage" class="hidden" style="margin-top: 1rem;"></p>
+                <p id="confirmationMessage" class="modal-error-message hidden"></p>
             </div>
             <div id="confirmationFooter" class="modal-footer">
                 <div class="modal-footer-buttons">

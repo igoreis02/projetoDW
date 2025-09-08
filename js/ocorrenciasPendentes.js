@@ -246,7 +246,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     html += `</ul>`;
                 }
             }
-    
+
             if (!hasContentForFilter && cityFilter !== 'todos') {
                 html += `<h3>${cityFilter}</h3><p>Nenhuma manutenção corretiva pendente para esta cidade.</p>`;
             }
@@ -254,7 +254,7 @@ document.addEventListener('DOMContentLoaded', function () {
         simplifiedView.innerHTML = html;
     }
 
-   
+
     function toggleView(showSimplified) {
         isSimplifiedViewActive = showSimplified;
 
@@ -415,13 +415,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     window.closeModal = function (modalId) {
         const modal = document.getElementById(modalId);
-        if (modal) modal.classList.remove('is-active'); 
+        if (modal) modal.classList.remove('is-active');
 
         if (modalId === 'assignModal') {
             const saveBtn = document.getElementById('saveAssignmentBtn');
             const btnText = saveBtn.querySelector('span');
             const btnSpinner = saveBtn.querySelector('.spinner');
             const assignErrorMessage = document.getElementById('assignErrorMessage');
+            const footerButtons = document.querySelector('#assignModal .modal-footer-buttons');
+
 
 
             saveBtn.disabled = false;
@@ -429,16 +431,18 @@ document.addEventListener('DOMContentLoaded', function () {
             btnSpinner.classList.add('hidden');
 
 
-            document.querySelector('#assignModal .modal-footer-buttons').classList.remove('hidden');
-            assignErrorMessage.style.color = '#ef4444';
+            footerButtons.classList.remove('hidden');
+            footerButtons.style.pointerEvents = 'auto';
 
 
+            assignErrorMessage.classList.remove('success');
             assignErrorMessage.classList.add('hidden');
         }
 
         if (modalId === 'confirmationModal') {
             document.getElementById('confirmationFooter').classList.remove('hidden');
-            document.getElementById('confirmationMessage').classList.add('hidden');
+            const confirmMessage = document.getElementById('confirmationMessage');
+            confirmMessage.className = 'hidden';
         }
         if (modalId === 'editOcorrenciaModal') {
             document.getElementById('editOcorrenciaTextarea').parentElement.classList.remove('hidden');
@@ -451,7 +455,9 @@ document.addEventListener('DOMContentLoaded', function () {
             btn.querySelector('span').textContent = 'Confirmar Cancelamento';
             btn.querySelector('.spinner').classList.add('hidden');
             document.getElementById('cancelFooterButtons').classList.remove('hidden');
-            document.getElementById('cancelSelectionError').classList.add('hidden');
+            const errorEl = document.getElementById('cancelSelectionError');
+            errorEl.classList.add('hidden');
+            errorEl.classList.remove('success');
         }
     };
 
@@ -513,7 +519,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
         document.getElementById('selectOcorrenciasModalTitle').textContent = `Selecionar Ocorrências`;
-        document.getElementById('selectOcorrenciasModalInfo').innerHTML = `<p><strong>Equipamento:</strong> ${groupedItem.nome_equip} - ${groupedItem.referencia_equip}</p>`;
+        document.getElementById('selectOcorrenciasModalInfo').innerHTML = `<p> ${groupedItem.nome_equip} - ${groupedItem.referencia_equip}</p>`;
         const container = document.getElementById('selectOcorrenciasContainer');
         container.innerHTML = '';
         groupedItem.ocorrencias_detalhadas.forEach(ocor => {
@@ -521,7 +527,11 @@ document.addEventListener('DOMContentLoaded', function () {
             btn.className = 'choice-btn';
             btn.dataset.id = ocor.id_manutencao;
             btn.textContent = `${ocor.ocorrencia_reparo} (Início: ${new Date(ocor.inicio_reparo).toLocaleDateString('pt-BR')})`;
-            btn.onclick = () => btn.classList.toggle('selected');
+            btn.onclick = () => {
+                btn.classList.toggle('selected');
+                // Eu adiciono esta linha para esconder a mensagem de erro ao clicar
+                document.getElementById('selectOcorrenciasError').classList.add('hidden');
+            };
             container.appendChild(btn);
         });
         document.getElementById('selectOcorrenciasError').classList.add('hidden');
@@ -612,6 +622,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const selectedTecnicos = Array.from(document.querySelectorAll('#assignTecnicosContainer .choice-btn.selected')).map(btn => btn.dataset.id);
         const selectedVeiculos = Array.from(document.querySelectorAll('#assignVeiculosContainer .choice-btn.selected')).map(btn => btn.dataset.id);
 
+        const footerButtons = document.querySelector('#assignModal .modal-footer-buttons');
+
+
         assignErrorMessage.classList.add('hidden');
         if (!inicioReparo || !fimReparo) { assignErrorMessage.textContent = 'As datas são obrigatórias.'; assignErrorMessage.classList.remove('hidden'); return; }
         if (selectedTecnicos.length === 0) { assignErrorMessage.textContent = 'Selecione um técnico.'; assignErrorMessage.classList.remove('hidden'); return; }
@@ -620,6 +633,8 @@ document.addEventListener('DOMContentLoaded', function () {
         saveBtn.disabled = true;
         saveBtn.querySelector('span').textContent = 'Salvando...';
         saveBtn.querySelector('.spinner').classList.remove('hidden');
+        footerButtons.style.pointerEvents = 'none';
+
 
         try {
             const response = await fetch('API/atribuir_tecnicos_manutencao.php', {
@@ -634,16 +649,21 @@ document.addEventListener('DOMContentLoaded', function () {
             const result = await response.json();
             if (!result.success) throw new Error(result.message);
 
+            footerButtons.classList.add('hidden');
+
             assignErrorMessage.textContent = 'Atribuído com sucesso!';
-            assignErrorMessage.style.color = '#155724';
+            assignErrorMessage.classList.add('success');
             assignErrorMessage.classList.remove('hidden');
-            setTimeout(() => { closeModal('assignModal'); fetchData(); }, 2000);
+            setTimeout(() => { closeModal('assignModal'); fetchData(); }, 3000);
         } catch (error) {
             assignErrorMessage.textContent = error.message;
             assignErrorMessage.classList.remove('hidden');
+            assignErrorMessage.classList.remove('success');
             saveBtn.disabled = false;
             saveBtn.querySelector('span').textContent = 'Salvar Atribuição';
             saveBtn.querySelector('.spinner').classList.add('hidden');
+            footerButtons.style.pointerEvents = 'auto';
+
         }
     }
 
@@ -709,12 +729,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
             document.getElementById('cancelFooterButtons').classList.add('hidden');
             errorEl.textContent = 'Cancelado(s) com sucesso!';
-            errorEl.style.color = '#155724';
+            errorEl.classList.add('success');
             errorEl.classList.remove('hidden');
             setTimeout(() => { closeModal('cancelSelectionModal'); fetchData(); }, 2000);
 
         } catch (error) {
             errorEl.textContent = `Erro: ${error.message}`;
+            errorEl.classList.remove('success');
             errorEl.classList.remove('hidden');
             saveBtn.disabled = false;
             saveBtn.querySelector('span').textContent = 'Confirmar Cancelamento';
@@ -851,7 +872,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             confirmFooter.classList.add('hidden');
             confirmMessage.textContent = 'Ocorrência cancelada com sucesso!';
-            confirmMessage.style.color = '#155724';
+            confirmMessage.className = 'modal-error-message success';
             confirmMessage.classList.remove('hidden');
             setTimeout(() => { closeModal('confirmationModal'); fetchData(); }, 2000);
 
@@ -859,7 +880,7 @@ document.addEventListener('DOMContentLoaded', function () {
             console.error("Erro ao alterar status:", error);
             confirmFooter.classList.add('hidden');
             confirmMessage.textContent = `Erro: ${error.message}`;
-            confirmMessage.style.color = '#ef4444';
+            confirmMessage.className = 'modal-error-message';
             confirmMessage.classList.remove('hidden');
         } finally {
             if (document.getElementById('confirmationModal').classList.contains('is-active')) {
@@ -882,7 +903,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const btnVoltarAoTopo = document.getElementById("btnVoltarAoTopo");
 
     // Agora, eu digo à janela do navegador para "escutar" o evento de rolagem (scroll).
-    window.onscroll = function() {
+    window.onscroll = function () {
         // Chamo a minha função que decide se o botão deve aparecer ou não.
         controlarVisibilidadeBotao();
     };
@@ -899,9 +920,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Por último, eu adiciono a ação que acontece quando eu clico no botão.
-    btnVoltarAoTopo.addEventListener('click', function() {
+    btnVoltarAoTopo.addEventListener('click', function () {
         // Eu mando a página de volta para o topo de forma suave.
-        window.scrollTo({top: 0, behavior: 'smooth'});
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     });
 
 });
