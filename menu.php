@@ -316,6 +316,10 @@ if (isset($user_id)) {
                 <button id="change-password-btn" class="btn-change-password">Alterar Senha</button>
             </div>
 
+            <a href="relatorios.php" data-title="Relatórios">
+                <i class="fas fa-file-alt"></i>
+                <span>Relatórios</span>
+            </a>
             <a href="usuarios" data-title="Gerenciar Usuários">
                 <i class="fas fa-users-cog"></i>
                 <span>Gerenciar Usuários</span>
@@ -403,7 +407,7 @@ if (isset($user_id)) {
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const sidebar = document.getElementById('sidebar-icons');
             const menuToggleBtn = document.getElementById('menu-toggle-btn');
             const contentContainer = document.querySelector('.content-container');
@@ -421,7 +425,7 @@ if (isset($user_id)) {
             userEmailDisplay.textContent = userEmail;
             userTypeDisplay.textContent = userType;
 
-            menuToggleBtn.addEventListener('click', function() {
+            menuToggleBtn.addEventListener('click', function () {
                 sidebar.classList.toggle('expanded');
                 contentContainer.classList.toggle('sidebar-open');
                 menuToggleBtn.classList.toggle('menu-shifted');
@@ -434,14 +438,14 @@ if (isset($user_id)) {
             });
 
             if (changePasswordBtn) {
-                changePasswordBtn.addEventListener('click', function() {
+                changePasswordBtn.addEventListener('click', function () {
                     window.location.href = 'change_password.php';
                 });
             }
 
             const manutencaoButton = document.getElementById('manutencao');
             if (manutencaoButton) {
-                manutencaoButton.addEventListener('click', function() {
+                manutencaoButton.addEventListener('click', function () {
                     window.location.href = 'manutencoes_instalacoes';
                 });
             }
@@ -449,21 +453,21 @@ if (isset($user_id)) {
 
             const manutencaoAndamentoButton = document.getElementById('manutencaoAndamento');
             if (manutencaoAndamentoButton) {
-                manutencaoAndamentoButton.addEventListener('click', function() {
+                manutencaoAndamentoButton.addEventListener('click', function () {
                     window.location.href = 'ocorrenciasEmAndamento';
                 });
             }
 
             const manutencaoPendentesButton = document.getElementById('manutencaoPendentes');
             if (manutencaoPendentesButton) {
-                manutencaoPendentesButton.addEventListener('click', function() {
+                manutencaoPendentesButton.addEventListener('click', function () {
                     window.location.href = 'ocorrenciasPendentes';
                 });
             }
 
             const atribuirTecnicoButton = document.getElementById('atribuirTecnico');
             if (atribuirTecnicoButton) {
-                atribuirTecnicoButton.addEventListener('click', function() {
+                atribuirTecnicoButton.addEventListener('click', function () {
                     window.location.href = 'atribuir_tecnico';
                 });
             }
@@ -471,21 +475,21 @@ if (isset($user_id)) {
 
             const ocorrenciaProvedoresButton = document.getElementById('ocorrenciaProvedores');
             if (ocorrenciaProvedoresButton) {
-                ocorrenciaProvedoresButton.addEventListener('click', function() {
+                ocorrenciaProvedoresButton.addEventListener('click', function () {
                     window.location.href = 'ocorrenciaProvedores';
                 });
             }
 
             const ocorrenciaProcessamentoButton = document.getElementById('ocorrenciaProcessamento');
             if (ocorrenciaProcessamentoButton) {
-                ocorrenciaProcessamentoButton.addEventListener('click', function() {
+                ocorrenciaProcessamentoButton.addEventListener('click', function () {
                     window.location.href = 'ocorrenciaProcessamento';
                 });
             }
 
             const gestaoOcorrenciasButton = document.getElementById('gestaoOcorrencias');
             if (gestaoOcorrenciasButton) {
-                gestaoOcorrenciasButton.addEventListener('click', function() {
+                gestaoOcorrenciasButton.addEventListener('click', function () {
                     window.location.href = 'gestaoOcorrencias';
                 });
             }
@@ -493,7 +497,7 @@ if (isset($user_id)) {
             // Lógica para os novos botões
             const solicitacaoClientesBtn = document.getElementById('solicitacaoClientesBtn');
             if (solicitacaoClientesBtn) {
-                solicitacaoClientesBtn.addEventListener('click', function() {
+                solicitacaoClientesBtn.addEventListener('click', function () {
                     // Redireciona para a nova página de solicitações de clientes
                     window.location.href = 'solicitacoesClientes';
                 });
@@ -501,14 +505,14 @@ if (isset($user_id)) {
 
             const lacresImetroBtn = document.getElementById('lacresImetroBtn');
             if (lacresImetroBtn) {
-                lacresImetroBtn.addEventListener('click', function() {
+                lacresImetroBtn.addEventListener('click', function () {
                     window.location.href = 'lacresImetro';
                 });
             }
 
             const afericoesBtn = document.getElementById('afericoesBtn');
             if (afericoesBtn) {
-                afericoesBtn.addEventListener('click', function() {
+                afericoesBtn.addEventListener('click', function () {
                     // Redireciona para a nova página de aferições
                     // window.location.href = 'afericoes'; // Substitua pelo nome correto da página
                     alert('Funcionalidade "Aferições" ainda não implementada.');
@@ -517,7 +521,7 @@ if (isset($user_id)) {
 
             const logoutButton = document.querySelector('.sidebar-icons-left a[href="logout.php"]');
             if (logoutButton) {
-                logoutButton.addEventListener('click', function(event) {
+                logoutButton.addEventListener('click', function (event) {
                     event.preventDefault();
                     if (confirm('Tem certeza que deseja sair?')) {
                         window.location.href = 'logout.php';
