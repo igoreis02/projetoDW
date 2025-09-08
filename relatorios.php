@@ -121,14 +121,8 @@ if (!isset($_SESSION['user_id'])) {
             margin-bottom: 0.5rem;
         }
 
-        .maintenance-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 1rem;
-        }
 
-        .maintenance-table th,
-        .maintenance-table td {
+        .maintenance-table th {
             border: 1px solid #b3b3b3;
             /* Borda para todas as células */
             padding: 8px 12px;
@@ -136,6 +130,16 @@ if (!isset($_SESSION['user_id'])) {
             vertical-align: middle;
             /* Alinho o conteúdo verticalmente */
         }
+
+        .maintenance-table td {
+            white-space: normal;
+            /* Eu permito que o texto quebre a linha */
+            word-wrap: break-word;
+            /* Eu forço a quebra de palavras muito longas */
+            vertical-align: top;
+            /* Alinho o texto no topo da célula para melhor leitura */
+        }
+
 
         .maintenance-table thead {
             background-color: #e9ecef;
@@ -147,6 +151,14 @@ if (!isset($_SESSION['user_id'])) {
             text-align: center;
             /* Centralizo os cabeçalhos */
         }
+
+        .maintenance-table th:nth-child(1), .maintenance-table td:nth-child(1) { width: 5%; }  /* Item */
+.maintenance-table th:nth-child(2), .maintenance-table td:nth-child(2) { width: 12%; } /* Data Início */
+.maintenance-table th:nth-child(3), .maintenance-table td:nth-child(3) { width: 30%; } /* Descrição Problema */
+.maintenance-table th:nth-child(4), .maintenance-table td:nth-child(4) { width: 12%; } /* Data Fim */
+.maintenance-table th:nth-child(5), .maintenance-table td:nth-child(5) { width: 30%; } /* Descrição Reparo */
+.maintenance-table th:nth-child(6), .maintenance-table td:nth-child(6) { width: 5%; }  /* Dias */
+.maintenance-table th:nth-child(7), .maintenance-table td:nth-child(7) { width: 6%; }  /* Técnico */
 
         .report-item {
             border: 1px solid #e5e7eb;
