@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     // --- REFERÊNCIAS AOS ELEMENTOS ---
     const actionButtons = document.querySelectorAll('.action-btn');
-    const btSemaforica = document.getElementById('btSemaforica'); 
+    const btSemaforica = document.getElementById('btSemaforica');
     const filterContainer = document.getElementById('filterContainer');
     const ocorrenciasContainer = document.getElementById('ocorrenciasContainer');
     const pageLoader = document.getElementById('pageLoader');
@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let activeCity = 'todos';
     let allData = null;
     let currentItemsToAssign = [];
+    let currentItemsToUpdatePriority = []; // Itens atuais para atualizar prioridade
     let currentEditingItem = null;
     let updateInterval;
     let currentCardForSelection = null;
@@ -49,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function () {
             data_fim: endDate || startDate
         });
 
-         let apiUrl = '';
+        let apiUrl = '';
         if (activeType === 'semaforica') {
             apiUrl = 'API/get_semaforicas_pendentes.php';
         } else {
@@ -144,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     groupedItem.ocorrencias_detalhadas.some(detail => detail.ocorrencia_reparo && detail.ocorrencia_reparo.toLowerCase().includes(searchTerm));
 
                 const typeMatch = (activeType === 'manutencao' && groupedItem.tipo_manutencao === 'corretiva') ||
-                    (activeType === 'instalação' && groupedItem.tipo_manutencao === 'instalação')||
+                    (activeType === 'instalação' && groupedItem.tipo_manutencao === 'instalação') ||
                     (activeType === 'semaforica' && groupedItem.tipo_manutencao === 'semaforica');
 
                 return searchMatch && typeMatch;
@@ -174,10 +175,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 cityGroup.innerHTML = `
                     <div class="city-group-header">
-                        <h2 class="city-group-title">${cidade}</h2>
-                        <button class="atribuir-cidade-btn hidden" data-city="${cidade}" onclick="handleMultiAssignClick(this)">Atribuir</button>
+                    <h2 class="city-group-title">${cidade}</h2>
+                    <div class="city-header-actions hidden">
+                        <button class="atribuir-cidade-btn" data-city="${cidade}" onclick="handleMultiAssignClick(this)">Atribuir</button>
+                        <button class="atribuir-cidade-btn" data-city="${cidade}" onclick="handlePriorityClick(this)">Nível Prioridade</button>
                     </div>
-                    <div class="city-ocorrencias-grid">${cityGridHTML}</div>`;
+                </div>
+                <div class="city-ocorrencias-grid">${cityGridHTML}</div>`;
                 ocorrenciasContainer.appendChild(cityGroup);
             });
         } else {
@@ -229,60 +233,96 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        let corretivasPorCidade = {};
+        let allCorretivas = [];
         for (const cidade in allData.ocorrencias) {
             const corretivas = allData.ocorrencias[cidade].filter(item => item.tipo_manutencao === 'corretiva');
-            if (corretivas.length > 0) {
-                corretivasPorCidade[cidade] = corretivas;
-            }
+            allCorretivas.push(...corretivas);
         }
 
-        let html = '<h2>MANUTENÇÕES CORRETIVAS PENDENTES:</h2>';
-        const sortedCities = Object.keys(corretivasPorCidade).sort();
+        if (allCorretivas.length === 0) {
+            simplifiedView.innerHTML = '<h2>RESUMO DE PRIORIDADES</h2><p>Nenhuma manutenção corretiva pendente encontrada.</p>';
+            return;
+        }
 
-        const citiesToRender = cityFilter === 'todos' ? sortedCities : [cityFilter];
-        let hasContentForFilter = false;
+        const urgentes = [];
+        const padrao = [];
+        const semUrgencia = [];
 
-        if (sortedCities.length === 0) {
-            html += '<p>Nenhuma manutenção corretiva pendente encontrada.</p>';
-        } else {
-            for (const city of citiesToRender) {
-                if (corretivasPorCidade[city]) {
-                    hasContentForFilter = true;
-                    html += `<h3>${city}</h3>`;
-                    html += `<ul>`;
+        allCorretivas.forEach(item => {
+            if (cityFilter !== 'todos' && item.cidade !== cityFilter) {
+                return;
+            }
+            switch (item.nivel_ocorrencia) {
+                case 1: urgentes.push(item); break;
+                case 3: semUrgencia.push(item); break;
+                case 2: default: padrao.push(item); break;
+            }
+        });
 
-                    const itemsGroupedByEquip = {};
-                    for (const item of corretivasPorCidade[city]) {
-                        const key = `${item.nome_equip}|||${item.referencia_equip}`;
-                        if (!itemsGroupedByEquip[key]) {
-                            itemsGroupedByEquip[key] = [];
-                        }
-                        itemsGroupedByEquip[key].push(item);
-                    }
+        const buildPrioritySection = (items, cssClass) => {
+            if (items.length === 0) return '';
 
-                    for (const groupKey in itemsGroupedByEquip) {
-                        const groupItems = itemsGroupedByEquip[groupKey];
-                        const firstItem = groupItems[0];
-                        let displayName = firstItem.nome_equip;
-                        if (displayName && displayName.includes('-')) {
-                            displayName = displayName.split('-')[0].trim();
-                        }
-                        const problemasConcatenados = groupItems.map(item => item.ocorrencia_reparo).join('; ');
-                        html += `<li><strong>${displayName}</strong> - ${firstItem.referencia_equip}: ${problemasConcatenados}</li>`;
-                    }
-                    html += `</ul>`;
+            const itemsByCity = {};
+            items.forEach(item => {
+                if (!itemsByCity[item.cidade]) {
+                    itemsByCity[item.cidade] = [];
                 }
-            }
+                itemsByCity[item.cidade].push(item);
+            });
 
-            if (!hasContentForFilter && cityFilter !== 'todos') {
-                html += `<h3>${cityFilter}</h3><p>Nenhuma manutenção corretiva pendente para esta cidade.</p>`;
+            let sectionHtml = '';
+            const sortedCities = Object.keys(itemsByCity).sort();
+
+            for (const city of sortedCities) {
+                sectionHtml += `<h3>${city}</h3>`;
+                sectionHtml += `<ul>`;
+
+                const itemsGroupedByEquip = {};
+                for (const item of itemsByCity[city]) {
+                    const key = `${item.nome_equip}|||${item.referencia_equip}`;
+                    if (!itemsGroupedByEquip[key]) {
+                        itemsGroupedByEquip[key] = [];
+                    }
+                    itemsGroupedByEquip[key].push(item);
+                }
+
+                for (const groupKey in itemsGroupedByEquip) {
+                    const groupItems = itemsGroupedByEquip[groupKey];
+                    const firstItem = groupItems[0];
+                    let displayName = firstItem.nome_equip;
+                    if (displayName && displayName.includes('-')) {
+                        displayName = displayName.split('-')[0].trim();
+                    }
+
+                    const problemasConcatenados = groupItems.map(item => item.ocorrencia_reparo).join('; ');
+                    sectionHtml += `<li class="${cssClass}"><strong>${displayName}</strong> - ${firstItem.referencia_equip}: ${problemasConcatenados}</li>`;
+                }
+                sectionHtml += `</ul>`;
             }
+            return sectionHtml;
+        };
+
+        // <<< LÓGICA ALTERADA PARA ADICIONAR O TÍTULO "SEM URGÊNCIA" >>>
+        const urgenteHtml = buildPrioritySection(urgentes, 'prioridade-urgente');
+        const padraoHtml = buildPrioritySection(padrao, 'prioridade-padrao');
+        let semUrgenciaHtml = buildPrioritySection(semUrgencia, 'prioridade-sem-urgencia');
+
+        // Se a seção "Sem Urgência" tiver conteúdo, adicionamos o título a ela
+        if (semUrgenciaHtml) {
+            semUrgenciaHtml = `<h2 class="simplified-section-title">OCORRÊNCIAS SEM URGÊNCIA</h2>` + semUrgenciaHtml;
         }
-        simplifiedView.innerHTML = html;
+
+        const sections = [urgenteHtml, padraoHtml, semUrgenciaHtml].filter(Boolean);
+        const finalHtml = sections.join('<hr class="section-divider">');
+
+        if (finalHtml === '') {
+            simplifiedView.innerHTML = `<h2>RESUMO DE PRIORIDADES</h2><p>Nenhuma manutenção corretiva encontrada para ${cityFilter}.</p>`;
+        } else {
+            simplifiedView.innerHTML = `<h2>RESUMO DE PRIORIDADES</h2>` + finalHtml;
+        }
     }
 
-
+    
     function toggleView(showSimplified) {
         isSimplifiedViewActive = showSimplified;
 
@@ -329,7 +369,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 actionButtons.forEach(btn => { if (btn.id !== 'btnSimplificado') btn.classList.remove('active'); });
                 button.classList.add('active');
                 activeType = button.dataset.type;
-                fetchData(); 
+                fetchData();
             }
         });
     });
@@ -361,9 +401,20 @@ document.addEventListener('DOMContentLoaded', function () {
     function createOcorrenciaHTML(item, index) {
         const firstOcorrencia = item.ocorrencias_detalhadas[0];
         let detailsHTML = '';
-        const statusHTML = `<span class="status-tag status-pendente">Pendente</span>`;
         let atribuidoPorHTML = firstOcorrencia.atribuido_por ? `<div class="detail-item"><strong>Solicitado por</strong> <span>${firstOcorrencia.atribuido_por}</span></div>` : '';
 
+        let statusHTML = '';
+        const statusValue = firstOcorrencia.status_reparo || 'pendente'; // Pega o status real do item
+        switch (statusValue) {
+            case 'em andamento':
+                statusHTML = `<span class="status-tag status-em-andamento">Em Andamento</span>`;
+                break;
+            case 'pendente':
+            default:
+                statusHTML = `<span class="status-tag status-pendente">Pendente</span>`;
+                break;
+            // Adicione outros casos como 'concluido', 'cancelado' se precisar no futuro
+        }
         // --- LÓGICA PARA INSTALAÇÕES ---
         if (item.tipo_manutencao === 'instalação') {
             const statusMap = { inst_laco: 'Laço', inst_base: 'Base', inst_infra: 'Infra', inst_energia: 'Energia', inst_prov: 'Provedor' };
@@ -375,8 +426,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 return `<div class="detail-item"><strong>${label}</strong> <span>${status}</span></div>`;
             }).join('');
             // --- LÓGICA PARA SEMAFÓRICAS ---
-        }else if(item.tipo_manutencao === 'semaforica') {
-             detailsHTML = `
+        } else if (item.tipo_manutencao === 'semaforica') {
+            detailsHTML = `
             <div class="detail-item">
                 <strong>Tipo de Serviço:</strong> 
                 <span style="text-transform: capitalize;">${firstOcorrencia.tipo || 'Não informado'}</span>
@@ -410,8 +461,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 <strong>Status:</strong> ${statusHTML}
             </div>
         `;
-        
-        return `
+
+            return `
             <div class="ocorrencia-item" data-type="${item.tipo_manutencao}" data-id="${firstOcorrencia.id_manutencao}" data-is-grouped="false">
                 <div class="ocorrencia-header">
                     <h3>Ocorrência ${index + 1}</h3>
@@ -635,12 +686,78 @@ document.addEventListener('DOMContentLoaded', function () {
         currentCardForSelection = null;
     };
 
+    window.handlePriorityClick = function (button) {
+        const city = button.dataset.city;
+        const group = document.querySelector(`.city-group[data-city="${city}"]`);
+        const selectedItemsElements = group.querySelectorAll('.ocorrencia-item.selected:not(.hidden)');
+
+        currentItemsToUpdatePriority = [];
+        selectedItemsElements.forEach(itemEl => {
+            if (itemEl.dataset.selectedIds) {
+                currentItemsToUpdatePriority.push(...itemEl.dataset.selectedIds.split(','));
+            }
+        });
+
+        if (currentItemsToUpdatePriority.length === 0) return;
+
+        const firstItemId = currentItemsToUpdatePriority[0];
+        const firstItem = findOcorrenciaById(firstItemId);
+        const currentLevel = firstItem ? (firstItem.nivel_ocorrencia || 2) : 2;
+
+        const levelMap = { 1: 'Urgente', 2: 'Padrão', 3: 'Sem Urgência' };
+        document.getElementById('priorityModalInfo').innerHTML = `
+            <p><strong>${currentItemsToUpdatePriority.length} ocorrência(s) selecionada(s).</strong></p>
+            <p>Nível atual (primeiro item): <strong>${levelMap[currentLevel]}</strong></p>
+        `;
+
+        openModal('priorityModal');
+    }
+
+    // <<<  Função para salvar a prioridade selecionada >>>
+    window.savePriority = async function (nivel) {
+        const footer = document.querySelector('#priorityModal .modal-footer');
+        const errorEl = footer.querySelector('#priorityErrorMessage');
+        const buttons = footer.querySelectorAll('button');
+
+        buttons.forEach(btn => {
+            btn.disabled = true;
+            btn.querySelector('.spinner').classList.remove('hidden');
+        });
+        errorEl.classList.add('hidden');
+
+        try {
+            const response = await fetch('API/update_nivel_prioridade.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: currentItemsToUpdatePriority, nivel: nivel })
+            });
+            const result = await response.json();
+            if (!result.success) throw new Error(result.message);
+
+            closeModal('priorityModal');
+            fetchData();
+
+        } catch (error) {
+            errorEl.textContent = error.message;
+            errorEl.classList.remove('hidden');
+        } finally {
+            buttons.forEach(btn => {
+                btn.disabled = false;
+                btn.querySelector('.spinner').classList.add('hidden');
+            });
+        }
+    }
+
     function checkSelectionAndToggleButtons() {
         document.querySelectorAll('.city-group').forEach(group => {
-            const city = group.dataset.city;
             const selectedItems = group.querySelectorAll('.ocorrencia-item.selected:not(.hidden)');
-            const btn = group.querySelector(`.atribuir-cidade-btn[data-city="${city}"]`);
-            if (btn) btn.classList.toggle('hidden', selectedItems.length === 0);
+            // Procura pelo contêiner que segura os botões de ação
+            const actionContainer = group.querySelector('.city-header-actions');
+
+            if (actionContainer) {
+                // Mostra ou esconde o contêiner inteiro de uma vez
+                actionContainer.classList.toggle('hidden', selectedItems.length === 0);
+            }
         });
     }
 

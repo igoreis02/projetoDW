@@ -7,22 +7,24 @@ $ocorrencias_por_cidade = [];
 $cidades_com_ocorrencias = [];
 
 try {
-    // Consulta atualizada para incluir todos os campos necessários
+    // <<< CORREÇÃO PRINCIPAL APLICADA AQUI >>>
+    // Adicionamos um JOIN com a tabela 'manutencoes' para buscar o ID correto.
     $sql = "SELECT 
-                os.id AS id_manutencao,
+                m.id_manutencao, -- Buscando o ID REAL da manutenção
                 'semaforica' AS tipo_manutencao,
-                os.referencia AS nome_equip,       -- Mapeado para o título do card
-                os.endereco AS referencia_equip,   -- Mapeado para o subtítulo do card
+                os.referencia AS nome_equip,
+                os.endereco AS referencia_equip,
                 os.descricao_problema AS ocorrencia_reparo,
                 os.data AS inicio_reparo,
                 os.status AS status_reparo,
                 os.endereco AS local_completo,
                 c.nome AS cidade,
-                os.qtd,                            -- <<< ADICIONADO
-                os.unidade,                        -- <<< ADICIONADO
-                os.tipo,                           -- <<< ADICIONADO
-                os.observacao                      -- <<< ADICIONADO
+                os.qtd,
+                os.unidade,
+                os.tipo,
+                os.observacao
             FROM ocorrencia_semaforica AS os
+            JOIN manutencoes AS m ON os.id = m.id_ocorrencia_semaforica
             LEFT JOIN cidades AS c ON os.id_cidade = c.id_cidade
             WHERE os.status = 'pendente'
             ORDER BY c.nome, os.data DESC";

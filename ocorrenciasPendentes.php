@@ -290,8 +290,10 @@ if (!isset($_SESSION['user_id'])) {
         .ocorrencia-item[data-type="instalação"] {
             border-left-color: #f97316;
         }
+
         .ocorrencia-item[data-type="semaforica"] {
-        border-left-color: #8b5cf6; /* Cor roxa para diferenciar */
+            border-left-color: #8b5cf6;
+            /* Cor roxa para diferenciar */
         }
 
         .ocorrencia-header {
@@ -498,8 +500,9 @@ if (!isset($_SESSION['user_id'])) {
             overflow-y: auto;
             align-items: flex-start;
             padding-top: 1rem;
-            
+
         }
+
         .choice-btn {
             color: #112058;
             font-weight: bold;
@@ -798,6 +801,42 @@ if (!isset($_SESSION['user_id'])) {
         .ocorrencia-list li:last-child {
             border-bottom: none;
         }
+
+        #simplifiedView li.prioridade-urgente {
+            color: #ef4444;
+            /* Vermelho */
+            border-left: 3px solid #ef4444;
+            padding-left: 10px;
+        }
+
+        #simplifiedView li.prioridade-padrao {
+            color: #112058;
+            /* Azul */
+            border-left: 3px solid #112058;
+            padding-left: 10px;
+        }
+
+        #simplifiedView li.prioridade-sem-urgencia {
+            color: #6b7280;
+            /* Cinza Escuro */
+            border-left: 3px solid #6b7280;
+            padding-left: 10px;
+        }
+        .section-divider {
+        border: 0;
+        height: 1px;
+        background-color: #e5e7eb; /* Cinza claro, combinando com o design */
+        margin: 2rem 0; /* Espaçamento vertical para a linha respirar */
+    }
+    .simplified-section-title {
+        font-size: 1.1em;
+        color: #4b5563; /* Cinza escuro para o texto */
+        text-align: left;
+        margin-top: 2.5rem; /* << A distância superior que você pediu */
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #d1d5db;
+        font-weight: 600;
+    }
     </style>
 </head>
 
@@ -972,6 +1011,35 @@ if (!isset($_SESSION['user_id'])) {
                 <div class="modal-footer-buttons">
                     <button class="modal-btn btn-secondary" onclick="closeModal('confirmationModal')">Não</button>
                     <button id="confirmActionButton" class="modal-btn btn-primary">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="priorityModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Alterar Nível de Prioridade</h3>
+                <button class="modal-close" onclick="closeModal('priorityModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <p>Selecione o novo nível de prioridade para a(s) ocorrência(s) selecionada(s):</p>
+                <div id="priorityModalInfo" class="modal-info-message"></div>
+            </div>
+            <div class="modal-footer">
+                <div id="priorityErrorMessage" class="modal-error-message hidden"></div>
+                <div class="modal-footer-buttons">
+                    <button class="modal-btn" style="background-color: #ef4444; color: white;" onclick="savePriority(1)">
+                        <span>Urgente (1)</span>
+                        <div class="spinner hidden"></div>
+                    </button>
+                    <button class="modal-btn" style="background-color: #112058; color: white;" onclick="savePriority(2)">
+                        <span>Padrão (2)</span>
+                        <div class="spinner hidden"></div>
+                    </button>
+                    <button class="modal-btn" style="background-color: #6b7280; color: white;" onclick="savePriority(3)">
+                        <span>Sem Urgência (3)</span>
+                        <div class="spinner hidden"></div>
+                    </button>
                 </div>
             </div>
         </div>

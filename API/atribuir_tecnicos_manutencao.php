@@ -45,6 +45,15 @@ try {
         throw new Exception('Erro ao preparar a declaração de inserção: ' . $conn->error);
     }
 
+    $stmt_get_semaforica_id = $conn->prepare("SELECT id_ocorrencia_semaforica FROM manutencoes WHERE id_manutencao = ?");
+    if (!$stmt_get_semaforica_id) {
+        throw new Exception('Erro ao preparar a declaração de verificação semafórica: ' . $conn->error);
+    }
+    $stmt_update_semaforica = $conn->prepare("UPDATE ocorrencia_semaforica SET status = 'em andamento' WHERE id = ?");
+    if (!$stmt_update_semaforica) {
+        throw new Exception('Erro ao preparar a declaração de atualização semafórica: ' . $conn->error);
+    }
+
     $veiculo_count = count($idsVeiculos);
 
     // Itera sobre cada manutenção selecionada
@@ -68,6 +77,17 @@ try {
             
             $i++;
         }
+        $stmt_get_semaforica_id->bind_param("i", $id_manutencao);
+        $stmt_get_semaforica_id->execute();
+        $result = $stmt_get_semaforica_id->get_result();
+        $row = $result->fetch_assoc();
+
+        // b. Se um ID for encontrado, atualiza o status na tabela 'ocorrencia_semaforica'
+        if ($row && !empty($row['id_ocorrencia_semaforica'])) {
+            $id_semaforica = $row['id_ocorrencia_semaforica'];
+            $stmt_update_semaforica->bind_param("i", $id_semaforica);
+            $stmt_update_semaforica->execute();
+        }
     }
 
     $conn->commit();
@@ -88,6 +108,12 @@ if (isset($stmt_delete_atribuicoes)) {
 }
 if (isset($stmt_insert_atribuicao)) {
     $stmt_insert_atribuicao->close();
+}
+if (isset($stmt_get_semaforica_id)) {
+    $stmt_get_semaforica_id->close();
+}
+if (isset($stmt_update_semaforica)) {
+    $stmt_update_semaforica->close();
 }
 $conn->close();
 ?>

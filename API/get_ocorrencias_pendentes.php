@@ -20,6 +20,7 @@ try {
     $sql = "SELECT
                 m.id_manutencao,
                 m.tipo_manutencao,
+                m.nivel_ocorrencia,
                 m.ocorrencia_reparo,
                 m.inicio_reparo,
                 m.status_reparo,
