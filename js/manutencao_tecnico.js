@@ -490,7 +490,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const payload = {
                     id_manutencao: currentManutencao.id_manutencao,
                     is_installation: false,
-                    status_reparo: 'validação',
+                    status_reparo: 'validacao',
                     reparo_finalizado: reparoRealizado,
                     materiais_utilizados: materiaisUtilizados,
                     rompimento_lacre: rompimentoLacre ? 1 : 0,

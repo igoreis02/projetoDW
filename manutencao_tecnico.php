@@ -15,7 +15,8 @@ $user_email = $_SESSION['user_email'];
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/style_tecnico.css">
-    <title>Minhas Manutenções - Técnico</title>
+    <link rel="icon" type="image/png" href="imagens/favicon.png">
+    <title>Ocorrência - Técnico</title>
 </head>
 
 <body>

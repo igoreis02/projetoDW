@@ -114,36 +114,15 @@ try {
         echo json_encode(['success' => true, 'message' => 'Ocorrência concluída e registrada com sucesso!']);
     } elseif ($action === 'validar_reparo') {
         // 1. Mudar status da manutenção para 'concluido'
-        $stmt_update = $conn->prepare("UPDATE manutencoes SET status_reparo = 'concluido' WHERE id_manutencao = ?");
-        $stmt_update->bind_param('i', $id);
-        if (!$stmt_update->execute()) {
-            throw new Exception('Falha ao validar a manutenção.');
-        }
-        $stmt_update->close();
+         $stmt_update = $conn->prepare("UPDATE manutencoes SET status_reparo = 'concluido' WHERE id_manutencao = ?");
+    $stmt_update->bind_param('i', $id);
+    
+    if (!$stmt_update->execute()) {
+        throw new Exception('Falha ao validar a manutenção.');
+    }
+    $stmt_update->close();
 
-        // 2. Obter dados da manutenção para criar a ocorrência de processamento
-        $stmt_get = $conn->prepare("SELECT id_usuario, tipo_manutencao, ocorrencia_reparo FROM manutencoes WHERE id_manutencao = ?");
-        $stmt_get->bind_param('i', $id);
-        $stmt_get->execute();
-        $manut_data = $stmt_get->get_result()->fetch_assoc();
-        $stmt_get->close();
-
-        if ($manut_data) {
-            // 3. Inserir novo registro na tabela de ocorrência de processamento
-            $stmt_insert = $conn->prepare("INSERT INTO ocorrencia_processamento (id_manutencao, id_usuario_registro, tipo_ocorrencia, descricao, status, dt_resolucao) VALUES (?, ?, ?, ?, 'concluido', NOW())");
-            // Usamos o tipo da manutenção original (corretiva/preditiva) como tipo_ocorrencia
-            $stmt_insert->bind_param('isss', $id, $id_usuario_logado, $manut_data['tipo_manutencao'], $manut_data['ocorrencia_reparo']);
-            if (!$stmt_insert->execute()) {
-                throw new Exception('Falha ao criar o registro de processamento.');
-            }
-            $stmt_insert->close();
-        } else {
-            throw new Exception('Manutenção original não encontrada para criar a ocorrência.');
-        }
-
-        echo json_encode(['success' => true, 'message' => 'Reparo validado e ocorrência criada com sucesso.']);
-
-        // <-- MUDANÇA AQUI: Adicionada a nova ação 'retornar_manutencao' -->
+    echo json_encode(['success' => true, 'message' => 'Reparo validado com sucesso.']);
     } elseif ($action === 'retornar_manutencao') {
         $nova_ocorrencia = $input['nova_ocorrencia'] ?? null;
         if (empty($nova_ocorrencia)) {
