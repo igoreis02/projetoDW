@@ -355,13 +355,6 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        const hoje = new Date().toISOString().split('T')[0];
-        if (inicioReparo < hoje) {
-            errorMessageDiv.textContent = 'A data de início não pode ser anterior à data atual.';
-            errorMessageDiv.classList.remove('hidden');
-            return;
-        }
-
         if (fimReparo < inicioReparo) {
             errorMessageDiv.textContent = 'A data de fim não pode ser anterior à data de início.';
             errorMessageDiv.classList.remove('hidden');

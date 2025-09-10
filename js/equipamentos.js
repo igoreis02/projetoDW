@@ -25,11 +25,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const mainLoadingState = document.getElementById('mainLoadingState');
     const campoPesquisa = document.getElementById('campoPesquisa');
     const cityButtonsContainer = document.getElementById('cityButtonsContainer');
-    
+
     // **NOVO**: Referências para os novos botões
     const clearFiltersBtn = document.getElementById('clearFiltersBtn');
     const backToTopBtn = document.getElementById('backToTopBtn');
-    
+
 
 
     // --- VARIÁVEIS DE ESTADO ---
@@ -59,13 +59,13 @@ document.addEventListener('DOMContentLoaded', () => {
         element.classList.add('hidden');
         element.textContent = '';
     };
-    
+
     function toggleLoadingState(spinnerId, saveButtonId, cancelButtonId, show) {
         const saveButton = document.getElementById(saveButtonId);
         const cancelButton = document.getElementById(cancelButtonId);
         if (saveButton) {
             saveButton.disabled = show;
-             if (show) {
+            if (show) {
                 if (saveButtonId === 'saveAddEquipmentButton') {
                     saveButton.innerHTML = 'Salvando Equipamento <span id="addEquipmentSpinner" class="loading-spinner is-active"></span>';
                 } else if (saveButtonId === 'saveEditEquipmentButton') {
@@ -86,18 +86,69 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function toggleConditionalFields(formId) {
         const form = document.getElementById(formId);
+        if (!form) return;
+
         const selectedTypes = Array.from(form.querySelectorAll('input[name="tipo_equip[]"]:checked')).map(cb => cb.value);
 
-        const typesThatHideFields = ['CCO', 'DOME'];
-        const shouldHideAll = selectedTypes.length > 0 && selectedTypes.every(type => typesThatHideFields.includes(type));
+        const prefix = formId.includes('add') ? 'add' : 'edit';
+        const specificContainer = document.getElementById(`${prefix}-specific-fields-container`);
+        const afericaoContainer = document.getElementById(`${prefix}-afericao-fields-container`);
+        const dateContainer = document.getElementById(`${prefix}-date-fields-container`);
 
-        const specificContainer = form.querySelector(`#${formId.includes('add') ? 'add' : 'edit'}-specific-fields-container`);
-        const afericaoContainer = form.querySelector(`#${formId.includes('add') ? 'add' : 'edit'}-afericao-fields-container`);
-        const dateContainer = form.querySelector(`#${formId.includes('add') ? 'add' : 'edit'}-date-fields-container`);
+        // Campos individuais para controle mais fino
+        const kmInput = form.querySelector(`[name="km"]`);
+        const kmLabel = kmInput ? form.querySelector(`label[for="${kmInput.id}"]`) : null;
+        const estudoTecInput = form.querySelector(`input[name="dt_estudoTec"]`)?.closest('.custom-date-input');
+        const estudoTecLabel = form.querySelector(`label[for="${prefix}_dt_estudoTec"]`);
 
-        if(specificContainer) specificContainer.classList.toggle('hidden', shouldHideAll);
-        if(afericaoContainer) afericaoContainer.classList.toggle('hidden', shouldHideAll);
-        if(dateContainer) dateContainer.classList.toggle('hidden', shouldHideAll);
+        // --- Regras de visibilidade ---
+        // Tipos que geralmente ocultam todos os campos específicos
+        const simpleTypes = ['CCO', 'DOME', 'VIDEO MONITORAMENTO'];
+        // Tipos que precisam do container de aferição
+        const needsAfericao = ['RADAR FIXO', 'LOMBADA ELETRONICA'];
+        // Tipos que precisam do container específico (faixa, sentido, km)
+        const needsSpecifics = ['RADAR FIXO', 'LOMBADA ELETRONICA', 'MONITOR DE SEMAFORO', 'LAP'];
+        // Tipos que precisam do campo de estudo técnico
+        const needsEstudoTec = ['RADAR FIXO', 'LOMBADA ELETRONICA', 'MONITOR DE SEMAFORO'];
+
+
+        // --- Lógica de Decisão ---
+        // Um container/campo é visível se PELO MENOS UM tipo selecionado o exigir.
+
+        const showSpecifics = selectedTypes.length > 0 && selectedTypes.some(type => needsSpecifics.includes(type));
+        const showAfericao = selectedTypes.length > 0 && selectedTypes.some(type => needsAfericao.includes(type));
+        const showEstudoTec = selectedTypes.length > 0 && selectedTypes.some(type => needsEstudoTec.includes(type));
+
+        // --- Aplica Visibilidade ---
+
+        // Container Específico (Faixa, KM, Sentido)
+        specificContainer.classList.toggle('hidden', !showSpecifics);
+        // Container Aferição (Nº Instrumento, Data Aferição)
+        afericaoContainer.classList.toggle('hidden', !showAfericao);
+
+        // Container de Datas (sempre visível, mas controlamos o "Estudo Técnico" dentro dele)
+        dateContainer.classList.remove('hidden');
+
+        // Lógica específica para campos individuais que podem ser ocultados mesmo se o container estiver visível
+        if (kmInput && kmLabel) {
+            // Oculta KM se LAP for selecionado
+            const isLapSelected = selectedTypes.includes('LAP');
+            kmInput.classList.toggle('hidden', isLapSelected);
+            kmLabel.classList.toggle('hidden', isLapSelected);
+        }
+
+        if (estudoTecInput && estudoTecLabel) {
+            // Oculta "Estudo Técnico" se a regra exigir
+            estudoTecInput.classList.toggle('hidden', !showEstudoTec);
+            estudoTecLabel.classList.toggle('hidden', !showEstudoTec);
+        }
+
+        // Se nenhum tipo estiver selecionado, oculta tudo
+        if (selectedTypes.length === 0) {
+            specificContainer.classList.add('hidden');
+            afericaoContainer.classList.add('hidden');
+            dateContainer.classList.add('hidden');
+        }
     }
     async function checkForUpdates() {
         try {
@@ -167,7 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const order = { 'CCO': 1, 'RADAR FIXO': 2, 'LOMBADA ELETRONICA': 2, 'MONITOR DE SEMAFORO': 3, 'VIDEO MONITORAMENTO': 4, 'DOME': 5, 'LAP': 6, 'EDUCATIVO': 99 };
         return Math.min(...types.map(t => order[t] || 99));
     }
-    
+
     function customSort(a, b) {
         const typeOrderA = getEquipmentTypeOrder(a.tipo_equip);
         const typeOrderB = getEquipmentTypeOrder(b.tipo_equip);
@@ -191,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
         filteredData.sort(customSort);
         renderEquipmentList(filteredData);
     }
-    
+
     function activateDatePickers() {
         document.querySelectorAll('.custom-date-input').forEach(wrapper => {
             wrapper.addEventListener('click', () => {
@@ -226,11 +277,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const statusClass = `status-${(equip.status || '').toLowerCase()}`;
                 const statusDisplay = (equip.status || 'N/A').charAt(0).toUpperCase() + (equip.status || 'N/A').slice(1);
                 const formatDate = (date) => (!date || date === '0000-00-00') ? 'N/A' : new Date(date + 'T00:00:00').toLocaleDateString('pt-BR');
-                
+
                 const types = equip.tipo_equip ? equip.tipo_equip.split(',').map(t => t.trim()) : [];
                 const typesThatHideFields = ['CCO', 'DOME'];
                 const shouldShowDetails = types.length === 0 || !types.every(type => typesThatHideFields.includes(type));
-                
+
                 // **MODIFICADO**: Formatação do endereço
                 const enderecoCompleto = `${equip.logradouro || 'N/A'} - ${equip.bairro || 'N/A'}`;
 
@@ -264,7 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function findEquipmentById(id) {
         return allEquipmentData.find(equip => equip.id_equipamento == id);
     }
-    
+
     function openAddEquipmentModal() {
         addEquipmentForm.reset();
         hideMessage(addEquipmentMessage);
@@ -275,11 +326,11 @@ document.addEventListener('DOMContentLoaded', () => {
         addEquipmentModal.classList.add('is-active');
         addFormButtonsContainer.style.display = 'flex';
     }
-    
+
     function openEditEquipmentModal(equipmentData) {
         if (!equipmentData) return;
         editEquipmentForm.reset();
-        
+
         document.getElementById('editEquipmentId').value = equipmentData.id_equipamento;
         document.getElementById('editEnderecoId').value = equipmentData.id_endereco;
         document.getElementById('editEquipmentName').value = equipmentData.nome_equip;
@@ -297,7 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('editDtAfericao').value = equipmentData.dt_afericao;
         document.getElementById('edit_dt_instalacao').value = equipmentData.dt_instalacao;
         document.getElementById('edit_dt_estudoTec').value = equipmentData.dt_estudoTec;
-        
+
         const coordenadas = (equipmentData.latitude && equipmentData.longitude) ? `${equipmentData.latitude}, ${equipmentData.longitude}` : '';
         document.getElementById('editCoordenadas').value = coordenadas;
 
@@ -312,14 +363,14 @@ document.addEventListener('DOMContentLoaded', () => {
         editEquipmentModal.classList.add('is-active');
         editFormButtonsContainer.style.display = 'flex';
     }
-    
+
     function setupFormValidationListeners(formElement, messageElement, validationRules) {
         // Seleciona todos os inputs, selects e textareas
         const inputs = formElement.querySelectorAll('input, select, textarea');
-        
+
         const validateAndClear = () => {
             let allValid = true;
-           
+
             for (const fieldId in validationRules) {
                 const input = formElement.querySelector(`#${fieldId}`);
                 if (input) {
@@ -329,7 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             allValid = false;
                             break;
                         }
-                    } 
+                    }
                     // Para outros campos, usa a sua lógica original
                     else if (!input.value.trim()) {
                         allValid = false;
@@ -341,15 +392,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (allValid) hideMessage(messageElement);
         };
 
-        
+
         inputs.forEach(input => {
             input.addEventListener('input', () => hideMessage(messageElement)); // Esconde ao digitar/mudar
             input.addEventListener('change', () => hideMessage(messageElement)); // Esconde ao selecionar
         });
     }
-    
+
     // **NOVO**: Função para controlar o botão "Voltar ao Topo"
-    window.onscroll = function() {
+    window.onscroll = function () {
         if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
             backToTopBtn.style.display = "block";
         } else {
@@ -363,7 +414,7 @@ document.addEventListener('DOMContentLoaded', () => {
     [closeEditEquipmentModal, cancelEditEquipmentButton].forEach(el => el.addEventListener('click', () => editEquipmentModal.classList.remove('is-active')));
 
     campoPesquisa.addEventListener('input', applyFilters);
-    
+
     // **NOVO**: Event listener para o botão Limpar Filtros
     clearFiltersBtn.addEventListener('click', () => {
         campoPesquisa.value = '';
@@ -372,7 +423,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('.city-button[data-city="all"]').classList.add('active');
         applyFilters();
     });
-    
+
     // **NOVO**: Event listener para o botão Voltar ao Topo
     backToTopBtn.addEventListener('click', () => {
         document.body.scrollTop = 0; // Para Safari
@@ -390,7 +441,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('addEquipmentType').addEventListener('change', () => toggleConditionalFields('addEquipmentForm'));
     document.getElementById('editEquipmentType').addEventListener('change', () => toggleConditionalFields('editEquipmentForm'));
-    
+
     equipmentListContainer.addEventListener('click', (event) => {
         if (event.target.classList.contains('botao-editar')) {
             openEditEquipmentModal(findEquipmentById(event.target.dataset.equipmentId));
@@ -408,6 +459,9 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const formData = new FormData(addEquipmentForm);
             const data = Object.fromEntries(formData.entries());
+            delete data['tipo_equip[]']; // Remove a chave com colchetes
+
+            // Adiciona a chave correta 'tipo_equip' com o array de valores
             data.tipo_equip = formData.getAll('tipo_equip[]');
 
             const response = await fetch('API/add_equipment.php', {
@@ -437,12 +491,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     editEquipmentForm.addEventListener('submit', async function (event) {
         event.preventDefault();
-        
+
         toggleLoadingState('editEquipmentSpinner', 'saveEditEquipmentButton', 'cancelEditEquipmentButton', true);
         try {
             const formData = new FormData(editEquipmentForm);
             const data = Object.fromEntries(formData.entries());
-            data.tipo_equip = formData.getAll('tipo_equip[]');
+            delete data['tipo_equip[]']; // Remove a chave com colchetes
+
+            // Adiciona a chave correta 'tipo_equip' com o array de valores
+            data.tipo_equip = formData.getAll('tipo_equip');
 
             const response = await fetch('API/update_equipment.php', {
                 method: 'POST',
@@ -472,7 +529,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- INICIALIZAÇÃO ---
     fetchProvidersForSelect();
     fetchAndRenderEquipments();
-    
+
     setupFormValidationListeners(addEquipmentForm, addEquipmentMessage, fieldsToValidate);
     setupFormValidationListeners(editEquipmentForm, editEquipmentMessage, fieldsToValidate);
     const editInputsToWatch = editEquipmentForm.querySelectorAll('input, select');

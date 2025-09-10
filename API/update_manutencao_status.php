@@ -105,7 +105,7 @@ if ($is_installation) {
     $types = "s";
     $params = [$status_reparo];
 
-    if ($status_reparo === 'concluido' || $status_reparo === 'validação') {
+    if ($status_reparo === 'concluido' || $status_reparo === 'validacao') {
         $sql .= ", fim_reparo = NOW(), reparo_finalizado = ?, materiais_utilizados = ?, motivo_devolucao = NULL, tempo_reparo = TIMEDIFF(NOW(), inicio_reparo)";
         $types .= "ss";
         $params[] = $reparo_finalizado;

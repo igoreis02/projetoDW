@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', function () {
         let atribuidoPorHTML = item.atribuido_por ? `<div class="detail-item"><strong>Reportado por</strong> <span>${item.atribuido_por}</span></div>` : '';
         let reparoFinalizadoHTML = '';
         
-        if ((statusClass === 'concluido' || statusClass === 'validação') && item.reparo_finalizado) {
+        if ((statusClass === 'concluido' || statusClass === 'validacao') && item.reparo_finalizado) {
             reparoFinalizadoHTML = `<div class="detail-item reparo-info"><strong>Solução</strong> <span>${item.reparo_finalizado}</span></div>`;
         }
         
@@ -128,7 +128,7 @@ document.addEventListener('DOMContentLoaded', function () {
         `;
 
         let actionsContent = '';
-        if (statusClass === 'validação') {
+        if (statusClass === 'validacao') {
             actionsContent = `<button class="item-btn validar-btn" onclick="openValidarModal(${item.id})">Validar</button>`;
         } else if (statusClass === 'pendente') {
             actionsContent = `<button class="item-btn concluir-btn" onclick="openConcluirModal(${item.id}, '${item.origem}')">Concluir</button><button class="item-btn edit-btn" onclick="openEditModal(${item.id}, '${item.origem}')">Editar</button><button class="item-btn cancel-btn" onclick="openConfirmationModal('cancelar', ${item.id}, '${item.origem}')">Cancelar</button>`;
