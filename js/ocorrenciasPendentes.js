@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     // --- REFERÊNCIAS AOS ELEMENTOS ---
     const actionButtons = document.querySelectorAll('.action-btn');
+    const btSemaforica = document.getElementById('btSemaforica'); 
     const filterContainer = document.getElementById('filterContainer');
     const ocorrenciasContainer = document.getElementById('ocorrenciasContainer');
     const pageLoader = document.getElementById('pageLoader');
@@ -23,6 +24,18 @@ document.addEventListener('DOMContentLoaded', function () {
     let currentCardForSelection = null;
     let isSimplifiedViewActive = false;
 
+    async function checkAndShowSemaforicaButton() {
+        try {
+            const response = await fetch('API/check_semaforicas_pendentes.php');
+            const result = await response.json();
+            if (result.success && result.data.has_pending) {
+                btSemaforica.classList.remove('hidden');
+            }
+        } catch (error) {
+            console.error('Erro ao verificar ocorrências semafóricas:', error);
+        }
+    }
+
     // --- LÓGICA DE BUSCA E RENDERIZAÇÃO ---
     async function fetchData(isUpdate = false) {
         if (!isUpdate) {
@@ -36,8 +49,20 @@ document.addEventListener('DOMContentLoaded', function () {
             data_fim: endDate || startDate
         });
 
+         let apiUrl = '';
+        if (activeType === 'semaforica') {
+            apiUrl = 'API/get_semaforicas_pendentes.php';
+        } else {
+            // Para 'manutencao' e 'instalação', usa a API original com os filtros de data
+            const params = new URLSearchParams({
+                data_inicio: startDateInput.value,
+                data_fim: endDateInput.value || startDateInput.value
+            });
+            apiUrl = `API/get_ocorrencias_pendentes.php?${params.toString()}`;
+        }
+
         try {
-            const response = await fetch(`API/get_ocorrencias_pendentes.php?${params.toString()}`);
+            const response = await fetch(apiUrl);
             const result = await response.json();
             const newSignature = JSON.stringify(result.data);
             const oldSignature = JSON.stringify(allData);
@@ -91,8 +116,9 @@ document.addEventListener('DOMContentLoaded', function () {
             const itemsGroupedByEquip = {};
 
             cityItems.forEach(item => {
-                if (item.tipo_manutencao === 'instalação') {
-                    const uniqueKey = `inst-${item.id_manutencao}`;
+                if (item.tipo_manutencao === 'instalação' || item.tipo_manutencao === 'semaforica') {
+                    // Trata instalações e semafóricas como itens únicos
+                    const uniqueKey = `${item.tipo_manutencao}-${item.id_manutencao}`;
                     itemsGroupedByEquip[uniqueKey] = { ...item, isGrouped: false, ocorrencias_detalhadas: [item] };
                     return;
                 }
@@ -118,7 +144,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     groupedItem.ocorrencias_detalhadas.some(detail => detail.ocorrencia_reparo && detail.ocorrencia_reparo.toLowerCase().includes(searchTerm));
 
                 const typeMatch = (activeType === 'manutencao' && groupedItem.tipo_manutencao === 'corretiva') ||
-                    (activeType === 'instalação' && groupedItem.tipo_manutencao === 'instalação');
+                    (activeType === 'instalação' && groupedItem.tipo_manutencao === 'instalação')||
+                    (activeType === 'semaforica' && groupedItem.tipo_manutencao === 'semaforica');
 
                 return searchMatch && typeMatch;
             });
@@ -142,7 +169,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 const cityGroup = document.createElement('div');
                 cityGroup.className = 'city-group';
                 cityGroup.dataset.city = cidade;
-                const cityGridHTML = ocorrencias[cidade].map(createOcorrenciaHTML).join('');
+                const cityGridHTML = ocorrencias[cidade].map((item, index) => createOcorrenciaHTML(item, index)).join('');
+
 
                 cityGroup.innerHTML = `
                     <div class="city-group-header">
@@ -301,7 +329,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 actionButtons.forEach(btn => { if (btn.id !== 'btnSimplificado') btn.classList.remove('active'); });
                 button.classList.add('active');
                 activeType = button.dataset.type;
-                applyFiltersAndRender();
+                fetchData(); 
             }
         });
     });
@@ -330,7 +358,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
 
-    function createOcorrenciaHTML(item) {
+    function createOcorrenciaHTML(item, index) {
         const firstOcorrencia = item.ocorrencias_detalhadas[0];
         let detailsHTML = '';
         const statusHTML = `<span class="status-tag status-pendente">Pendente</span>`;
@@ -346,7 +374,53 @@ document.addEventListener('DOMContentLoaded', function () {
                     `<span class="status-value aguardando">Aguardando instalação</span>`;
                 return `<div class="detail-item"><strong>${label}</strong> <span>${status}</span></div>`;
             }).join('');
-
+            // --- LÓGICA PARA SEMAFÓRICAS ---
+        }else if(item.tipo_manutencao === 'semaforica') {
+             detailsHTML = `
+            <div class="detail-item">
+                <strong>Tipo de Serviço:</strong> 
+                <span style="text-transform: capitalize;">${firstOcorrencia.tipo || 'Não informado'}</span>
+            </div>
+            <div class="detail-item">
+                <strong>Data:</strong> 
+                <span>${new Date(firstOcorrencia.inicio_reparo).toLocaleString('pt-BR')}</span>
+            </div>
+            <div class="detail-item">
+                <strong>Endereço:</strong> 
+                <span>${firstOcorrencia.local_completo || 'Não informado'}</span>
+            </div>
+            <div class="detail-item">
+                <strong>Referência:</strong> 
+                <span>${firstOcorrencia.nome_equip || 'Não informada'}</span>
+            </div>
+             <div class="detail-item">
+                <strong>Quantidade:</strong> 
+                <span>${firstOcorrencia.qtd || 'N/A'} ${firstOcorrencia.unidade || ''}</span>
+            </div>
+            <div class="detail-item" style="grid-column: 1 / -1;">
+                <strong>Descrição:</strong> 
+                <span class="status-tag status-pendente" style="white-space: normal; text-align: left;">${firstOcorrencia.ocorrencia_reparo || 'Não especificada'}</span>
+            </div>
+            ${firstOcorrencia.observacao ? `
+            <div class="detail-item" style="grid-column: 1 / -1;">
+                <strong>Observação:</strong> 
+                <span>${firstOcorrencia.observacao}</span>
+            </div>` : ''}
+            <div class="detail-item">
+                <strong>Status:</strong> ${statusHTML}
+            </div>
+        `;
+        
+        return `
+            <div class="ocorrencia-item" data-type="${item.tipo_manutencao}" data-id="${firstOcorrencia.id_manutencao}" data-is-grouped="false">
+                <div class="ocorrencia-header">
+                    <h3>Ocorrência ${index + 1}</h3>
+                </div>
+                <div class="ocorrencia-details" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
+                    ${detailsHTML}
+                </div>
+            </div>
+        `;
             // --- LÓGICA PARA MÚLTIPLAS OCORRÊNCIAS ---
         } else if (item.ocorrencias_detalhadas.length > 1) {
             let ocorrenciasListHTML = item.ocorrencias_detalhadas.map((ocor, index) =>
@@ -896,6 +970,7 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('assignVeiculosContainer').addEventListener('click', () => assignErrorMessage.classList.add('hidden'));
 
     // --- INICIALIZAÇÃO ---
+    checkAndShowSemaforicaButton();
     fetchData();
     startAutoUpdate();
 

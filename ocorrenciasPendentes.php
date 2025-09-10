@@ -35,7 +35,7 @@ if (!isset($_SESSION['user_id'])) {
             border-radius: 1rem;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
             width: 95%;
-            max-width: 1200px;
+            max-width: 1400px;
             text-align: center;
             position: relative;
         }
@@ -289,6 +289,9 @@ if (!isset($_SESSION['user_id'])) {
 
         .ocorrencia-item[data-type="instalação"] {
             border-left-color: #f97316;
+        }
+        .ocorrencia-item[data-type="semaforica"] {
+        border-left-color: #8b5cf6; /* Cor roxa para diferenciar */
         }
 
         .ocorrencia-header {
@@ -813,6 +816,7 @@ if (!isset($_SESSION['user_id'])) {
                 <div class="action-buttons">
                     <button id="btnManutencoes" class="action-btn active" data-type="manutencao">Manutenções</button>
                     <button id="btnInstalacoes" class="action-btn" data-type="instalação">Instalações</button>
+                    <button id="btSemaforica" class="action-btn hidden" data-type="semaforica">Semafóricas</button>
                 </div>
                 <div class="date-filter-container">
                     <label for="startDate">De:</label>

@@ -30,6 +30,7 @@ try {
                 m.inst_infra, m.data_infra,
                 m.inst_energia, m.dt_energia,
                 m.inst_prov, m.data_provedor,
+                m.id_ocorrencia_semaforica,
                 e.nome_equip,
                 e.referencia_equip,
                 c.nome AS cidade,
@@ -77,6 +78,9 @@ try {
 
     if ($result->num_rows > 0) {
         while ($row = $result->fetch_assoc()) {
+
+            $row['tem_ocorrencia_semaforica'] = !empty($row['id_ocorrencia_semaforica']);
+
             $cidade = $row['cidade'];
             if (!isset($ocorrencias_por_cidade[$cidade])) {
                 $ocorrencias_por_cidade[$cidade] = [];
