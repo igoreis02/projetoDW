@@ -1,47 +1,101 @@
 <?php
-// Define o cabeçalho da resposta como JSON.
-header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *'); 
+// /API/get_ocorrencias_em_andamento.php
 
-// --- Configurações do Banco de Dados ---
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+
 require_once 'conexao_bd.php';
 
-// --- Variáveis para armazenar os dados ---
-$ocorrencias_por_cidade = [];
-$cidades_com_ocorrencias = [];
-$response_data = [];
-
 try {
-    // --- Consulta SQL atualizada para incluir o tipo de equipamento ---
-    $sql = "SELECT
-                m.id_manutencao,
-                m.tipo_manutencao,
-                m.ocorrencia_reparo,
-                m.inicio_reparo,
-                m.status_reparo,
-                m.inst_laco, m.dt_laco,
-                m.inst_base, m.dt_base,
-                m.inst_infra, m.data_infra,
-                m.inst_energia, m.dt_energia,
-                e.nome_equip,
-                e.referencia_equip,
-                e.tipo_equip,
-                c.nome AS cidade,
-                CONCAT(en.logradouro, ', ', en.bairro) AS local_completo,
-                GROUP_CONCAT(DISTINCT u.nome SEPARATOR ', ') AS tecnicos_nomes,
-                GROUP_CONCAT(DISTINCT CONCAT(v.nome, ' (', v.placa, ')') SEPARATOR ', ') AS veiculos_nomes,
-                MIN(mt.inicio_reparoTec) AS inicio_periodo_reparo,
-                MAX(mt.fim_reparoT) AS fim_periodo_reparo
-            FROM manutencoes AS m
-            JOIN equipamentos AS e ON m.id_equipamento = e.id_equipamento
-            JOIN cidades AS c ON m.id_cidade = c.id_cidade
-            LEFT JOIN endereco AS en ON e.id_endereco = en.id_endereco
-            LEFT JOIN manutencoes_tecnicos AS mt ON m.id_manutencao = mt.id_manutencao
-            LEFT JOIN usuario AS u ON mt.id_tecnico = u.id_usuario
-            LEFT JOIN veiculos AS v ON mt.id_veiculo = v.id_veiculo
-            WHERE m.status_reparo = 'em andamento'
-            GROUP BY m.id_manutencao
-            ORDER BY c.nome, m.inicio_reparo DESC";
+    $where_clauses = ["m.status_reparo = 'em andamento'"];
+    
+    if (!empty($_GET['data_inicio'])) {
+        $data_inicio = $conn->real_escape_string($_GET['data_inicio']);
+        $where_clauses[] = "m.inicio_reparo >= '{$data_inicio} 00:00:00'";
+    }
+
+    if (!empty($_GET['data_fim'])) {
+        $data_fim = $conn->real_escape_string($_GET['data_fim']);
+        $where_clauses[] = "m.inicio_reparo <= '{$data_fim} 23:59:59'";
+    }
+
+    $where_sql = implode(' AND ', $where_clauses);
+
+    // Consulta SQL com a correção para buscar as datas de execução corretas
+    $sql = "
+    -- PARTE 1: Manutenções de Equipamentos
+    (SELECT
+        m.id_manutencao,
+        m.tipo_manutencao COLLATE utf8mb4_general_ci as tipo_manutencao,
+        m.ocorrencia_reparo COLLATE utf8mb4_general_ci as ocorrencia_reparo,
+        m.inicio_reparo,
+        m.status_reparo COLLATE utf8mb4_general_ci as status_reparo,
+        e.nome_equip COLLATE utf8mb4_general_ci as nome_equip,
+        e.referencia_equip COLLATE utf8mb4_general_ci as referencia_equip,
+        e.tipo_equip COLLATE utf8mb4_general_ci as tipo_equip,
+        c.nome COLLATE utf8mb4_general_ci AS cidade,
+        CONCAT(en.logradouro, ', ', en.bairro) COLLATE utf8mb4_general_ci AS local_completo,
+        GROUP_CONCAT(DISTINCT u.nome SEPARATOR ', ') COLLATE utf8mb4_general_ci AS tecnicos_nomes,
+        GROUP_CONCAT(DISTINCT CONCAT(v.nome, ' (', v.placa, ')') SEPARATOR ', ') COLLATE utf8mb4_general_ci AS veiculos_nomes,
+        -- CORREÇÃO APLICADA AQUI: Busca a data de início e fim da execução
+        mt_dates.inicio_reparoTec AS inicio_periodo_reparo,
+        mt_dates.fim_reparoT AS fim_periodo_reparo,
+        m.inst_laco, m.dt_laco,
+        m.inst_base, m.dt_base,
+        m.inst_infra, m.data_infra,
+        m.inst_energia, m.dt_energia
+    FROM manutencoes AS m
+    JOIN equipamentos AS e ON m.id_equipamento = e.id_equipamento
+    JOIN cidades AS c ON m.id_cidade = c.id_cidade
+    LEFT JOIN endereco AS en ON e.id_endereco = en.id_endereco
+    LEFT JOIN manutencoes_tecnicos AS mt ON m.id_manutencao = mt.id_manutencao
+    -- Subconsulta para pegar a data correta sem duplicar linhas no GROUP BY principal
+    LEFT JOIN (
+        SELECT id_manutencao, MIN(inicio_reparoTec) as inicio_reparoTec, MAX(fim_reparoT) as fim_reparoT 
+        FROM manutencoes_tecnicos GROUP BY id_manutencao
+    ) as mt_dates ON m.id_manutencao = mt_dates.id_manutencao
+    LEFT JOIN usuario AS u ON mt.id_tecnico = u.id_usuario
+    LEFT JOIN veiculos AS v ON mt.id_veiculo = v.id_veiculo
+    WHERE $where_sql AND m.id_ocorrencia_semaforica IS NULL
+    GROUP BY m.id_manutencao)
+
+    UNION ALL
+
+    -- PARTE 2: Manutenções de Ocorrências Semafóricas
+    (SELECT
+        m.id_manutencao,
+        'semaforica' COLLATE utf8mb4_general_ci as tipo_manutencao,
+        os.descricao_problema COLLATE utf8mb4_general_ci as ocorrencia_reparo,
+        m.inicio_reparo,
+        m.status_reparo COLLATE utf8mb4_general_ci as status_reparo,
+        os.referencia COLLATE utf8mb4_general_ci as nome_equip,
+        'Ocorrência Semafórica' COLLATE utf8mb4_general_ci as referencia_equip,
+        os.tipo COLLATE utf8mb4_general_ci as tipo_equip,
+        c.nome COLLATE utf8mb4_general_ci AS cidade,
+        os.endereco COLLATE utf8mb4_general_ci AS local_completo,
+        GROUP_CONCAT(DISTINCT u.nome SEPARATOR ', ') COLLATE utf8mb4_general_ci AS tecnicos_nomes,
+        GROUP_CONCAT(DISTINCT CONCAT(v.nome, ' (', v.placa, ')') SEPARATOR ', ') COLLATE utf8mb4_general_ci AS veiculos_nomes,
+        -- CORREÇÃO APLICADA AQUI TAMBÉM
+        mt_dates.inicio_reparoTec AS inicio_periodo_reparo,
+        mt_dates.fim_reparoT AS fim_periodo_reparo,
+        NULL as inst_laco, NULL as dt_laco,
+        NULL as inst_base, NULL as dt_base,
+        NULL as inst_infra, NULL as data_infra,
+        NULL as inst_energia, NULL as dt_energia
+    FROM manutencoes AS m
+    JOIN ocorrencia_semaforica AS os ON m.id_ocorrencia_semaforica = os.id
+    JOIN cidades AS c ON os.id_cidade = c.id_cidade
+    LEFT JOIN manutencoes_tecnicos AS mt ON m.id_manutencao = mt.id_manutencao
+    LEFT JOIN (
+        SELECT id_manutencao, MIN(inicio_reparoTec) as inicio_reparoTec, MAX(fim_reparoT) as fim_reparoT 
+        FROM manutencoes_tecnicos GROUP BY id_manutencao
+    ) as mt_dates ON m.id_manutencao = mt_dates.id_manutencao
+    LEFT JOIN usuario AS u ON mt.id_tecnico = u.id_usuario
+    LEFT JOIN veiculos AS v ON mt.id_veiculo = v.id_veiculo
+    WHERE $where_sql AND m.id_ocorrencia_semaforica IS NOT NULL
+    GROUP BY m.id_manutencao)
+
+    ORDER BY cidade, inicio_reparo DESC";
 
     $result = $conn->query($sql);
 
@@ -49,6 +103,7 @@ try {
         throw new Exception("Erro na consulta SQL: " . $conn->error);
     }
 
+    $ocorrencias_por_cidade = [];
     if ($result->num_rows > 0) {
         while ($row = $result->fetch_assoc()) {
             $cidade = $row['cidade'];
@@ -56,25 +111,16 @@ try {
                 $ocorrencias_por_cidade[$cidade] = [];
             }
             $ocorrencias_por_cidade[$cidade][] = $row;
-            
-            if (!in_array($cidade, $cidades_com_ocorrencias)) {
-                $cidades_com_ocorrencias[] = $cidade;
-            }
         }
-        sort($cidades_com_ocorrencias);
-        
-        $response_data['ocorrencias'] = $ocorrencias_por_cidade;
-        $response_data['cidades'] = $cidades_com_ocorrencias;
-        
-        echo json_encode(['success' => true, 'data' => $response_data]);
-
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Nenhuma ocorrência em andamento encontrada.']);
     }
+    
+    echo json_encode(['success' => true, 'data' => ['ocorrencias' => $ocorrencias_por_cidade]]);
 
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'message' => 'Erro ao carregar dados: ' . $e->getMessage()]);
 } finally {
-    $conn->close();
+    if(isset($conn)) {
+        $conn->close();
+    }
 }
 ?>

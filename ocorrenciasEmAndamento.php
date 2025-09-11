@@ -35,7 +35,8 @@ if (!isset($_SESSION['user_id'])) {
             border-radius: 1rem;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
             width: 95%;
-            max-width: 1200px;
+            max-width: 1400px;
+            /* Aumentado para comportar novos filtros */
             text-align: center;
             position: relative;
         }
@@ -51,7 +52,7 @@ if (!isset($_SESSION['user_id'])) {
 
         .header-container h2 {
             font-size: 2.2em;
-            color: var(--cor-principal);
+            color: black;
             margin: 0;
         }
 
@@ -80,12 +81,119 @@ if (!isset($_SESSION['user_id'])) {
             color: #333;
         }
 
+        /* --- NOVOS ESTILOS - CONTROLES --- */
+        .controls-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .main-controls-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            width: 100%;
+            position: relative;
+            min-height: 48px;
+        }
+
+        .date-filter-container {
+            right: 0;
+            top: 50%;
+            position: absolute;
+            display: flex;
+            transform: translateY(-50%);
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .date-filter-container label {
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .date-filter-container input[type="date"] {
+            padding: 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .search-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        #searchInput {
+            width: 450px;
+            max-width: 500px;
+            padding: 10px 15px;
+            font-size: 1em;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        #searchInput:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+
+        #clearFiltersBtn {
+            position: absolute;
+            left: 100%;
+            top: 50%;
+            transform: translateY(-50%);
+            margin-left: 1rem;
+            padding: 10px 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            color: #374151;
+            background-color: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        #clearFiltersBtn:hover {
+            background-color: #e5e7eb;
+        }
+
+        #btnSimplificado {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: #f9fafb;
+            border: 1px solid #d1d5db;
+            color: #374151;
+        }
+
+        /* --- FIM NOVOS ESTILOS --- */
+
+
         /* Botões de Ação (Manutenção/Instalação) */
         .action-buttons {
             display: flex;
             justify-content: center;
             gap: 1rem;
-            margin-bottom: 1.5rem;
+            /* Removido margin-bottom para alinhar com o novo layout */
         }
 
         .action-btn {
@@ -163,7 +271,8 @@ if (!isset($_SESSION['user_id'])) {
 
         .city-ocorrencias-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            /* Responsividade dos cards */
             gap: 1.5rem;
         }
 
@@ -183,6 +292,10 @@ if (!isset($_SESSION['user_id'])) {
 
         .ocorrencia-item[data-type="instalação"] {
             border-left-color: #f97316;
+        }
+
+        .ocorrencia-item[data-type="semaforica"] {
+            border-left-color: #8b5cf6;
         }
 
         .ocorrencia-item:hover {
@@ -505,15 +618,38 @@ if (!isset($_SESSION['user_id'])) {
             font-size: 1.1em;
         }
 
-        /* Spinner de Carregamento */
-        .loading-spinner {
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid var(--cor-principal);
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
+        /* --- ESTILO ATUALIZADO --- Spinner de Carregamento de Página */
+        #pageLoader {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem 0;
+            gap: 1.5rem;
         }
+
+        .page-spinner {
+            border: 8px solid rgba(0, 0, 0, 0.1);
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border-left-color: var(--cor-principal);
+            animation: spin 1s ease infinite;
+        }
+
+        #pageLoader p {
+            font-size: 1.5em;
+            color: #374151;
+            font-weight: 600;
+        }
+
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-left-color: #fff;
+            animation: spin 1s ease infinite;
+        }
+
 
         .modal-btn .spinner {
             width: 20px;
@@ -559,6 +695,94 @@ if (!isset($_SESSION['user_id'])) {
             border-left: 3px solid #e5e7eb;
         }
 
+        /* --- NOVOS ESTILOS - VISÃO SIMPLIFICADA --- */
+        #simplifiedView {
+            text-align: left;
+            font-size: 1.3em;
+            padding: 1rem 0.2rem;
+            border-top: 1px solid #e5e7eb;
+            border-bottom: 1px solid #e5e7eb;
+            margin-bottom: 2rem;
+        }
+
+        #simplifiedView h2 {
+            font-size: 1.5em;
+            color: black;
+            margin-bottom: 1.5rem;
+        }
+
+        #simplifiedView h3 {
+            font-size: 1.2em;
+            color: #374151;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        #simplifiedView ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        #simplifiedView li {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.1em;
+            padding: 0.4rem 0.2rem;
+            border-radius: 4px;
+        }
+
+        #simplifiedView li:nth-child(odd) {
+            background-color: #f9fafb;
+        }
+
+        #simplifiedView li.prioridade-urgente {
+            color: #ef4444;
+            border-left: 3px solid #ef4444;
+            padding-left: 10px;
+        }
+
+        #simplifiedView li.prioridade-padrao {
+            color: #112058;
+            border-left: 3px solid #112058;
+            padding-left: 10px;
+            margin-bottom: 0.5rem;
+        }
+
+        #simplifiedView li.prioridade-sem-urgencia {
+            color: #6b7280;
+            border-left: 3px solid #6b7280;
+            padding-left: 10px;
+        }
+
+        .section-divider {
+            border: 0;
+            height: 1px;
+            background-color: #e5e7eb;
+            margin: 2rem 0;
+        }
+
+        .simplified-section-title {
+            font-size: 1.1em;
+            color: #4b5563;
+            text-align: left;
+            margin-top: 2.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #d1d5db;
+            font-weight: 600;
+        }
+
+        .card-dias-simplificado {
+            float: right;
+            text-align: right;
+            font-size: 0.9em;
+            color: #6b7280;
+        }
+        .dias-simplificado{
+            font-weight: bold;
+        }
+
+
         @keyframes spin {
             0% {
                 transform: rotate(0deg);
@@ -569,11 +793,83 @@ if (!isset($_SESSION['user_id'])) {
             }
         }
 
-        /* Responsividade */
         @media (max-width: 1200px) {
             .city-ocorrencias-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
+
+            .main-controls-container {
+                flex-direction: column;
+                /* Organiza os itens em coluna */
+                align-items: center;
+                /* Centraliza tudo */
+                gap: 1rem;
+                /* Adiciona um espaço entre as linhas */
+                height: auto;
+                /* Remove a altura mínima para permitir que cresça */
+                margin-bottom: 1rem;
+            }
+
+            /* Remove o posicionamento absoluto para que os botões entrem no fluxo normal */
+            #btnSimplificado,
+            .date-filter-container {
+                position: static !important;
+                /* !important garante a sobreposição */
+                transform: none !important;
+                /* Remove o transform de centralização vertical */
+                width: 100%;
+                justify-content: center;
+            }
+
+            /* Força os botões de ação a ficarem na mesma linha, mesmo em coluna */
+            .action-buttons {
+                order: 1;
+                /* Ordem em que aparece: primeiro */
+            }
+
+            #btnSimplificado {
+                order: 2;
+                /* Segundo */
+                width: auto;
+                /* Largura automática para o botão */
+            }
+
+            .date-filter-container {
+                order: 3;
+                /* Terceiro */
+                flex-wrap: wrap;
+                /* Permite que os campos de data quebrem a linha se necessário */
+            }
+
+            .search-container {
+                margin-bottom: 1rem;
+                /* Reduz a margem inferior */
+            }
+
+            .search-wrapper {
+                display: flex;
+                flex-direction: column;
+                /* Coloca o input e o botão de limpar em coluna */
+                align-items: center;
+                gap: 0.75rem;
+                /* Espaço entre o input e o botão */
+                width: 100%;
+            }
+
+            #clearFiltersBtn {
+                width: 90%;
+                /* Ocupa 90% da largura do container */
+                max-width: 450px;
+                /* Mas não passa de 450px */
+            }
+
+            #clearFiltersBtn {
+                position: static !important;
+                /* !important garante a sobreposição */
+                transform: none !important;
+                margin-left: 0;
+            }
+
         }
 
         @media (max-width: 768px) {
@@ -606,15 +902,39 @@ if (!isset($_SESSION['user_id'])) {
             <a href="menu.php" class="close-btn" title="Voltar ao Menu">&times;</a>
         </div>
 
-        <div class="action-buttons">
-            <button id="btnManutencoes" class="action-btn active" data-type="manutencao">Manutenções</button>
-            <button id="btnInstalacoes" class="action-btn" data-type="instalação">Instalações</button>
+        <div class="controls-wrapper">
+            <div class="main-controls-container">
+                <button id="btnSimplificado" class="action-btn">Simplificado</button>
+                <div class="action-buttons">
+                    <button id="btnManutencoes" class="action-btn active" data-type="manutencao">Manutenções</button>
+                    <button id="btnInstalacoes" class="action-btn" data-type="instalação">Instalações</button>
+                    <button id="btSemaforica" class="action-btn hidden" data-type="semaforica">Semafóricas</button>
+                </div>
+                <div class="date-filter-container">
+                    <label for="startDate">De:</label>
+                    <input type="date" id="startDate">
+                    <label for="endDate">Até:</label>
+                    <input type="date" id="endDate">
+                </div>
+            </div>
+            <div class="search-container">
+                <div class="search-wrapper">
+                    <input type="text" id="searchInput"
+                        placeholder="Pesquisar por nome, referência ou ocorrência...">
+                    <button id="clearFiltersBtn">Limpar Filtros</button>
+                </div>
+            </div>
         </div>
 
         <div id="filterContainer" class="filter-container"></div>
 
+        <div id="simplifiedView" class="hidden"></div>
+
         <div id="ocorrenciasContainer" class="ocorrencias-container">
-            <div id="loadingMessage" class="loading-spinner"></div>
+            <div id="pageLoader">
+                <div class="page-spinner"></div>
+                <p>Carregando ocorrências em andamento...</p>
+            </div>
         </div>
 
         <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
@@ -696,7 +1016,6 @@ if (!isset($_SESSION['user_id'])) {
             </div>
         </div>
     </div>
-
 
     <div id="confirmationModal" class="modal confirmation-modal">
         <div class="modal-content">

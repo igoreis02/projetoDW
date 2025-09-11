@@ -25,6 +25,25 @@ document.addEventListener('DOMContentLoaded', function () {
     let currentCardForSelection = null;
     let isSimplifiedViewActive = false;
 
+    function calculateDaysOpen(startDateString) {
+        const startDate = new Date(startDateString);
+        const today = new Date();
+        // Zera o horário para comparar apenas as datas
+        startDate.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0);
+
+        const diffTime = Math.abs(today - startDate);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays === 0) {
+            return 'Hoje';
+        } else if (diffDays === 1) {
+            return '(1 dia)';
+        } else {
+            return `(${diffDays} dias)`;
+        }
+    }
+
     async function checkAndShowSemaforicaButton() {
         try {
             const response = await fetch('API/check_semaforicas_pendentes.php');
@@ -295,21 +314,26 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
 
                     const problemasConcatenados = groupItems.map(item => item.ocorrencia_reparo).join('; ');
-                    sectionHtml += `<li class="${cssClass}"><strong>${displayName}</strong> - ${firstItem.referencia_equip}: ${problemasConcatenados}</li>`;
+                    const diasEmAberto = calculateDaysOpen(firstItem.inicio_reparo);
+                    const dateInfoHtml = `
+                    <div class="card-dias-simplificado">
+                        <span class="dias-simplificado">${diasEmAberto}</span>
+                    </div>`;
+                    sectionHtml += `<li class="${cssClass}"><strong>${displayName}</strong> - ${firstItem.referencia_equip}: ${problemasConcatenados} ${dateInfoHtml}</li>`;
                 }
                 sectionHtml += `</ul>`;
             }
             return sectionHtml;
         };
 
-        // <<< LÓGICA ALTERADA PARA ADICIONAR O TÍTULO "SEM URGÊNCIA" >>>
+        // <<< ADICIONAR O TÍTULO "SEM URGÊNCIA" >>>
         const urgenteHtml = buildPrioritySection(urgentes, 'prioridade-urgente');
         const padraoHtml = buildPrioritySection(padrao, 'prioridade-padrao');
         let semUrgenciaHtml = buildPrioritySection(semUrgencia, 'prioridade-sem-urgencia');
 
         // Se a seção "Sem Urgência" tiver conteúdo, adicionamos o título a ela
         if (semUrgenciaHtml) {
-            semUrgenciaHtml = `<h2 class="simplified-section-title">OCORRÊNCIAS SEM URGÊNCIA</h2>` + semUrgenciaHtml;
+            semUrgenciaHtml = `<h2 class="simplified-section-title">OCORRÊNCIAS SEM URGÊNCIA - NÍVEL 2</h2>` + semUrgenciaHtml;
         }
 
         const sections = [urgenteHtml, padraoHtml, semUrgenciaHtml].filter(Boolean);
@@ -322,7 +346,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    
+
     function toggleView(showSimplified) {
         isSimplifiedViewActive = showSimplified;
 
@@ -399,119 +423,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     function createOcorrenciaHTML(item, index) {
-        const firstOcorrencia = item.ocorrencias_detalhadas[0];
-        let detailsHTML = '';
-        let atribuidoPorHTML = firstOcorrencia.atribuido_por ? `<div class="detail-item"><strong>Solicitado por</strong> <span>${firstOcorrencia.atribuido_por}</span></div>` : '';
+    const firstOcorrencia = item.ocorrencias_detalhadas[0];
+    let detailsHTML = '';
+    let atribuidoPorHTML = firstOcorrencia.atribuido_por ? `<div class="detail-item"><strong>Solicitado por</strong> <span>${firstOcorrencia.atribuido_por}</span></div>` : '';
 
-        let statusHTML = '';
-        const statusValue = firstOcorrencia.status_reparo || 'pendente'; // Pega o status real do item
-        switch (statusValue) {
-            case 'em andamento':
-                statusHTML = `<span class="status-tag status-em-andamento">Em Andamento</span>`;
-                break;
-            case 'pendente':
-            default:
-                statusHTML = `<span class="status-tag status-pendente">Pendente</span>`;
-                break;
-            // Adicione outros casos como 'concluido', 'cancelado' se precisar no futuro
-        }
-        // --- LÓGICA PARA INSTALAÇÕES ---
-        if (item.tipo_manutencao === 'instalação') {
-            const statusMap = { inst_laco: 'Laço', inst_base: 'Base', inst_infra: 'Infra', inst_energia: 'Energia', inst_prov: 'Provedor' };
-            const dateMap = { inst_laco: 'dt_laco', inst_base: 'dt_base', inst_infra: 'data_infra', inst_energia: 'dt_energia', inst_prov: 'data_provedor' };
-            detailsHTML = Object.entries(statusMap).map(([key, label]) => {
-                const status = firstOcorrencia[key] == 1 ?
-                    `<span class="status-value instalado">Instalado ${formatDate(firstOcorrencia[dateMap[key]])}</span>` :
-                    `<span class="status-value aguardando">Aguardando instalação</span>`;
-                return `<div class="detail-item"><strong>${label}</strong> <span>${status}</span></div>`;
-            }).join('');
-            // --- LÓGICA PARA SEMAFÓRICAS ---
-        } else if (item.tipo_manutencao === 'semaforica') {
-            detailsHTML = `
-            <div class="detail-item">
-                <strong>Tipo de Serviço:</strong> 
-                <span style="text-transform: capitalize;">${firstOcorrencia.tipo || 'Não informado'}</span>
-            </div>
-            <div class="detail-item">
-                <strong>Data:</strong> 
-                <span>${new Date(firstOcorrencia.inicio_reparo).toLocaleString('pt-BR')}</span>
-            </div>
-            <div class="detail-item">
-                <strong>Endereço:</strong> 
-                <span>${firstOcorrencia.local_completo || 'Não informado'}</span>
-            </div>
-            <div class="detail-item">
-                <strong>Referência:</strong> 
-                <span>${firstOcorrencia.nome_equip || 'Não informada'}</span>
-            </div>
-             <div class="detail-item">
-                <strong>Quantidade:</strong> 
-                <span>${firstOcorrencia.qtd || 'N/A'} ${firstOcorrencia.unidade || ''}</span>
-            </div>
-            <div class="detail-item" style="grid-column: 1 / -1;">
-                <strong>Descrição:</strong> 
-                <span class="status-tag status-pendente" style="white-space: normal; text-align: left;">${firstOcorrencia.ocorrencia_reparo || 'Não especificada'}</span>
-            </div>
-            ${firstOcorrencia.observacao ? `
-            <div class="detail-item" style="grid-column: 1 / -1;">
-                <strong>Observação:</strong> 
-                <span>${firstOcorrencia.observacao}</span>
-            </div>` : ''}
-            <div class="detail-item">
-                <strong>Status:</strong> ${statusHTML}
-            </div>
-        `;
+    let statusHTML = `<span class="status-tag status-pendente">Pendente</span>`;
 
-            return `
-            <div class="ocorrencia-item" data-type="${item.tipo_manutencao}" data-id="${firstOcorrencia.id_manutencao}" data-is-grouped="false">
-                <div class="ocorrencia-header">
-                    <h3>Ocorrência ${index + 1}</h3>
-                </div>
-                <div class="ocorrencia-details" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
-                    ${detailsHTML}
-                </div>
-            </div>
-        `;
-            // --- LÓGICA PARA MÚLTIPLAS OCORRÊNCIAS ---
-        } else if (item.ocorrencias_detalhadas.length > 1) {
-            let ocorrenciasListHTML = item.ocorrencias_detalhadas.map((ocor, index) =>
-                `<li>
-                <strong>${index + 1}.</strong> <span class="status-tag status-pendente">${ocor.ocorrencia_reparo.toUpperCase() || 'Não especificada'}</span>
-                <div style="font-size: 0.9em; color: #6b7280; padding-left: 20px;">
-                    <strong>Data Ocorrência:</strong> ${new Date(ocor.inicio_reparo).toLocaleString('pt-BR')}
-                </div>
-            </li>`
-            ).join('');
-            detailsHTML = `<div class="detail-item"><strong>Ocorrências</strong><ul class="ocorrencia-list">${ocorrenciasListHTML}</ul></div>`;
-
-            // --- LÓGICA PARA OCORRÊNCIA ÚNICA ---
-        } else {
-            detailsHTML = `
-            <div class="detail-item">
-                <strong>Ocorrência:</strong> <span class="status-tag status-pendente">${firstOcorrencia.ocorrencia_reparo.toUpperCase() || 'Não especificada'}</span>
-                <div style="font-size: 0.9em; color: #6b7280; padding-left: 0px; margin-top: 5px;">
-                    <strong>Data Ocorrência:</strong> ${new Date(firstOcorrencia.inicio_reparo).toLocaleString('pt-BR')}
-                </div>
-            </div>
-        `;
-        }
-
-        // --- DETALHES COMUNS A AMBAS AS SITUAÇÕES ---
-        const commonDetails = `
-        ${atribuidoPorHTML}
-        <div class="detail-item"><strong>Status</strong> ${statusHTML}</div>
-        <div class="detail-item"><strong>Local</strong> <span>${firstOcorrencia.local_completo || 'N/A'}</span></div>
-        ${firstOcorrencia.motivo_devolucao ? `<div class="detail-item"><strong>Devolvida</strong> <span class="status-tag status-pendente">${firstOcorrencia.motivo_devolucao}</span></div>` : ''}
-    `;
-
-        // A lógica de adicionar os detalhes comuns 
-        detailsHTML += commonDetails;
-
-        // --- AÇÕES ---
-        const allIdsInGroup = item.ocorrencias_detalhadas.map(o => o.id_manutencao).join(',');
-        const isGrouped = item.tipo_manutencao !== 'instalação' && item.ocorrencias_detalhadas.length > 1;
-
-        const actionsHTML = `
+    // Ações são definidas aqui para serem usadas por todos os tipos de card
+    const allIdsInGroup = item.ocorrencias_detalhadas.map(o => o.id_manutencao).join(',');
+    const isGrouped = item.tipo_manutencao !== 'instalação' && item.ocorrencias_detalhadas.length > 1;
+    const actionsHTML = `
         <div class="item-actions">
             <p style="margin-right: auto; font-size: 0.9em; color: #6b7280;">Clique no card para selecionar</p>
             <button class="item-btn edit-btn" onclick="openEditOcorrenciaModal('${allIdsInGroup}', event)">Editar</button>
@@ -519,16 +440,85 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
     `;
 
-        const groupKey = `${item.nome_equip}|||${item.referencia_equip}`;
+    if (item.tipo_manutencao === 'instalação') {
+        const statusMap = { inst_laco: 'Laço', inst_base: 'Base', inst_infra: 'Infra', inst_energia: 'Energia', inst_prov: 'Provedor' };
+        const dateMap = { inst_laco: 'dt_laco', inst_base: 'dt_base', inst_infra: 'data_infra', inst_energia: 'dt_energia', inst_prov: 'data_provedor' };
+        detailsHTML = Object.entries(statusMap).map(([key, label]) => {
+            const status = firstOcorrencia[key] == 1 ?
+                `<span class="status-value instalado">Instalado ${formatDate(firstOcorrencia[dateMap[key]])}</span>` :
+                `<span class="status-value aguardando">Aguardando instalação</span>`;
+            return `<div class="detail-item"><strong>${label}</strong> <span>${status}</span></div>`;
+        }).join('');
+    } else if (item.tipo_manutencao === 'semaforica') {
+        const dataInicioFormatada = new Date(firstOcorrencia.inicio_reparo).toLocaleDateString('pt-BR');
+        const diasEmAberto = calculateDaysOpen(firstOcorrencia.inicio_reparo);
+        detailsHTML = `
+            <div class="detail-item" style="grid-column: 1 / -1;"><strong>Descrição:</strong> <span class="status-tag status-pendente" style="white-space: normal; text-align: left;">${firstOcorrencia.ocorrencia_reparo || 'Não especificada'}</span>
+            </div>
+            ${firstOcorrencia.observacao ? `<div class="detail-item" style="grid-column: 1 / -1;"><strong>Observação:</strong> <span>${firstOcorrencia.observacao}</span></div>` : ''}
+            <div class="detail-item"><strong>Referência:</strong> <span>${firstOcorrencia.nome_equip || 'Não informada'}</span></div>
+            <div class="detail-item"><strong>Tipo de Serviço:</strong> <span style="text-transform: capitalize;">${firstOcorrencia.tipo || 'Não informado'}</span></div>
+            <div class="detail-item"><strong>Data:</strong> <span>${dataInicioFormatada} ${diasEmAberto}</span></div>
+            <div class="detail-item"><strong>Endereço:</strong> <span>${firstOcorrencia.local_completo || 'Não informado'}</span></div>
+            <div class="detail-item"><strong>Quantidade:</strong> <span>${firstOcorrencia.qtd || 'N/A'} ${firstOcorrencia.unidade || ''}</span></div>
+            
+            <div class="detail-item"><strong>Status:</strong> ${statusHTML}</div>
+        `;
 
+        // O return foi movido para o final da função para incluir as actions
         return `
+            <div class="ocorrencia-item" data-type="${item.tipo_manutencao}" data-id="${firstOcorrencia.id_manutencao}" data-is-grouped="false">
+                <div class="ocorrencia-header">
+                    <h3>Ocorrência Semafórica ${index + 1}</h3>
+                </div>
+                <div class="ocorrencia-details" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
+                    ${detailsHTML}
+                </div>
+                ${actionsHTML}
+            </div>
+        `;
+    } else if (item.ocorrencias_detalhadas.length > 1) {
+        let ocorrenciasListHTML = item.ocorrencias_detalhadas.map((ocor, i) => {
+            const dataInicioFormatada = new Date(ocor.inicio_reparo).toLocaleDateString('pt-BR');
+            const diasEmAberto = calculateDaysOpen(ocor.inicio_reparo);
+            return `<li>
+                <strong>${i + 1}.</strong> <span class="status-tag status-pendente">${ocor.ocorrencia_reparo.toUpperCase() || 'Não especificada'}</span>
+                <div style="font-size: 0.9em; color: #6b7280; padding-left: 20px;">
+                    <strong>Data Ocorrência:</strong> ${dataInicioFormatada} ${diasEmAberto}
+                </div>
+            </li>`;
+        }).join('');
+        detailsHTML = `<div class="detail-item"><strong>Ocorrências</strong><ul class="ocorrencia-list">${ocorrenciasListHTML}</ul></div>`;
+    } else {
+        const dataInicioFormatada = new Date(firstOcorrencia.inicio_reparo).toLocaleDateString('pt-BR');
+        const diasEmAberto = calculateDaysOpen(firstOcorrencia.inicio_reparo);
+        detailsHTML = `
+            <div class="detail-item">
+                <strong>Ocorrência:</strong> <span class="status-tag status-pendente">${firstOcorrencia.ocorrencia_reparo.toUpperCase() || 'Não especificada'}</span>
+                <div style="font-size: 0.9em; color: #6b7280; padding-left: 0px; margin-top: 5px;">
+                    <strong>Data Ocorrência:</strong> ${dataInicioFormatada} ${diasEmAberto}
+                </div>
+            </div>`;
+    }
+
+    const commonDetails = `
+        ${atribuidoPorHTML}
+        <div class="detail-item"><strong>Status</strong> ${statusHTML}</div>
+        <div class="detail-item"><strong>Local</strong> <span>${firstOcorrencia.local_completo || 'N/A'}</span></div>
+        ${firstOcorrencia.motivo_devolucao ? `<div class="detail-item"><strong>Devolvida</strong> <span class="status-tag status-pendente">${firstOcorrencia.motivo_devolucao}</span></div>` : ''}
+    `;
+    detailsHTML += commonDetails;
+
+    const groupKey = `${item.nome_equip}|||${item.referencia_equip}`;
+
+    return `
         <div class="ocorrencia-item" data-type="${item.tipo_manutencao}" data-id="${allIdsInGroup}" data-group-key="${groupKey}" data-is-grouped="${isGrouped}">
             <div class="ocorrencia-header"><h3>${item.nome_equip} - ${item.referencia_equip}</h3></div>
             <div class="ocorrencia-details">${detailsHTML}</div>
             ${actionsHTML}
         </div>
     `;
-    }
+}
 
     function formatDate(dateString) {
         if (!dateString || dateString === '0000-00-00') return '';

@@ -36,7 +36,7 @@ require_once 'conexao_bd.php';
             border-radius: 1rem;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             width: 95%;
-            max-width: 1200px;
+            max-width: 1400px;
             margin-bottom: 2rem;
             text-align: center;
         }

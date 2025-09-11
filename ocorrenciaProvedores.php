@@ -34,7 +34,7 @@ if (!isset($_SESSION['user_id'])) {
             border-radius: 1rem;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
             width: 95%;
-            max-width: 1300px;
+            max-width: 1400px;
             text-align: center;
             position: relative;
         }

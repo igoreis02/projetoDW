@@ -643,12 +643,86 @@ if (!isset($_SESSION['user_id'])) {
         #btnVoltarAoTopo:hover {
             background-color: #09143f;
             /* Escureço a cor quando passo o mouse */
+
         }
 
         @media (max-width: 1200px) {
             .city-ocorrencias-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
+
+            .main-controls-container {
+                flex-direction: column;
+                /* Organiza os itens em coluna */
+                align-items: center;
+                /* Centraliza tudo */
+                gap: 1rem;
+                /* Adiciona um espaço entre as linhas */
+                height: auto;
+                /* Remove a altura mínima para permitir que cresça */
+                margin-bottom: 1rem;
+            }
+
+            /* Remove o posicionamento absoluto para que os botões entrem no fluxo normal */
+            #btnSimplificado,
+            .date-filter-container {
+                position: static !important;
+                /* !important garante a sobreposição */
+                transform: none !important;
+                /* Remove o transform de centralização vertical */
+                width: 100%;
+                justify-content: center;
+            }
+
+            /* Força os botões de ação a ficarem na mesma linha, mesmo em coluna */
+            .action-buttons {
+                order: 1;
+                /* Ordem em que aparece: primeiro */
+            }
+
+            #btnSimplificado {
+                order: 2;
+                /* Segundo */
+                width: auto;
+                /* Largura automática para o botão */
+            }
+
+            .date-filter-container {
+                order: 3;
+                /* Terceiro */
+                flex-wrap: wrap;
+                /* Permite que os campos de data quebrem a linha se necessário */
+            }
+
+            .search-container {
+                margin-bottom: 1rem;
+                /* Reduz a margem inferior */
+            }
+
+            .search-wrapper {
+                display: flex;
+                flex-direction: column;
+                /* Coloca o input e o botão de limpar em coluna */
+                align-items: center;
+                gap: 0.75rem;
+                /* Espaço entre o input e o botão */
+                width: 100%;
+            }
+
+            #clearFiltersBtn {
+                width: 90%;
+                /* Ocupa 90% da largura do container */
+                max-width: 450px;
+                /* Mas não passa de 450px */
+            }
+
+            #clearFiltersBtn {
+                position: static !important;
+                /* !important garante a sobreposição */
+                transform: none !important;
+                margin-left: 0;
+            }
+
         }
 
         @media (max-width: 768px) {
@@ -759,9 +833,9 @@ if (!isset($_SESSION['user_id'])) {
         }
 
         #simplifiedView h3 {
-            font-size: 1.2em;
+            font-size: 1.5em;
             color: #374151;
-            margin-top: 1.5rem;
+            margin-top: 1.8rem;
             margin-bottom: 0.5rem;
             padding-bottom: 0.5rem;
             border-bottom: 1px solid #e5e7eb;
@@ -776,7 +850,7 @@ if (!isset($_SESSION['user_id'])) {
             font-family: 'Courier New', Courier, monospace;
             /* Fonte monoespaçada para melhor alinhamento */
             font-size: 1.1em;
-            padding: 0.4rem 0.2rem;
+            padding: 0.8rem 0.2rem;
             border-radius: 4px;
         }
 
@@ -796,6 +870,7 @@ if (!isset($_SESSION['user_id'])) {
         .ocorrencia-list li {
             padding: 4px 0;
             border-bottom: 1px solid #f3f4f6;
+
         }
 
         .ocorrencia-list li:last-child {
@@ -807,6 +882,7 @@ if (!isset($_SESSION['user_id'])) {
             /* Vermelho */
             border-left: 3px solid #ef4444;
             padding-left: 10px;
+            margin-bottom: 0.5rem
         }
 
         #simplifiedView li.prioridade-padrao {
@@ -814,6 +890,7 @@ if (!isset($_SESSION['user_id'])) {
             /* Azul */
             border-left: 3px solid #112058;
             padding-left: 10px;
+            margin-bottom: 0.5rem
         }
 
         #simplifiedView li.prioridade-sem-urgencia {
@@ -821,22 +898,40 @@ if (!isset($_SESSION['user_id'])) {
             /* Cinza Escuro */
             border-left: 3px solid #6b7280;
             padding-left: 10px;
+            margin-bottom: 0.5rem
         }
+
         .section-divider {
-        border: 0;
-        height: 1px;
-        background-color: #e5e7eb; /* Cinza claro, combinando com o design */
-        margin: 2rem 0; /* Espaçamento vertical para a linha respirar */
-    }
-    .simplified-section-title {
-        font-size: 1.1em;
-        color: #4b5563; /* Cinza escuro para o texto */
-        text-align: left;
-        margin-top: 2.5rem; /* << A distância superior que você pediu */
-        padding-bottom: 0.5rem;
-        border-bottom: 1px solid #d1d5db;
-        font-weight: 600;
-    }
+            border: 0;
+            height: 1px;
+            background-color: #e5e7eb;
+            /* Cinza claro, combinando com o design */
+            margin: 2rem 0;
+            /* Espaçamento vertical para a linha respirar */
+        }
+
+        .simplified-section-title {
+            font-size: 1.1em;
+            color: #4b5563;
+            /* Cinza escuro para o texto */
+            text-align: left;
+            margin-top: 2.5rem;
+            /* << A distância superior que você pediu */
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #d1d5db;
+            font-weight: 600;
+        }
+
+        .card-dias-simplificado {
+            float: right;
+            text-align: right;
+            font-size: 0.9em;
+            color: #6b7280;
+        }
+
+        .dias-simplificado {
+            font-weight: bold;
+        }
     </style>
 </head>
 
