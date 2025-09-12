@@ -618,7 +618,7 @@ if (!isset($_SESSION['user_id'])) {
             /* Tiro a borda padrão */
             outline: none;
             /* Tiro o contorno ao clicar */
-            background-color: #112058;
+            background-color: #213fadff;
             /* Uso a cor principal do meu projeto */
             color: white;
             /* Cor do ícone */
@@ -641,7 +641,7 @@ if (!isset($_SESSION['user_id'])) {
         }
 
         #btnVoltarAoTopo:hover {
-            background-color: #09143f;
+            background-color: #12287eff;
             /* Escureço a cor quando passo o mouse */
 
         }
