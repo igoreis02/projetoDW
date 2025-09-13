@@ -6,6 +6,20 @@ $data_inicio = $_GET['data_inicio'] ?? null;
 $data_fim = $_GET['data_fim'] ?? null;
 
 try {
+
+    // ---BLOCO DE CÁLCULO DE CHECKSUM GLOBAL ---
+    $tables = ['manutencoes', 'ocorrencia_semaforica', 'ocorrencia_provedor', 'ocorrencia_processamento', 'solicitacao_cliente', 'equipamentos'];
+    $totalChecksum = 0;
+    foreach ($tables as $table) {
+        $result = $conn->query("CHECKSUM TABLE `$table`");
+        if ($result) {
+            $row = $result->fetch_assoc();
+            $totalChecksum += (int)$row['Checksum'];
+        } else {
+            throw new Exception("Erro ao calcular checksum para a tabela: $table");
+        }
+    }
+
     $dashboard_data = [];
 
     // --- Montagem dos Filtros de Data ---
@@ -40,8 +54,6 @@ try {
     }
 
     // --- KPIs ---
-    // --- KPIs ---
-// Adicionamos a cláusula "AND tipo_manutencao = 'corretiva'" em todas as consultas de KPIs de manutenção.
 
     // 1. Manutenções Abertas (Pendentes + Em Andamento) - APENAS CORRETIVAS
     $stmt_abertas = $conn->prepare("SELECT COUNT(id_manutencao) as total FROM manutencoes WHERE status_reparo IN ('pendente', 'em andamento') AND tipo_manutencao = 'corretiva' $filtro_manutencao_sql");
@@ -210,7 +222,13 @@ try {
     $stmt->execute();
     $dashboard_data['evolucao_diaria'] = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
-    echo json_encode(['success' => true, 'data' => $dashboard_data]);
+    echo json_encode([
+        'success' => true,
+        'checksum' => $totalChecksum,
+        'data' => $dashboard_data
+    ]);
+
+
 
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'message' => 'Erro ao carregar dados do dashboard: ' . $e->getMessage()]);

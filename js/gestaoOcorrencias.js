@@ -30,9 +30,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const filtersWrapper = document.querySelector('.filters-wrapper'); // <<< ADICIONE ESTA LINHA
 
 
-
-
-
     // =================================================================================
     // 2. VARIÁVEIS DE ESTADO
     // =================================================================================
@@ -40,9 +37,16 @@ document.addEventListener('DOMContentLoaded', function () {
     let activeCity = 'todos';
     let activeStatus = 'todos';
     let charts = {};
-
     let allOcorrenciasData = null;
     let isSimplifiedViewActive = false;
+
+
+     // --- VARIÁVEIS PARA AUTO-UPDATE ---
+    let currentChecksum = null;
+    let updateTimeoutId = null;
+    const BASE_INTERVAL = 15000; // Intervalo inicial: 15 segundos
+    const MAX_INTERVAL = 120000; // Intervalo máximo: 2 minutos
+    let currentInterval = BASE_INTERVAL;
 
     // =================================================================================
     // 3. FUNÇÕES DE APOIO (HELPERS)
@@ -69,6 +73,38 @@ document.addEventListener('DOMContentLoaded', function () {
         if (diffDays === 0) return '(Hoje)';
         if (diffDays === 1) return '(1 dia)';
         return `(${diffDays} dias)`;
+    }
+    async function scheduleNextCheck() {
+        if (updateTimeoutId) {
+            clearTimeout(updateTimeoutId);
+        }
+        try {
+            // Usamos o contexto 'gestao_global' que criamos para uma verificação completa
+            const checkResponse = await fetch('API/check_updates.php?context=gestao_global');
+            const checkResult = await checkResponse.json();
+
+            if (checkResult.success && checkResult.checksum !== currentChecksum) {
+                console.log('Novas atualizações na gestão de ocorrências detectadas. Recarregando...');
+                
+                // Verifica qual view está ativa e recarrega apenas ela
+                if (!dashboardView.classList.contains('hidden')) {
+                    await loadDashboardData();
+                } else {
+                    await fetchOcorrencias();
+                }
+                
+                currentInterval = BASE_INTERVAL;
+                console.log('Intervalo de verificação da gestão resetado.');
+            } else {
+                currentInterval = Math.min(currentInterval * 2, MAX_INTERVAL);
+                console.log(`Nenhuma atualização. Próxima verificação da gestão em ${currentInterval / 1000}s.`);
+            }
+        } catch (error) {
+            console.error('Erro no ciclo de verificação de atualizações:', error);
+            currentInterval = Math.min(currentInterval * 2, MAX_INTERVAL);
+        } finally {
+            updateTimeoutId = setTimeout(scheduleNextCheck, currentInterval);
+        }
     }
 
 
@@ -140,6 +176,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const response = await fetch(`API/get_dashboard_data.php?${params.toString()}`);
             const result = await response.json();
             if (result.success) {
+                currentChecksum = result.checksum;
                 const data = result.data;
                 updateKpiCards(data);
                 updateMttrDisplays(data);
@@ -479,6 +516,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const response = await fetch(`API/get_gestao_ocorrencias.php?${params.toString()}`);
             const result = await response.json();
             if (result.success) {
+                currentChecksum = result.checksum;
                 allOcorrenciasData = result.data;
 
                 // Se a visão simplificada estiver ativa, gera o resumo. Senão, mostra os cards.
@@ -796,6 +834,10 @@ document.addEventListener('DOMContentLoaded', function () {
     // =================================================================================
     updateDashboardTitles();
     switchView('dashboard');
+    loadDashboardData().then(() => {
+        console.log('Carga inicial do dashboard completa. Iniciando ciclo de verificação.');
+        scheduleNextCheck();
+    });
 });
 
 // ===== FIM DO CÓDIGO COMPLETO E CORRIGIDO PARA gestaoOcorrencias.js =====

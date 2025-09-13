@@ -16,7 +16,19 @@ $cidades_com_ocorrencias = [];
 $response_data = [];
 
 try {
-    // MODIFICADO: Adicionado LEFT JOIN com a tabela 'usuario' e o campo 'atribuido_por'
+    // --- BLOCO DE CÁLCULO DE CHECKSUM GLOBAL ---
+     $tables = ['manutencoes', 'ocorrencia_semaforica', 'ocorrencia_provedor', 'ocorrencia_processamento', 'solicitacao_cliente', 'equipamentos'];
+    $totalChecksum = 0;
+    foreach ($tables as $table) {
+        $result = $conn->query("CHECKSUM TABLE `$table`");
+        if ($result) {
+            $row = $result->fetch_assoc();
+            $totalChecksum += (int)$row['Checksum'];
+        } else {
+            throw new Exception("Erro ao calcular checksum para a tabela: $table");
+        }
+    }
+
     $sql = "SELECT
                 m.id_manutencao, m.tipo_manutencao, m.ocorrencia_reparo,
                 m.reparo_finalizado, m.inicio_reparo, m.fim_reparo, m.status_reparo,
@@ -106,10 +118,18 @@ try {
         $response_data['ocorrencias'] = $ocorrencias_por_cidade;
         $response_data['cidades'] = $cidades_com_ocorrencias;
 
-        echo json_encode(['success' => true, 'data' => $response_data]);
+        echo json_encode([
+            'success' => true,
+            'checksum' => $totalChecksum,
+            'data' => $response_data
+        ]);
 
     } else {
-        echo json_encode(['success' => false, 'message' => 'Nenhuma ocorrência encontrada para os filtros selecionados.']);
+        echo json_encode([
+            'success' => false,
+            'checksum' => $totalChecksum,
+            'message' => 'Nenhuma ocorrência encontrada para os filtros selecionados.'
+        ]);
     }
 
 } catch (Exception $e) {
