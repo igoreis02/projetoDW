@@ -28,7 +28,12 @@ document.addEventListener('DOMContentLoaded', function () {
     let filters = { type: 'manutencao', status: 'todos', startDate: '', endDate: '', city: 'todos' };
     let allData = null, currentItem = null;
     let conclusionType = null;
-    let currentPendentIds = new Set(), updateInterval;
+
+    let currentChecksum = null;
+    let updateTimeoutId = null;
+    const BASE_INTERVAL = 15000; // 15 segundos
+    const MAX_INTERVAL = 120000; // 2 minutos
+    let currentInterval = BASE_INTERVAL;
 
     // --- Funções Principais ---
 
@@ -48,11 +53,11 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             loadingMessage.classList.add('hidden');
             if (result.success) {
+                currentChecksum = result.checksum;
                 allData = result.data;
                 renderAllOcorrencias(allData);
                 updateCityFilters();
                 updateDisplay();
-                updatePendentIds(result.data);
                 adjustSearchSpacer(); // Ajusta o espaçador após renderizar
             } else {
                 ocorrenciasContainer.innerHTML = `<p style="text-align: center; padding: 2rem;">${result.message || 'Nenhuma ocorrência encontrada.'}</p>`;
@@ -60,6 +65,32 @@ document.addEventListener('DOMContentLoaded', function () {
         } catch (error) {
             console.error('Erro ao buscar dados:', error);
             if (!isUpdateCheck) { loadingMessage.classList.add('hidden'); ocorrenciasContainer.innerHTML = `<p class="message error">Ocorreu um erro ao carregar os dados. Verifique a consola.</p>`; }
+        }
+    }
+
+    async function scheduleNextCheck() {
+        if (updateTimeoutId) {
+            clearTimeout(updateTimeoutId);
+        }
+        try {
+            // Usa o contexto correto para esta página
+            const checkResponse = await fetch('API/check_updates.php?context=ocorrencias_provedores');
+            const checkResult = await checkResponse.json();
+
+            if (checkResult.success && checkResult.checksum !== currentChecksum) {
+                console.log('Novas atualizações de ocorrências de provedor detectadas. Recarregando...');
+                await fetchData();
+                currentInterval = BASE_INTERVAL;
+                console.log('Intervalo de verificação de provedores resetado.');
+            } else {
+                currentInterval = Math.min(currentInterval * 2, MAX_INTERVAL);
+                console.log(`Nenhuma atualização. Próxima verificação de provedores em ${currentInterval / 1000}s.`);
+            }
+        } catch (error) {
+            console.error('Erro no ciclo de verificação de atualizações:', error);
+            currentInterval = Math.min(currentInterval * 2, MAX_INTERVAL);
+        } finally {
+            updateTimeoutId = setTimeout(scheduleNextCheck, currentInterval);
         }
     }
 
@@ -166,41 +197,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    function updatePendentIds(data) {
-        currentPendentIds.clear();
-        const sourceData = data || allData;
-        if (sourceData && sourceData.ocorrencias) {
-            for (const city in sourceData.ocorrencias) {
-                sourceData.ocorrencias[city].forEach(item => {
-                    if (item.status === 'pendente') {
-                        currentPendentIds.add(item.id);
-                    }
-                });
-            }
-        }
-    }
-
-    function startUpdatePolling() {
-        if (updateInterval) clearInterval(updateInterval);
-        updateInterval = setInterval(() => { fetchData(true); }, 30000);
-    }
-
-    function handleUpdateCheck(result) {
-        if (!result.success) return;
-        const newPendentIds = new Set();
-        if (result.data.ocorrencias) {
-            for (const city in result.data.ocorrencias) {
-                result.data.ocorrencias[city].forEach(item => {
-                    if (item.status === 'pendente') newPendentIds.add(item.id);
-                });
-            }
-        }
-        if (newPendentIds.size !== currentPendentIds.size || [...newPendentIds].some(id => !currentPendentIds.has(id))) {
-            if (filters.status === 'pendente' || filters.status === 'todos') {
-                fetchData();
-            }
-        }
-    }
 
     function initializeFilters() {
         typeFilterContainer.addEventListener('click', (e) => {
@@ -547,8 +543,10 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- Inicialização da Página ---
     initializeFilters();
     setupConclusionModalListeners();
-    fetchData();
-    startUpdatePolling();
+    fetchData().then(() => {
+        console.log('Carga inicial de ocorrências de provedores completa. Iniciando ciclo de verificação.');
+        scheduleNextCheck();
+    });
 
     reparoRealizadoTextarea.addEventListener('input', () => {
         if (reparoRealizadoTextarea.value.trim() !== '') {

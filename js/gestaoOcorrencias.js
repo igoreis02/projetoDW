@@ -375,8 +375,15 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function renderOcorrenciasTecnicasChart(data) {
-        // Para este gráfico, mantemos a paleta de cores padrão
-        createPieChart('ocorrenciasTecnicasChart', data, 'status_reparo', 'total', 'Ocorrências Técnicas');
+        // CORREÇÃO: Adicionamos o mapa de cores específico para este gráfico
+        const statusColorMap = {
+            'concluido': '#22c55e',      // Verde
+            'pendente': '#3b82f6',       // Azul
+            'em andamento': '#f59e0b',   // Amarelo/Laranja
+            'cancelado': '#ef4444'       // Vermelho
+        };
+        // O campo do status aqui é 'status_reparo'
+        createPieChart('ocorrenciasTecnicasChart', data, 'status_reparo', 'total', 'Ocorrências Técnicas', statusColorMap);
     }
 
     function renderOcorrenciasProvedoresChart(data) {

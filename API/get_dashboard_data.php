@@ -14,7 +14,7 @@ try {
         $result = $conn->query("CHECKSUM TABLE `$table`");
         if ($result) {
             $row = $result->fetch_assoc();
-            $totalChecksum += (int)$row['Checksum'];
+            $totalChecksum += (int) $row['Checksum'];
         } else {
             throw new Exception("Erro ao calcular checksum para a tabela: $table");
         }
@@ -65,17 +65,21 @@ try {
     $stmt_abertas->close();
 
     // 2. Concluídas (no período ou todo o período) - APENAS CORRETIVAS
-    $sql_concluidas = "SELECT COUNT(id_manutencao) as total FROM manutencoes WHERE status_reparo = 'concluido' AND tipo_manutencao = 'corretiva' $filtro_conclusao_sql";
-    if (!empty($params_conclusao)) {
-        $stmt_concluidas = $conn->prepare($sql_concluidas);
-        $stmt_concluidas->bind_param($types_conclusao, ...$params_conclusao);
+    $sql_concluidas = "SELECT COUNT(id_manutencao) as total FROM manutencoes WHERE status_reparo = 'concluido' AND tipo_manutencao = 'corretiva'";
+    if (!empty($data_inicio) || !empty($data_fim)) {
+        // CORREÇÃO: Agora usa o filtro correto de CONCLUSÃO ($filtro_conclusao_sql)
+        $stmt_concluidas = $conn->prepare($sql_concluidas . $filtro_conclusao_sql);
+        if (!empty($params_conclusao)) {
+            // CORREÇÃO: Usa os parâmetros corretos ($types_conclusao, $params_conclusao)
+            $stmt_concluidas->bind_param($types_conclusao, ...$params_conclusao);
+        }
     } else {
+        // Sem filtro de data, conta todas as concluídas (esta parte já estava correta)
         $stmt_concluidas = $conn->prepare($sql_concluidas);
     }
     $stmt_concluidas->execute();
     $dashboard_data['kpi_concluidas_mes'] = $stmt_concluidas->get_result()->fetch_assoc()['total'] ?? 0;
     $stmt_concluidas->close();
-
     // 3. Tempo Médio de Reparo (MTTR) - CORREÇÃO APLICADA AQUI
 // A consulta foi alterada para calcular em HORAS e a formatação agora imita a do JavaScript para garantir consistência.
     $stmt_mttr = $conn->prepare("SELECT AVG(TIMESTAMPDIFF(HOUR, inicio_reparo, fim_reparo)) as mttr_horas FROM manutencoes WHERE status_reparo = 'concluido' AND inicio_reparo IS NOT NULL AND fim_reparo IS NOT NULL and tipo_manutencao = 'corretiva' $filtro_conclusao_sql");

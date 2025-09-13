@@ -17,7 +17,40 @@ document.addEventListener('DOMContentLoaded', function () {
     let filters = { type: 'manutencao', status: 'todos', startDate: '', endDate: '', city: 'todos' };
     let allData = null, currentItem = null;
 
+    let currentChecksum = null;
+    let updateTimeoutId = null;
+    const BASE_INTERVAL = 15000; // 15 segundos
+    const MAX_INTERVAL = 120000; // 2 minutos
+    let currentInterval = BASE_INTERVAL;
+
     // --- Funções Principais ---
+
+    async function scheduleNextCheck() {
+        if (updateTimeoutId) {
+            clearTimeout(updateTimeoutId);
+        }
+        try {
+            // Usa o contexto correto para esta página (baseado no seu check_updates.php)
+            const checkResponse = await fetch('API/check_updates.php?context=ocorrencias_processamento');
+            const checkResult = await checkResponse.json();
+
+            if (checkResult.success && checkResult.checksum !== currentChecksum) {
+                console.log('Novas atualizações de processamento detectadas. Recarregando...');
+                await fetchData(true); // Recarrega os dados sem piscar a tela
+                currentInterval = BASE_INTERVAL;
+                console.log('Intervalo de verificação de processamento resetado.');
+            } else {
+                currentInterval = Math.min(currentInterval * 2, MAX_INTERVAL);
+                console.log(`Nenhuma atualização. Próxima verificação de processamento em ${currentInterval / 1000}s.`);
+            }
+        } catch (error) {
+            console.error('Erro no ciclo de verificação de atualizações:', error);
+            currentInterval = Math.min(currentInterval * 2, MAX_INTERVAL);
+        } finally {
+            updateTimeoutId = setTimeout(scheduleNextCheck, currentInterval);
+        }
+    }
+
 
     async function initialLoad() {
         loadingMessage.classList.remove('hidden');
@@ -61,9 +94,11 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    async function fetchData() {
-        ocorrenciasContainer.innerHTML = `<p id="loadingMessage">Carregando suas manutenções...</p>`;
-        cityFilterContainer.innerHTML = '';
+    async function fetchData(isUpdate = false) {
+        if (!isUpdate) { // Só mostra o "carregando" na carga inicial ou em filtros manuais
+            ocorrenciasContainer.innerHTML = `<p id="loadingMessage">Carregando ocorrências...</p>`;
+            cityFilterContainer.innerHTML = '';
+        }
 
         const params = new URLSearchParams({ tipo: filters.type, status: filters.status, data_inicio: filters.startDate, data_fim: filters.endDate });
         try {
@@ -71,6 +106,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const result = await response.json();
 
             if (result.success) {
+                currentChecksum = result.checksum;
                 allData = result.data;
                 renderAllOcorrencias(allData);
                 updateCityFilters();
@@ -84,6 +120,7 @@ document.addEventListener('DOMContentLoaded', function () {
             ocorrenciasContainer.innerHTML = `<p class="message error">Ocorreu um erro ao carregar os dados.</p>`;
         }
     }
+
 
     function renderAllOcorrencias(data) {
         ocorrenciasContainer.innerHTML = '';
@@ -322,6 +359,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- Inicialização da Página ---
     initializeFilters();
-    initialLoad(); // Usa a nova função de carga inicial inteligente
+    initialLoad().then(() => {
+        console.log('Carga inicial de ocorrências de processamento completa. Iniciando ciclo de verificação.');
+        scheduleNextCheck();
+    });
     window.addEventListener('resize', adjustSearchSpacer);
 });

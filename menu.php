@@ -376,7 +376,6 @@ if (isset($user_id)) {
                 <span></span>
             </button>
             <div class="card">
-                <h1 class="card-header">Menu Principal</h1>
                 <div class="menu-buttons-container">
                     <div class="menu-row">
                         <a href="manutencoes_instalacoes.php" class="menu-button" id="manutencao"><i

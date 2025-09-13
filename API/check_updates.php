@@ -58,6 +58,9 @@ try {
             // A página de lacres depende apenas da tabela de controle de lacres
             $tables = ['controle_lacres'];
             break;
+        case 'provedores':
+            $tables = ['provedor'];
+            break;
 
         // -----------------------------------------
 

@@ -19,6 +19,13 @@ if (!empty($search)) {
 }
 
 try {
+
+    $checksum = 0;
+    $checksum_result = $conn->query("CHECKSUM TABLE provedor");
+    if ($checksum_result) {
+        $checksum_row = $checksum_result->fetch_assoc();
+        $checksum = (int)$checksum_row['Checksum'];
+    }
     $stmt->execute();
     $result = $stmt->get_result();
     $providers = [];
@@ -26,9 +33,12 @@ try {
         $providers[] = $row;
     }
 
-    echo json_encode(['success' => true, 'providers' => $providers]);
+    echo json_encode([
+        'success' => true, 
+        'checksum' => $checksum, 
+        'providers' => $providers
+    ]);
 } catch (Exception $e) {
-    http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'Erro ao buscar provedores: ' . $e->getMessage()]);
 }
 

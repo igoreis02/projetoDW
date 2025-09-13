@@ -55,14 +55,29 @@ if (!isset($_SESSION['user_id'])) {
             margin: 0;
         }
 
+        .close-btn,
         .back-btn-icon {
             position: absolute;
-            left: 0;
             top: 50%;
             transform: translateY(-50%);
             font-size: 2em;
+            font-weight: bold;
             color: #aaa;
             text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .close-btn {
+            right: 0;
+        }
+
+        .back-btn-icon {
+            left: 0;
+        }
+
+        .close-btn:hover,
+        .back-btn-icon:hover {
+            color: #333;
         }
 
         .main-actions-filter {
@@ -657,6 +672,7 @@ if (!isset($_SESSION['user_id'])) {
         <div class="header-container">
             <a href="menu.php" class="back-btn-icon" title="Voltar ao Menu">&larr;</a>
             <h2>Gestão de Ocorrências</h2>
+            <a href="menu.php" class="close-btn" title="Voltar ao Menu">&times;</a>
         </div>
 
         <div class="main-actions-filter">
