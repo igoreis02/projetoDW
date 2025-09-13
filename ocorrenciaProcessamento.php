@@ -593,7 +593,7 @@ if (!isset($_SESSION['user_id'])) {
 
         <div class="main-controls-container">
             <div class="action-buttons" id="typeFilterContainer">
-                <button class="action-btn active" data-type="manutencao">Manutenções</button>
+                <button class="action-btn active" data-type="manutencao">Ocorrências</button>
                 <button class="action-btn" data-type="instalacao">Instalações</button>
             </div>
             <div class="date-filter-container">

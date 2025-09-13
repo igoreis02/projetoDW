@@ -40,13 +40,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const form = btnElement.closest('form');
         const buttonGroup = btnElement.parentElement;
         buttonGroup.querySelectorAll('button').forEach(btn => btn.classList.remove('ativo'));
-        
+
         const activeButton = num === 1 ? buttonGroup.children[0] : buttonGroup.children[1];
         if (activeButton) activeButton.classList.add('ativo');
 
         const unica = form.querySelector(`#${groupPrefix}_camera_unica`);
         const dupla = form.querySelector(`#${groupPrefix}_camera_dupla`);
-        
+
         const inputAB = unica.querySelector('input');
         const inputA = dupla.querySelector('input[name*="_a"]');
         const inputB = dupla.querySelector('input[name*="_b"]');
@@ -166,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const equipamentosFiltrados = todosOsEquipamentos.filter(equip => {
             const correspondeCidade = filtroCidadeAtivo === 'Todas' || equip.cidade_nome === filtroCidadeAtivo;
-            const correspondePesquisa = !termoPesquisa || 
+            const correspondePesquisa = !termoPesquisa ||
                 (equip.nome_equip && equip.nome_equip.toLowerCase().includes(termoPesquisa)) ||
                 (equip.referencia_equip && equip.referencia_equip.toLowerCase().includes(termoPesquisa));
             return correspondeCidade && correspondePesquisa;
@@ -189,20 +189,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const grupoDiv = document.createElement('div');
             grupoDiv.className = 'cidade-grupo';
             grupoDiv.innerHTML = `<h2>${cidade}</h2>`;
-            
+
             equipamentosAgrupados[cidade].forEach(equip => {
                 const isExpiring = expiringItems.some(item => item.id_equipamento === equip.id_equipamento);
                 const itemClass = isExpiring ? 'item-equipamento-lacre vencimento-proximo' : 'item-equipamento-lacre';
                 const vencimentoClass = isExpiring ? 'vencimento-proximo-texto' : '';
                 const temLacres = equip.lacres && equip.lacres.length > 0;
-                
+
                 const lacresHTML = temLacres ? equip.lacres.map(lacre => {
                     const formName = dbValueToFormName[lacre.local_lacre];
                     // CORREÇÃO: Trata nomes inválidos ou não mapeados de forma elegante
                     const displayName = formName ? LacreMap[formName].displayName : (lacre.local_lacre || 'Lacre Inválido');
                     return `<div class="lacre-item"><strong>${displayName}:</strong> ${lacre.num_lacre}</div>`;
                 }).join('') : '<p>Nenhum lacre cadastrado.</p>';
-                
+
                 const lacresData = JSON.stringify(equip.lacres).replace(/"/g, '&quot;');
                 const vencimentoTexto = equip.dt_vencimento ? new Date(equip.dt_vencimento + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A';
 
@@ -212,19 +212,19 @@ document.addEventListener('DOMContentLoaded', () => {
             containerListaLacres.appendChild(grupoDiv);
         }
     }
-    
+
     // --- LÓGICA DE ABRIR MODAL COMPLETAMENTE REFEITA E CORRIGIDA ---
     window.abrirModalLacres = (btn) => {
         const form = document.getElementById('formularioAdicionarLacres');
         form.reset();
-        
+
         const lacresAtuais = btn.dataset.lacres ? JSON.parse(btn.dataset.lacres) : [];
         const temLacres = lacresAtuais.length > 0;
         operacaoAtual = temLacres ? 'substitute' : 'add';
 
         form.querySelector('[name="id_equipamento"]').value = btn.dataset.equipId;
         document.getElementById('tituloModalAdicionarLacres').textContent = `${temLacres ? 'Substituir' : 'Adicionar'} Lacres para: ${btn.dataset.equipName}`;
-        
+
         if (!temLacres) {
             // Se for ADICIONAR, apenas reseta os toggles para o padrão e abre o modal
             toggleCameras(1, form.querySelector('.zoom-toggle button'), 'zoom');
@@ -273,7 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (const [dbName, formName] of Object.entries(outrosLacres)) {
             if (lacresMap.has(dbName)) {
                 const input = form.querySelector(`[name="${formName}"]`);
-                if(input) input.value = lacresMap.get(dbName);
+                if (input) input.value = lacresMap.get(dbName);
             }
         }
 
@@ -313,7 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
             botaoInativo.classList.remove('btn-inactive');
         }, 400);
     }
-    
+
     campoPesquisa.addEventListener('input', renderizarLista);
 
     btnFiltrar.addEventListener('click', () => {
@@ -334,10 +334,24 @@ document.addEventListener('DOMContentLoaded', () => {
         buscarEquipamentosELacres(true);
     });
 
-    dataFim.addEventListener('change', () => {
-        if (dataFim.value && dataInicio.value && dataFim.value < dataInicio.value) {
-            alert('A data final não pode ser anterior à data inicial.');
-            dataFim.value = '';
+    dataInicio.addEventListener('change', () => {
+        const dataDe = dataInicio.value;
+
+        if (dataDe) {
+            // 1. Trava as datas anteriores no campo "Até"
+            dataFim.min = dataDe;
+
+            // o campo "Até" será limpo para evitar um intervalo inválido.
+            if (dataFim.value && dataFim.value < dataDe) {
+                dataFim.value = '';
+            }
+
+            // 2. Abre o calendário do campo "Até" automaticamente
+            dataFim.showPicker();
+
+        } else {
+            // Se o campo "De" for limpo, remove a restrição de data mínima
+            dataFim.min = '';
         }
     });
 

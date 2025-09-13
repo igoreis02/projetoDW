@@ -279,7 +279,20 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     
     campoPesquisa.addEventListener('input', handleFilterChange);
-    startDateInput.addEventListener('change', handleFilterChange);
+    startDateInput.addEventListener('change', () => {
+    const dataDe = startDateInput.value;
+
+    if (dataDe) {
+        endDateInput.min = dataDe;
+        if (endDateInput.value && endDateInput.value < dataDe) {
+            endDateInput.value = '';
+        }
+        endDateInput.showPicker();
+    } else {
+        endDateInput.min = '';
+    }
+    fetchData(); 
+});
     endDateInput.addEventListener('change', handleFilterChange);
     
     statusFilters.addEventListener('click', (e) => {

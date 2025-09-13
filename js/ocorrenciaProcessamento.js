@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             const response = await fetch(`API/get_ocorrencias_processamento.php?${paramsCheck.toString()}`);
             const result = await response.json();
-            
+
             let hasValidacao = false;
             if (result.success && result.data.ocorrencias && Object.keys(result.data.ocorrencias).length > 0) {
                 const allItems = Object.values(result.data.ocorrencias).flat();
@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     hasValidacao = true;
                 }
             }
-            
+
             const btnValidacao = document.getElementById('btnValidacao');
             if (hasValidacao) {
                 btnValidacao.style.display = ''; // Mostra o botão
@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 btnValidacao.style.display = 'none'; // Garante que o botão está escondido
                 filters.status = 'todos'; // Mantém o padrão 'todos'
             }
-            
+
             // Atualiza a aparência dos botões de filtro de status
             document.querySelectorAll('#statusFilterContainer .filter-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.status === filters.status);
@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', function () {
     async function fetchData() {
         ocorrenciasContainer.innerHTML = `<p id="loadingMessage">Carregando suas manutenções...</p>`;
         cityFilterContainer.innerHTML = '';
-        
+
         const params = new URLSearchParams({ tipo: filters.type, status: filters.status, data_inicio: filters.startDate, data_fim: filters.endDate });
         try {
             const response = await fetch(`API/get_ocorrencias_processamento.php?${params.toString()}`);
@@ -106,17 +106,17 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function createOcorrenciaHTML(item) {
-        const statusClass = (item.status || 'pendente').toLowerCase(); 
-        
+        const statusClass = (item.status || 'pendente').toLowerCase();
+
         const inicioReparoFormatted = item.inicio_reparo ? new Date(item.inicio_reparo).toLocaleString('pt-BR') : 'N/A';
         const fimReparoFormatted = item.fim_reparo ? new Date(item.fim_reparo).toLocaleString('pt-BR') : 'N/A';
         let atribuidoPorHTML = item.atribuido_por ? `<div class="detail-item"><strong>Reportado por</strong> <span>${item.atribuido_por}</span></div>` : '';
         let reparoFinalizadoHTML = '';
-        
+
         if ((statusClass === 'concluido' || statusClass === 'validacao') && item.reparo_finalizado) {
             reparoFinalizadoHTML = `<div class="detail-item reparo-info"><strong>Solução</strong> <span>${item.reparo_finalizado}</span></div>`;
         }
-        
+
         const detailsHTML = `
             <div class="detail-item"><strong>Problema</strong> <span class="searchable">${item.ocorrencia_reparo || 'N/A'}</span></div>
             ${reparoFinalizadoHTML}
@@ -136,7 +136,7 @@ document.addEventListener('DOMContentLoaded', function () {
             actionsContent = `<button class="item-btn edit-btn" onclick="openEditModal(${item.id}, '${item.origem}')">Editar</button>`;
         }
         const actionsHTML = actionsContent ? `<div class="item-actions">${actionsContent}</div>` : `<div class="item-actions" style="min-height: 40px;"></div>`;
-        
+
         return `<div class="ocorrencia-item status-${statusClass}" data-id="${item.id}" data-origem="${item.origem}">
                     <div class="ocorrencia-header"><h3><span class="searchable">${item.nome_equip}</span> - <span class="searchable">${item.referencia_equip}</span></h3></div>
                     <div class="ocorrencia-details">${detailsHTML}</div>
@@ -181,12 +181,25 @@ document.addEventListener('DOMContentLoaded', function () {
         typeFilterContainer.addEventListener('click', (e) => { if (e.target.matches('.action-btn')) { document.querySelectorAll('#typeFilterContainer .action-btn').forEach(btn => btn.classList.remove('active')); e.target.classList.add('active'); filters.type = e.target.dataset.type; fetchData(); } });
         statusFilterContainer.addEventListener('click', (e) => { if (e.target.matches('.filter-btn[data-status]')) { document.querySelectorAll('#statusFilterContainer .filter-btn').forEach(btn => btn.classList.remove('active')); e.target.classList.add('active'); filters.status = e.target.dataset.status; fetchData(); } });
         cityFilterContainer.addEventListener('click', (e) => { if (e.target.matches('.filter-btn[data-city]')) { document.querySelectorAll('#cityFilterContainer .filter-btn').forEach(btn => btn.classList.remove('active')); e.target.classList.add('active'); filters.city = e.target.dataset.city; updateDisplay(); } });
-        startDateInput.addEventListener('change', () => { filters.startDate = startDateInput.value; endDateInput.min = startDateInput.value; fetchData(); });
+        startDateInput.addEventListener('change', () => {
+            const dataDe = startDateInput.value;
+
+            if (dataDe) {
+                endDateInput.min = dataDe;
+                if (endDateInput.value && endDateInput.value < dataDe) {
+                    endDateInput.value = '';
+                }
+                endDateInput.showPicker();
+            } else {
+                endDateInput.min = '';
+            }
+            fetchData();
+        });
         endDateInput.addEventListener('change', () => { filters.endDate = endDateInput.value; fetchData(); });
         searchInput.addEventListener('input', updateDisplay);
         clearFiltersBtn.addEventListener('click', () => { searchInput.value = ''; startDateInput.value = ''; endDateInput.value = ''; filters = { type: 'manutencao', status: 'todos', startDate: '', endDate: '', city: 'todos' }; document.querySelectorAll('.filter-btn, .action-btn').forEach(btn => btn.classList.remove('active')); document.querySelector('.action-btn[data-type="manutencao"]').classList.add('active'); document.querySelector('.filter-btn[data-status="todos"]').classList.add('active'); const allCitiesBtn = document.querySelector('.filter-btn[data-city="todos"]'); if (allCitiesBtn) allCitiesBtn.classList.add('active'); initialLoad(); });
     }
-    
+
     // --- Lógica de Modais ---
     window.openValidarModal = (id) => {
         currentItem = findOcorrenciaById(id, 'manutencao');
@@ -237,19 +250,19 @@ document.addEventListener('DOMContentLoaded', function () {
     window.saveOcorrenciaEdit = async () => { const newProblemText = document.getElementById('editOcorrenciaTextarea').value.trim(); if (!newProblemText) { alert('A descrição do problema não pode ser vazia.'); return; } const payload = { action: 'edit_ocorrencia', id: currentItem.id, origem: 'ocorrencia_processamento', ocorrencia_reparo: newProblemText }; if (currentItem.status === 'concluido') { payload.reparo_finalizado = document.getElementById('editReparoTextarea').value.trim(); } await executeApiUpdate(payload, 'Atualizado com sucesso!', 'editModal', 'saveEditBtn', 'editMessage', 'editButtons'); };
     window.openConfirmationModal = (type, id, origem) => { if (id) currentItem = findOcorrenciaById(id, origem); if (!currentItem) return; const titleEl = document.getElementById('confirmationModalTitle'); const textEl = document.getElementById('confirmationModalText'); const actionButton = document.getElementById('confirmActionButton'); const actionText = document.getElementById('confirmActionText'); actionButton.className = 'modal-btn btn-primary'; if (type === 'concluir') { titleEl.textContent = 'Confirmar Conclusão'; textEl.textContent = 'Deseja marcar esta ocorrência como concluída?'; actionText.textContent = "Sim, Concluir"; actionButton.onclick = () => saveConclusion(); } else if (type === 'cancelar') { titleEl.textContent = 'Confirmar Cancelamento'; textEl.textContent = 'Tem certeza que deseja cancelar esta ocorrência?'; actionText.textContent = "Sim, Cancelar"; actionButton.classList.add('cancel'); actionButton.onclick = () => executeStatusChange(currentItem.id, 'cancelado', 'ocorrencia_processamento'); } openModal('confirmationModal'); };
     async function executeStatusChange(id, status, origem) { const payload = { action: 'update_status', id: id, status: status, origem: origem }; await executeApiUpdate(payload, 'Status atualizado com sucesso!'); }
-    
+
     async function executeApiUpdate(payload, successMessage, modalToClose, btnId, msgId, btnsId) {
         const button = btnId ? document.getElementById(btnId) : document.getElementById('confirmActionButton');
         if (!button) { console.error("Botão não encontrado:", btnId); return; }
-        
+
         const spinner = button.querySelector('.spinner');
         const messageEl = msgId ? document.getElementById(msgId) : document.getElementById('confirmationMessage');
         const buttonsDiv = btnsId ? document.getElementById(btnsId) : document.getElementById('confirmationButtons');
 
         button.disabled = true;
-        if(spinner) spinner.classList.add('is-active');
-        if(messageEl) messageEl.classList.add('hidden');
-        if(buttonsDiv) buttonsDiv.querySelectorAll('.modal-btn').forEach(b => b.disabled = true);
+        if (spinner) spinner.classList.add('is-active');
+        if (messageEl) messageEl.classList.add('hidden');
+        if (buttonsDiv) buttonsDiv.querySelectorAll('.modal-btn').forEach(b => b.disabled = true);
 
 
         try {
@@ -267,7 +280,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 messageEl.className = 'message success';
                 messageEl.classList.remove('hidden');
             }
-            
+
             setTimeout(() => {
                 if (modalToClose) closeModal(modalToClose);
                 closeModal('confirmationModal');
@@ -282,31 +295,31 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             if (button) button.disabled = false;
             if (spinner) spinner.classList.remove('is-active');
-            if(buttonsDiv) buttonsDiv.querySelectorAll('.modal-btn').forEach(b => b.disabled = false);
+            if (buttonsDiv) buttonsDiv.querySelectorAll('.modal-btn').forEach(b => b.disabled = false);
         }
     }
 
     function updateCityFilters() { cityFilterContainer.innerHTML = ''; const cities = allData.cidades || []; if (cities.length > 0) { const allButton = document.createElement('button'); allButton.className = 'filter-btn active todos'; allButton.dataset.city = 'todos'; allButton.textContent = 'Todas'; cityFilterContainer.appendChild(allButton); cities.sort().forEach(cidade => { const button = document.createElement('button'); button.className = 'filter-btn city'; button.dataset.city = cidade; button.textContent = cidade; cityFilterContainer.appendChild(button); }); } }
-    
+
     window.openModal = (modalId) => document.getElementById(modalId).classList.add('is-active');
-    
+
     window.closeModal = (modalId) => {
         const modal = document.getElementById(modalId);
         if (!modal) return;
         modal.classList.remove('is-active');
-        
+
         const messageEl = modal.querySelector('.message');
         const buttonsDiv = modal.querySelector('.modal-footer-buttons');
-        
+
         if (messageEl) { messageEl.classList.add('hidden'); }
-        if (buttonsDiv) { 
+        if (buttonsDiv) {
             buttonsDiv.style.display = 'flex';
             buttonsDiv.querySelectorAll('.modal-btn').forEach(b => b.disabled = false);
         }
         const spinner = modal.querySelector('.spinner.is-active');
         if (spinner) { spinner.classList.remove('is-active'); }
     };
-    
+
     // --- Inicialização da Página ---
     initializeFilters();
     initialLoad(); // Usa a nova função de carga inicial inteligente

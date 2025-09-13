@@ -36,7 +36,6 @@ if (!isset($_SESSION['user_id'])) {
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
             width: 95%;
             max-width: 1400px;
-            /* Aumentado para mais espaço */
             text-align: center;
             position: relative;
         }
@@ -66,12 +65,27 @@ if (!isset($_SESSION['user_id'])) {
             text-decoration: none;
         }
 
-        /* Botões de Ação (Manutenção/Instalação) */
+        .main-actions-filter {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            gap: 1rem;
+        }
+
+        .left-actions {
+            grid-column: 1;
+            justify-self: start;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
         .action-buttons {
+            grid-column: 2;
             display: flex;
             justify-content: center;
             gap: 1rem;
-            margin-bottom: 1.5rem;
         }
 
         .action-btn {
@@ -84,6 +98,7 @@ if (!isset($_SESSION['user_id'])) {
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s ease;
+            white-space: nowrap;
         }
 
         .action-btn:hover {
@@ -95,8 +110,6 @@ if (!isset($_SESSION['user_id'])) {
             color: white;
         }
 
-
-        /* Container de Filtros */
         .filters-wrapper {
             margin-bottom: 2rem;
             padding-bottom: 1.5rem;
@@ -105,7 +118,7 @@ if (!isset($_SESSION['user_id'])) {
 
         .top-filters {
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
             gap: 20px;
             margin-bottom: 1rem;
@@ -113,6 +126,8 @@ if (!isset($_SESSION['user_id'])) {
         }
 
         .date-filter {
+            grid-column: 3;
+            justify-self: end;
             display: flex;
             align-items: center;
             gap: 10px;
@@ -132,6 +147,8 @@ if (!isset($_SESSION['user_id'])) {
         .status-filters {
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
         }
 
         .filter-btn {
@@ -153,7 +170,6 @@ if (!isset($_SESSION['user_id'])) {
             color: white;
         }
 
-        /* Cores dos botões de status */
         .filter-btn[data-status="pendente"].active {
             background-color: #3b82f6;
             border-color: #3b82f6;
@@ -187,7 +203,6 @@ if (!isset($_SESSION['user_id'])) {
             min-height: 38px;
         }
 
-        /* Conteúdo */
         .ocorrencias-container {
             width: 100%;
         }
@@ -211,7 +226,6 @@ if (!isset($_SESSION['user_id'])) {
             gap: 1.5rem;
         }
 
-        /* Card de Ocorrência */
         .ocorrencia-item {
             background-color: #ffffff;
             border: 1px solid #e5e7eb;
@@ -223,7 +237,6 @@ if (!isset($_SESSION['user_id'])) {
             text-align: left;
         }
 
-        /* Cores da borda por status */
         .ocorrencia-item.status-pendente {
             border-left: 5px solid #3b82f6;
         }
@@ -286,29 +299,55 @@ if (!isset($_SESSION['user_id'])) {
             font-weight: 600;
         }
 
-        /* Tags de Status */
         .status-tag {
-            padding: 3px 10px;
+            padding: 2px 8px;
             border-radius: 15px;
             font-weight: 600;
             font-size: 0.9em;
-            color: white;
+            white-space: normal;
         }
 
         .tag-pendente {
-            background-color: #3b82f6;
+            background-color: #eff6ff;
+            color: #3b82f6;
         }
 
         .tag-em-andamento {
-            background-color: #f59e0b;
+            background-color: #fffbeb;
+            color: #f59e0b;
         }
 
         .tag-concluido {
-            background-color: #22c55e;
+            background-color: #f0fdf4;
+            color: #22c55e;
         }
 
         .tag-cancelado {
             background-color: #ef4444;
+            color: #b91c1c;
+        }
+
+
+        .ocorrencia-list {
+            list-style: decimal;
+            padding-left: 20px;
+            margin: 5px 0;
+        }
+
+        .ocorrencia-list::marker {
+            color: black;
+            font-weight: bold;
+        }
+
+        .ocorrencia-list li {
+            padding-bottom: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .ocorrencia-list li:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
         }
 
         .voltar-btn {
@@ -327,6 +366,186 @@ if (!isset($_SESSION['user_id'])) {
         .hidden {
             display: none !important;
         }
+
+        .dashboard-view {
+            width: 100%;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .dashboard-card {
+            background-color: #ffffff;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            text-align: left;
+        }
+
+        .dashboard-card-full {
+            grid-column: 1 / -1;
+        }
+
+        .dashboard-card h3 {
+            margin-top: 0;
+            margin-bottom: 1rem;
+            font-size: 1.1em;
+            color: #374151;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 0.5rem;
+        }
+
+        .kpi-card-content {
+            text-align: center;
+        }
+
+        .kpi-number {
+            font-size: 3em;
+            font-weight: 700;
+            color: #112058;
+            margin: 0;
+        }
+
+        .kpi-label {
+            font-size: 1em;
+            color: #6b7280;
+            margin-top: 0.5rem;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .date-clear-wrapper {
+            grid-column: 3;
+            justify-self: end;
+            display: flex;
+            flex-direction: column;
+            /* Organiza em coluna */
+            align-items: flex-end;
+            /* Alinha os itens à direita */
+            gap: 0.5rem;
+            /* Espaço entre a data e o botão */
+        }
+
+        .search-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 1.5rem;
+        }
+
+        #searchInput {
+            padding: 10px 15px;
+            font-size: 1em;
+            border-radius: 6px;
+            border: 1px solid #d1d5db;
+            width: 500px;
+            max-width: 100%;
+            /* Limita a largura da busca */
+        }
+
+        #btnClearFilters {
+            padding: 8px 15px;
+            /* Botão menor */
+            font-size: 0.85em;
+            /* Fonte menor */
+            font-weight: 600;
+            color: #4b5563;
+            background-color: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            white-space: nowrap;
+        }
+
+        #btnClearFilters:hover {
+            background-color: #e5e7eb;
+        }
+
+        .ocorrencia-list {
+            list-style: decimal;
+            padding-left: 20px;
+            margin: 5px 0;
+        }
+
+        .ocorrencia-list::marker {
+            color: black;
+            font-weight: bold;
+        }
+
+        .ocorrencia-list li {
+            padding-bottom: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .ocorrencia-list li:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .ocorrencia-list li div strong {
+            font-weight: bold;
+            color: #1f2937;
+            /* Cor preta/cinza escuro para os títulos */
+        }
+
+        .date-sub-item {
+            font-size: 0.9em;
+            color: #6b7280;
+            padding-left: 5px;
+            margin-top: 5px;
+        }
+
+        #limparFiltroData {
+            /* Estilos para um botão pequeno e discreto */
+            padding: 5px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+            margin-top: 5px;
+            /* Adiciona um pequeno espaço acima do botão */
+        }
+
+        @media (max-width: 950px) {
+            .main-actions-filter {
+                grid-template-columns: 1fr;
+                justify-items: center;
+            }
+
+            .left-actions {
+                grid-column: 1;
+                justify-self: center;
+                order: 1;
+                margin-bottom: 1rem;
+            }
+
+            .action-buttons {
+                grid-column: 1;
+                order: 2;
+            }
+
+            .date-filter {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+        }
     </style>
 </head>
 
@@ -338,37 +557,99 @@ if (!isset($_SESSION['user_id'])) {
             <h2>Gestão de Ocorrências</h2>
         </div>
 
-        <div class="action-buttons">
-            <button id="btnManutencoes" class="action-btn active" data-type="manutencao">Manutenções</button>
-            <button id="btnInstalacoes" class="action-btn" data-type="instalacao">Instalações</button>
+        <div class="main-actions-filter">
+            <div class="left-actions">
+                <button id="btnDashboard" class="action-btn active">Dashboard</button>
+                <button id="btnSimplificado" class="action-btn">Simplificado</button>
+            </div>
+            <div class="action-buttons">
+                <button id="btnManutencoes" class="action-btn" data-type="manutencao">Ocorrências</button>
+                <button id="btnInstalacoes" class="action-btn" data-type="instalacao">Instalações</button>
+                <button id="btnSemaforica" class="action-btn" data-type="semaforica">Semafórica</button>
+            </div>
+            <div class="date-clear-wrapper">
+            <div class="date-filter">
+                <label for="startDate">De:</label>
+                <input type="date" id="startDate">
+                <label for="endDate">Até:</label>
+                <input type="date" id="endDate">
+            </div>
+            <button id="limparFiltroData" style="display: none;">Limpar Filtro</button>
+            </div>
         </div>
 
-        <div class="filters-wrapper">
-            <div class="top-filters">
-                <div class="date-filter">
-                    <label for="startDate">De:</label>
-                    <input type="date" id="startDate">
-                    <label for="endDate">Até:</label>
-                    <input type="date" id="endDate">
+        <div id="searchContainer" class="search-container">
+            <input type="search" id="searchInput" placeholder="Pesquisar por equipamento, status, cidade, técnico...">
+            <button id="btnClearFilters">Limpar Filtros</button>
+        </div>
+
+        <div id="dashboardView" class="dashboard-view">
+            <div class="dashboard-grid">
+                <div class="dashboard-card">
+                    <div id="kpiManutencoesAbertas" class="kpi-card-content">
+                        <p class="kpi-number">-</p>
+                        <p class="kpi-label">Manutenções Abertas</p>
+                    </div>
                 </div>
-                <div id="statusFilters" class="status-filters">
-                    <button class="filter-btn active" data-status="todos">Todos</button>
-                    <button class="filter-btn" data-status="pendente">Pendente</button>
-                    <button class="filter-btn" data-status="em andamento">Em Andamento</button>
-                    <button class="filter-btn" data-status="concluido">Concluído</button>
-                    <button class="filter-btn" data-status="cancelado">Cancelado</button>
+                <div class="dashboard-card">
+                    <div id="kpiConcluidasMes" class="kpi-card-content">
+                        <p class="kpi-number">-</p>
+                        <p id="concluidasLabel" class="kpi-label">Concluídas (Todo o Período)</p>
+                    </div>
+                </div>
+                <div class="dashboard-card">
+                    <div id="kpiMttr" class="kpi-card-content">
+                        <p class="kpi-number">-</p>
+                        <p class="kpi-label">Tempo Médio de Reparo (MTTR)</p>
+                    </div>
+                </div>
+                <div class="dashboard-card">
+                    <div id="kpiAfericoesVencendo" class="kpi-card-content">
+                        <p class="kpi-number">-</p>
+                        <p id="afericoesLabel" class="kpi-label">Aferições a Vencer (Total)</p>
+                    </div>
+                </div>
+                <div class="dashboard-card">
+                    <h3>Manutenções por Status</h3>
+                    <canvas id="manutencoesPorStatusChart"></canvas>
+                </div>
+                <div class="dashboard-card">
+                    <h3>Manutenções por Tipo</h3>
+                    <canvas id="manutencoesPorTipoChart"></canvas>
+                </div>
+                <div class="dashboard-card dashboard-card-full">
+                    <h3>Manutenções Abertas por Cidade</h3>
+                    <canvas id="manutencoesPorCidadeChart"></canvas>
+                </div>
+                <div class="dashboard-card dashboard-card-full">
+                    <h3 id="evolucaoTitle">Evolução Mensal (Todo o Período)</h3>
+                    <canvas id="evolucaoDiariaChart"></canvas>
                 </div>
             </div>
-            <div id="cityFilters" class="city-filters"></div>
         </div>
 
-        <div id="ocorrenciasContainer" class="ocorrencias-container">
-            <p id="loadingMessage">A carregar ocorrências...</p>
+        <div id="ocorrenciasView" class="hidden">
+            <div class="filters-wrapper">
+                <div class="top-filters">
+                    <div id="statusFilters" class="status-filters">
+                        <button class="filter-btn active" data-status="todos">Todos</button>
+                        <button class="filter-btn" data-status="pendente">Pendente</button>
+                        <button class="filter-btn" data-status="em andamento">Em Andamento</button>
+                        <button class="filter-btn" data-status="concluido">Concluído</button>
+                        <button class="filter-btn" data-status="cancelado">Cancelado</button>
+                    </div>
+                </div>
+                <div id="cityFilters" class="city-filters"></div>
+            </div>
+            <div id="ocorrenciasContainer" class="ocorrencias-container">
+                <p id="loadingMessage">A carregar ocorrências...</p>
+            </div>
         </div>
 
         <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="js/gestaoOcorrencias.js"></script>
 </body>
 

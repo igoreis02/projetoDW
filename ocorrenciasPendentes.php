@@ -948,7 +948,7 @@ if (!isset($_SESSION['user_id'])) {
             <div class="main-controls-container">
                 <button id="btnSimplificado" class="action-btn">Simplificado</button>
                 <div class="action-buttons">
-                    <button id="btnManutencoes" class="action-btn active" data-type="manutencao">Manutenções</button>
+                    <button id="btnManutencoes" class="action-btn active" data-type="manutencao">Ocorrências</button>
                     <button id="btnInstalacoes" class="action-btn" data-type="instalação">Instalações</button>
                     <button id="btSemaforica" class="action-btn hidden" data-type="semaforica">Semafóricas</button>
                 </div>

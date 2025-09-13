@@ -472,7 +472,20 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     btnSimplificado.addEventListener('click', () => toggleView(!isSimplifiedViewActive));
-    startDateInput.addEventListener('change', fetchData);
+    startDateInput.addEventListener('change', () => {
+    const dataDe = startDateInput.value;
+
+    if (dataDe) {
+        endDateInput.min = dataDe;
+        if (endDateInput.value && endDateInput.value < dataDe) {
+            endDateInput.value = '';
+        }
+        endDateInput.showPicker();
+    } else {
+        endDateInput.min = '';
+    }
+    fetchData(); 
+});
     endDateInput.addEventListener('change', fetchData);
     searchInput.addEventListener('input', applyFiltersAndRender);
 

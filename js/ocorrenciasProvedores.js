@@ -228,11 +228,17 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
         startDateInput.addEventListener('change', () => {
-            filters.startDate = startDateInput.value;
-            if (endDateInput.value && endDateInput.value < startDateInput.value) {
-                endDateInput.value = startDateInput.value;
+            const dataDe = startDateInput.value;
+
+            if (dataDe) {
+                endDateInput.min = dataDe;
+                if (endDateInput.value && endDateInput.value < dataDe) {
+                    endDateInput.value = '';
+                }
+                endDateInput.showPicker();
+            } else {
+                endDateInput.min = '';
             }
-            endDateInput.min = startDateInput.value;
             fetchData();
         });
         endDateInput.addEventListener('change', () => { filters.endDate = endDateInput.value; fetchData(); });
