@@ -11,6 +11,8 @@ document.addEventListener('DOMContentLoaded', function () {
     let activeCity = 'todos';
     let activeStatus = 'todos';
     let totalSolicitacoes = 0; // Variável para rastrear o número de solicitações
+    let currentChecksum = null;
+
 
     // --- FUNÇÕES DE LÓGICA PRINCIPAL ---
     async function fetchData() {
@@ -27,11 +29,13 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             const response = await fetch(`API/get_solicitacoes.php?${params.toString()}`);
             const result = await response.json();
-            
+
             if (result.success) {
                 loadingMessage.style.display = 'none';
                 allData = result.data;
                 totalSolicitacoes = result.total_count; // Atualiza a contagem total
+                currentChecksum = result.checksum; //
+
                 renderAllSolicitacoes(allData);
                 updateCityFilters(allData.cidades || []);
                 updateDisplay();
@@ -78,14 +82,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     <h2 class="city-group-title">${cidade}</h2>
                     <div class="solicitacoes-grid">${cityGridHTML}</div>
                 `;
-                
+
                 solicitacoesContainer.appendChild(cityGroup);
             });
         } else {
             solicitacoesContainer.innerHTML = `<p class="mensagem">Nenhuma solicitação encontrada para os filtros selecionados.</p>`;
         }
     }
-    
+
     function createSolicitacaoHTML(item) {
         const statusClass = item.status_solicitacao.replace(' ', '-');
         const statusText = item.status_solicitacao.charAt(0).toUpperCase() + item.status_solicitacao.slice(1);
@@ -189,36 +193,36 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    window.abrirModalAdicionarSolicitacao = function() {
+    window.abrirModalAdicionarSolicitacao = function () {
         const modal = document.getElementById('modalAdicionarSolicitacao');
         const formulario = document.getElementById('formularioAdicionarSolicitacao');
         const botao = document.getElementById('botaoSalvarAdicionar');
         const desdobramentoContainer = document.getElementById('desdobramentoContainerAdicionar');
         const statusInput = document.getElementById('statusSolicitacaoAdicionar');
-        
+
         formulario.reset();
         document.getElementById('mensagemAdicionarSolicitacao').style.display = 'none';
         botao.style.display = 'flex';
-        
+
         desdobramentoContainer.style.display = 'none';
         document.getElementById('desdobramentoSoliAdicionar').required = false;
         botao.querySelector('span').textContent = 'Adicionar';
         statusInput.value = 'pendente';
         modal.querySelectorAll('.status-btn').forEach(btn => btn.classList.remove('active'));
         modal.querySelector('.status-btn[data-status="pendente"]').classList.add('active');
-        
+
         alternarCarregamento(botao, false);
         modal.classList.add('esta-ativo');
-        carregarDropdowns('Adicionar'); 
+        carregarDropdowns('Adicionar');
     }
 
-    window.abrirModalEdicaoSolicitacao = function(id) {
+    window.abrirModalEdicaoSolicitacao = function (id) {
         const cidadeEncontrada = Object.keys(allData.solicitacoes).find(cidade => allData.solicitacoes[cidade].some(s => s.id_solicitacao == id));
         const solicitacao = cidadeEncontrada ? allData.solicitacoes[cidadeEncontrada].find(s => s.id_solicitacao == id) : null;
         if (solicitacao) {
             const formulario = document.getElementById('formularioEdicaoSolicitacao');
             const botao = document.getElementById('botaoSalvarEdicao');
-            
+
             document.getElementById('idSolicitacaoEdicao').value = solicitacao.id_solicitacao;
             document.getElementById('usuarioEdicao').value = solicitacao.nome_usuario;
             document.getElementById('cidadeEdicao').value = solicitacao.nome_cidade;
@@ -226,7 +230,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('tipoSolicitacaoEdicao').value = solicitacao.tipo_solicitacao || '';
             document.getElementById('descSolicitacaoEdicao').value = solicitacao.desc_solicitacao || '';
             document.getElementById('statusSolicitacaoEdicao').value = solicitacao.status_solicitacao;
-            
+
             document.getElementById('mensagemEdicaoSolicitacao').style.display = 'none';
             botao.style.display = 'flex';
             alternarCarregamento(botao, false);
@@ -234,7 +238,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    window.abrirModalConcluirSolicitacao = function(id) {
+    window.abrirModalConcluirSolicitacao = function (id) {
         const cidadeEncontrada = Object.keys(allData.solicitacoes).find(cidade => allData.solicitacoes[cidade].some(s => s.id_solicitacao == id));
         const solicitacao = cidadeEncontrada ? allData.solicitacoes[cidadeEncontrada].find(s => s.id_solicitacao == id) : null;
         if (solicitacao) {
@@ -251,7 +255,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    window.excluirSolicitacao = async function(id) {
+    window.excluirSolicitacao = async function (id) {
         if (confirm('Tem certeza que deseja excluir esta solicitação?')) {
             try {
                 const response = await fetch('API/delete_solicitacao.php', {
@@ -277,24 +281,24 @@ document.addEventListener('DOMContentLoaded', function () {
     function handleFilterChange() {
         fetchData();
     }
-    
+
     campoPesquisa.addEventListener('input', handleFilterChange);
     startDateInput.addEventListener('change', () => {
-    const dataDe = startDateInput.value;
+        const dataDe = startDateInput.value;
 
-    if (dataDe) {
-        endDateInput.min = dataDe;
-        if (endDateInput.value && endDateInput.value < dataDe) {
-            endDateInput.value = '';
+        if (dataDe) {
+            endDateInput.min = dataDe;
+            if (endDateInput.value && endDateInput.value < dataDe) {
+                endDateInput.value = '';
+            }
+            endDateInput.showPicker();
+        } else {
+            endDateInput.min = '';
         }
-        endDateInput.showPicker();
-    } else {
-        endDateInput.min = '';
-    }
-    fetchData(); 
-});
+        fetchData();
+    });
     endDateInput.addEventListener('change', handleFilterChange);
-    
+
     statusFilters.addEventListener('click', (e) => {
         if (e.target.tagName === 'BUTTON') {
             document.querySelectorAll('#statusFilters .filter-btn').forEach(btn => btn.classList.remove('active'));
@@ -305,7 +309,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     document.querySelectorAll('#modalAdicionarSolicitacao .status-btn').forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function () {
             document.querySelectorAll('#modalAdicionarSolicitacao .status-btn').forEach(btn => btn.classList.remove('active'));
             this.classList.add('active');
 
@@ -329,7 +333,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    document.getElementById('formularioAdicionarSolicitacao').addEventListener('submit', async function(e) {
+    document.getElementById('formularioAdicionarSolicitacao').addEventListener('submit', async function (e) {
         e.preventDefault();
         const mensagem = document.getElementById('mensagemAdicionarSolicitacao');
         const botao = this.querySelector('.botao-salvar');
@@ -356,14 +360,14 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    document.getElementById('formularioEdicaoSolicitacao').addEventListener('submit', async function(e) {
+    document.getElementById('formularioEdicaoSolicitacao').addEventListener('submit', async function (e) {
         e.preventDefault();
         const mensagem = document.getElementById('mensagemEdicaoSolicitacao');
         const botao = this.querySelector('.botao-salvar');
         alternarCarregamento(botao, true);
         const formData = new FormData(this);
         const data = Object.fromEntries(formData.entries());
-        
+
         delete data.nome_usuario;
         delete data.nome_cidade;
 
@@ -387,7 +391,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    document.getElementById('formularioConcluirSolicitacao').addEventListener('submit', async function(e) {
+    document.getElementById('formularioConcluirSolicitacao').addEventListener('submit', async function (e) {
         e.preventDefault();
         const mensagem = document.getElementById('mensagemConcluirSolicitacao');
         const botao = this.querySelector('.botao-salvar');
@@ -422,12 +426,78 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    window.onclick = function(event) {
+    window.onclick = function (event) {
         if (event.target.matches('.modal')) {
             event.target.classList.remove('esta-ativo');
         }
     };
 
-     fetchData(); // Carga inicial
-    setInterval(checkForUpdates, 15000); // Verifica atualizações a cada 15 segundos
+    // --- LÓGICA DE AUTO-UPDATE COM BACKOFF EXPONENCIAL ---
+    let updateTimeoutId = null;
+    const BASE_INTERVAL = 15000; // Intervalo inicial: 15 segundos
+    const MAX_INTERVAL = 120000;  // Intervalo máximo: 2 minutos
+    let currentInterval = BASE_INTERVAL;
+
+    // Função que APENAS verifica se há atualizações
+    async function performUpdateCheck() {
+        try {
+            const response = await fetch('API/check_updates.php?context=solicitacoes_clientes');
+            const result = await response.json();
+
+            // Compara o checksum do servidor com o checksum local
+            if (result.success && result.checksum !== currentChecksum) {
+                // Se forem diferentes, retorna o NOVO checksum para ser processado
+                return result.checksum;
+            }
+            // Se forem iguais ou se houver erro, retorna null (sem atualizações)
+            return null;
+        } catch (error) {
+            console.error('Erro ao verificar atualizações de solicitações:', error);
+            return null; // Retorna null em caso de erro de rede
+        }
+    }
+
+    // Função que gerencia o agendamento do "loop" de verificação
+    // Função que gerencia o agendamento e a execução das verificações
+    async function scheduleNextCheck() {
+        if (updateTimeoutId) {
+            clearTimeout(updateTimeoutId);
+        }
+
+        try {
+            // 1. Verifica se há um novo checksum no servidor
+            const checkResponse = await fetch('API/check_updates.php?context=solicitacoes_clientes');
+            const checkResult = await checkResponse.json();
+
+            // 2. Compara o checksum do servidor com o checksum local
+            if (checkResult.success && checkResult.checksum !== currentChecksum) {
+                console.log('Novas atualizações detectadas. Recarregando dados...');
+                
+                // 3. Se houver mudança, busca os dados completos. A API get_solicitacoes.php já retorna o checksum mais recente.
+                await fetchData(); // fetchData irá buscar os dados e ATUALIZAR a variável 'currentChecksum' localmente.
+
+                console.log('Intervalo de verificação resetado para o valor base.');
+                currentInterval = BASE_INTERVAL; // Reseta o intervalo
+            } else {
+                // 4. Se não houver mudança, aumenta o intervalo para a próxima verificação
+                currentInterval = Math.min(currentInterval * 2, MAX_INTERVAL);
+                console.log(`Nenhuma atualização. Próxima verificação em ${currentInterval / 1000}s.`);
+            }
+        } catch (error) {
+            console.error('Erro no ciclo de verificação de atualizações:', error);
+            // Em caso de erro, também aumenta o intervalo para evitar sobrecarga
+            currentInterval = Math.min(currentInterval * 2, MAX_INTERVAL);
+        } finally {
+            // 5. Agenda a próxima verificação, independentemente do resultado
+            updateTimeoutId = setTimeout(scheduleNextCheck, currentInterval);
+        }
+    }
+
+    // --- INICIALIZAÇÃO ---
+    // Carga inicial dos dados. 
+    fetchData().then(() => {
+        // Inicia o ciclo de verificação SOMENTE APÓS a primeira carga de dados
+        console.log('Carga inicial completa. Iniciando ciclo de verificação de atualizações.');
+        scheduleNextCheck();
+    });
 });

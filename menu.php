@@ -43,17 +43,20 @@ if (isset($user_id)) {
         .card:before {
             content: none;
         }
+
         .menu-buttons-container {
             display: flex;
             flex-direction: column;
             gap: 15px;
             padding: 20px;
         }
+
         .menu-row {
             display: flex;
             justify-content: space-around;
             gap: 20px;
         }
+
         .menu-button {
             display: flex;
             flex-direction: column;
@@ -71,14 +74,17 @@ if (isset($user_id)) {
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             min-height: 120px;
         }
+
         .menu-button i {
             font-size: 2.5rem;
             margin-bottom: 10px;
         }
+
         .menu-button:hover {
             transform: translateY(-5px);
             box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
         }
+
         .card {
             background-color: #ffffff;
             border-radius: 12px;
@@ -88,6 +94,7 @@ if (isset($user_id)) {
             margin: 40px auto;
             position: relative;
         }
+
         .card-header {
             font-size: 2rem;
             font-weight: 700;
@@ -95,77 +102,202 @@ if (isset($user_id)) {
             margin-bottom: 1.5rem;
             text-align: center;
         }
+
         @media (max-width: 768px) {
-            .menu-row { flex-direction: column; }
-            .menu-button { width: 100%; }
-            .card { margin: 20px auto; padding: 1rem; }
-            .card-header { font-size: 1.5rem; }
+            .menu-row {
+                flex-direction: column;
+            }
+
+            .menu-button {
+                width: 100%;
+            }
+
+            .card {
+                margin: 20px auto;
+                padding: 1rem;
+            }
+
+            .card-header {
+                font-size: 1.5rem;
+            }
         }
-        .main-wrapper { display: flex; min-height: 100vh; }
+
+        .main-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
         .sidebar-icons-left {
-            position: fixed; top: 0; left: 0; width: 70px; height: 100vh;
-            background-color: #112058; padding: 10px 0; box-sizing: border-box;
-            display: flex; flex-direction: column; justify-content: flex-end;
-            align-items: center; transition: width 0.3s ease; z-index: 1000;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 70px;
+            height: 100vh;
+            background-color: #112058;
+            padding: 10px 0;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            transition: width 0.3s ease;
+            z-index: 1000;
         }
-        .sidebar-icons-left.expanded { width: 250px; }
+
+        .sidebar-icons-left.expanded {
+            width: 250px;
+        }
+
         .sidebar-icons-left a {
-            position: relative; display: flex; align-items: center; justify-content: center;
-            gap: 15px; color: white; text-decoration: none; padding: 10px;
-            margin-bottom: 10px; width: 100%; transition: background-color 0.3s ease; box-sizing: border-box;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            color: white;
+            text-decoration: none;
+            padding: 10px;
+            margin-bottom: 10px;
+            width: 100%;
+            transition: background-color 0.3s ease;
+            box-sizing: border-box;
         }
-        .sidebar-icons-left.expanded a { justify-content: flex-start; }
-        .sidebar-icons-left a:first-of-type { margin-top: auto; }
-        .sidebar-icons-left a:hover { background-color: rgba(9, 16, 43, 0.2); }
-        .sidebar-icons-left a i { font-size: 1.5rem; min-width: 30px; text-align: center; }
+
+        .sidebar-icons-left.expanded a {
+            justify-content: flex-start;
+        }
+
+        .sidebar-icons-left a:first-of-type {
+            margin-top: auto;
+        }
+
+        .sidebar-icons-left a:hover {
+            background-color: rgba(9, 16, 43, 0.2);
+        }
+
+        .sidebar-icons-left a i {
+            font-size: 1.5rem;
+            min-width: 30px;
+            text-align: center;
+        }
+
         .sidebar-icons-left a span {
-            display: none; white-space: normal; overflow: hidden;
-            text-overflow: ellipsis; width: 150px;
+            display: none;
+            white-space: normal;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 150px;
         }
-        .sidebar-icons-left.expanded a span { display: block; }
+
+        .sidebar-icons-left.expanded a span {
+            display: block;
+        }
+
         .sidebar-icons-left:not(.expanded) a::after {
-            content: attr(data-title); position: absolute; left: 80px; top: 50%;
-            transform: translateY(-50%); background-color: rgba(0, 0, 0, 0.7); color: #fff;
-            padding: 5px 10px; border-radius: 5px; white-space: nowrap;
-            opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease;
+            content: attr(data-title);
+            position: absolute;
+            left: 80px;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 5px;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
         }
-        .sidebar-icons-left:not(.expanded) a:hover::after { opacity: 1; visibility: visible; }
+
+        .sidebar-icons-left:not(.expanded) a:hover::after {
+            opacity: 1;
+            visibility: visible;
+        }
+
         .menu-toggle-btn {
-            position: fixed; top: 20px; left: 80px; width: 30px; height: 25px;
-            display: flex; flex-direction: column; justify-content: space-between;
-            cursor: pointer; z-index: 1001; background: none; border: none;
-            padding: 0; transition: left 0.3s ease;
+            position: fixed;
+            top: 20px;
+            left: 80px;
+            width: 30px;
+            height: 25px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            cursor: pointer;
+            z-index: 1001;
+            background: none;
+            border: none;
+            padding: 0;
+            transition: left 0.3s ease;
         }
-        .menu-toggle-btn.menu-shifted { left: 260px; }
+
+        .menu-toggle-btn.menu-shifted {
+            left: 260px;
+        }
+
         .menu-toggle-btn span {
-            display: block; width: 100%; height: 3px;
-            background-color: #333; transition: all 0.3s ease;
+            display: block;
+            width: 100%;
+            height: 3px;
+            background-color: #333;
+            transition: all 0.3s ease;
         }
+
         .content-container {
-            flex-grow: 1; padding: 20px; margin-left: 70px;
+            flex-grow: 1;
+            padding: 20px;
+            margin-left: 70px;
             transition: margin-left 0.3s ease;
         }
-        .content-container.sidebar-open { margin-left: 250px; }
+
+        .content-container.sidebar-open {
+            margin-left: 250px;
+        }
+
         .sidebar-user-info {
-            padding: 20px 10px; color: white; text-align: center; display: none;
+            padding: 20px 10px;
+            color: white;
+            text-align: center;
+            display: none;
             border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-            margin-bottom: 20px; width: 100%; box-sizing: border-box;
+            margin-bottom: 20px;
+            width: 100%;
+            box-sizing: border-box;
         }
-        .sidebar-user-info.visible { display: block; }
-        .sidebar-user-info p { margin: 5px 0; font-size: 0.9rem; }
+
+        .sidebar-user-info.visible {
+            display: block;
+        }
+
+        .sidebar-user-info p {
+            margin: 5px 0;
+            font-size: 0.9rem;
+        }
+
         .btn-change-password {
-            background-color: #007bff; color: white; border: none; border-radius: 5px;
-            padding: 8px 12px; cursor: pointer; margin-top: 10px; font-size: 0.8rem;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 8px 12px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 0.8rem;
         }
-        .btn-change-password:hover { background-color: #0056b3; }
+
+        .btn-change-password:hover {
+            background-color: #0056b3;
+        }
 
         /* --- NOVO CSS ADICIONADO PARA A NOTIFICAÇÃO --- */
         .notification-toast {
             position: fixed;
             bottom: 20px;
-            right: -400px; /* Começa fora da tela para animar a entrada */
+            right: -400px;
+            /* Começa fora da tela para animar a entrada */
             width: 380px;
-            background-color: #2c3e50; /* Cor escura elegante */
+            background-color: #2c3e50;
+            /* Cor escura elegante */
             color: white;
             padding: 20px;
             border-radius: 8px;
@@ -175,21 +307,29 @@ if (isset($user_id)) {
             gap: 15px;
             font-family: 'Inter', sans-serif;
             z-index: 2000;
-            transition: right 0.5s ease-in-out; /* Animação suave de entrada e saída */
-            cursor: pointer; /* Torna a notificação clicável */
+            transition: right 0.5s ease-in-out;
+            /* Animação suave de entrada e saída */
+            cursor: pointer;
+            /* Torna a notificação clicável */
         }
+
         .notification-toast.show {
-            right: 20px; /* Posição final na tela quando visível */
+            right: 20px;
+            /* Posição final na tela quando visível */
         }
+
         .notification-toast i {
             font-size: 1.8rem;
-            color: #f1c40f; /* Cor de ícone para aviso */
+            color: #f1c40f;
+            /* Cor de ícone para aviso */
         }
+
         .notification-toast .message {
             flex-grow: 1;
             font-size: 1rem;
             font-weight: 500;
         }
+
         .notification-toast .close-notification {
             background: none;
             border: none;
@@ -199,12 +339,14 @@ if (isset($user_id)) {
             opacity: 0.7;
             transition: opacity 0.2s;
         }
+
         .notification-toast .close-notification:hover {
             opacity: 1;
         }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
+
 <body>
 
     <div class="main-wrapper">
@@ -216,9 +358,12 @@ if (isset($user_id)) {
                 <button id="change-password-btn" class="btn-change-password">Alterar Senha</button>
             </div>
             <a href="relatorios.php" data-title="Relatórios"><i class="fas fa-file-alt"></i><span>Relatórios</span></a>
-            <a href="usuarios" data-title="Gerenciar Usuários"><i class="fas fa-users-cog"></i><span>Gerenciar Usuários</span></a>
-            <a href="cidades" data-title="Gerenciar Cidades"><i class="fas fa-city"></i><span>Gerenciar Cidades</span></a>
-            <a href="equipamentos" data-title="Informações dos Equipamentos"><i class="fas fa-server"></i><span>Informações dos Equipamentos</span></a>
+            <a href="usuarios" data-title="Gerenciar Usuários"><i class="fas fa-users-cog"></i><span>Gerenciar
+                    Usuários</span></a>
+            <a href="cidades" data-title="Gerenciar Cidades"><i class="fas fa-city"></i><span>Gerenciar
+                    Cidades</span></a>
+            <a href="equipamentos" data-title="Informações dos Equipamentos"><i
+                    class="fas fa-server"></i><span>Informações dos Equipamentos</span></a>
             <a href="veiculos" data-title="Veículos"><i class="fas fa-car"></i><span>Veículos</span></a>
             <a href="provedores" data-title="Provedores"><i class="fas fa-network-wired"></i><span>Provedores</span></a>
             <a href="logout.php" data-title="Sair"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
@@ -234,21 +379,30 @@ if (isset($user_id)) {
                 <h1 class="card-header">Menu Principal</h1>
                 <div class="menu-buttons-container">
                     <div class="menu-row">
-                        <a href="manutencoes_instalacoes.php" class="menu-button" id="manutencao"><i class="fas fa-tools"></i><span>Ocorrências e Instalações</span></a>
-                        <a href="ocorrenciasPendentes.php" class="menu-button" id="manutencaoPendentes"><i class="fas fa-clock"></i><span>Atribuir Técnico Ocorrências Pendentes</span></a>
-                        <a href="ocorrenciaProvedores.php" class="menu-button" id="ocorrenciaProvedores"><i class="fas fa-network-wired"></i><span>Ocorrência Provedores</span></a>
+                        <a href="manutencoes_instalacoes.php" class="menu-button" id="manutencao"><i
+                                class="fas fa-tools"></i><span>Ocorrências e Instalações</span></a>
+                        <a href="ocorrenciasPendentes.php" class="menu-button" id="manutencaoPendentes"><i
+                                class="fas fa-clock"></i><span>Atribuir Técnico Ocorrências Pendentes</span></a>
+                        <a href="ocorrenciaProvedores.php" class="menu-button" id="ocorrenciaProvedores"><i
+                                class="fas fa-network-wired"></i><span>Ocorrência Provedores</span></a>
                     </div>
                     <div class="menu-row">
-                        <a href="ocorrenciasEmAndamento.php" class="menu-button" id="manutencaoAndamento"><i class="fas fa-cogs"></i><span>Ocorrências Em Andamento</span></a>
-                        <a href="ocorrenciaProcessamento.php" class="menu-button" id="ocorrenciaProcessamento"><i class="fas fa-clipboard-check"></i><span>Ocorrência Processamento</span></a>
+                        <a href="ocorrenciasEmAndamento.php" class="menu-button" id="manutencaoAndamento"><i
+                                class="fas fa-cogs"></i><span>Ocorrências Em Andamento</span></a>
+                        <a href="ocorrenciaProcessamento.php" class="menu-button" id="ocorrenciaProcessamento"><i
+                                class="fas fa-clipboard-check"></i><span>Ocorrência Processamento</span></a>
                     </div>
                     <div class="menu-row">
-                        <a href="solicitacoesClientes.php" class="menu-button" id="solicitacaoClientesBtn"><i class="fas fa-headset"></i><span>Solicitação Clientes</span></a>
-                        <a href="lacresImetro.php" class="menu-button" id="lacresImetroBtn"><i class="fas fa-stamp"></i><span>Lacres IMETRO</span></a>
-                        <a href="#" class="menu-button" id="afericoesBtn"><i class="fas fa-gauge-high"></i><span>Aferições</span></a>
+                        <a href="solicitacoesClientes.php" class="menu-button" id="solicitacaoClientesBtn"><i
+                                class="fas fa-headset"></i><span>Solicitação Clientes</span></a>
+                        <a href="lacresImetro.php" class="menu-button" id="lacresImetroBtn"><i
+                                class="fas fa-stamp"></i><span>Lacres IMETRO</span></a>
+                        <a href="#" class="menu-button" id="afericoesBtn"><i
+                                class="fas fa-gauge-high"></i><span>Aferições</span></a>
                     </div>
                     <div class="menu-row">
-                        <a href="gestaoOcorrencias.php" class="menu-button" id="gestaoOcorrencias"><i class="fas fa-check-circle"></i><span>Gestão de Ocorrências</span></a>
+                        <a href="gestaoOcorrencias.php" class="menu-button" id="gestaoOcorrencias"><i
+                                class="fas fa-check-circle"></i><span>Gestão de Ocorrências</span></a>
                     </div>
                 </div>
             </div>
@@ -275,9 +429,9 @@ if (isset($user_id)) {
             const userTypeDisplay = document.getElementById('user-type-display');
             const changePasswordBtn = document.getElementById('change-password-btn');
 
-            const userName = '<?php echo $user_name; ?>';
-            const userEmail = '<?php echo $user_email; ?>';
-            const userType = '<?php echo $user_type; ?>';
+            const userName = <?php echo json_encode($user_name); ?>;
+            const userEmail = <?php echo json_encode($user_email); ?>;
+            const userType = <?php echo json_encode($user_type); ?>;
 
             userNameDisplay.textContent = userName;
             userEmailDisplay.textContent = userEmail;
@@ -299,7 +453,7 @@ if (isset($user_id)) {
                     window.location.href = 'change_password.php';
                 });
             }
-            
+
             // Adicionado redirecionamentos para os botões do menu principal
             document.getElementById('manutencao').addEventListener('click', () => window.location.href = 'manutencoes_instalacoes.php');
             document.getElementById('manutencaoPendentes').addEventListener('click', () => window.location.href = 'ocorrenciasPendentes.php');
@@ -342,15 +496,15 @@ if (isset($user_id)) {
             }
 
             // A notificação também funciona como um botão para ir à página de processamento
-            toast.addEventListener('click', function(event) {
+            toast.addEventListener('click', function (event) {
                 // A ação só ocorre se o clique não for no botão de fechar
                 if (event.target !== closeToastBtn) {
                     window.location.href = 'ocorrenciaProcessamento.php';
                 }
             });
-            
+
             // Adiciona o evento para fechar a notificação ao clicar no 'X'
-            closeToastBtn.addEventListener('click', function() {
+            closeToastBtn.addEventListener('click', function () {
                 toast.classList.remove('show');
             });
 
@@ -358,8 +512,9 @@ if (isset($user_id)) {
             checkPendingValidations();
 
             // Configura o intervalo para verificar a cada 5 minutos (300000 milissegundos)
-            setInterval(checkPendingValidations, 300000); 
+            setInterval(checkPendingValidations, 300000);
         });
     </script>
 </body>
+
 </html>

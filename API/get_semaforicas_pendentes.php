@@ -7,7 +7,19 @@ $ocorrencias_por_cidade = [];
 $cidades_com_ocorrencias = [];
 
 try {
-    // <<< CORREÇÃO PRINCIPAL APLICADA AQUI >>>
+    // Verifica as duas tabelas que definem o estado de "pendentes"
+    $tables = ['manutencoes', 'ocorrencia_semaforica'];
+    $totalChecksum = 0;
+    foreach ($tables as $table) {
+        $result = $conn->query("CHECKSUM TABLE `$table`");
+        if ($result) {
+            $row = $result->fetch_assoc();
+            $totalChecksum += (int)$row['Checksum'];
+        } else {
+            throw new Exception("Erro ao calcular checksum para a tabela: $table");
+        }
+    }
+
     // Adicionamos um JOIN com a tabela 'manutencoes' para buscar o ID correto.
     $sql = "SELECT 
                 m.id_manutencao, -- Buscando o ID REAL da manutenção
@@ -48,15 +60,23 @@ try {
         $response_data['ocorrencias'] = $ocorrencias_por_cidade;
         $response_data['cidades'] = $cidades_com_ocorrencias;
         
-        echo json_encode(['success' => true, 'data' => $response_data]);
+         echo json_encode([
+        'success' => true,
+        'checksum' => $totalChecksum,
+        'data' => $response_data
+    ]);
 
     } else {
-        echo json_encode(['success' => false, 'message' => 'Nenhuma ocorrência semafórica pendente encontrada.']);
+        echo json_encode([
+            'success' => false,
+            'checksum' => $totalChecksum,
+            'data' => ['ocorrencias' => [], 'cidades' => []],
+            'message' => 'Nenhuma ocorrência semafórica pendente encontrada.'
+        ]);
     }
 
 } catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Erro no servidor: ' . $e->getMessage()]);
+    echo json_encode(['success' => false, 'message' => 'Erro ao buscar ocorrências semafóricas: ' . $e->getMessage()]);
 } finally {
     $conn->close();
 }

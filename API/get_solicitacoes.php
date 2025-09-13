@@ -14,6 +14,12 @@ $data_fim = $_GET['data_fim'] ?? null;
 $status_filtro = $_GET['status'] ?? 'todos';
 
 try {
+
+    $checksum_result = $conn->query("CHECKSUM TABLE solicitacao_cliente");
+    if ($checksum_result) {
+        $checksum_row = $checksum_result->fetch_assoc();
+        $response['checksum'] = (int)$checksum_row['Checksum']; // Adiciona o checksum
+    }
     // Primeiro, pega a contagem total de todas as solicitações
     $count_result = $conn->query("SELECT COUNT(*) as total_count FROM solicitacao_cliente");
     $total_count = $count_result->fetch_assoc()['total_count'];
@@ -59,7 +65,7 @@ try {
     $stmt->bind_param($types, ...$params);
     $stmt->execute();
     $result = $stmt->get_result();
-    
+
     if ($result) {
         while ($row = $result->fetch_assoc()) {
             $cidade = $row['nome_cidade'];
@@ -67,14 +73,14 @@ try {
                 $solicitacoes_por_cidade[$cidade] = [];
             }
             $solicitacoes_por_cidade[$cidade][] = $row;
-            
+
             if (!in_array($cidade, $cidades_com_solicitacoes)) {
                 $cidades_com_solicitacoes[] = $cidade;
             }
         }
-        
+
         sort($cidades_com_solicitacoes);
-        
+
         $response_data['solicitacoes'] = $solicitacoes_por_cidade;
         $response_data['cidades'] = $cidades_com_solicitacoes;
 

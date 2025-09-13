@@ -24,9 +24,15 @@ document.addEventListener('DOMContentLoaded', function () {
     let currentItemsToAssign = [];
     let currentItemsToUpdatePriority = []; // Itens atuais para atualizar prioridade
     let currentEditingItem = null;
-    let updateInterval;
     let currentCardForSelection = null;
     let isSimplifiedViewActive = false;
+
+    let currentChecksum = null;
+    let updateTimeoutId = null;
+    const BASE_INTERVAL = 15000; // Intervalo inicial: 15 segundos
+    const MAX_INTERVAL = 120000; // Intervalo máximo: 2 minutos
+    let currentInterval = BASE_INTERVAL;
+
 
     function calculateDaysOpen(startDateString) {
         const startDate = new Date(startDateString);
@@ -60,26 +66,20 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // --- LÓGICA DE BUSCA E RENDERIZAÇÃO ---
-    async function fetchData(isUpdate = false) {
-        if (!isUpdate) {
-            pageLoader.style.display = 'flex';
-            ocorrenciasContainer.innerHTML = '';
-        }
+    async function fetchData() {
+        pageLoader.style.display = 'flex';
+        ocorrenciasContainer.innerHTML = '';
+
         const startDate = startDateInput.value;
         const endDate = endDateInput.value;
-        const params = new URLSearchParams({
-            data_inicio: startDate,
-            data_fim: endDate || startDate
-        });
 
         let apiUrl = '';
         if (activeType === 'semaforica') {
             apiUrl = 'API/get_semaforicas_pendentes.php';
         } else {
-            // Para 'manutencao' e 'instalação', usa a API original com os filtros de data
             const params = new URLSearchParams({
-                data_inicio: startDateInput.value,
-                data_fim: endDateInput.value || startDateInput.value
+                data_inicio: startDate,
+                data_fim: endDate || startDate
             });
             apiUrl = `API/get_ocorrencias_pendentes.php?${params.toString()}`;
         }
@@ -87,39 +87,54 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             const response = await fetch(apiUrl);
             const result = await response.json();
-            const newSignature = JSON.stringify(result.data);
-            const oldSignature = JSON.stringify(allData);
 
-            if (isUpdate) {
-                if (newSignature !== oldSignature) {
-                    allData = result.data;
-                    applyFiltersAndRender();
-                }
+            // A lógica de comparação de JSON foi removida.
+            if (result.success) {
+                allData = result.data;
+                // AQUI ATUALIZAMOS O CHECKSUM LOCAL
+                currentChecksum = result.checksum;
+                applyFiltersAndRender();
             } else {
-                if (result.success) {
-                    allData = result.data;
-                    applyFiltersAndRender();
-                } else {
-                    allData = null;
-                    ocorrenciasContainer.innerHTML = `<p>${result.message || 'Nenhuma ocorrência encontrada.'}</p>`;
-                    updateCityFilters([]);
-                }
+                allData = null;
+                ocorrenciasContainer.innerHTML = `<p>${result.message || 'Nenhuma ocorrência encontrada.'}</p>`;
+                updateCityFilters([]);
             }
         } catch (error) {
-            if (!isUpdate) {
-                console.error('Erro ao buscar dados:', error);
-                ocorrenciasContainer.innerHTML = `<p>Ocorreu um erro ao carregar os dados. Tente novamente.</p>`;
-            }
+            console.error('Erro ao buscar dados:', error);
+            ocorrenciasContainer.innerHTML = `<p>Ocorreu um erro ao carregar os dados. Tente novamente.</p>`;
         } finally {
-            if (!isUpdate) {
-                pageLoader.style.display = 'none';
-            }
+            pageLoader.style.display = 'none';
         }
     }
 
-    function startAutoUpdate() {
-        if (updateInterval) clearInterval(updateInterval);
-        updateInterval = setInterval(() => fetchData(true), 5000);  // Atualiza a cada 5 segundos
+    async function scheduleNextCheck() {
+        if (updateTimeoutId) {
+            clearTimeout(updateTimeoutId);
+        }
+
+        try {
+            // Chama o script central de verificação com o contexto correto.
+            const checkResponse = await fetch('API/check_updates.php?context=ocorrencias_pendentes');
+            const checkResult = await checkResponse.json();
+
+            // Compara o checksum do servidor com o checksum local
+            if (checkResult.success && checkResult.checksum !== currentChecksum) {
+                console.log('Novas ocorrências pendentes detectadas. Recarregando...');
+                await fetchData(); // Recarrega os dados completos
+                currentInterval = BASE_INTERVAL; // Reseta o intervalo
+                console.log('Intervalo de verificação de pendentes resetado.');
+            } else {
+                // Se não houver mudança, aumenta o intervalo
+                currentInterval = Math.min(currentInterval * 2, MAX_INTERVAL);
+                console.log(`Nenhuma atualização. Próxima verificação de pendentes em ${currentInterval / 1000}s.`);
+            }
+        } catch (error) {
+            console.error('Erro no ciclo de verificação de atualizações:', error);
+            currentInterval = Math.min(currentInterval * 2, MAX_INTERVAL);
+        } finally {
+            // Agenda a próxima verificação
+            updateTimeoutId = setTimeout(scheduleNextCheck, currentInterval);
+        }
     }
 
     function applyFiltersAndRender() {
@@ -1181,8 +1196,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- INICIALIZAÇÃO ---
     checkAndShowSemaforicaButton();
-    fetchData();
-    startAutoUpdate();
+    fetchData().then(() => {
+        console.log('Carga inicial de ocorrências pendentes completa. Iniciando ciclo de verificação.');
+        scheduleNextCheck();
+    });
+    
 
     // Primeiro, eu pego a referência do botão que criei no HTML.
     const btnVoltarAoTopo = document.getElementById("btnVoltarAoTopo");

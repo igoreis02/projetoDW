@@ -7,16 +7,35 @@ header('Access-Control-Allow-Origin: *');
 require_once 'conexao_bd.php';
 
 try {
+
+    // --- BLOCO DE CÁLCULO DE CHECKSUM ---
+    $tables = ['manutencoes', 'ocorrencia_semaforica'];
+    $totalChecksum = 0;
+    foreach ($tables as $table) {
+        $result = $conn->query("CHECKSUM TABLE `$table`");
+        if ($result) {
+            $row = $result->fetch_assoc();
+            // Somamos os checksums para criar uma assinatura única do estado dos dados.
+            $totalChecksum += (int)$row['Checksum'];
+        } else {
+            // Lançar uma exceção em caso de falha no cálculo
+            throw new Exception("Erro ao calcular checksum para a tabela: $table");
+        }
+    }
     $where_clauses = ["m.status_reparo = 'em andamento'"];
-    
+    $params = [];
+    $types = '';
+
     if (!empty($_GET['data_inicio'])) {
-        $data_inicio = $conn->real_escape_string($_GET['data_inicio']);
-        $where_clauses[] = "m.inicio_reparo >= '{$data_inicio} 00:00:00'";
+        $where_clauses[] = "m.inicio_reparo >= ?";
+        $params[] = $_GET['data_inicio'] . ' 00:00:00';
+        $types .= 's';
     }
 
     if (!empty($_GET['data_fim'])) {
-        $data_fim = $conn->real_escape_string($_GET['data_fim']);
-        $where_clauses[] = "m.inicio_reparo <= '{$data_fim} 23:59:59'";
+        $where_clauses[] = "m.inicio_reparo <= ?";
+        $params[] = $_GET['data_fim'] . ' 23:59:59';
+        $types .= 's';
     }
 
     $where_sql = implode(' AND ', $where_clauses);
@@ -97,11 +116,18 @@ try {
 
     ORDER BY cidade, inicio_reparo DESC";
 
-    $result = $conn->query($sql);
+    $stmt = $conn->prepare($sql);
 
-    if ($result === false) {
+    if ($stmt === false) {
         throw new Exception("Erro na consulta SQL: " . $conn->error);
     }
+
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
+
+    $stmt->execute();
+    $result = $stmt->get_result();
 
     $ocorrencias_por_cidade = [];
     if ($result->num_rows > 0) {
@@ -114,7 +140,11 @@ try {
         }
     }
     
-    echo json_encode(['success' => true, 'data' => ['ocorrencias' => $ocorrencias_por_cidade]]);
+    echo json_encode([
+        'success' => true, 
+        'checksum' => $totalChecksum, 
+        'data' => ['ocorrencias' => $ocorrencias_por_cidade]
+    ]);
 
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'message' => 'Erro ao carregar dados: ' . $e->getMessage()]);

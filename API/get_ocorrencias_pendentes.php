@@ -16,6 +16,18 @@ $cidades_com_ocorrencias = [];
 $response_data = [];
 
 try {
+    // Verifica as duas tabelas que definem o estado de "pendentes"
+    $tables = ['manutencoes', 'ocorrencia_semaforica'];
+    $totalChecksum = 0;
+    foreach ($tables as $table) {
+        $result = $conn->query("CHECKSUM TABLE `$table`");
+        if ($result) {
+            $row = $result->fetch_assoc();
+            $totalChecksum += (int)$row['Checksum'];
+        } else {
+            throw new Exception("Erro ao calcular checksum para a tabela: $table");
+        }
+    }
     // --- Consulta SQL base ---
     $sql = "SELECT
                 m.id_manutencao,
@@ -97,10 +109,19 @@ try {
         $response_data['ocorrencias'] = $ocorrencias_por_cidade;
         $response_data['cidades'] = $cidades_com_ocorrencias;
         
-        echo json_encode(['success' => true, 'data' => $response_data]);
+        echo json_encode([
+            'success' => true,
+            'checksum' => $totalChecksum, // Adiciona o checksum
+            'data' => $response_data
+        ]);
 
     } else {
-        echo json_encode(['success' => false, 'message' => 'Nenhuma ocorrência pendente encontrada para os filtros selecionados.']);
+        echo json_encode([
+            'success' => true, 
+            'checksum' => $totalChecksum,
+            'data' => ['ocorrencias' => [], 'cidades' => []],
+            'message' => 'Nenhuma ocorrência pendente encontrada para os filtros selecionados.'
+        ]);
     }
 
 } catch (Exception $e) {
