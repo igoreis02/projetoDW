@@ -546,6 +546,98 @@ if (!isset($_SESSION['user_id'])) {
                 gap: 10px;
             }
         }
+
+        #simplifiedView {
+            text-align: left;
+            font-size: 1.3em;
+            padding: 1rem 0.2rem;
+            border-top: 1px solid #e5e7eb;
+            border-bottom: 1px solid #e5e7eb;
+            margin-bottom: 2rem;
+            width: 100%;
+        }
+
+        #simplifiedView h2 {
+            font-size: 1.5em;
+            color: black;
+            margin-bottom: 1.5rem;
+        }
+
+        #simplifiedView h3 {
+            font-size: 1.2em;
+            color: #374151;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        #simplifiedView ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        #simplifiedView li {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.1em;
+            padding: 0.4rem 0.2rem;
+            border-radius: 4px;
+            position: relative;
+            /* Para o posicionamento dos dias */
+            margin-bottom: 0.5rem;
+            border-left: 3px solid #6b7280;
+            /* Cor padrão */
+            padding-left: 10px;
+        }
+
+        #simplifiedView li:nth-child(odd) {
+            background-color: #f9fafb;
+        }
+
+        /* Estilos baseados no status da ocorrência */
+        #simplifiedView li.status-pendente {
+            color: #3b82f6;
+            /* Azul */
+            border-left-color: #3b82f6;
+        }
+
+        #simplifiedView li.status-em-andamento {
+            color: #f59e0b;
+            /* Amarelo/Laranja */
+            border-left-color: #f59e0b;
+        }
+
+        #simplifiedView li.status-concluido {
+            color: #16a34a;
+            /* Verde */
+            border-left-color: #16a34a;
+        }
+
+        .card-dias-simplificado {
+            float: right;
+            text-align: right;
+            font-size: 0.9em;
+            color: #6b7280;
+        }
+
+        .dias-simplificado {
+            font-weight: bold;
+        }
+
+        .cidade-toggle {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            /* Espaço entre a seta e o nome da cidade */
+            user-select: none;
+            /* Impede que o texto seja selecionado ao clicar */
+        }
+
+        .arrow-toggle {
+            font-size: 0.8em;
+            transition: transform 0.2s ease-in-out;
+        }
     </style>
 </head>
 
@@ -568,19 +660,31 @@ if (!isset($_SESSION['user_id'])) {
                 <button id="btnSemaforica" class="action-btn" data-type="semaforica">Semafórica</button>
             </div>
             <div class="date-clear-wrapper">
-            <div class="date-filter">
-                <label for="startDate">De:</label>
-                <input type="date" id="startDate">
-                <label for="endDate">Até:</label>
-                <input type="date" id="endDate">
-            </div>
-            <button id="limparFiltroData" style="display: none;">Limpar Filtro</button>
+                <div class="date-filter">
+                    <label for="startDate">De:</label>
+                    <input type="date" id="startDate">
+                    <label for="endDate">Até:</label>
+                    <input type="date" id="endDate">
+                </div>
+                <button id="limparFiltroData" style="display: none;">Limpar Filtro</button>
             </div>
         </div>
 
         <div id="searchContainer" class="search-container">
             <input type="search" id="searchInput" placeholder="Pesquisar por equipamento, status, cidade, técnico...">
             <button id="btnClearFilters">Limpar Filtros</button>
+        </div>
+        <div class="filters-wrapper hidden">
+            <div class="top-filters">
+                <div id="statusFilters" class="status-filters">
+                    <button class="filter-btn active" data-status="todos">Todos</button>
+                    <button class="filter-btn" data-status="pendente">Pendente</button>
+                    <button class="filter-btn" data-status="em andamento">Em Andamento</button>
+                    <button class="filter-btn" data-status="concluido">Concluído</button>
+                    <button class="filter-btn" data-status="cancelado">Cancelado</button>
+                </div>
+            </div>
+            <div id="cityFilters" class="city-filters"></div>
         </div>
 
         <div id="dashboardView" class="dashboard-view">
@@ -629,22 +733,12 @@ if (!isset($_SESSION['user_id'])) {
         </div>
 
         <div id="ocorrenciasView" class="hidden">
-            <div class="filters-wrapper">
-                <div class="top-filters">
-                    <div id="statusFilters" class="status-filters">
-                        <button class="filter-btn active" data-status="todos">Todos</button>
-                        <button class="filter-btn" data-status="pendente">Pendente</button>
-                        <button class="filter-btn" data-status="em andamento">Em Andamento</button>
-                        <button class="filter-btn" data-status="concluido">Concluído</button>
-                        <button class="filter-btn" data-status="cancelado">Cancelado</button>
-                    </div>
-                </div>
-                <div id="cityFilters" class="city-filters"></div>
-            </div>
+
             <div id="ocorrenciasContainer" class="ocorrencias-container">
                 <p id="loadingMessage">A carregar ocorrências...</p>
             </div>
         </div>
+        <div id="simplifiedView" class="hidden"></div>
 
         <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
     </div>

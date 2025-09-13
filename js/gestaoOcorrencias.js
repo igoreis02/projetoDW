@@ -24,6 +24,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const btnLimparFiltroData = document.getElementById('limparFiltroData');
     const searchContainer = document.getElementById('searchContainer');
 
+    const btnSimplificado = document.getElementById('btnSimplificado');
+    const simplifiedView = document.getElementById('simplifiedView');
+    const dateClearWrapper = document.querySelector('.date-clear-wrapper');
+    const filtersWrapper = document.querySelector('.filters-wrapper'); // <<< ADICIONE ESTA LINHA
+
+
+
 
 
     // =================================================================================
@@ -33,6 +40,9 @@ document.addEventListener('DOMContentLoaded', function () {
     let activeCity = 'todos';
     let activeStatus = 'todos';
     let charts = {};
+
+    let allOcorrenciasData = null;
+    let isSimplifiedViewActive = false;
 
     // =================================================================================
     // 3. FUNÇÕES DE APOIO (HELPERS)
@@ -98,12 +108,15 @@ document.addEventListener('DOMContentLoaded', function () {
             dashboardView.classList.remove('hidden');
             btnLimparFiltroData.style.display = 'block';
             searchContainer.classList.add('hidden');
+            filtersWrapper.classList.add('hidden'); // <<< ADICIONE ESTA LINHA
+
 
             loadDashboardData();
         } else {
             ocorrenciasView.classList.remove('hidden');
             btnLimparFiltroData.style.display = 'none';
-            searchContainer.classList.remove('hidden'); 
+            searchContainer.classList.remove('hidden')
+            filtersWrapper.classList.remove('hidden');;
 
             fetchOcorrencias();
         }
@@ -144,6 +157,134 @@ document.addEventListener('DOMContentLoaded', function () {
         document.querySelector('#kpiAfericoesVencendo .kpi-number').textContent = data.kpi_afericoes_vencendo || 0;
     }
 
+    function generateSimplifiedView() {
+        if (!allOcorrenciasData || !allOcorrenciasData.ocorrencias) {
+            simplifiedView.innerHTML = '<p>Não há dados para exibir no resumo.</p>';
+            return;
+        }
+
+        const statusPermitidos = ['pendente', 'em andamento', 'concluido'];
+        let itensFiltrados = Object.values(allOcorrenciasData.ocorrencias).flat();
+
+        if (activeStatus !== 'todos') {
+            itensFiltrados = itensFiltrados.filter(item => item.status_reparo === activeStatus);
+        } else {
+            itensFiltrados = itensFiltrados.filter(item => statusPermitidos.includes(item.status_reparo));
+        }
+
+        if (activeCity !== 'todos') {
+            itensFiltrados = itensFiltrados.filter(item => item.cidade === activeCity);
+        }
+
+        if (itensFiltrados.length === 0) {
+            simplifiedView.innerHTML = `<h2>RESUMO DE OCORRÊNCIAS</h2><p>Nenhuma ocorrência encontrada para os filtros selecionados.</p>`;
+            return;
+        }
+
+        const itensPorCidade = {};
+        itensFiltrados.forEach(item => {
+            if (!itensPorCidade[item.cidade]) itensPorCidade[item.cidade] = [];
+            itensPorCidade[item.cidade].push(item);
+        });
+
+        let finalHtml = '<h2>RESUMO DE OCORRÊNCIAS</h2>';
+        const sortedCities = Object.keys(itensPorCidade).sort();
+
+        for (const cidade of sortedCities) {
+            // <<< MODIFICAÇÃO AQUI >>>
+            // Adicionamos a classe 'cidade-toggle', o onclick, e o span da seta.
+            // A seta começa para baixo (lista visível).
+            finalHtml += `
+            <h3 class="cidade-toggle" onclick="toggleCityList(this)">
+                <span class="arrow-toggle">&#9660;</span>
+                ${cidade}
+            </h3>
+            <ul>`; // A lista <ul> vem logo depois
+
+            const itensPorEquipamento = {};
+            for (const item of itensPorCidade[cidade]) {
+                const groupingStatus = (item.status_reparo === 'pendente' || item.status_reparo === 'em andamento')
+                    ? 'aberto'
+                    : item.status_reparo;
+                const key = `${item.nome_equip}|||${item.referencia_equip}|||${groupingStatus}`;
+
+                if (!itensPorEquipamento[key]) itensPorEquipamento[key] = [];
+                itensPorEquipamento[key].push(item);
+            }
+
+            for (const groupKey in itensPorEquipamento) {
+                const groupItems = itensPorEquipamento[groupKey];
+                const firstItem = groupItems[0];
+
+                const displayName = firstItem.nome_equip.split('-')[0].trim();
+                const problemas = groupItems.map(item => {
+                    if (item.status_reparo === 'concluido') {
+                        const tempo = calculateCompletionTime(item.inicio_reparo, item.fim_reparo);
+                        const tempoDisplay = tempo ? `(${tempo})` : '';
+                        return `${item.ocorrencia_reparo} -> <strong>${item.reparo_finalizado || 'Concluído'}</strong> ${tempoDisplay}`;
+                    }
+                    return item.ocorrencia_reparo;
+                }).join('; ');
+
+                const diasEmAberto = (firstItem.status_reparo !== 'concluido') ? calculateDaysOpen(firstItem.inicio_reparo) : '';
+                const statusClass = `status-${firstItem.status_reparo.replace(/ /g, '-')}`;
+
+                const dateInfoHtml = `<div class="card-dias-simplificado"><span class="dias-simplificado">${diasEmAberto}</span></div>`;
+
+                finalHtml += `
+                <li class="${statusClass}">
+                    ${diasEmAberto ? dateInfoHtml : ''}
+                    <div style="margin-right: 150px;"> 
+                        <strong>${displayName}</strong> - ${firstItem.referencia_equip}: ${problemas}
+                    </div>
+                </li>`;
+            }
+            finalHtml += `</ul>`;
+        }
+        simplifiedView.innerHTML = finalHtml;
+    }
+
+    window.toggleCityList = function (h3Element) {
+        // Encontra a lista de ocorrências (<ul>) que é o próximo elemento irmão do <h3>
+        const list = h3Element.nextElementSibling;
+        // Encontra o <span> que contém a seta
+        const arrow = h3Element.querySelector('.arrow-toggle');
+
+        // Verifica se a lista está escondida
+        if (list.classList.contains('hidden')) {
+            // Se estiver, mostra a lista e muda a seta para baixo
+            list.classList.remove('hidden');
+            arrow.innerHTML = '&#9660;'; // Seta para baixo ▼
+        } else {
+            // Se estiver visível, esconde a lista e muda a seta para o lado
+            list.classList.add('hidden');
+            arrow.innerHTML = '&#9654;'; // Seta para o lado ▶
+        }
+    };
+
+    function toggleView(showSimplified) {
+        isSimplifiedViewActive = showSimplified;
+
+        // Controla as views principais
+        dashboardView.classList.add('hidden');
+        ocorrenciasView.classList.toggle('hidden', showSimplified);
+        simplifiedView.classList.toggle('hidden', !showSimplified);
+
+        // Controla os filtros
+        searchContainer.classList.toggle('hidden', showSimplified);
+        dateClearWrapper.classList.toggle('hidden', showSimplified);
+        filtersWrapper.classList.toggle('hidden', !showSimplified); // Mostra os filtros na visão simplificada
+
+        // Ajusta os botões "ativos"
+        document.querySelectorAll('.main-actions-filter .action-btn, .left-actions .action-btn').forEach(btn => btn.classList.remove('active'));
+        btnSimplificado.classList.toggle('active', showSimplified);
+
+
+        if (showSimplified) {
+            cityFilters.classList.remove('hidden'); // Garante que os filtros de cidade estejam visíveis
+            generateSimplifiedView(); // Gera a view com os filtros ativos
+        }
+    }
     function renderChart(chartId, chartConfig) { if (charts[chartId]) { charts[chartId].destroy(); } const ctx = document.getElementById(chartId).getContext('2d'); charts[chartId] = new Chart(ctx, chartConfig); }
     function renderStatusChart(data) { const labels = data.map(item => item.status_reparo); const values = data.map(item => item.total); renderChart('manutencoesPorStatusChart', { type: 'doughnut', data: { labels, datasets: [{ label: 'Status', data: values, backgroundColor: ['#f59e0b', '#3b82f6', '#22c55e', '#ef4444', '#6b7280'] }] }, options: { responsive: true, plugins: { legend: { position: 'top' } } } }); }
     function renderTipoChart(data) { const labels = data.map(item => item.tipo_manutencao); const values = data.map(item => item.total); renderChart('manutencoesPorTipoChart', { type: 'pie', data: { labels, datasets: [{ label: 'Tipo', data: values, backgroundColor: ['#6366f1', '#a855f7', '#ec4899', '#14b8a6', '#f43f5e'] }] }, options: { responsive: true, plugins: { legend: { position: 'top' } } } }); }
@@ -161,7 +302,15 @@ document.addEventListener('DOMContentLoaded', function () {
             const response = await fetch(`API/get_gestao_ocorrencias.php?${params.toString()}`);
             const result = await response.json();
             if (result.success) {
-                renderAllOcorrencias(result.data);
+                allOcorrenciasData = result.data;
+
+                // Se a visão simplificada estiver ativa, gera o resumo. Senão, mostra os cards.
+                if (isSimplifiedViewActive) {
+                    generateSimplifiedView();
+                } else {
+                    renderAllOcorrencias(result.data);
+                }
+
                 updateCityFilters(result.data.cidades || []);
                 updateDisplay();
             } else {
@@ -243,7 +392,25 @@ document.addEventListener('DOMContentLoaded', function () {
                 document.querySelectorAll('#cityFilters .filter-btn').forEach(btn => btn.classList.remove('active'));
                 button.classList.add('active');
                 activeCity = button.dataset.city;
-                updateDisplay();
+                if (isSimplifiedViewActive) {
+                    generateSimplifiedView(activeCity);
+                } else {
+                    updateDisplay();
+                }
+            });
+        });
+        document.querySelectorAll('#cityFilters .filter-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('#cityFilters .filter-btn').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                activeCity = button.dataset.city;
+
+                // SE A VISÃO SIMPLIFICADA ESTIVER ATIVA, RECARREGA ELA
+                if (isSimplifiedViewActive) {
+                    generateSimplifiedView();
+                } else {
+                    updateDisplay();
+                }
             });
         });
     }
@@ -366,34 +533,60 @@ document.addEventListener('DOMContentLoaded', function () {
     function updateDashboardTitles() { const hasDateFilter = startDateInput.value && endDateInput.value; if (hasDateFilter) { evolucaoTitle.textContent = 'Evolução no Período'; concluidasLabel.textContent = 'Concluídas no Período'; afericoesLabel.textContent = 'Aferições Vencendo no Período'; } else { evolucaoTitle.textContent = 'Evolução Mensal (Todo o Período)'; concluidasLabel.textContent = 'Concluídas (Todo o Período)'; afericoesLabel.textContent = 'Aferições a Vencer (Total)'; } }
     function handleDateChange() { const isDashboardActive = !dashboardView.classList.contains('hidden'); if (isDashboardActive) { updateDashboardTitles(); loadDashboardData(); } else { fetchOcorrencias(); } }
     function clearFilters() { searchInput.value = ''; startDateInput.value = ''; endDateInput.value = ''; startDateInput.max = ''; endDateInput.min = ''; activeStatus = 'todos'; activeCity = 'todos'; activeType = 'manutencao'; document.querySelectorAll('#statusFilters .filter-btn').forEach(btn => btn.classList.remove('active')); document.querySelector('#statusFilters .filter-btn[data-status="todos"]').classList.add('active'); switchView('ocorrencias'); }
-    btnDashboard.addEventListener('click', () => { updateDashboardTitles(); switchView('dashboard'); });
-    btnManutencoes.addEventListener('click', () => { activeType = 'manutencao'; switchView('ocorrencias'); });
-    btnInstalacoes.addEventListener('click', () => { activeType = 'instalacao'; switchView('ocorrencias'); });
+    btnDashboard.addEventListener('click', () => {
+        if (isSimplifiedViewActive) toggleView(false); // Desativa a visão simplificada se estiver ativa
+        updateDashboardTitles();
+        switchView('dashboard');
+    });
+
+    btnManutencoes.addEventListener('click', () => {
+        if (isSimplifiedViewActive) toggleView(false); // Desativa a visão simplificada se estiver ativa
+        activeType = 'manutencao';
+        switchView('ocorrencias');
+    });
+    btnInstalacoes.addEventListener('click', () => {
+        if (isSimplifiedViewActive) toggleView(false); // Desativa a visão simplificada se estiver ativa
+        activeType = 'instalacao';
+        switchView('ocorrencias');
+    });
     btnSemaforica.addEventListener('click', () => { activeType = 'semaforica'; alert('Funcionalidade Semafórica em desenvolvimento.'); document.querySelectorAll('.main-actions-filter .action-btn, .left-actions .action-btn').forEach(btn => btn.classList.remove('active')); btnSemaforica.classList.add('active'); dashboardView.classList.add('hidden'); ocorrenciasView.classList.add('hidden'); });
-    statusFilters.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON') { document.querySelectorAll('#statusFilters .filter-btn').forEach(btn => btn.classList.remove('active')); e.target.classList.add('active'); activeStatus = e.target.dataset.status; fetchOcorrencias(); } });
+    statusFilters.addEventListener('click', (e) => {
+        if (e.target.tagName === 'BUTTON') {
+            document.querySelectorAll('#statusFilters .filter-btn').forEach(btn => btn.classList.remove('active'));
+            e.target.classList.add('active');
+            activeStatus = e.target.dataset.status;
+
+            // SE A VISÃO SIMPLIFICADA ESTIVER ATIVA, RECARREGA ELA
+            if (isSimplifiedViewActive) {
+                generateSimplifiedView();
+            } else {
+                fetchOcorrencias();
+            }
+        }
+    });
     startDateInput.addEventListener('change', () => {
-    const dataDe = startDateInput.value;
+        const dataDe = startDateInput.value;
 
-    if (dataDe) {
-        // 1. Trava as datas anteriores no campo "Até"
-        endDateInput.min = dataDe;
+        if (dataDe) {
+            // 1. Trava as datas anteriores no campo "Até"
+            endDateInput.min = dataDe;
 
-        // o campo "Até" será limpo para evitar um intervalo inválido.
-        if (endDateInput.value && endDateInput.value < dataDe) {
-            endDateInput.value = '';
+            // o campo "Até" será limpo para evitar um intervalo inválido.
+            if (endDateInput.value && endDateInput.value < dataDe) {
+                endDateInput.value = '';
+            }
+
+            // 2. Abre o calendário do campo "Até" automaticamente
+            endDateInput.showPicker();
+
+        } else {
+            // Se o campo "De" for limpo, remove a restrição de data mínima do campo "Até"
+            endDateInput.min = '';
         }
 
-        // 2. Abre o calendário do campo "Até" automaticamente
-        endDateInput.showPicker();
-
-    } else {
-        // Se o campo "De" for limpo, remove a restrição de data mínima do campo "Até"
-        endDateInput.min = '';
-    }
-    
-    // Chama a função original para recarregar os dados do dashboard/lista
-    handleDateChange();
-});
+        // Chama a função original para recarregar os dados do dashboard/lista
+        handleDateChange();
+    });
     endDateInput.addEventListener('change', handleDateChange);
     searchInput.addEventListener('input', () => { if (ocorrenciasView.classList.contains('hidden')) { switchView('ocorrencias'); } else { fetchOcorrencias(); } });
     btnClearFilters.addEventListener('click', clearFilters);
@@ -405,6 +598,21 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     btnClearFilters.addEventListener('click', clearFilters);
+    btnSimplificado.addEventListener('click', () => {
+        // Apenas alterna a interface, sem chamar a lógica de dados ainda
+        toggleView(!isSimplifiedViewActive);
+
+        // Se a visão simplificada foi ativada, agora verificamos os dados
+        if (isSimplifiedViewActive) {
+            // Se já temos os dados carregados, apenas geramos a lista
+            if (allOcorrenciasData) {
+                generateSimplifiedView();
+            } else {
+                // Se for o primeiro clique, buscamos os dados na API
+                fetchOcorrencias();
+            }
+        }
+    });
 
     // =================================================================================
     // 9. INICIALIZAÇÃO
