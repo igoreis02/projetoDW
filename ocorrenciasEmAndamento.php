@@ -695,12 +695,34 @@ if (!isset($_SESSION['user_id'])) {
             border-left: 3px solid #e5e7eb;
         }
 
+        .cidade-header-simplificado {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            /* Remove a borda do h3 e a coloca no contêiner */
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 0.5rem;
+            margin-top: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .cidade-header-simplificado {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            /* Remove a borda do h3 e a coloca no contêiner */
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 0.5rem;
+            margin-top: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+
         /* --- NOVOS ESTILOS - VISÃO SIMPLIFICADA --- */
         #simplifiedView {
             text-align: left;
             font-size: 1.3em;
             padding: 1rem 0.2rem;
-            border-top: 1px solid #e5e7eb;
             border-bottom: 1px solid #e5e7eb;
             margin-bottom: 2rem;
         }
@@ -711,13 +733,36 @@ if (!isset($_SESSION['user_id'])) {
             margin-bottom: 1.5rem;
         }
 
-        #simplifiedView h3 {
-            font-size: 1.2em;
-            color: #374151;
-            margin-top: 1.5rem;
-            margin-bottom: 0.5rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid #e5e7eb;
+        #simplifiedView h3.cidade-toggle {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            /* Espaço entre a seta e o nome da cidade */
+            user-select: none;
+            /* Impede que o texto seja selecionado ao clicar */
+            color: black;
+            font-size: 1.4em;
+            border-bottom: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .arrow-toggle {
+            font-size: 0.8em;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .toggle-dias-btn {
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: 600;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: #f9fafb;
+            color: #4b5563;
+            white-space: nowrap;
         }
 
         #simplifiedView ul {
@@ -778,8 +823,16 @@ if (!isset($_SESSION['user_id'])) {
             font-size: 0.9em;
             color: #6b7280;
         }
-        .dias-simplificado{
+
+        .dias-simplificado {
             font-weight: bold;
+        }
+
+        .filter-container.inline-view {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+            min-height: auto;
         }
 
 
@@ -919,8 +972,7 @@ if (!isset($_SESSION['user_id'])) {
             </div>
             <div class="search-container">
                 <div class="search-wrapper">
-                    <input type="text" id="searchInput"
-                        placeholder="Pesquisar por nome, referência ou ocorrência...">
+                    <input type="text" id="searchInput" placeholder="Pesquisar por nome, referência ou ocorrência...">
                     <button id="clearFiltersBtn">Limpar Filtros</button>
                 </div>
             </div>

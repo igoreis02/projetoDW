@@ -14,6 +14,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const mainControls = document.querySelector('.main-controls-container');
     const voltarBtnFooter = document.querySelector('.voltar-btn');
 
+    const controlsWrapper = document.querySelector('.controls-wrapper'); // <<< ADICIONE ESTA LINHA
+
+
     // --- VARIÁVEIS DE ESTADO ---
     let activeType = 'manutencao';
     let activeCity = 'todos';
@@ -280,54 +283,45 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const buildPrioritySection = (items, cssClass) => {
             if (items.length === 0) return '';
-
             const itemsByCity = {};
             items.forEach(item => {
-                if (!itemsByCity[item.cidade]) {
-                    itemsByCity[item.cidade] = [];
-                }
+                if (!itemsByCity[item.cidade]) itemsByCity[item.cidade] = [];
                 itemsByCity[item.cidade].push(item);
             });
-
             let sectionHtml = '';
             const sortedCities = Object.keys(itemsByCity).sort();
-
             for (const city of sortedCities) {
-                // <<< MODIFICAÇÃO AQUI >>>
-                // Adicionamos a classe 'cidade-toggle', o onclick, e o span da seta.
-                sectionHtml += `<h3 class="cidade-toggle" onclick="toggleCityList(this)"><span class="arrow-toggle">&#9660;</span>${city}</h3>`;
-                sectionHtml += `<ul>`;
+                // <<< MODIFICAÇÃO PRINCIPAL AQUI >>>
+                // Criamos o cabeçalho completo com um container, o título com a seta, e o novo botão.
+                sectionHtml += `
+            <div class="cidade-header-simplificado">
+                <h3 class="cidade-toggle" onclick="toggleCityList(this)">
+                    <span class="arrow-toggle">&#9660;</span>${city}
+                </h3>
+                <button class="toggle-dias-btn" onclick="toggleDiasVisibilidade(this, event)">Ocultar Dias</button>
+            </div>
+            <ul>`; // A lista <ul> vem logo depois
 
-                const itemsGroupedByEquip = {};
+                const itemsByEquip = {};
                 for (const item of itemsByCity[city]) {
                     const key = `${item.nome_equip}|||${item.referencia_equip}`;
-                    if (!itemsGroupedByEquip[key]) {
-                        itemsGroupedByEquip[key] = [];
-                    }
-                    itemsGroupedByEquip[key].push(item);
+                    if (!itemsByEquip[key]) itemsByEquip[key] = [];
+                    itemsByEquip[key].push(item);
                 }
-
-                for (const groupKey in itemsGroupedByEquip) {
-                    const groupItems = itemsGroupedByEquip[groupKey];
+                for (const groupKey in itemsByEquip) {
+                    const groupItems = itemsByEquip[groupKey];
                     const firstItem = groupItems[0];
-                    let displayName = firstItem.nome_equip;
-                    if (displayName && displayName.includes('-')) {
-                        displayName = displayName.split('-')[0].trim();
-                    }
-
-                    const problemasConcatenados = groupItems.map(item => item.ocorrencia_reparo).join('; ');
+                    let displayName = firstItem.nome_equip.split('-')[0].trim();
+                    const problemas = groupItems.map(item => item.ocorrencia_reparo).join('; ');
                     const diasEmAberto = calculateDaysOpen(firstItem.inicio_reparo);
-                    const dateInfoHtml = `
-            <div class="card-dias-simplificado">
-                <span class="dias-simplificado">${diasEmAberto}</span>
-            </div>`;
+                    const dateInfoHtml = `<div class="card-dias-simplificado"><span class="dias-simplificado">${diasEmAberto}</span></div>`;
                     sectionHtml += `
-                <li class="${cssClass}">
-                    ${dateInfoHtml}
-                    <div style="margin-right: 150px;">
-                        <strong>${displayName}</strong> - ${firstItem.referencia_equip}: ${problemasConcatenados}
-                    </div>
-                </li>`;
+            <li class="${cssClass}">
+                ${dateInfoHtml}
+                <div style="margin-right: 150px;"> 
+                    <strong>${displayName}</strong> - ${firstItem.referencia_equip}: ${problemas}
+                </div>
+            </li>`;
                 }
                 sectionHtml += `</ul>`;
             }
@@ -363,20 +357,53 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     window.toggleCityList = function (h3Element) {
-        // Encontra a lista de ocorrências (<ul>) que é o próximo elemento irmão do <h3>
-        const list = h3Element.nextElementSibling;
+        // Encontra a lista de ocorrências (<ul>)
+        const list = h3Element.parentElement.nextElementSibling;
         // Encontra o <span> que contém a seta
         const arrow = h3Element.querySelector('.arrow-toggle');
+        //Encontra o botão "Ocultar/Exibir Dias" no mesmo cabeçalho >>>
+        const diasButton = h3Element.parentElement.querySelector('.toggle-dias-btn');
 
-        // Verifica se a lista está escondida
+        // Verifica se a lista está escondida para decidir a ação
         if (list.classList.contains('hidden')) {
-            // Se estiver, mostra a lista e muda a seta para baixo
+            // Ação: EXPANDIR
             list.classList.remove('hidden');
             arrow.innerHTML = '&#9660;'; // Seta para baixo ▼
+            // Mostra o botão de dias novamente
+            if (diasButton) {
+                diasButton.classList.remove('hidden');
+            }
         } else {
-            // Se estiver visível, esconde a lista e muda a seta para o lado
+            // Ação: MINIMIZAR
             list.classList.add('hidden');
             arrow.innerHTML = '&#9654;'; // Seta para o lado ▶
+            // Esconde o botão de dias junto com a lista
+            if (diasButton) {
+                diasButton.classList.add('hidden');
+            }
+        }
+    };
+
+    window.toggleDiasVisibilidade = function (buttonElement, event) {
+        // Impede que o clique no botão também acione o toggle da cidade (expandir/recolher)
+        event.stopPropagation();
+
+        // Encontra a lista (<ul>) associada a este cabeçalho
+        const listElement = buttonElement.parentElement.nextElementSibling;
+        if (!listElement) return;
+
+        // Encontra todos os elementos de dias dentro desta lista
+        const diasElements = listElement.querySelectorAll('.card-dias-simplificado');
+
+        // Verifica o estado atual pelo texto do botão
+        const isVisible = buttonElement.textContent === 'Ocultar Dias';
+
+        if (isVisible) {
+            diasElements.forEach(el => el.classList.add('hidden'));
+            buttonElement.textContent = 'Exibir Dias';
+        } else {
+            diasElements.forEach(el => el.classList.remove('hidden'));
+            buttonElement.textContent = 'Ocultar Dias';
         }
     };
 
@@ -384,22 +411,51 @@ document.addEventListener('DOMContentLoaded', function () {
     function toggleView(showSimplified) {
         isSimplifiedViewActive = showSimplified;
 
-        // Esconde tudo, exceto o filtro de cidade
-        searchInput.parentElement.classList.toggle('hidden', showSimplified);
-        mainControls.querySelector('.action-buttons').classList.toggle('hidden', showSimplified);
-        mainControls.querySelector('.date-filter-container').classList.toggle('hidden', showSimplified);
+        // Pega as referências dos elementos que serão movidos/alterados
+        const leftControlsTarget = mainControls.querySelector('.action-buttons'); // Onde os filtros vão entrar
 
-        // Lógica de visualização principal vs. simplificada
-        ocorrenciasContainer.classList.toggle('hidden', showSimplified);
-        simplifiedView.classList.toggle('hidden', !showSimplified);
-        voltarBtnFooter.classList.toggle('hidden', !showSimplified); // O botão de voltar aparece na visão de cards
+        if (showSimplified) {
+            // --- AÇÕES PARA ENTRAR NA VISÃO SIMPLIFICADA ---
 
+            // Move o filterContainer para a mesma linha dos botões
+            leftControlsTarget.insertAdjacentElement('beforebegin', filterContainer);
+            // Adiciona a classe para remover bordas e margens
+            filterContainer.classList.add('inline-view');
+
+            // Esconde os outros controles
+            mainControls.querySelector('.action-buttons').classList.add('hidden');
+            mainControls.querySelector('.date-filter-container').classList.add('hidden');
+            searchInput.parentElement.classList.add('hidden');
+
+            // Mostra/esconde as views principais
+            ocorrenciasContainer.classList.add('hidden');
+            simplifiedView.classList.remove('hidden');
+
+        } else {
+            // --- AÇÕES PARA VOLTAR PARA A VISÃO NORMAL (CARDS) ---
+
+            // Devolve o filterContainer para sua posição original (abaixo do search)
+            controlsWrapper.insertAdjacentElement('afterend', filterContainer);
+            // Remove a classe de formatação inline
+            filterContainer.classList.remove('inline-view');
+
+            // Mostra os outros controles
+            mainControls.querySelector('.action-buttons').classList.remove('hidden');
+            mainControls.querySelector('.date-filter-container').classList.remove('hidden');
+            searchInput.parentElement.classList.remove('hidden');
+
+            // Mostra/esconde as views principais
+            ocorrenciasContainer.classList.remove('hidden');
+            simplifiedView.classList.add('hidden');
+        }
+
+        // Lógica para ativar/desativar botões e recarregar dados (permanece a mesma)
+        voltarBtnFooter.classList.toggle('hidden', showSimplified);
         btnSimplificado.classList.toggle('active', showSimplified);
 
         if (showSimplified) {
-            generateSimplifiedView(activeCity); // Gera a view simplificada respeitando o filtro atual
-            document.getElementById('btnManutencoes').classList.remove('active');
-            document.getElementById('btnInstalacoes').classList.remove('active');
+            actionButtons.forEach(btn => btn.classList.remove('active'));
+            generateSimplifiedView(activeCity);
         } else {
             document.getElementById('btnManutencoes').classList.add('active');
             activeType = 'manutencao';

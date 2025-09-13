@@ -21,6 +21,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const lacreNaoBtn = document.getElementById('lacreNaoBtn');
     const lacreFieldsContainer = document.getElementById('lacreFieldsContainer');
 
+    const controlsWrapper = document.querySelector('.controls-wrapper');
+
+
     // --- VARIÁVEIS DE ESTADO ---
     let activeType = 'manutencao';
     let activeCity = 'todos';
@@ -372,10 +375,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
         allCorretivas.forEach(item => {
             if (cityFilter !== 'todos' && item.cidade !== cityFilter) return;
-            switch (item.nivel_ocorrencia) {
+            // CORREÇÃO: Compara o nível de prioridade como string, que é como ele vem da API.
+            switch (String(item.nivel_ocorrencia)) {
                 case '1': urgentes.push(item); break;
                 case '3': semUrgencia.push(item); break;
-                case '2': default: padrao.push(item); break;
+                case '2':
+                default: padrao.push(item); break;
             }
         });
 
@@ -389,7 +394,17 @@ document.addEventListener('DOMContentLoaded', function () {
             let sectionHtml = '';
             const sortedCities = Object.keys(itemsByCity).sort();
             for (const city of sortedCities) {
-                sectionHtml += `<h3>${city}</h3><ul>`;
+                // <<< MODIFICAÇÃO PRINCIPAL AQUI >>>
+                // Criamos o cabeçalho completo com um container, o título com a seta, e o novo botão.
+                sectionHtml += `
+            <div class="cidade-header-simplificado">
+                <h3 class="cidade-toggle" onclick="toggleCityList(this)">
+                    <span class="arrow-toggle">&#9660;</span>${city}
+                </h3>
+                <button class="toggle-dias-btn" onclick="toggleDiasVisibilidade(this, event)">Ocultar Dias</button>
+            </div>
+            <ul>`; // A lista <ul> vem logo depois
+
                 const itemsByEquip = {};
                 for (const item of itemsByCity[city]) {
                     const key = `${item.nome_equip}|||${item.referencia_equip}`;
@@ -401,32 +416,34 @@ document.addEventListener('DOMContentLoaded', function () {
                     const firstItem = groupItems[0];
                     let displayName = firstItem.nome_equip.split('-')[0].trim();
                     const problemas = groupItems.map(item => item.ocorrencia_reparo).join('; ');
-
                     const diasEmAberto = calculateDaysOpen(firstItem.inicio_reparo);
-                    const dateInfoHtml = `
-                    <div class="card-dias-simplificado">
-                        <span class="dias-simplificado">${diasEmAberto}</span>
-                    </div>
-                `;
-
+                    const dateInfoHtml = `<div class="card-dias-simplificado"><span class="dias-simplificado">${diasEmAberto}</span></div>`;
                     sectionHtml += `
-                    <li class="${cssClass}">
-                        ${dateInfoHtml}
-                        <div style="margin-right: 150px;"> <strong>${displayName}</strong> - ${firstItem.referencia_equip}: ${problemas}
-                        </div>
-                    </li>`;
+            <li class="${cssClass}">
+                ${dateInfoHtml}
+                <div style="margin-right: 150px;"> 
+                    <strong>${displayName}</strong> - ${firstItem.referencia_equip}: ${problemas}
+                </div>
+            </li>`;
                 }
                 sectionHtml += `</ul>`;
             }
             return sectionHtml;
         };
 
-        const urgenteHtml = buildPrioritySection(urgentes, 'prioridade-urgente');
-        const padraoHtml = buildPrioritySection(padrao, 'prioridade-padrao');
+        let urgenteHtml = buildPrioritySection(urgentes, 'prioridade-urgente');
+        let padraoHtml = buildPrioritySection(padrao, 'prioridade-padrao');
         let semUrgenciaHtml = buildPrioritySection(semUrgencia, 'prioridade-sem-urgencia');
 
+        // ADICIONADO: Títulos para cada seção de prioridade.
+        if (urgenteHtml) {
+            urgenteHtml = `<h2 class="simplified-section-title">OCORRÊNCIAS URGENTES </h2>` + urgenteHtml;
+        }
+        if (padraoHtml) {
+            padraoHtml = `<h2 class="simplified-section-title">OCORRÊNCIAS - NÍVEL 1</h2>` + padraoHtml;
+        }
         if (semUrgenciaHtml) {
-            semUrgenciaHtml = `<h2 class="simplified-section-title">OCORRÊNCIAS SEM URGÊNCIA</h2>` + semUrgenciaHtml;
+            semUrgenciaHtml = `<h2 class="simplified-section-title">OCORRÊNCIAS SEM URGÊNCIA - NÍVEL 2</h2>` + semUrgenciaHtml;
         }
 
         const finalHtml = [urgenteHtml, padraoHtml, semUrgenciaHtml].filter(Boolean).join('<hr class="section-divider">');
@@ -438,26 +455,111 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    window.toggleCityList = function (h3Element) {
+        // Encontra a lista de ocorrências (<ul>)
+        const list = h3Element.parentElement.nextElementSibling;
+        // Encontra o <span> que contém a seta
+        const arrow = h3Element.querySelector('.arrow-toggle');
+        //Encontra o botão "Ocultar/Exibir Dias" no mesmo cabeçalho >>>
+        const diasButton = h3Element.parentElement.querySelector('.toggle-dias-btn');
+
+        // Verifica se a lista está escondida para decidir a ação
+        if (list.classList.contains('hidden')) {
+            // Ação: EXPANDIR
+            list.classList.remove('hidden');
+            arrow.innerHTML = '&#9660;'; // Seta para baixo ▼
+            // Mostra o botão de dias novamente
+            if (diasButton) {
+                diasButton.classList.remove('hidden');
+            }
+        } else {
+            // Ação: MINIMIZAR
+            list.classList.add('hidden');
+            arrow.innerHTML = '&#9654;'; // Seta para o lado ▶
+            // Esconde o botão de dias junto com a lista
+            if (diasButton) {
+                diasButton.classList.add('hidden');
+            }
+        }
+    };
+
+    window.toggleDiasVisibilidade = function (buttonElement, event) {
+        // Impede que o clique no botão também acione o toggle da cidade (expandir/recolher)
+        event.stopPropagation();
+
+        // Encontra a lista (<ul>) associada a este cabeçalho
+        const listElement = buttonElement.parentElement.nextElementSibling;
+        if (!listElement) return;
+
+        // Encontra todos os elementos de dias dentro desta lista
+        const diasElements = listElement.querySelectorAll('.card-dias-simplificado');
+
+        // Verifica o estado atual pelo texto do botão
+        const isVisible = buttonElement.textContent === 'Ocultar Dias';
+
+        if (isVisible) {
+            diasElements.forEach(el => el.classList.add('hidden'));
+            buttonElement.textContent = 'Exibir Dias';
+        } else {
+            diasElements.forEach(el => el.classList.remove('hidden'));
+            buttonElement.textContent = 'Ocultar Dias';
+        }
+    };
+
     function toggleView(showSimplified) {
         isSimplifiedViewActive = showSimplified;
-        searchInput.parentElement.classList.toggle('hidden', showSimplified);
-        mainControls.querySelector('.action-buttons').classList.toggle('hidden', showSimplified);
-        mainControls.querySelector('.date-filter-container').classList.toggle('hidden', showSimplified);
-        ocorrenciasContainer.classList.toggle('hidden', showSimplified);
-        simplifiedView.classList.toggle('hidden', !showSimplified);
-        voltarBtnFooter.classList.toggle('hidden', !showSimplified);
+
+        // Pega as referências dos elementos que serão movidos/alterados
+        const leftControlsTarget = mainControls.querySelector('.action-buttons'); // Onde os filtros vão entrar
+
+        if (showSimplified) {
+            // --- AÇÕES PARA ENTRAR NA VISÃO SIMPLIFICADA ---
+
+            // Move o filterContainer para a mesma linha dos botões
+            leftControlsTarget.insertAdjacentElement('beforebegin', filterContainer);
+            // Adiciona a classe para remover bordas e margens
+            filterContainer.classList.add('inline-view');
+
+            // Esconde os outros controles
+            mainControls.querySelector('.action-buttons').classList.add('hidden');
+            mainControls.querySelector('.date-filter-container').classList.add('hidden');
+            searchInput.parentElement.classList.add('hidden');
+
+            // Mostra/esconde as views principais
+            ocorrenciasContainer.classList.add('hidden');
+            simplifiedView.classList.remove('hidden');
+
+        } else {
+            // --- AÇÕES PARA VOLTAR PARA A VISÃO NORMAL (CARDS) ---
+
+            // Devolve o filterContainer para sua posição original (abaixo do search)
+            controlsWrapper.insertAdjacentElement('afterend', filterContainer);
+            // Remove a classe de formatação inline
+            filterContainer.classList.remove('inline-view');
+
+            // Mostra os outros controles
+            mainControls.querySelector('.action-buttons').classList.remove('hidden');
+            mainControls.querySelector('.date-filter-container').classList.remove('hidden');
+            searchInput.parentElement.classList.remove('hidden');
+
+            // Mostra/esconde as views principais
+            ocorrenciasContainer.classList.remove('hidden');
+            simplifiedView.classList.add('hidden');
+        }
+
+        // Lógica para ativar/desativar botões e recarregar dados (permanece a mesma)
+        voltarBtnFooter.classList.toggle('hidden', showSimplified);
         btnSimplificado.classList.toggle('active', showSimplified);
 
         if (showSimplified) {
-            generateSimplifiedView(activeCity);
             actionButtons.forEach(btn => btn.classList.remove('active'));
+            generateSimplifiedView(activeCity);
         } else {
             document.getElementById('btnManutencoes').classList.add('active');
             activeType = 'manutencao';
             applyFiltersAndRender();
         }
     }
-
     // ---  EVENT LISTENERS ---
     clearFiltersBtn.addEventListener('click', () => {
         if (isSimplifiedViewActive) toggleView(false);
@@ -473,19 +575,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
     btnSimplificado.addEventListener('click', () => toggleView(!isSimplifiedViewActive));
     startDateInput.addEventListener('change', () => {
-    const dataDe = startDateInput.value;
+        const dataDe = startDateInput.value;
 
-    if (dataDe) {
-        endDateInput.min = dataDe;
-        if (endDateInput.value && endDateInput.value < dataDe) {
-            endDateInput.value = '';
+        if (dataDe) {
+            endDateInput.min = dataDe;
+            if (endDateInput.value && endDateInput.value < dataDe) {
+                endDateInput.value = '';
+            }
+            endDateInput.showPicker();
+        } else {
+            endDateInput.min = '';
         }
-        endDateInput.showPicker();
-    } else {
-        endDateInput.min = '';
-    }
-    fetchData(); 
-});
+        fetchData();
+    });
     endDateInput.addEventListener('change', fetchData);
     searchInput.addEventListener('input', applyFiltersAndRender);
 
