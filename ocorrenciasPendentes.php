@@ -832,13 +832,21 @@ if (!isset($_SESSION['user_id'])) {
             margin-bottom: 1.5rem;
         }
 
-        #simplifiedView h3 {
-            font-size: 1.5em;
-            color: #374151;
-            margin-top: 1.8rem;
-            margin-bottom: 0.5rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid #e5e7eb;
+        #simplifiedView h3.cidade-toggle {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            /* Espaço entre a seta e o nome da cidade */
+            user-select: none;
+            /* Impede que o texto seja selecionado ao clicar */
+            color: black;
+            font-size: 1.4em;
+        }
+
+        .arrow-toggle {
+            font-size: 0.8em;
+            transition: transform 0.2s ease-in-out;
         }
 
         #simplifiedView ul {
@@ -1123,15 +1131,18 @@ if (!isset($_SESSION['user_id'])) {
             <div class="modal-footer">
                 <div id="priorityErrorMessage" class="modal-error-message hidden"></div>
                 <div class="modal-footer-buttons">
-                    <button class="modal-btn" style="background-color: #ef4444; color: white;" onclick="savePriority(1)">
+                    <button class="modal-btn" style="background-color: #ef4444; color: white;"
+                        onclick="savePriority(1)">
                         <span>Urgente (1)</span>
                         <div class="spinner hidden"></div>
                     </button>
-                    <button class="modal-btn" style="background-color: #112058; color: white;" onclick="savePriority(2)">
+                    <button class="modal-btn" style="background-color: #112058; color: white;"
+                        onclick="savePriority(2)">
                         <span>Padrão (2)</span>
                         <div class="spinner hidden"></div>
                     </button>
-                    <button class="modal-btn" style="background-color: #6b7280; color: white;" onclick="savePriority(3)">
+                    <button class="modal-btn" style="background-color: #6b7280; color: white;"
+                        onclick="savePriority(3)">
                         <span>Sem Urgência (3)</span>
                         <div class="spinner hidden"></div>
                     </button>

@@ -293,7 +293,9 @@ document.addEventListener('DOMContentLoaded', function () {
             const sortedCities = Object.keys(itemsByCity).sort();
 
             for (const city of sortedCities) {
-                sectionHtml += `<h3>${city}</h3>`;
+                // <<< MODIFICAÇÃO AQUI >>>
+                // Adicionamos a classe 'cidade-toggle', o onclick, e o span da seta.
+                sectionHtml += `<h3 class="cidade-toggle" onclick="toggleCityList(this)"><span class="arrow-toggle">&#9660;</span>${city}</h3>`;
                 sectionHtml += `<ul>`;
 
                 const itemsGroupedByEquip = {};
@@ -316,10 +318,16 @@ document.addEventListener('DOMContentLoaded', function () {
                     const problemasConcatenados = groupItems.map(item => item.ocorrencia_reparo).join('; ');
                     const diasEmAberto = calculateDaysOpen(firstItem.inicio_reparo);
                     const dateInfoHtml = `
-                    <div class="card-dias-simplificado">
-                        <span class="dias-simplificado">${diasEmAberto}</span>
-                    </div>`;
-                    sectionHtml += `<li class="${cssClass}"><strong>${displayName}</strong> - ${firstItem.referencia_equip}: ${problemasConcatenados} ${dateInfoHtml}</li>`;
+            <div class="card-dias-simplificado">
+                <span class="dias-simplificado">${diasEmAberto}</span>
+            </div>`;
+                    sectionHtml += `
+                <li class="${cssClass}">
+                    ${dateInfoHtml}
+                    <div style="margin-right: 150px;">
+                        <strong>${displayName}</strong> - ${firstItem.referencia_equip}: ${problemasConcatenados}
+                    </div>
+                </li>`;
                 }
                 sectionHtml += `</ul>`;
             }
@@ -327,9 +335,17 @@ document.addEventListener('DOMContentLoaded', function () {
         };
 
         // <<< ADICIONAR O TÍTULO "SEM URGÊNCIA" >>>
-        const urgenteHtml = buildPrioritySection(urgentes, 'prioridade-urgente');
-        const padraoHtml = buildPrioritySection(padrao, 'prioridade-padrao');
+        let urgenteHtml = buildPrioritySection(urgentes, 'prioridade-urgente');
+        let padraoHtml = buildPrioritySection(padrao, 'prioridade-padrao');
         let semUrgenciaHtml = buildPrioritySection(semUrgencia, 'prioridade-sem-urgencia');
+
+        if (urgenteHtml) {
+            urgenteHtml = `<h2 class="simplified-section-title">OCORRÊNCIAS URGENTES</h2>` + urgenteHtml;
+        }
+
+        if (padraoHtml) {
+            padraoHtml = `<h2 class="simplified-section-title">OCORRÊNCIAS - NÍVEL 1</h2>` + padraoHtml;
+        }
 
         // Se a seção "Sem Urgência" tiver conteúdo, adicionamos o título a ela
         if (semUrgenciaHtml) {
@@ -345,6 +361,24 @@ document.addEventListener('DOMContentLoaded', function () {
             simplifiedView.innerHTML = `<h2>RESUMO DE PRIORIDADES</h2>` + finalHtml;
         }
     }
+
+    window.toggleCityList = function (h3Element) {
+        // Encontra a lista de ocorrências (<ul>) que é o próximo elemento irmão do <h3>
+        const list = h3Element.nextElementSibling;
+        // Encontra o <span> que contém a seta
+        const arrow = h3Element.querySelector('.arrow-toggle');
+
+        // Verifica se a lista está escondida
+        if (list.classList.contains('hidden')) {
+            // Se estiver, mostra a lista e muda a seta para baixo
+            list.classList.remove('hidden');
+            arrow.innerHTML = '&#9660;'; // Seta para baixo ▼
+        } else {
+            // Se estiver visível, esconde a lista e muda a seta para o lado
+            list.classList.add('hidden');
+            arrow.innerHTML = '&#9654;'; // Seta para o lado ▶
+        }
+    };
 
 
     function toggleView(showSimplified) {
@@ -400,19 +434,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
     btnSimplificado.addEventListener('click', () => toggleView(!isSimplifiedViewActive));
     startDateInput.addEventListener('change', () => {
-    const dataDe = startDateInput.value;
+        const dataDe = startDateInput.value;
 
-    if (dataDe) {
-        endDateInput.min = dataDe;
-        if (endDateInput.value && endDateInput.value < dataDe) {
-            endDateInput.value = '';
+        if (dataDe) {
+            endDateInput.min = dataDe;
+            if (endDateInput.value && endDateInput.value < dataDe) {
+                endDateInput.value = '';
+            }
+            endDateInput.showPicker();
+        } else {
+            endDateInput.min = '';
         }
-        endDateInput.showPicker();
-    } else {
-        endDateInput.min = '';
-    }
-    fetchData(); 
-});
+        fetchData();
+    });
     endDateInput.addEventListener('change', fetchData);
     searchInput.addEventListener('input', applyFiltersAndRender);
 
@@ -436,16 +470,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     function createOcorrenciaHTML(item, index) {
-    const firstOcorrencia = item.ocorrencias_detalhadas[0];
-    let detailsHTML = '';
-    let atribuidoPorHTML = firstOcorrencia.atribuido_por ? `<div class="detail-item"><strong>Solicitado por</strong> <span>${firstOcorrencia.atribuido_por}</span></div>` : '';
+        const firstOcorrencia = item.ocorrencias_detalhadas[0];
+        let detailsHTML = '';
+        let atribuidoPorHTML = firstOcorrencia.atribuido_por ? `<div class="detail-item"><strong>Solicitado por</strong> <span>${firstOcorrencia.atribuido_por}</span></div>` : '';
 
-    let statusHTML = `<span class="status-tag status-pendente">Pendente</span>`;
+        let statusHTML = `<span class="status-tag status-pendente">Pendente</span>`;
 
-    // Ações são definidas aqui para serem usadas por todos os tipos de card
-    const allIdsInGroup = item.ocorrencias_detalhadas.map(o => o.id_manutencao).join(',');
-    const isGrouped = item.tipo_manutencao !== 'instalação' && item.ocorrencias_detalhadas.length > 1;
-    const actionsHTML = `
+        // Ações são definidas aqui para serem usadas por todos os tipos de card
+        const allIdsInGroup = item.ocorrencias_detalhadas.map(o => o.id_manutencao).join(',');
+        const isGrouped = item.tipo_manutencao !== 'instalação' && item.ocorrencias_detalhadas.length > 1;
+        const actionsHTML = `
         <div class="item-actions">
             <p style="margin-right: auto; font-size: 0.9em; color: #6b7280;">Clique no card para selecionar</p>
             <button class="item-btn edit-btn" onclick="openEditOcorrenciaModal('${allIdsInGroup}', event)">Editar</button>
@@ -453,19 +487,19 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
     `;
 
-    if (item.tipo_manutencao === 'instalação') {
-        const statusMap = { inst_laco: 'Laço', inst_base: 'Base', inst_infra: 'Infra', inst_energia: 'Energia', inst_prov: 'Provedor' };
-        const dateMap = { inst_laco: 'dt_laco', inst_base: 'dt_base', inst_infra: 'data_infra', inst_energia: 'dt_energia', inst_prov: 'data_provedor' };
-        detailsHTML = Object.entries(statusMap).map(([key, label]) => {
-            const status = firstOcorrencia[key] == 1 ?
-                `<span class="status-value instalado">Instalado ${formatDate(firstOcorrencia[dateMap[key]])}</span>` :
-                `<span class="status-value aguardando">Aguardando instalação</span>`;
-            return `<div class="detail-item"><strong>${label}</strong> <span>${status}</span></div>`;
-        }).join('');
-    } else if (item.tipo_manutencao === 'semaforica') {
-        const dataInicioFormatada = new Date(firstOcorrencia.inicio_reparo).toLocaleDateString('pt-BR');
-        const diasEmAberto = calculateDaysOpen(firstOcorrencia.inicio_reparo);
-        detailsHTML = `
+        if (item.tipo_manutencao === 'instalação') {
+            const statusMap = { inst_laco: 'Laço', inst_base: 'Base', inst_infra: 'Infra', inst_energia: 'Energia', inst_prov: 'Provedor' };
+            const dateMap = { inst_laco: 'dt_laco', inst_base: 'dt_base', inst_infra: 'data_infra', inst_energia: 'dt_energia', inst_prov: 'data_provedor' };
+            detailsHTML = Object.entries(statusMap).map(([key, label]) => {
+                const status = firstOcorrencia[key] == 1 ?
+                    `<span class="status-value instalado">Instalado ${formatDate(firstOcorrencia[dateMap[key]])}</span>` :
+                    `<span class="status-value aguardando">Aguardando instalação</span>`;
+                return `<div class="detail-item"><strong>${label}</strong> <span>${status}</span></div>`;
+            }).join('');
+        } else if (item.tipo_manutencao === 'semaforica') {
+            const dataInicioFormatada = new Date(firstOcorrencia.inicio_reparo).toLocaleDateString('pt-BR');
+            const diasEmAberto = calculateDaysOpen(firstOcorrencia.inicio_reparo);
+            detailsHTML = `
             <div class="detail-item" style="grid-column: 1 / -1;"><strong>Descrição:</strong> <span class="status-tag status-pendente" style="white-space: normal; text-align: left;">${firstOcorrencia.ocorrencia_reparo || 'Não especificada'}</span>
             </div>
             ${firstOcorrencia.observacao ? `<div class="detail-item" style="grid-column: 1 / -1;"><strong>Observação:</strong> <span>${firstOcorrencia.observacao}</span></div>` : ''}
@@ -478,8 +512,8 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="detail-item"><strong>Status:</strong> ${statusHTML}</div>
         `;
 
-        // O return foi movido para o final da função para incluir as actions
-        return `
+            // O return foi movido para o final da função para incluir as actions
+            return `
             <div class="ocorrencia-item" data-type="${item.tipo_manutencao}" data-id="${firstOcorrencia.id_manutencao}" data-is-grouped="false">
                 <div class="ocorrencia-header">
                     <h3>Ocorrência Semafórica ${index + 1}</h3>
@@ -490,48 +524,48 @@ document.addEventListener('DOMContentLoaded', function () {
                 ${actionsHTML}
             </div>
         `;
-    } else if (item.ocorrencias_detalhadas.length > 1) {
-        let ocorrenciasListHTML = item.ocorrencias_detalhadas.map((ocor, i) => {
-            const dataInicioFormatada = new Date(ocor.inicio_reparo).toLocaleDateString('pt-BR');
-            const diasEmAberto = calculateDaysOpen(ocor.inicio_reparo);
-            return `<li>
+        } else if (item.ocorrencias_detalhadas.length > 1) {
+            let ocorrenciasListHTML = item.ocorrencias_detalhadas.map((ocor, i) => {
+                const dataInicioFormatada = new Date(ocor.inicio_reparo).toLocaleDateString('pt-BR');
+                const diasEmAberto = calculateDaysOpen(ocor.inicio_reparo);
+                return `<li>
                 <strong>${i + 1}.</strong> <span class="status-tag status-pendente">${ocor.ocorrencia_reparo.toUpperCase() || 'Não especificada'}</span>
                 <div style="font-size: 0.9em; color: #6b7280; padding-left: 20px;">
                     <strong>Data Ocorrência:</strong> ${dataInicioFormatada} ${diasEmAberto}
                 </div>
             </li>`;
-        }).join('');
-        detailsHTML = `<div class="detail-item"><strong>Ocorrências</strong><ul class="ocorrencia-list">${ocorrenciasListHTML}</ul></div>`;
-    } else {
-        const dataInicioFormatada = new Date(firstOcorrencia.inicio_reparo).toLocaleDateString('pt-BR');
-        const diasEmAberto = calculateDaysOpen(firstOcorrencia.inicio_reparo);
-        detailsHTML = `
+            }).join('');
+            detailsHTML = `<div class="detail-item"><strong>Ocorrências</strong><ul class="ocorrencia-list">${ocorrenciasListHTML}</ul></div>`;
+        } else {
+            const dataInicioFormatada = new Date(firstOcorrencia.inicio_reparo).toLocaleDateString('pt-BR');
+            const diasEmAberto = calculateDaysOpen(firstOcorrencia.inicio_reparo);
+            detailsHTML = `
             <div class="detail-item">
                 <strong>Ocorrência:</strong> <span class="status-tag status-pendente">${firstOcorrencia.ocorrencia_reparo.toUpperCase() || 'Não especificada'}</span>
                 <div style="font-size: 0.9em; color: #6b7280; padding-left: 0px; margin-top: 5px;">
                     <strong>Data Ocorrência:</strong> ${dataInicioFormatada} ${diasEmAberto}
                 </div>
             </div>`;
-    }
+        }
 
-    const commonDetails = `
+        const commonDetails = `
         ${atribuidoPorHTML}
         <div class="detail-item"><strong>Status</strong> ${statusHTML}</div>
         <div class="detail-item"><strong>Local</strong> <span>${firstOcorrencia.local_completo || 'N/A'}</span></div>
         ${firstOcorrencia.motivo_devolucao ? `<div class="detail-item"><strong>Devolvida</strong> <span class="status-tag status-pendente">${firstOcorrencia.motivo_devolucao}</span></div>` : ''}
     `;
-    detailsHTML += commonDetails;
+        detailsHTML += commonDetails;
 
-    const groupKey = `${item.nome_equip}|||${item.referencia_equip}`;
+        const groupKey = `${item.nome_equip}|||${item.referencia_equip}`;
 
-    return `
+        return `
         <div class="ocorrencia-item" data-type="${item.tipo_manutencao}" data-id="${allIdsInGroup}" data-group-key="${groupKey}" data-is-grouped="${isGrouped}">
             <div class="ocorrencia-header"><h3>${item.nome_equip} - ${item.referencia_equip}</h3></div>
             <div class="ocorrencia-details">${detailsHTML}</div>
             ${actionsHTML}
         </div>
     `;
-}
+    }
 
     function formatDate(dateString) {
         if (!dateString || dateString === '0000-00-00') return '';
