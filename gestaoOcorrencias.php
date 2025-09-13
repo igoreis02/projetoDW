@@ -638,6 +638,16 @@ if (!isset($_SESSION['user_id'])) {
             font-size: 0.8em;
             transition: transform 0.2s ease-in-out;
         }
+
+         .mttr-label {
+            text-align: center;
+            font-size: 0.9em;
+            color: #6b7280;
+            font-weight: 600;
+            margin-top: 1rem;
+            border-top: 1px solid #f3f4f6;
+            padding-top: 0.8rem;
+        }
     </style>
 </head>
 
@@ -714,12 +724,24 @@ if (!isset($_SESSION['user_id'])) {
                     </div>
                 </div>
                 <div class="dashboard-card">
-                    <h3>Manutenções por Status</h3>
-                    <canvas id="manutencoesPorStatusChart"></canvas>
+                    <h3 id="ocorrenciasTecnicasTitle">Ocorrências Técnicas</h3>
+                    <canvas id="ocorrenciasTecnicasChart"></canvas>
+                    <p class="mttr-label" id="mttrTecnicas">Média de Reparo: -</p>
                 </div>
                 <div class="dashboard-card">
-                    <h3>Manutenções por Tipo</h3>
-                    <canvas id="manutencoesPorTipoChart"></canvas>
+                    <h3>Ocorrências Provedores</h3>
+                    <canvas id="ocorrenciasProvedoresChart"></canvas>
+                    <p class="mttr-label" id="mttrProvedores">Média de Reparo: -</p>
+                </div>
+                <div class="dashboard-card">
+                    <h3>Ocorrências Processamento</h3>
+                    <canvas id="ocorrenciasProcessamentoChart"></canvas>
+                    <p class="mttr-label" id="mttrProcessamento">Média de Reparo: -</p>
+                </div>
+                <div class="dashboard-card">
+                    <h3>Solicitações Clientes</h3>
+                    <canvas id="solicitacoesClientesChart"></canvas>
+                    <p class="mttr-label" id="mttrClientes">Média de Reparo: -</p>
                 </div>
                 <div class="dashboard-card dashboard-card-full">
                     <h3>Manutenções Abertas por Cidade</h3>

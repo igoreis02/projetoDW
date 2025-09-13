@@ -142,8 +142,11 @@ document.addEventListener('DOMContentLoaded', function () {
             if (result.success) {
                 const data = result.data;
                 updateKpiCards(data);
-                renderStatusChart(data.manutencoes_por_status || []);
-                renderTipoChart(data.manutencoes_por_tipo || []);
+                updateMttrDisplays(data);
+                renderOcorrenciasTecnicasChart(data.ocorrencias_tecnicas || []);
+                renderOcorrenciasProvedoresChart(data.ocorrencias_provedores || []);
+                renderOcorrenciasProcessamentoChart(data.ocorrencias_processamento || []);
+                renderSolicitacoesClientesChart(data.solicitacoes_clientes || []);
                 renderCidadeChart(data.manutencoes_abertas_cidade || []);
                 renderEvolucaoDiariaChart(data.evolucao_diaria || []);
             } else { console.error('Falha ao carregar dados do dashboard:', result.message); }
@@ -285,11 +288,185 @@ document.addEventListener('DOMContentLoaded', function () {
             generateSimplifiedView(); // Gera a view com os filtros ativos
         }
     }
-    function renderChart(chartId, chartConfig) { if (charts[chartId]) { charts[chartId].destroy(); } const ctx = document.getElementById(chartId).getContext('2d'); charts[chartId] = new Chart(ctx, chartConfig); }
-    function renderStatusChart(data) { const labels = data.map(item => item.status_reparo); const values = data.map(item => item.total); renderChart('manutencoesPorStatusChart', { type: 'doughnut', data: { labels, datasets: [{ label: 'Status', data: values, backgroundColor: ['#f59e0b', '#3b82f6', '#22c55e', '#ef4444', '#6b7280'] }] }, options: { responsive: true, plugins: { legend: { position: 'top' } } } }); }
-    function renderTipoChart(data) { const labels = data.map(item => item.tipo_manutencao); const values = data.map(item => item.total); renderChart('manutencoesPorTipoChart', { type: 'pie', data: { labels, datasets: [{ label: 'Tipo', data: values, backgroundColor: ['#6366f1', '#a855f7', '#ec4899', '#14b8a6', '#f43f5e'] }] }, options: { responsive: true, plugins: { legend: { position: 'top' } } } }); }
-    function renderCidadeChart(data) { const labels = data.map(item => item.nome); const values = data.map(item => item.total); renderChart('manutencoesPorCidadeChart', { type: 'bar', data: { labels, datasets: [{ label: 'Manutenções Abertas', data: values, backgroundColor: '#3b82f6' }] }, options: { responsive: true, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } } }); }
-    function renderEvolucaoDiariaChart(data) { const hasDateFilter = startDateInput.value && endDateInput.value; const labels = data.map(item => { const date = new Date(item.dia + 'T00:00:00'); return hasDateFilter ? date.toLocaleDateString('pt-BR') : date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }); }); const abertasData = data.map(item => item.abertas); const fechadasData = data.map(item => item.fechadas); renderChart('evolucaoDiariaChart', { type: 'line', data: { labels, datasets: [{ label: 'Abertas', data: abertasData, borderColor: '#3b82f6', backgroundColor: '#3b82f620', fill: true, tension: 0.3 }, { label: 'Concluídas', data: fechadasData, borderColor: '#22c55e', backgroundColor: '#22c55e20', fill: true, tension: 0.3 }] }, options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } } }); }
+    function renderChart(chartId, chartConfig) {
+        if (charts[chartId]) {
+            charts[chartId].destroy();
+        }
+        const ctx = document.getElementById(chartId).getContext('2d');
+        charts[chartId] = new Chart(ctx, chartConfig);
+    }
+    function createPieChart(chartId, data, labelField, valueField, title, customColors = null) {
+        if (charts[chartId]) {
+            charts[chartId].destroy();
+        }
+        const ctx = document.getElementById(chartId).getContext('2d');
+        
+        const labels = data.map(item => item[labelField]);
+        const values = data.map(item => item[valueField]);
+        
+        let backgroundColors;
+        if (customColors) {
+            // Usa as cores personalizadas se forem fornecidas
+            backgroundColors = labels.map(label => customColors[label.toLowerCase()] || '#6b7280'); // Cinza como padrão
+        } else {
+            // Usa a paleta de cores padrão se não houver cores personalizadas
+            backgroundColors = ['#3b82f6', '#f59e0b', '#22c55e', '#ef4444', '#6b7280', '#6366f1', '#a855f7'];
+        }
+
+        charts[chartId] = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels.map(l => l.charAt(0).toUpperCase() + l.slice(1)), // Deixa a primeira letra maiúscula
+                datasets: [{
+                    label: title,
+                    data: values,
+                    backgroundColor: backgroundColors,
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+
+    function renderOcorrenciasTecnicasChart(data) {
+        // Para este gráfico, mantemos a paleta de cores padrão
+        createPieChart('ocorrenciasTecnicasChart', data, 'status_reparo', 'total', 'Ocorrências Técnicas');
+    }
+
+    function renderOcorrenciasProvedoresChart(data) {
+        // Define o mapa de cores específico para este gráfico
+        const statusColorMap = {
+            'concluido': '#22c55e',  // Verde
+            'pendente': '#3b82f6',   // Azul
+            'cancelado': '#ef4444',  // Vermelho
+            'em andamento': '#f59e0b' // Laranja para outros status
+        };
+        createPieChart('ocorrenciasProvedoresChart', data, 'status', 'total', 'Ocorrências Provedores', statusColorMap);
+    }
+
+    function renderOcorrenciasProcessamentoChart(data) {
+        // Define o mapa de cores específico para este gráfico
+        const statusColorMap = {
+            'concluido': '#22c55e',  // Verde
+            'pendente': '#3b82f6',   // Azul
+            'cancelado': '#ef4444',  // Vermelho
+            'em andamento': '#f59e0b' // Laranja para outros status
+        };
+        createPieChart('ocorrenciasProcessamentoChart', data, 'status', 'total', 'Ocorrências Processamento', statusColorMap);
+    }
+
+    function renderSolicitacoesClientesChart(data) {
+        // Define o mapa de cores específico para este gráfico
+        const statusColorMap = {
+            'concluido': '#22c55e',  // Verde
+            'pendente': '#3b82f6',   // Azul
+            'cancelado': '#ef4444',  // Vermelho
+            'em andamento': '#f59e0b' // Laranja para outros status
+        };
+        createPieChart('solicitacoesClientesChart', data, 'status', 'total', 'Solicitações Clientes', statusColorMap);
+    }
+    function renderCidadeChart(data) {
+        const labels = data.map(item => item.nome);
+        const values = data.map(item => item.total);
+        renderChart('manutencoesPorCidadeChart', {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Manutenções Abertas',
+                    data: values,
+                    backgroundColor: '#3b82f6'
+                }]
+            },
+            options: {
+                responsive: true,
+                indexAxis: 'y',
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+    function renderEvolucaoDiariaChart(data) {
+        const hasDateFilter = startDateInput.value && endDateInput.value;
+        const labels = data.map(item => {
+            const date = new Date(item.dia + 'T00:00:00');
+            return hasDateFilter ? date.toLocaleDateString('pt-BR') : date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+        });
+        const abertasData = data.map(item => item.abertas);
+        const fechadasData = data.map(item => item.fechadas);
+        renderChart('evolucaoDiariaChart', {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Abertas',
+                    data: abertasData,
+                    borderColor: '#3b82f6',
+                    backgroundColor: '#3b82f620',
+                    fill: true,
+                    tension: 0.3
+                }, {
+                    label: 'Concluídas',
+                    data: fechadasData,
+                    borderColor: '#22c55e',
+                    backgroundColor: '#22c55e20',
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    function updateMttrDisplays(data) {
+        const formatMttr = (hours) => {
+            if (hours === null || hours === undefined) return 'N/A';
+            
+            const totalHours = parseFloat(hours);
+            if (totalHours < 24) {
+                return `${totalHours.toFixed(1)} horas`;
+            } else {
+                const days = totalHours / 24;
+                return `${days.toFixed(1)} dias`;
+            }
+        };
+
+        document.getElementById('mttrTecnicas').textContent = `Média de Reparo: ${formatMttr(data.mttr_tecnicas)}`;
+        document.getElementById('mttrProvedores').textContent = `Média de Reparo: ${formatMttr(data.mttr_provedores)}`;
+        document.getElementById('mttrProcessamento').textContent = `Média de Reparo: ${formatMttr(data.mttr_processamento)}`;
+        document.getElementById('mttrClientes').textContent = `Média de Reparo: ${formatMttr(data.mttr_clientes)}`;
+    }
+
+    
 
     // =================================================================================
     // 7. LÓGICA DA LISTA DE OCORRÊNCIAS

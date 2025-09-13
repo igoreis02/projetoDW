@@ -23,12 +23,11 @@ try {
         
         case 'ocorrencias_pendentes':
         case 'ocorrencias_em_andamento':
-        case 'gestao_ocorrencias': // <-- NOVO CONTEXTO ADICIONADO
+        case 'gestao_ocorrencias': // 
             // Todas estas páginas dependem de mudanças em manutenções ou ocorrências semafóricas
             $tables = ['manutencoes', 'ocorrencia_semaforica'];
             break;
 
-        // --- NOVOS CONTEXTOS ADICIONADOS ---
 
         case 'ocorrencias_provedores':
             // Esta página verifica as tabelas de ocorrências de provedor e manutenções gerais
@@ -58,11 +57,10 @@ try {
 
     $totalChecksum = 0;
     foreach ($tables as $table) {
-        // Usamos ` ` para garantir que nomes de tabelas com caracteres especiais funcionem
         $result = $conn->query("CHECKSUM TABLE `$table`");
         if ($result) {
             $row = $result->fetch_assoc();
-            // Somamos os checksums de todas as tabelas relevantes para criar uma assinatura única
+            // Soma os checksums de todas as tabelas relevantes para criar uma assinatura única
             $totalChecksum += (int)$row['Checksum'];
         } else {
             throw new Exception("Erro ao calcular checksum para a tabela: $table");
