@@ -184,7 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (ativosContainer) {
             ativosContainer.classList.add('hidden'); 
         }
-        return; 
+        return; // Termina a execução da função
     }
 
         const primaryType = selectedTypes[0];

@@ -619,30 +619,34 @@ try {
 
         /* NOVO: Estilo para o botão Voltar ao Topo */
         #backToTopBtn {
-            display: none;
+             display: none;
             position: fixed;
             bottom: 20px;
             right: 30px;
             z-index: 99;
             border: none;
             outline: none;
-            background-color: var(--cor-principal);
+            background-color: #213fadff;
             color: white;
             cursor: pointer;
             padding: 15px;
             border-radius: 50%;
             font-size: 18px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             width: 50px;
             height: 50px;
-            line-height: 20px;
-            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s, opacity 0.5s;
         }
 
         #backToTopBtn:hover {
-            background-color: var(--cor-secundaria);
+            background-color: #12287eff;
         }
 
+         @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
         .ativos-container {
             width: 100%;
             margin-bottom: 1rem;
@@ -763,7 +767,7 @@ try {
         <p>&copy; 2025 APsystem. Todos os direitos reservados.</p>
     </div>
 
-    <button id="backToTopBtn" title="Voltar ao topo">&#8679;</button>
+    <button id="backToTopBtn" title="Voltar ao topo"><i class="fas fa-arrow-up"></i></button>
 
     <div id="addEquipmentModal" class="modal">
         <div class="modal-content">

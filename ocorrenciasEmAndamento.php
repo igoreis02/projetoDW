@@ -1023,6 +1023,7 @@ if (!isset($_SESSION['user_id'])) {
 
         <button id="btnVoltarAoTopo" title="Voltar ao topo">
         <i class="fas fa-arrow-up"></i>
+    </button>
         
     </div>
 
