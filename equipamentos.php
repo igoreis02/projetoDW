@@ -238,6 +238,7 @@ try {
             justify-content: center;
             gap: 10px;
             margin-bottom: 1.5rem;
+            
         }
 
         .city-button {
@@ -288,6 +289,14 @@ try {
             width: 100%;
         }
 
+        .city-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #112058;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid var(--cor-principal);
+        }
+
         .city-section {
             display: flex;
             flex-direction: column;
@@ -295,9 +304,9 @@ try {
             text-align: left;
         }
 
-        .city-section h3 {
+        .item-equipamento-titulo {
             margin: 0;
-            color: var(--cor-secundaria);
+            color: #112058;
         }
 
         .equipment-grid {

@@ -59,9 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'logradouro': 'Logradouro',
         'bairro': 'Bairro',
         'id_provedor': 'Provedor',
-        'cep': 'CEP',
-        'coordenadas': 'Coordenadas'
-        // 'dt_instalacao' e 'dt_estudoTec' são omitidos de propósito
+        'cep': 'CEP'
     };
 
     // --- FUNÇÕES UTILITÁRIAS (SEU CÓDIGO ORIGINAL) ---
@@ -329,7 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function renderEquipmentList(equipments) {
+   function renderEquipmentList(equipments) {
         equipmentListContainer.innerHTML = '';
         if (equipments.length === 0) {
             equipmentListContainer.innerHTML = '<p class="message">Nenhum equipamento encontrado.</p>';
@@ -349,21 +347,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 const statusClass = `status-${(equip.status || '').toLowerCase()}`;
                 const statusDisplay = (equip.status || 'N/A').charAt(0).toUpperCase() + (equip.status || 'N/A').slice(1);
                 const formatDate = (date) => (!date || date === '0000-00-00') ? 'N/A' : new Date(date + 'T00:00:00').toLocaleDateString('pt-BR');
+
                 const types = equip.tipo_equip ? equip.tipo_equip.split(',').map(t => t.trim()) : [];
-                const typesThatHideFields = ['CCO', 'DOME'];
-                const shouldHideDetails = types.length > 0 && types.every(type => typesThatHideFields.includes(type));
+                
+                // --- LÓGICA DE VISIBILIDADE CORRIGIDA ---
+                const primaryType = types.length > 0 ? types[0] : null;
+                const typesThatHideDetails = ['CCO', 'DOME', 'VIDEO MONITORAMENTO', 'EDUCATIVO'];
+                const shouldShowDetails = primaryType && !typesThatHideDetails.includes(primaryType);
+                // --- FIM DA CORREÇÃO ---
+
                 const enderecoCompleto = `${equip.logradouro || 'N/A'} - ${equip.bairro || 'N/A'}`;
+
                 const item = document.createElement('div');
                 item.className = 'item-equipamento';
                 item.innerHTML = `
                     <div class="item-equipamento-conteudo">
                         <h3>${equip.nome_equip || 'N/A'} - ${equip.referencia_equip || 'N/A'}</h3>
                         <p><strong>Tipo:</strong> ${equip.tipo_equip || 'N/A'}</p>
-                        ${!shouldHideDetails ? `
+                        ${shouldShowDetails ? `
                             <p><strong>Qtd. Faixa:</strong> ${equip.qtd_faixa || 'N/A'}</p>
                             <p><strong>Sentido:</strong> ${equip.sentido || 'N/A'}</p>
                             <p><strong>Velocidade:</strong> ${equip.km ? equip.km + ' Km/h' : 'N/A'}</p>
-                            <p><strong>Data Instalação:</strong> ${formatDate(equip.data_instalacao)}</p> <p><strong>Nº Instrumento:</strong> ${equip.num_instrumento || 'N/A'}</p>
+                            <p><strong>Data Instalação:</strong> ${formatDate(equip.data_instalacao)}</p>
+                            <p><strong>Nº Instrumento:</strong> ${equip.num_instrumento || 'N/A'}</p>
                             <p><strong>Data Aferição:</strong> ${formatDate(equip.dt_afericao)}</p>
                             <p><strong>Data Vencimento:</strong> ${formatDate(equip.dt_vencimento)}</p>
                         ` : ''}
@@ -378,7 +384,6 @@ document.addEventListener('DOMContentLoaded', () => {
             equipmentListContainer.appendChild(citySection);
         });
     }
-
     function findEquipmentById(id) {
         return allEquipmentData.find(equip => equip.id_equipamento == id);
     }
