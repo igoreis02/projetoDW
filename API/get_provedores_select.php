@@ -12,7 +12,8 @@ if ($conn->connect_error) {
 
 $provedores = [];
 try {
-    $sql = "SELECT id_provedor, nome_prov FROM provedor ORDER BY nome_prov ASC";
+    // MODIFICADO: Adicionamos o campo id_cidade à consulta
+    $sql = "SELECT id_provedor, nome_prov, id_cidade FROM provedor ORDER BY nome_prov ASC";
     $result = $conn->query($sql);
 
     if ($result) {
@@ -22,7 +23,7 @@ try {
             }
             echo json_encode(['success' => true, 'provedores' => $provedores]);
         } else {
-            echo json_encode(['success' => false, 'message' => 'Nenhum provedor encontrado.']);
+            echo json_encode(['success' => true, 'provedores' => []]); // Retorna sucesso com array vazio
         }
     } else {
         throw new Exception("Erro na consulta SQL: " . $conn->error);

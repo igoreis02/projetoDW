@@ -1,8 +1,5 @@
 <?php
 session_start();
-// Ativa a exibição de erros para depuração (REMOVER EM PRODUÇÃO)
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: index.html');
@@ -15,7 +12,7 @@ $cities = []; // Array para armazenar as cidades
 
 try {
     // Consulta SQL para obter as cidades para os dropdowns
-    $sql_cidades = "SELECT id_cidade, nome FROM cidades ORDER BY nome ASC";
+    $sql_cidades = "SELECT DISTINCT c.id_cidade, c.nome FROM cidades c JOIN equipamentos e ON c.id_cidade = e.id_cidade ORDER BY c.nome ASC";
     $result_cidades = $conn->query($sql_cidades);
 
     if ($result_cidades === false) {
@@ -65,7 +62,7 @@ try {
             border-radius: 1rem;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             width: 90%;
-            max-width: 1000px;
+            max-width: 1400px;
             margin-bottom: 2rem;
             text-align: center;
         }
@@ -75,7 +72,7 @@ try {
             margin-bottom: 1.5rem;
         }
 
-    
+
         .header-container {
             display: flex;
             justify-content: center;
@@ -89,6 +86,7 @@ try {
             color: black;
             margin: 0;
         }
+
         .conteudo-cabecalho {
             display: flex;
             align-items: center;
@@ -118,11 +116,23 @@ try {
             background-color: var(--cor-secundaria);
         }
 
-        .container-botao-adicionar-equipamento {
+        .top-controls-wrapper {
+            display: grid;
+            /* Cria 3 colunas: Esquerda (1fr), Centro (auto), Direita (1fr) */
+            grid-template-columns: 1fr 2fr 1fr;
+            align-items: center;
+            gap: 1rem;
+            /* Espaçamento entre os elementos */
             width: 100%;
-            display: flex;
-            justify-content: flex-start;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .container-botao-adicionar-equipamento {
+            grid-column: 1;
+            /* Posiciona na primeira coluna */
+            justify-self: start;
+            /* Alinha o conteúdo à esquerda */
+            margin-bottom: 0;
         }
 
         .botao-adicionar-equipamento {
@@ -141,32 +151,39 @@ try {
         }
 
         .container-pesquisa {
+            grid-column: 2;
+            /* Posiciona na coluna central */
+            justify-self: center;
+            /* Centraliza o container na célula do grid */
+            margin-bottom: 0;
             display: flex;
-            justify-content: center;
             align-items: center;
-            margin-bottom: 1.5rem;
             gap: 10px;
+            width: auto;
+
+
         }
 
         .container-pesquisa input {
             padding: 10px;
             border-radius: 5px;
             border: 1px solid #ccc;
-            width: 100%;
-            max-width: 400px;
+            width: 550px;
         }
-        
+
         /* NOVO: Estilo para o botão Limpar Filtros */
         .botao-limpar-filtros {
-            padding: 10px 15px;
+            padding: 10px 10px;
             border: 1px solid #ccc;
             border-radius: 8px;
             color: #374151;
             background-color: #f8f9fa;
             cursor: pointer;
+            width: 150px;
             font-size: 1em;
             transition: all 0.2s ease;
         }
+
         .botao-limpar-filtros:hover {
             background-color: #e2e6ea;
         }
@@ -189,6 +206,7 @@ try {
         .voltar-btn:hover {
             background-color: #192e73ff;
         }
+
         .close-btn,
         .back-btn-icon {
             position: absolute;
@@ -227,7 +245,8 @@ try {
             color: #112058;
             padding: 8px 16px;
             border: 1px solid #cbd5e0;
-            border-radius: 9999px; /* rounded-full */
+            border-radius: 9999px;
+            /* rounded-full */
             cursor: pointer;
             transition: all 0.2s ease-in-out;
             font-size: 0.9em;
@@ -242,7 +261,7 @@ try {
             color: white;
             border-color: var(--cor-principal);
         }
-        
+
         .main-loading-state {
             display: none;
             justify-content: center;
@@ -252,7 +271,7 @@ try {
             color: #555;
             padding: 40px 0;
         }
-        
+
         .main-loading-spinner {
             border: 5px solid #f3f3f3;
             border-top: 5px solid var(--cor-principal);
@@ -275,19 +294,19 @@ try {
             gap: 1.5rem;
             text-align: left;
         }
-        
+
         .city-section h3 {
             margin: 0;
             color: var(--cor-secundaria);
         }
-        
+
         .equipment-grid {
             list-style: none;
             padding: 0;
             margin: 0;
             display: grid;
             gap: 1.5rem;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(3, 1fr);
         }
 
         .item-equipamento {
@@ -297,12 +316,15 @@ try {
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
             text-align: left;
             position: relative;
-            display: flex; /* Adicionado para layout flexível */
-            flex-direction: column; /* Organiza o conteúdo em coluna */
+            display: flex;
+            /* Adicionado para layout flexível */
+            flex-direction: column;
+            /* Organiza o conteúdo em coluna */
         }
-        
+
         .item-equipamento-conteudo {
-            flex-grow: 1; /* Faz o conteúdo crescer e empurrar o botão para baixo */
+            flex-grow: 1;
+            /* Faz o conteúdo crescer e empurrar o botão para baixo */
         }
 
         .item-equipamento h3 {
@@ -325,8 +347,10 @@ try {
             border-radius: 0.5rem;
             cursor: pointer;
             transition: background-color 0.3s ease;
-            margin-top: 1rem; /* Espaço acima do botão */
-            align-self: flex-end; /* Alinha o botão à direita */
+            margin-top: 1rem;
+            /* Espaço acima do botão */
+            align-self: flex-end;
+            /* Alinha o botão à direita */
         }
 
         .item-equipamento .botao-editar:hover {
@@ -406,7 +430,7 @@ try {
             text-align: left;
             margin-top: 5%;
         }
-        
+
         .modal-header {
             display: flex;
             justify-content: space-between;
@@ -515,27 +539,35 @@ try {
             display: flex;
             align-items: center;
             width: 100%;
-            cursor: pointer; /* Adicionado para indicar que é clicável */
+            cursor: pointer;
+            /* Adicionado para indicar que é clicável */
         }
+
         .custom-date-input::after {
             font-family: "Font Awesome 5 Free";
-            content: '\f073'; /* Ícone de calendário */
+            content: '\f073';
+            /* Ícone de calendário */
             font-weight: 900;
             position: absolute;
             right: 15px;
             color: #888;
-            pointer-events: none; /* Permite clicar no campo de data através do ícone */
+            pointer-events: none;
+            /* Permite clicar no campo de data através do ícone */
         }
+
         .custom-date-input input[type="date"] {
             -webkit-appearance: none;
             moz-appearance: none;
             appearance: none;
-            padding-right: 35px; /* Espaço para o ícone */
+            padding-right: 35px;
+            /* Espaço para o ícone */
         }
+
         /* Esconde o ícone de calendário padrão do Chrome/Edge */
         .custom-date-input input[type="date"]::-webkit-calendar-picker-indicator {
             display: none;
         }
+
         @keyframes spin {
             0% {
                 transform: rotate(0deg);
@@ -558,7 +590,7 @@ try {
             text-align: center;
             padding-top: 20px;
         }
-        
+
         .equipment-type-group {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -568,13 +600,14 @@ try {
             border-radius: 4px;
             margin-bottom: 1rem;
         }
+
         .equipment-type-group label {
             display: flex;
             align-items: center;
             gap: 5px;
             font-weight: normal;
         }
-        
+
         /* NOVO: Estilo para o botão Voltar ao Topo */
         #backToTopBtn {
             display: none;
@@ -590,17 +623,50 @@ try {
             padding: 15px;
             border-radius: 50%;
             font-size: 18px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             width: 50px;
             height: 50px;
             line-height: 20px;
             text-align: center;
         }
+
         #backToTopBtn:hover {
             background-color: var(--cor-secundaria);
         }
+        @media (max-width: 1200px) {
+            .top-controls-wrapper {
+                grid-template-columns: 1fr; /* Muda para coluna única */
+                justify-items: center; /* Centraliza os itens na coluna */
+                gap: 1.5rem; /* Aumenta o espaço entre as linhas */
+            }
+
+            .container-botao-adicionar-equipamento {
+                grid-column: 1; 
+                justify-self: center; /* Centraliza o botão */
+            }
+
+            .container-pesquisa {
+                grid-column: 1; /* Coloca a pesquisa na mesma (e única) coluna */
+                width: 100%;
+                max-width: 700px; /* Define uma largura máxima para a pesquisa */
+            }
+        }
 
         @media (max-width: 768px) {
+
+            .container-pesquisa {
+                flex-direction: column; /* Empilha o input e o botão */
+            }
+
+            .container-pesquisa input,
+            .container-pesquisa .botao-limpar-filtros {
+                width: 100%; /* Faz ambos ocuparem a largura total */
+                box-sizing: border-box; /* Garante que padding não afete a largura */
+            }
+
+            .equipment-grid {
+                grid-template-columns: 1fr; /* Uma coluna para os cards */
+            }
             .card {
                 padding: 1.5rem;
                 width: 95%;
@@ -638,12 +704,15 @@ try {
             <h1 class="titulo-cabecalho">Gerenciar Equipamentos</h1>
             <a href="menu.php" class="close-btn" title="Voltar ao Menu">&times;</a>
         </header>
-        <div class="container-botao-adicionar-equipamento">
-            <button class="botao-adicionar-equipamento" id="addEquipmentBtn">Adicionar Equipamento</button>
-        </div>
-        <div class="container-pesquisa">
-            <input type="text" id="campoPesquisa" placeholder="Pesquisar por nome ou cidade...">
-            <button id="clearFiltersBtn" class="botao-limpar-filtros">Limpar filtros</button>
+        <div class="top-controls-wrapper">
+            <div class="container-botao-adicionar-equipamento">
+                <button class="botao-adicionar-equipamento" id="addEquipmentBtn">Adicionar Equipamento</button>
+            </div>
+
+            <div class="container-pesquisa">
+                <input type="text" id="campoPesquisa" placeholder="Pesquisar por nome ou cidade...">
+                <button id="clearFiltersBtn" class="botao-limpar-filtros">Limpar filtros</button>
+            </div>
         </div>
         <div id="cityButtonsContainer" class="city-buttons-container">
             <button class="city-button active" data-city="all">Mostrar Todos</button>
@@ -658,13 +727,13 @@ try {
             <span>Carregando dados...</span>
         </div>
         <div id="containerListaEquipamentos" class="equipment-list-container">
-            </div>
+        </div>
         <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
     </main>
     <div class="footer">
         <p>&copy; 2025 APsystem. Todos os direitos reservados.</p>
     </div>
-    
+
     <button id="backToTopBtn" title="Voltar ao topo">&#8679;</button>
 
     <div id="addEquipmentModal" class="modal">
@@ -678,16 +747,19 @@ try {
                 <div id="addEquipmentType" class="equipment-type-group">
                     <label><input type="checkbox" name="tipo_equip[]" value="CCO"> CCO</label>
                     <label><input type="checkbox" name="tipo_equip[]" value="RADAR FIXO"> RADAR FIXO</label>
-                    <label><input type="checkbox" name="tipo_equip[]" value="MONITOR DE SEMAFORO"> MONITOR DE SEMÁFORO</label>
-                    <label><input type="checkbox" name="tipo_equip[]" value="VIDEO MONITORAMENTO"> VÍDEO MONITORAMENTO</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="MONITOR DE SEMAFORO"> MONITOR DE
+                        SEMÁFORO</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="VIDEO MONITORAMENTO"> VÍDEO
+                        MONITORAMENTO</label>
                     <label><input type="checkbox" name="tipo_equip[]" value="DOME"> DOME</label>
-                    <label><input type="checkbox" name="tipo_equip[]" value="LOMBADA ELETRONICA"> LOMBADA ELETRÔNICA</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="LOMBADA ELETRONICA"> LOMBADA
+                        ELETRÔNICA</label>
                     <label><input type="checkbox" name="tipo_equip[]" value="LAP"> LAP</label>
                     <label><input type="checkbox" name="tipo_equip[]" value="EDUCATIVO"> EDUCATIVO</label>
                 </div>
 
                 <label for="equipmentName">Nome:</label>
-                <input type="text" id="equipmentName" name="nome_equip" >
+                <input type="text" id="equipmentName" name="nome_equip">
 
                 <label for="equipmentReference">Referência:</label>
                 <input type="text" id="equipmentReference" name="referencia_equip">
@@ -702,7 +774,7 @@ try {
                 <div id="add-specific-fields-container" class="hidden">
                     <label for="equipmentQtdFaixa">Quantidade de Faixas:</label>
                     <input type="number" id="equipmentQtdFaixa" name="qtd_faixa">
-                    
+
                     <label for="equipmentKm">Velocidade (KM/h):</label>
                     <input type="text" id="equipmentKm" name="km">
 
@@ -719,21 +791,21 @@ try {
                         <input type="date" id="dtAfericao" name="dt_afericao">
                     </div>
                 </div>
-                
+
                 <div id="add-date-fields-container" class="hidden">
                     <label for="dt_instalacao">Data de Instalação:</label>
                     <div class="custom-date-input">
                         <input type="date" id="dt_instalacao" name="dt_instalacao">
                     </div>
 
-                    <label for="dt_estudoTec">Data de Estudo Técnico:</label>
+                    <label for="add_dt_estudoTec">Data de Estudo Técnico:</label>
                     <div class="custom-date-input">
-                        <input type="date" id="dt_estudoTec" name="dt_estudoTec">
+                        <input type="date" id="add_dt_estudoTec" name="dt_estudoTec">
                     </div>
                 </div>
 
                 <label for="equipmentCity">Cidade:</label>
-                <select id="equipmentCity" name="id_cidade" >
+                <select id="equipmentCity" name="id_cidade">
                     <option value="">Selecione a Cidade</option>
                     <?php foreach ($cities as $city): ?>
                         <option value="<?php echo htmlspecialchars($city['id_cidade']); ?>">
@@ -743,7 +815,7 @@ try {
                 </select>
 
                 <label for="equipmentLogradouro">Logradouro:</label>
-                <input type="text" id="equipmentLogradouro" name="logradouro" >
+                <input type="text" id="equipmentLogradouro" name="logradouro">
 
                 <label for="equipmentBairro">Bairro:</label>
                 <input type="text" id="equipmentBairro" name="bairro">
@@ -758,7 +830,7 @@ try {
 
                 <label for="coordenadas">Coordenadas (Latitude, Longitude):</label>
                 <input type="text" id="coordenadas" name="coordenadas" placeholder="-17.726909, -48.567032">
-                    
+
                 <p id="addEquipmentMessage" class="message hidden"></p>
                 <div class="form-buttons" id="add-form-buttons">
                     <button type="submit" class="save-button" id="saveAddEquipmentButton">
@@ -767,7 +839,7 @@ try {
                     </button>
                     <button type="button" class="cancel-button" id="cancelAddEquipmentButton">Cancelar</button>
                 </div>
-                
+
             </form>
         </div>
     </div>
@@ -786,27 +858,30 @@ try {
                 <div id="editEquipmentType" class="equipment-type-group">
                     <label><input type="checkbox" name="tipo_equip[]" value="CCO"> CCO</label>
                     <label><input type="checkbox" name="tipo_equip[]" value="RADAR FIXO"> RADAR FIXO</label>
-                    <label><input type="checkbox" name="tipo_equip[]" value="MONITOR DE SEMAFORO"> MONITOR DE SEMÁFORO</label>
-                    <label><input type="checkbox" name="tipo_equip[]" value="VIDEO MONITORAMENTO"> VÍDEO MONITORAMENTO</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="MONITOR DE SEMAFORO"> MONITOR DE
+                        SEMÁFORO</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="VIDEO MONITORAMENTO"> VÍDEO
+                        MONITORAMENTO</label>
                     <label><input type="checkbox" name="tipo_equip[]" value="DOME"> DOME</label>
-                    <label><input type="checkbox" name="tipo_equip[]" value="LOMBADA ELETRONICA"> LOMBADA ELETRÔNICA</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="LOMBADA ELETRONICA"> LOMBADA
+                        ELETRÔNICA</label>
                     <label><input type="checkbox" name="tipo_equip[]" value="LAP"> LAP</label>
                     <label><input type="checkbox" name="tipo_equip[]" value="EDUCATIVO"> EDUCATIVO</label>
                 </div>
 
                 <label for="editEquipmentName">Nome:</label>
-                <input type="text" id="editEquipmentName" name="nome_equip" >
+                <input type="text" id="editEquipmentName" name="nome_equip">
 
                 <label for="editEquipmentReference">Referência:</label>
                 <input type="text" id="editEquipmentReference" name="referencia_equip">
 
                 <label for="editEquipmentStatus">Status:</label>
-                <select id="editEquipmentStatus" name="status" >
+                <select id="editEquipmentStatus" name="status">
                     <option value="ativo">Ativo</option>
                     <option value="inativo">Inativo</option>
                     <option value="remanejado">Remanejado</option>
                 </select>
-                
+
                 <div id="edit-specific-fields-container" class="hidden">
                     <label for="editEquipmentQtdFaixa">Quantidade de Faixas:</label>
                     <input type="number" id="editEquipmentQtdFaixa" name="qtd_faixa">
@@ -820,14 +895,14 @@ try {
 
                 <div id="edit-afericao-fields-container" class="hidden">
                     <label for="editNumInstrumento">Nº Instrumento:</label>
-                    <input type="text" id="editNumInstrumento" name="num_instrumento" >
+                    <input type="text" id="editNumInstrumento" name="num_instrumento">
 
                     <label for="editDtAfericao">Data Aferição:</label>
                     <div class="custom-date-input">
-                        <input type="date" id="editDtAfericao" name="dt_afericao" >
+                        <input type="date" id="editDtAfericao" name="dt_afericao">
                     </div>
                 </div>
-                
+
                 <div id="edit-date-fields-container" class="hidden">
                     <label for="edit_dt_instalacao">Data de Instalação:</label>
                     <div class="custom-date-input">
@@ -841,7 +916,7 @@ try {
                 </div>
 
                 <label for="editEquipmentCity">Cidade:</label>
-                <select id="editEquipmentCity" name="id_cidade" >
+                <select id="editEquipmentCity" name="id_cidade">
                     <?php foreach ($cities as $city): ?>
                         <option value="<?php echo htmlspecialchars($city['id_cidade']); ?>">
                             <?php echo htmlspecialchars($city['nome']); ?>
@@ -850,13 +925,13 @@ try {
                 </select>
 
                 <label for="editEquipmentLogradouro">Logradouro:</label>
-                <input type="text" id="editEquipmentLogradouro" name="logradouro" >
+                <input type="text" id="editEquipmentLogradouro" name="logradouro">
 
                 <label for="editEquipmentBairro">Bairro:</label>
-                <input type="text" id="editEquipmentBairro" name="bairro" >
+                <input type="text" id="editEquipmentBairro" name="bairro">
 
                 <label for="editEquipmentProvider">Provedor:</label>
-                <select id="editEquipmentProvider" name="id_provedor" >
+                <select id="editEquipmentProvider" name="id_provedor">
                     <option value="">Carregando provedores...</option>
                 </select>
 
@@ -874,7 +949,7 @@ try {
                     </button>
                     <button type="button" class="cancel-button" id="cancelEditEquipmentButton">Cancelar</button>
                 </div>
-                
+
             </form>
         </div>
     </div>

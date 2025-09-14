@@ -61,7 +61,10 @@ try {
         case 'provedores':
             $tables = ['provedor'];
             break;
-
+        case 'manutencao_tecnico':
+            // Esta página depende de alterações nas manutenções e nas atribuições de técnicos
+            $tables = ['manutencoes', 'manutencoes_tecnicos'];
+            break;
         // -----------------------------------------
 
         default:

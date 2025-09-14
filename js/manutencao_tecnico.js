@@ -103,7 +103,40 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Variáveis de Estado ---
     let currentManutencao = null;
     let filtroAtual = 'corretiva';
-    let todasAsManutencoes = []; 
+    let todasAsManutencoes = [];
+
+    // --- VARIÁVEIS PARA AUTO-UPDATE ---
+    let currentChecksum = null;
+    let updateTimeoutId = null;
+    const BASE_INTERVAL = 15000; // 15 segundos
+    const MAX_INTERVAL = 120000; // 2 minutos
+    let currentInterval = BASE_INTERVAL;
+
+    // --- LÓGICA DE AUTO-UPDATE COM BACKOFF EXPONENCIAL  ---
+    async function scheduleNextCheck() {
+        if (updateTimeoutId) {
+            clearTimeout(updateTimeoutId);
+        }
+        try {
+            const checkResponse = await fetch(`API/check_updates.php?context=manutencao_tecnico`);
+            const checkResult = await checkResponse.json();
+
+            if (checkResult.success && checkResult.checksum !== currentChecksum) {
+                console.log('Novas atualizações de manutenções detectadas. Recarregando...');
+                await initialLoad(true); // Recarrega os dados sem piscar a tela
+                currentInterval = BASE_INTERVAL;
+                console.log('Intervalo de verificação de manutenções resetado.');
+            } else {
+                currentInterval = Math.min(currentInterval * 2, MAX_INTERVAL);
+                console.log(`Nenhuma atualização. Próxima verificação de manutenções em ${currentInterval / 1000}s.`);
+            }
+        } catch (error) {
+            console.error('Erro no ciclo de verificação de atualizações:', error);
+            currentInterval = Math.min(currentInterval * 2, MAX_INTERVAL);
+        } finally {
+            updateTimeoutId = setTimeout(scheduleNextCheck, currentInterval);
+        }
+    }
 
     // --- Funções Principais ---
 
@@ -113,9 +146,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         modalConcluirTitulo.textContent = isInstalacao ? 'Registrar Progresso da Instalação' : 'Concluir Reparo';
         confirmConcluirReparoBtn.querySelector('span').textContent = isInstalacao ? 'Confirmar Etapas' : 'Confirmar Reparo';
-        
+
         confirmConcluirReparoBtn.classList.remove('oculto');
-        
+
         camposReparo.classList.toggle('oculto', isInstalacao);
         camposInstalacao.classList.toggle('oculto', !isInstalacao);
 
@@ -133,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             // --- FIM DA ALTERAÇÃO ---
-            
+
             dataBaseInput.value = manutencao.dt_base || '';
             dataBaseInput.disabled = !!manutencao.dt_base;
             dataLacoInput.value = manutencao.dt_laco || '';
@@ -192,7 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const tipo = m.tipo_manutencao.toLowerCase();
             if (filtroAtual === 'instalação') {
                 return tipo === 'instalação';
-            } else { 
+            } else {
                 return tipo !== 'instalação';
             }
         });
@@ -339,7 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
             data_infra: !dataInfraInput.disabled ? dataInfraInput.value : null,
             dt_energia: !dataEnergiaInput.disabled ? dataEnergiaInput.value : null,
             tipo_equip: currentManutencao.tipo_equip,
-            id_cidade: currentManutencao.id_cidade 
+            id_cidade: currentManutencao.id_cidade
         };
         // --- FIM DA ALTERAÇÃO ---
         atualizarStatusManutencao(payload);
@@ -370,30 +403,46 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function initialLoad() {
-        mensagemCarregamento.classList.remove('oculto');
-        hideMessage(mensagemErro);
+    async function initialLoad(isUpdate = false) {
+        if (!isUpdate) { // Só mostra o "carregando" na primeira vez
+            mensagemCarregamento.classList.remove('oculto');
+            hideMessage(mensagemErro);
+        }
         try {
             const response = await fetch(`API/get_manutencoes_tecnico.php?user_id=${userId}`);
             const data = await response.json();
 
-            todasAsManutencoes = (data.success && data.manutencoes) ? data.manutencoes : [];
+            if (data.success) {
+                // ATUALIZA O CHECKSUM LOCAL
+                currentChecksum = data.checksum;
+                todasAsManutencoes = data.manutencoes || [];
 
-            const hasManutencoes = todasAsManutencoes.some(m => m.tipo_manutencao.toLowerCase() !== 'instalação');
-            filtroAtual = hasManutencoes ? 'corretiva' : 'instalação';
+                // Se não for uma atualização em segundo plano, define o filtro inicial
+                if (!isUpdate) {
+                    const hasManutencoes = todasAsManutencoes.some(m => m.tipo_manutencao.toLowerCase() !== 'instalação');
+                    filtroAtual = hasManutencoes ? 'corretiva' : 'instalação';
+                    btnCorretiva.classList.toggle('ativo', filtroAtual === 'corretiva');
+                    btnInstalacao.classList.toggle('ativo', filtroAtual === 'instalação');
+                }
 
-            btnCorretiva.classList.toggle('ativo', filtroAtual === 'corretiva');
-            btnInstalacao.classList.toggle('ativo', filtroAtual === 'instalação');
-
-            renderManutencoes();
-            setInterval(checkForUpdates, 30000);
+                renderManutencoes();
+            } else {
+                // Mesmo em caso de "falha" (sem manutenções), atualizamos o checksum
+                currentChecksum = data.checksum;
+                todasAsManutencoes = [];
+                renderManutencoes();
+            }
 
         } catch (error) {
-            console.error('Erro no carregamento inicial:', error);
-            todasAsManutencoes = [];
-            showMessage(mensagemErro, 'Ocorreu um erro ao carregar suas manutenções.', 'erro');
+            console.error('Erro no carregamento de dados:', error);
+            if (!isUpdate) {
+                todasAsManutencoes = [];
+                showMessage(mensagemErro, 'Ocorreu um erro ao carregar suas manutenções.', 'erro');
+            }
         } finally {
-            mensagemCarregamento.classList.add('oculto');
+            if (!isUpdate) {
+                mensagemCarregamento.classList.add('oculto');
+            }
         }
     }
 
@@ -432,7 +481,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const isInstalacao = currentManutencao.tipo_manutencao.toLowerCase() === 'instalação';
 
             if (isInstalacao) {
-                
+
                 const tipoEquip = currentManutencao.tipo_equip?.toUpperCase();
                 const isLacoRequired = tipoEquip !== 'DOME' && tipoEquip !== 'CCO';
 
@@ -442,7 +491,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     { nome: 'Infraestrutura', valor: dataInfraInput.value, desabilitado: dataInfraInput.disabled },
                     { nome: 'Energia', valor: dataEnergiaInput.value, desabilitado: dataEnergiaInput.disabled },
                 ];
-                
+
 
                 const novasDatasPreenchidas = datas.filter(d => d.valor && !d.desabilitado);
                 const totalConcluido = datas.filter(d => d.valor || d.desabilitado).length;
@@ -532,5 +581,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Carga Inicial ---
-    initialLoad();
+    initialLoad().then(() => {
+        console.log('Carga inicial de manutenções do técnico completa. Iniciando ciclo de verificação.');
+        scheduleNextCheck();
+    });
 });

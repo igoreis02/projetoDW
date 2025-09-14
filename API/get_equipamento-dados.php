@@ -15,6 +15,18 @@ $search_term = $_GET['search_term'] ?? '';
 $equipamentos = [];
 
 try {
+     $tables = ['equipamentos', 'endereco'];
+    $totalChecksum = 0;
+    foreach ($tables as $table) {
+        $result = $conn->query("CHECKSUM TABLE `$table`");
+        if ($result) {
+            $row = $result->fetch_assoc();
+            $totalChecksum += (int)$row['Checksum'];
+        } else {
+            throw new Exception("Erro ao calcular checksum para a tabela: $table");
+        }
+    }
+
     // Consulta base selecionando todas as colunas necessárias das tabelas corretas
     $sql = "
     SELECT 
@@ -81,9 +93,18 @@ try {
         while ($row = $result->fetch_assoc()) {
             $equipamentos[] = $row;
         }
-        echo json_encode(['success' => true, 'equipamentos' => $equipamentos]);
+        echo json_encode([
+            'success' => true, 
+            'checksum' => $totalChecksum,
+            'equipamentos' => $equipamentos
+        ]);
     } else {
-        echo json_encode(['success' => false, 'message' => 'Nenhum equipamento encontrado.']);
+        echo json_encode([
+            'success' => true,
+            'checksum' => $totalChecksum,
+            'equipamentos' => [],
+            'message' => 'Nenhum equipamento encontrado.'
+        ]);
     }
     
     $stmt->close();

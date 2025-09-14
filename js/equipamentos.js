@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const campoPesquisa = document.getElementById('campoPesquisa');
     const cityButtonsContainer = document.getElementById('cityButtonsContainer');
 
-    // **NOVO**: Referências para os novos botões
+
     const clearFiltersBtn = document.getElementById('clearFiltersBtn');
     const backToTopBtn = document.getElementById('backToTopBtn');
 
@@ -34,18 +34,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- VARIÁVEIS DE ESTADO ---
     let allEquipmentData = [];
+    let allProvidersData = [];
     let activeCityFilter = 'all';
-    let equipmentCount = 0;
+    // VARIÁVEIS PARA AUTO-UPDATE
+    let currentChecksum = null;
+    let updateTimeoutId = null;
+    const BASE_INTERVAL = 15000; // 15 segundos
+    const MAX_INTERVAL = 120000; // 2 minutos
+    let currentInterval = BASE_INTERVAL;
+    
 
     // --- MAPA DE VALIDAÇÃO (SEU CÓDIGO ORIGINAL) ---
-    const fieldsToValidate = {
-        'equipmentType': 'Tipo de Equipamento',
-        'equipmentName': 'Nome',
-        'equipmentStatus': 'Status',
-        'equipmentCity': 'Cidade',
-        'equipmentLogradouro': 'Logradouro',
-        'equipmentBairro': 'Bairro',
-        'equipmentProvider': 'Provedor',
+   const validationMap = {
+        'tipo_equip[]': 'Tipo de Equipamento',
+        'nome_equip': 'Nome',
+        'referencia_equip': 'Referência',
+        'status': 'Status',
+        'qtd_faixa': 'Quantidade de Faixas',
+        'km': 'Velocidade (KM/h)',
+        'sentido': 'Sentido',
+        'num_instrumento': 'Nº Instrumento',
+        'dt_afericao': 'Data Aferição',
+        'id_cidade': 'Cidade',
+        'logradouro': 'Logradouro',
+        'bairro': 'Bairro',
+        'id_provedor': 'Provedor',
+        'cep': 'CEP',
+        'coordenadas': 'Coordenadas'
+        // 'dt_instalacao' e 'dt_estudoTec' são omitidos de propósito
     };
 
     // --- FUNÇÕES UTILITÁRIAS (SEU CÓDIGO ORIGINAL) ---
@@ -59,6 +75,25 @@ document.addEventListener('DOMContentLoaded', () => {
         element.classList.add('hidden');
         element.textContent = '';
     };
+     function handleCityChange(event) {
+        const cityId = event.target.value;
+        const form = event.target.closest('form');
+        const providerSelect = form.querySelector('select[name="id_provedor"]');
+
+        if (!cityId || allProvidersData.length === 0) {
+            providerSelect.value = '';
+            return;
+        }
+
+        // Encontra o primeiro provedor que corresponde à cidade selecionada
+        const matchingProvider = allProvidersData.find(p => p.id_cidade == cityId);
+
+        if (matchingProvider) {
+            providerSelect.value = matchingProvider.id_provedor;
+        } else {
+            providerSelect.value = ''; // Se não encontrar, reseta o seletor
+        }
+    }
 
     function toggleLoadingState(spinnerId, saveButtonId, cancelButtonId, show) {
         const saveButton = document.getElementById(saveButtonId);
@@ -81,10 +116,50 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (cancelButton) cancelButton.disabled = show;
     }
+        // --- FUNÇÃO DE VALIDAÇÃO DE FORMULÁRIO ---
+     function validateForm(form, validationMap) {
+        for (const name in validationMap) {
+            const field = form.querySelector(`[name="${name}"]`);
+            if (!field) continue;
+
+            // Pula a validação de campos que estão intencionalmente ocultos
+            if (field.closest('.hidden')) {
+                continue;
+            }
+
+            const label = validationMap[name];
+
+            if (name === 'tipo_equip[]') {
+                if (form.querySelectorAll('input[name="tipo_equip[]"]:checked').length === 0) {
+                    return `O campo '${label}' é obrigatório.`;
+                }
+            } else {
+                if (!field.value || field.value.trim() === '') {
+                    return `O campo '${label}' é obrigatório.`;
+                }
+            }
+        }
+        return true; // Retorna true se tudo estiver válido
+    }
+    
+    // --- FUNÇÃO PARA LIMPAR MENSAGENS DE ERRO ---
+    function setupValidationListeners(form, messageElement) {
+        form.querySelectorAll('input, select, textarea').forEach(input => {
+            const eventType = (input.type === 'checkbox' || input.tagName.toLowerCase() === 'select') ? 'change' : 'input';
+            input.addEventListener(eventType, () => {
+                // Esconde a mensagem de erro assim que o usuário começa a corrigir
+                if (messageElement.classList.contains('error')) {
+                    hideMessage(messageElement);
+                }
+            });
+        });
+    }
+
+
 
     // --- FUNÇÕES DE LÓGICA DE NEGÓCIO ---
 
-    function toggleConditionalFields(formId) {
+   function toggleConditionalFields(formId) {
         const form = document.getElementById(formId);
         if (!form) return;
 
@@ -95,73 +170,64 @@ document.addEventListener('DOMContentLoaded', () => {
         const afericaoContainer = document.getElementById(`${prefix}-afericao-fields-container`);
         const dateContainer = document.getElementById(`${prefix}-date-fields-container`);
 
-        // Campos individuais para controle mais fino
         const kmInput = form.querySelector(`[name="km"]`);
         const kmLabel = kmInput ? form.querySelector(`label[for="${kmInput.id}"]`) : null;
         const estudoTecInput = form.querySelector(`input[name="dt_estudoTec"]`)?.closest('.custom-date-input');
         const estudoTecLabel = form.querySelector(`label[for="${prefix}_dt_estudoTec"]`);
 
-        // --- Regras de visibilidade ---
-        // Tipos que geralmente ocultam todos os campos específicos
-        const simpleTypes = ['CCO', 'DOME', 'VIDEO MONITORAMENTO'];
-        // Tipos que precisam do container de aferição
-        const needsAfericao = ['RADAR FIXO', 'LOMBADA ELETRONICA'];
-        // Tipos que precisam do container específico (faixa, sentido, km)
-        const needsSpecifics = ['RADAR FIXO', 'LOMBADA ELETRONICA', 'MONITOR DE SEMAFORO', 'LAP'];
-        // Tipos que precisam do campo de estudo técnico
-        const needsEstudoTec = ['RADAR FIXO', 'LOMBADA ELETRONICA', 'MONITOR DE SEMAFORO'];
-
-
-        // --- Lógica de Decisão ---
-        // Um container/campo é visível se PELO MENOS UM tipo selecionado o exigir.
-
-        const showSpecifics = selectedTypes.length > 0 && selectedTypes.some(type => needsSpecifics.includes(type));
-        const showAfericao = selectedTypes.length > 0 && selectedTypes.some(type => needsAfericao.includes(type));
-        const showEstudoTec = selectedTypes.length > 0 && selectedTypes.some(type => needsEstudoTec.includes(type));
-
-        // --- Aplica Visibilidade ---
-
-        // Container Específico (Faixa, KM, Sentido)
-        specificContainer.classList.toggle('hidden', !showSpecifics);
-        // Container Aferição (Nº Instrumento, Data Aferição)
-        afericaoContainer.classList.toggle('hidden', !showAfericao);
-
-        // Container de Datas (sempre visível, mas controlamos o "Estudo Técnico" dentro dele)
-        dateContainer.classList.remove('hidden');
-
-        // Lógica específica para campos individuais que podem ser ocultados mesmo se o container estiver visível
-        if (kmInput && kmLabel) {
-            // Oculta KM se LAP for selecionado
-            const isLapSelected = selectedTypes.includes('LAP');
-            kmInput.classList.toggle('hidden', isLapSelected);
-            kmLabel.classList.toggle('hidden', isLapSelected);
-        }
-
-        if (estudoTecInput && estudoTecLabel) {
-            // Oculta "Estudo Técnico" se a regra exigir
-            estudoTecInput.classList.toggle('hidden', !showEstudoTec);
-            estudoTecLabel.classList.toggle('hidden', !showEstudoTec);
-        }
-
-        // Se nenhum tipo estiver selecionado, oculta tudo
         if (selectedTypes.length === 0) {
             specificContainer.classList.add('hidden');
             afericaoContainer.classList.add('hidden');
             dateContainer.classList.add('hidden');
+            return;
+        }
+
+        const primaryType = selectedTypes[0];
+
+        const needsAfericao = ['RADAR FIXO', 'LOMBADA ELETRONICA'].includes(primaryType);
+        const needsSpecifics = ['RADAR FIXO', 'LOMBADA ELETRONICA', 'MONITOR DE SEMAFORO', 'LAP'].includes(primaryType);
+        const needsEstudoTec = ['RADAR FIXO', 'LOMBADA ELETRONICA', 'MONITOR DE SEMAFORO'].includes(primaryType);
+        const hidesKm = ['LAP'].includes(primaryType);
+
+        afericaoContainer.classList.toggle('hidden', !needsAfericao);
+        specificContainer.classList.toggle('hidden', !needsSpecifics);
+        dateContainer.classList.remove('hidden');
+
+        if (kmInput && kmLabel) {
+            kmInput.classList.toggle('hidden', hidesKm);
+            kmLabel.classList.toggle('hidden', hidesKm);
+        }
+        
+        if (estudoTecInput && estudoTecLabel) {
+            estudoTecInput.classList.toggle('hidden', !needsEstudoTec);
+            estudoTecLabel.classList.toggle('hidden', !needsEstudoTec);
         }
     }
-    async function checkForUpdates() {
+    async function scheduleNextCheck() {
+        if (updateTimeoutId) {
+            clearTimeout(updateTimeoutId);
+        }
         try {
-            const response = await fetch('API/check_equipments_updates.php');
-            const data = await response.json();
-            if (data.success && data.total !== equipmentCount) {
-                console.log('Novos dados detectados! Atualizando a lista...');
-                fetchAndRenderEquipments(); // Se a contagem mudou, busca a lista completa
+            const checkResponse = await fetch('API/check_updates.php?context=equipamentos');
+            const checkResult = await checkResponse.json();
+
+            if (checkResult.success && checkResult.checksum !== currentChecksum) {
+                console.log('Novas atualizações de equipamentos detectadas. Recarregando...');
+                await fetchAndRenderEquipments(); // Recarrega os dados
+                currentInterval = BASE_INTERVAL;
+                console.log('Intervalo de verificação de equipamentos resetado.');
+            } else {
+                currentInterval = Math.min(currentInterval * 2, MAX_INTERVAL);
+                console.log(`Nenhuma atualização. Próxima verificação de equipamentos em ${currentInterval / 1000}s.`);
             }
         } catch (error) {
-            console.error('Erro ao verificar atualizações:', error);
+            console.error('Erro no ciclo de verificação de atualizações:', error);
+            currentInterval = Math.min(currentInterval * 2, MAX_INTERVAL);
+        } finally {
+            updateTimeoutId = setTimeout(scheduleNextCheck, currentInterval);
         }
     }
+   
 
     async function fetchProvidersForSelect() {
         const selectProvider = document.getElementById('equipmentProvider');
@@ -171,10 +237,12 @@ document.addEventListener('DOMContentLoaded', () => {
         editSelectProvider.innerHTML = loadingOption;
 
         try {
+            // Usamos a API que agora retorna o id_cidade
             const response = await fetch('API/get_provedores_select.php');
             const data = await response.json();
             const defaultOption = '<option value="">Selecione o Provedor</option>';
             if (data.success) {
+                allProvidersData = data.provedores; // Armazena os dados completos
                 const providerOptions = data.provedores.map(p => `<option value="${p.id_provedor}">${p.nome_prov}</option>`).join('');
                 selectProvider.innerHTML = defaultOption + providerOptions;
                 editSelectProvider.innerHTML = defaultOption + providerOptions;
@@ -189,20 +257,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-
     async function fetchAndRenderEquipments() {
-        mainLoadingState.style.display = 'flex';
-        equipmentListContainer.innerHTML = '';
+        // Mostra o spinner de carregamento principal apenas na primeira carga
+        if (!currentChecksum) {
+            mainLoadingState.style.display = 'flex';
+            equipmentListContainer.innerHTML = '';
+        }
         try {
             const response = await fetch('API/get_equipamento-dados.php');
             const data = await response.json();
             if (data.success) {
+                // ATUALIZA O CHECKSUM LOCAL
+                currentChecksum = data.checksum;
                 allEquipmentData = data.equipamentos;
-                equipmentCount = allEquipmentData.length;
-                applyFilters();
+                applyFilters(); // Aplica filtros e renderiza a lista
             } else {
                 equipmentListContainer.innerHTML = `<p class="message error">${data.message}</p>`;
-                equipmentCount = 0;
+                // Mesmo sem equipamentos, o checksum do estado "vazio" é válido
+                currentChecksum = data.checksum; 
             }
         } catch (error) {
             console.error('Erro ao buscar equipamentos:', error);
@@ -455,6 +527,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     addEquipmentForm.addEventListener('submit', async function (event) {
         event.preventDefault();
+
+        const validationResult = validateForm(addEquipmentForm, validationMap);
+        if (validationResult !== true) {
+            showMessage(addEquipmentMessage, validationResult, 'error');
+            return; // Para a submissão se houver erro
+        }
+
         toggleLoadingState('addEquipmentSpinner', 'saveAddEquipmentButton', 'cancelAddEquipmentButton', true);
         try {
             const formData = new FormData(addEquipmentForm);
@@ -492,6 +571,12 @@ document.addEventListener('DOMContentLoaded', () => {
     editEquipmentForm.addEventListener('submit', async function (event) {
         event.preventDefault();
 
+        const validationResult = validateForm(editEquipmentForm, validationMap);
+        if (validationResult !== true) {
+            showMessage(editEquipmentMessage, validationResult, 'error');
+            return; // Para a submissão se houver erro
+        }
+
         toggleLoadingState('editEquipmentSpinner', 'saveEditEquipmentButton', 'cancelEditEquipmentButton', true);
         try {
             const formData = new FormData(editEquipmentForm);
@@ -526,16 +611,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    document.getElementById('equipmentCity').addEventListener('change', handleCityChange);
+    document.getElementById('editEquipmentCity').addEventListener('change', handleCityChange);
+
+
     // --- INICIALIZAÇÃO ---
     fetchProvidersForSelect();
-    fetchAndRenderEquipments();
+    fetchAndRenderEquipments().then(() => {
+        console.log('Carga inicial de equipamentos completa. Iniciando ciclo de verificação.');
+        scheduleNextCheck();
+    });;
 
-    setupFormValidationListeners(addEquipmentForm, addEquipmentMessage, fieldsToValidate);
-    setupFormValidationListeners(editEquipmentForm, editEquipmentMessage, fieldsToValidate);
+    setupValidationListeners(addEquipmentForm, addEquipmentMessage);
+    setupValidationListeners(editEquipmentForm, editEquipmentMessage);
+    
     const editInputsToWatch = editEquipmentForm.querySelectorAll('input, select');
     editInputsToWatch.forEach(input => {
         input.addEventListener('input', () => hideMessage(editEquipmentMessage));
     });
     activateDatePickers();
-    setInterval(checkForUpdates, 5000); // Verifica atualizações a cada 5 segundos
 });
