@@ -24,6 +24,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const problemaTecnicoDwError = document.getElementById('problemaTecnicoDwError');
     const concluirModalError = document.getElementById('concluirModalError');
 
+    const btnVoltarAoTopo = document.getElementById("btnVoltarAoTopo");
+
     // --- Variáveis de Estado ---
     let filters = { type: 'manutencao', status: 'todos', startDate: '', endDate: '', city: 'todos' };
     let allData = null, currentItem = null;
@@ -561,4 +563,25 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     // Ajusta o espaçador também em caso de redimensionamento da janela
     window.addEventListener('resize', adjustSearchSpacer);
+
+      // Adiciona um "ouvinte" para o evento de rolagem da página
+    window.onscroll = function () {
+        controlarVisibilidadeBotao();
+    };
+
+     function controlarVisibilidadeBotao() {
+        // Se a página for rolada mais de 20px para baixo...
+        if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+            // ...o botão aparece.
+            btnVoltarAoTopo.style.display = "block";
+        } else {
+            // ...senão, ele desaparece.
+            btnVoltarAoTopo.style.display = "none";
+        }
+    }
+
+    btnVoltarAoTopo.addEventListener('click', function () {
+        // Manda a página de volta para o topo de forma suave
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
 });

@@ -23,6 +23,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const controlsWrapper = document.querySelector('.controls-wrapper');
 
+    const btnVoltarAoTopo = document.getElementById("btnVoltarAoTopo");
+
+
 
     // --- VARIÁVEIS DE ESTADO ---
     let activeType = 'manutencao';
@@ -873,6 +876,27 @@ document.addEventListener('DOMContentLoaded', function () {
         lacreNaoBtn.classList.add('selected');
         lacreSimBtn.classList.remove('selected');
         lacreFieldsContainer.classList.add('hidden');
+    });
+    // Adiciona um "ouvinte" para o evento de rolagem da página
+    window.onscroll = function () {
+        controlarVisibilidadeBotao();
+    };
+
+    function controlarVisibilidadeBotao() {
+        // Se a página for rolada mais de 20px para baixo...
+        if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+            // ...o botão aparece.
+            btnVoltarAoTopo.style.display = "block";
+        } else {
+            // ...senão, ele desaparece.
+            btnVoltarAoTopo.style.display = "none";
+        }
+    }
+
+    // Adiciona a ação que acontece quando o botão é clicado
+    btnVoltarAoTopo.addEventListener('click', function () {
+        // Manda a página de volta para o topo de forma suave
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     });
 
     // --- INICIALIZAÇÃO ---

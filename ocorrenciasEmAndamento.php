@@ -11,6 +11,7 @@ if (!isset($_SESSION['user_id'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="icon" type="image/png" href="imagens/favicon.png">
     <link rel="stylesheet" href="css/style.css">
     <title>Ocorrências em Andamento</title>
@@ -845,6 +846,35 @@ if (!isset($_SESSION['user_id'])) {
                 transform: rotate(360deg);
             }
         }
+        #btnVoltarAoTopo {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 30px;
+            z-index: 99;
+            border: none;
+            outline: none;
+            background-color: #213fadff;
+            color: white;
+            cursor: pointer;
+            padding: 15px;
+            border-radius: 50%;
+            font-size: 18px;
+            width: 50px;
+            height: 50px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s, opacity 0.5s;
+        }
+
+        #btnVoltarAoTopo:hover {
+            background-color: #12287eff;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
 
         @media (max-width: 1200px) {
             .city-ocorrencias-grid {
@@ -990,6 +1020,10 @@ if (!isset($_SESSION['user_id'])) {
         </div>
 
         <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
+
+        <button id="btnVoltarAoTopo" title="Voltar ao topo">
+        <i class="fas fa-arrow-up"></i>
+        
     </div>
 
     <div id="concluirModal" class="modal">
