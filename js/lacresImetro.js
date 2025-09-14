@@ -37,7 +37,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     window.abrirModal = (id) => document.getElementById(id).classList.add('esta-ativo');
-    window.fecharModal = (id) => document.getElementById(id).classList.remove('esta-ativo');
+    window.fecharModal = (id) => {
+        const modal = document.getElementById(id);
+        if(modal) modal.classList.remove('esta-ativo');
+        
+        // Lógica específica para resetar o modal de confirmação ao fechar
+        if (id === 'modalConfirmacao') {
+            const msgDiv = document.getElementById('mensagemSalvar');
+            const btnContainer = document.getElementById('confirmacaoBotoesContainer');
+            const btnConfirmar = document.getElementById('btnConfirmarSalvar');
+            const btnSpan = btnConfirmar.querySelector('span');
+            const btnSpinner = btnConfirmar.querySelector('.spinner');
+
+            // Garante que da próxima vez o modal estará no estado inicial
+            setTimeout(() => { // Pequeno delay para a transição de fechar terminar
+                msgDiv.style.display = 'none';
+                btnContainer.style.display = 'flex';
+                btnContainer.querySelectorAll('button').forEach(b => b.disabled = false);
+                btnSpan.classList.remove('hidden');
+                btnSpinner.classList.add('hidden');
+            }, 500);
+        }
+    };
 
     window.toggleCameras = (num, btnElement, groupPrefix) => {
         const form = btnElement.closest('form');
@@ -66,6 +87,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    window.toggleRompido = (btn, isRompido) => {
+        const container = btn.closest('.botoes-toggle');
+        const obsTextarea = container.closest('.rompido-toggle-container').nextElementSibling;
+
+        container.querySelectorAll('button').forEach(b => b.classList.remove('ativo'));
+        btn.classList.add('ativo');
+
+        // Armazena o estado no próprio container para ler depois
+        container.dataset.rompido = isRompido;
+
+        if (isRompido) {
+            obsTextarea.classList.remove('hidden');
+        } else {
+            obsTextarea.classList.add('hidden');
+            obsTextarea.value = ''; // Limpa o campo se o usuário voltar para "Não"
+        }
+    };
+
     function showNotifications(expiringItems) {
         const container = document.getElementById('notification-container');
         let delay = 0;
@@ -87,31 +126,30 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function carregarDadosIniciais() {
-        await carregarFiltrosDeCidade();
+        // 1. Primeiro, busca todos os equipamentos para sabermos quais cidades têm equipamentos
         await buscarEquipamentosELacres(true);
+        // 2. Depois, cria os filtros de cidade com base nos dados retornados
+        carregarFiltrosDeCidade(todosOsEquipamentos);
     }
 
-    async function carregarFiltrosDeCidade() {
-        try {
-            const res = await fetch('API/get_cidades.php');
-            const data = await res.json();
-            if (data.success) {
-                containerFiltroCidades.innerHTML = '';
-                const btnTodas = document.createElement('button');
-                btnTodas.textContent = 'Todas';
-                btnTodas.className = 'ativo';
-                btnTodas.onclick = () => setFiltroCidade('Todas');
-                containerFiltroCidades.appendChild(btnTodas);
-                data.cidades.forEach(cidade => {
-                    const btn = document.createElement('button');
-                    btn.textContent = cidade.nome;
-                    btn.onclick = () => setFiltroCidade(cidade.nome);
-                    containerFiltroCidades.appendChild(btn);
-                });
-            }
-        } catch (error) {
-            containerFiltroCidades.innerHTML = 'Erro ao carregar cidades.';
-        }
+    function carregarFiltrosDeCidade(equipamentos) {
+        // Extrai nomes de cidades únicos e remove valores nulos/vazios
+        const nomesCidades = [...new Set(equipamentos.map(e => e.cidade_nome).filter(Boolean))];
+        nomesCidades.sort(); // Ordena alfabeticamente
+
+        containerFiltroCidades.innerHTML = '';
+        const btnTodas = document.createElement('button');
+        btnTodas.textContent = 'Todas';
+        btnTodas.className = 'ativo';
+        btnTodas.onclick = () => setFiltroCidade('Todas');
+        containerFiltroCidades.appendChild(btnTodas);
+
+        nomesCidades.forEach(nomeCidade => {
+            const btn = document.createElement('button');
+            btn.textContent = nomeCidade;
+            btn.onclick = () => setFiltroCidade(nomeCidade);
+            containerFiltroCidades.appendChild(btn);
+        });
     }
 
     function setFiltroCidade(nomeCidade) {
@@ -199,14 +237,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 const vencimentoClass = isExpiring ? 'vencimento-proximo-texto' : '';
                 const temLacres = equip.lacres && equip.lacres.length > 0;
 
-                const lacresHTML = temLacres ? equip.lacres.map(lacre => {
-                    const formName = dbValueToFormName[lacre.local_lacre];
-                    // CORREÇÃO: Trata nomes inválidos ou não mapeados de forma elegante
-                    const displayName = formName ? LacreMap[formName].displayName : (lacre.local_lacre || 'Lacre Inválido');
-                    return `<div class="lacre-item"><strong>${displayName}:</strong> ${lacre.num_lacre}</div>`;
+                const lacresValidos = temLacres ? equip.lacres.filter(lacre => lacre.local_lacre && lacre.local_lacre.trim() !== '') : [];
+
+                const lacresHTML = lacresValidos.length > 0 ? lacresValidos.map(lacre => {
+                    const localLacreLimpo = lacre.local_lacre.trim(); // Limpa espaços extras
+                    const formName = dbValueToFormName[localLacreLimpo];
+                    const displayName = formName ? LacreMap[formName].displayName : localLacreLimpo;
+
+                    // Constrói o HTML para cada lacre
+                    let itemLacreHTML = `<div class="lacre-item">`;
+                    itemLacreHTML += `<strong>${displayName}:</strong> ${lacre.num_lacre || ''}`;
+
+                    // Adiciona informações de rompimento, se existirem
+                    if (lacre.lacre_rompido == 1 && lacre.num_lacre_rompido) {
+                        itemLacreHTML += `<span class="lacre-detalhe rompido">Rompido: ${lacre.num_lacre_rompido}</span>`;
+                    }
+
+                    // Adiciona observações, se existirem
+                    if (lacre.obs_lacre) {
+                        itemLacreHTML += `<span class="lacre-detalhe">Obs: ${lacre.obs_lacre}</span>`;
+                    }
+
+                    itemLacreHTML += `</div>`;
+                    return itemLacreHTML;
                 }).join('') : '<p>Nenhum lacre cadastrado.</p>';
 
                 const lacresData = JSON.stringify(equip.lacres).replace(/"/g, '&quot;');
+
                 const vencimentoTexto = equip.dt_vencimento ? new Date(equip.dt_vencimento + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A';
 
                 const itemHTML = `<div class="${itemClass}"><div class="equipamento-info"><div class="info-bloco"><h4>Equipamento</h4><p class="equipamento-identificacao">${equip.nome_equip} - ${equip.referencia_equip}</p></div><div class="info-bloco"><h4>Detalhes</h4><p><strong>Qtd. Faixas:</strong> ${equip.qtd_faixa || 'N/A'}</p><p><strong>KM via:</strong> ${equip.km || 'N/A'}</p></div><div class="info-bloco"><h4>Aferição</h4><p><strong>N° Instrumento:</strong> ${equip.num_instrumento || 'N/A'}</p><p><strong>Data:</strong> ${equip.dt_afericao ? new Date(equip.dt_afericao + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}</p><p class="${vencimentoClass}"><strong>Vencimento:</strong> ${vencimentoTexto}</p></div></div><h4>Lacres</h4><div class="lacres-grid">${lacresHTML}</div><div class="equipamento-actions"><button class="botao-adicionar-lacres" data-equip-id="${equip.id_equipamento}" data-equip-name="${equip.nome_equip}" data-lacres="${lacresData}" onclick="abrirModalLacres(this)">${temLacres ? 'Substituir Lacres' : 'Adicionar Lacres'}</button></div></div>`;
@@ -220,6 +277,17 @@ document.addEventListener('DOMContentLoaded', () => {
     window.abrirModalLacres = (btn) => {
         const form = document.getElementById('formularioAdicionarLacres');
         form.reset();
+
+        form.querySelectorAll('.botoes-toggle').forEach(container => {
+            container.dataset.rompido = 'false';
+            const buttons = container.querySelectorAll('button');
+            if (buttons.length === 2) { // Garante que só afeta os botões Sim/Não
+                buttons[0].classList.add('ativo');  // Ativa o "Não"
+                buttons[1].classList.remove('ativo'); // Desativa o "Sim"
+            }
+        });
+        form.querySelectorAll('.obs-lacre').forEach(textarea => textarea.classList.add('hidden'));
+
 
         const lacresAtuais = btn.dataset.lacres ? JSON.parse(btn.dataset.lacres) : [];
         const temLacres = lacresAtuais.length > 0;
@@ -291,20 +359,55 @@ document.addEventListener('DOMContentLoaded', () => {
         const resumo = document.getElementById('resumoLacres');
         resumo.innerHTML = '';
         let temLacre = false;
+
         formData.forEach((value, formName) => {
+            // Ignora os campos de observação e o id do equipamento na iteração principal
+            if (formName.startsWith('obs_') || formName === 'id_equipamento') return;
+
             const lacreInfo = LacreMap[formName];
             if (lacreInfo && value.trim() !== '') {
                 temLacre = true;
-                lacresParaConfirmar.lacres.push({ local: lacreInfo.dbValue, numero: value });
-                resumo.innerHTML += `<p><strong>${lacreInfo.displayName}:</strong> ${value}</p>`;
+
+                const input = form.querySelector(`[name="${formName}"]`);
+
+                // --- INÍCIO DA CORREÇÃO SIMPLIFICADA ---
+                // A lógica agora é mais direta: o container com os botões é sempre o "irmão" seguinte do input.
+                // Isso funciona para todos os campos: simples, câmera única e câmeras duplas.
+                const rompidoContainer = input.nextElementSibling;
+                const toggleContainer = rompidoContainer ? rompidoContainer.querySelector('.botoes-toggle') : null;
+                // --- FIM DA CORREÇÃO ---
+
+                const isRompido = (toggleContainer && toggleContainer.dataset.rompido === 'true');
+                const observacao = formData.get(`obs_${formName}`) || '';
+
+                lacresParaConfirmar.lacres.push({
+                    local: lacreInfo.dbValue,
+                    numero: value,
+                    rompido: isRompido,
+                    obs: observacao
+                });
+
+                let resumoHTML = `<p><strong>${lacreInfo.displayName}:</strong> ${value}`;
+                if (isRompido) {
+                    resumoHTML += ` <span style="color: #c81e1e; font-weight: bold;">(Rompido)</span>`;
+                    if (observacao) {
+                        resumoHTML += `<br><small><em>Obs: ${observacao}</em></small>`;
+                    }
+                }
+                resumoHTML += `</p>`;
+                resumo.innerHTML += resumoHTML;
             }
         });
+
         if (temLacre) {
             document.getElementById('tituloConfirmacao').textContent = (operacaoAtual === 'substitute' ? 'Confirmar Substituição' : 'Confirmar Novos Lacres');
             fecharModal('modalAdicionarLacres');
             abrirModal('modalConfirmacao');
         } else {
-            alert('Preencha pelo menos um campo de lacre.');
+            const msgDiv = document.getElementById('mensagemAdicionarVazio');
+            msgDiv.textContent = 'Preencha pelo menos um campo de lacre.';
+            msgDiv.style.display = 'block';
+            setTimeout(() => { msgDiv.style.display = 'none'; }, 3000);
         }
     };
 
@@ -358,10 +461,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    document.getElementById('btnConfirmarSalvar').onclick = async () => {
+    document.getElementById('btnConfirmarSalvar').addEventListener('click', async () => {
         const endpoint = operacaoAtual === 'substitute' ? 'API/update_lacres.php' : 'API/add_lacres.php';
+        
+        // Referências aos elementos do modal
         const msgDiv = document.getElementById('mensagemSalvar');
+        const btnContainer = document.getElementById('confirmacaoBotoesContainer');
+        const btnConfirmar = document.getElementById('btnConfirmarSalvar');
+        const btnSpan = btnConfirmar.querySelector('span');
+        const btnSpinner = btnConfirmar.querySelector('.spinner');
+
+        // 1. Esconde mensagens antigas, desativa botões e mostra o spinner
         msgDiv.style.display = 'none';
+        btnContainer.querySelectorAll('button').forEach(b => b.disabled = true);
+        btnSpan.classList.add('hidden');
+        btnSpinner.classList.remove('hidden');
+
         try {
             const response = await fetch(endpoint, {
                 method: 'POST',
@@ -369,23 +484,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify(lacresParaConfirmar)
             });
             const result = await response.json();
-            if (result.success) {
-                msgDiv.className = 'mensagem sucesso';
-                msgDiv.textContent = result.message;
-                msgDiv.style.display = 'block';
-                setTimeout(() => {
-                    fecharModal('modalConfirmacao');
-                    buscarEquipamentosELacres();
-                }, 2000);
-            } else { throw new Error(result.message); }
+            if (!result.success) { throw new Error(result.message); }
+
+            // 2. Lógica de SUCESSO
+            btnContainer.style.display = 'none'; // Esconde os botões
+            msgDiv.className = 'mensagem sucesso';
+            msgDiv.textContent = result.message;
+            msgDiv.style.display = 'block';
+            setTimeout(() => {
+                fecharModal('modalConfirmacao');
+                buscarEquipamentosELacres();
+            }, 2000);
+
         } catch (error) {
+            // 3. Lógica de ERRO
             msgDiv.className = 'mensagem erro';
             msgDiv.textContent = `Erro: ${error.message}`;
             msgDiv.style.display = 'block';
-        }
-    };
 
-     window.onscroll = function () {
+            // Reativa os botões para nova tentativa
+            btnContainer.querySelectorAll('button').forEach(b => b.disabled = false);
+            btnSpan.classList.remove('hidden');
+            btnSpinner.classList.add('hidden');
+        }
+    });
+
+    window.onscroll = function () {
         controlarVisibilidadeBotao();
     };
 

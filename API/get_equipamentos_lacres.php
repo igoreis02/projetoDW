@@ -54,15 +54,15 @@ try {
         $ids = array_keys($equipamentos);
         $id_list = implode(',', $ids);
 
-        $sql_lacres = "SELECT lc.id_equipamento, lc.local_lacre, lc.num_lacre
+        $sql_lacres = "SELECT lc.id_equipamento, lc.local_lacre, lc.num_lacre,
+                              lc.lacre_rompido, lc.num_lacre_rompido, lc.obs_lacre
                        FROM controle_lacres lc
                        INNER JOIN (
                            SELECT id_equipamento, local_lacre, MAX(id_controle_lacres) as max_id
                            FROM controle_lacres
                            WHERE id_equipamento IN ($id_list)
                            GROUP BY id_equipamento, local_lacre
-                       ) as latest_lacres ON lc.id_controle_lacres = latest_lacres.max_id
-                       WHERE lc.lacre_afixado = 1";
+                       ) as latest_lacres ON lc.id_controle_lacres = latest_lacres.max_id";
                        
         $result_lacres = $conn->query($sql_lacres);
         while ($lacre = $result_lacres->fetch_assoc()) {

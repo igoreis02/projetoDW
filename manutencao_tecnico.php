@@ -71,11 +71,17 @@ $user_email = $_SESSION['user_email'];
                         <button type="button" id="botaoNaoRompimento" class="botao-toggle ativo">Não</button>
                     </div>
                 </div>
-                <div id="camposRompimentoLacre" class="oculto">
+                 <div id="camposRompimentoLacre" class="oculto">
+                    <label for="selectLacreRompido">Qual lacre foi rompido?</label>
+                    <select id="selectLacreRompido">
+                        <option value="">Selecione um lacre...</option>
+                    </select>
+                    
                     <label for="inputNumeroLacre">Número do lacre:</label>
-                    <input type="text" id="inputNumeroLacre" placeholder="Ex: 123456">
-                    <label for="inputInfoRompimento">Qual lacre foi rompido?</label>
-                    <input type="text" id="inputInfoRompimento" placeholder="Ex: Metrológico, Não-metrológico">
+                    <input type="text" id="inputNumeroLacre" placeholder="Selecione um lacre acima" readonly>
+                    
+                    <label for="inputDataRompimento">Data do rompimento:</label>
+                    <input type="date" id="inputDataRompimento">
                 </div>
                 <label for="reparoRealizadoTextarea">Reparo Realizado:</label>
                 <textarea id="reparoRealizadoTextarea" rows="5" placeholder="Descreva o que foi feito no reparo..."></textarea>

@@ -66,14 +66,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const concluirReparoMessage = document.getElementById('concluirReparoMessage');
 
     // Campos de Reparo (Corretiva)
-    const camposReparo = document.getElementById('camposReparo');
+     const camposReparo = document.getElementById('camposReparo');
     const materiaisUtilizadosInput = document.getElementById('materiaisUtilizadosInput');
     const checkboxNenhumMaterial = document.getElementById('checkboxNenhumMaterial');
     const botaoSimRompimento = document.getElementById('botaoSimRompimento');
     const botaoNaoRompimento = document.getElementById('botaoNaoRompimento');
     const camposRompimentoLacre = document.getElementById('camposRompimentoLacre');
+    const selectLacreRompido = document.getElementById('selectLacreRompido'); 
     const inputNumeroLacre = document.getElementById('inputNumeroLacre');
-    const inputInfoRompimento = document.getElementById('inputInfoRompimento');
+    const inputDataRompimento = document.getElementById('inputDataRompimento');
     const reparoRealizadoTextarea = document.getElementById('reparoRealizadoTextarea');
 
     // Campos de Instalação
@@ -457,11 +458,44 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (botaoSimRompimento) {
-        botaoSimRompimento.addEventListener('click', () => {
+     if (botaoSimRompimento) {
+        botaoSimRompimento.addEventListener('click', async () => {
             botaoSimRompimento.classList.add('ativo');
             botaoNaoRompimento.classList.remove('ativo');
             camposRompimentoLacre.classList.remove('oculto');
+
+            // Limpa e prepara os campos
+            selectLacreRompido.innerHTML = '<option value="">Carregando lacres...</option>';
+            inputNumeroLacre.value = '';
+            inputDataRompimento.value = '';
+
+            if (!currentManutencao || !currentManutencao.id_equipamento) {
+                selectLacreRompido.innerHTML = '<option value="">Erro: Equipamento não identificado.</option>';
+                return;
+            }
+
+            try {
+                // Busca os lacres da nova API
+                const response = await fetch(`API/get_lacres_por_equipamento.php?id_equipamento=${currentManutencao.id_equipamento}`);
+                const data = await response.json();
+
+                if (data.success && data.lacres.length > 0) {
+                    selectLacreRompido.innerHTML = '<option value="">Selecione um lacre...</option>';
+                    data.lacres.forEach(lacre => {
+                        const option = document.createElement('option');
+                        option.value = lacre.local_lacre;
+                        option.textContent = lacre.local_lacre;
+                        // Armazena o número do lacre no atributo data-* para fácil acesso
+                        option.dataset.numLacre = lacre.num_lacre;
+                        selectLacreRompido.appendChild(option);
+                    });
+                } else {
+                    selectLacreRompido.innerHTML = '<option value="">Nenhum lacre afixado encontrado.</option>';
+                }
+            } catch (error) {
+                console.error("Erro ao buscar lacres:", error);
+                selectLacreRompido.innerHTML = '<option value="">Falha ao carregar lacres.</option>';
+            }
         });
     }
 
@@ -472,6 +506,18 @@ document.addEventListener('DOMContentLoaded', () => {
             camposRompimentoLacre.classList.add('oculto');
             if (inputNumeroLacre) inputNumeroLacre.value = '';
             if (inputInfoRompimento) inputInfoRompimento.value = '';
+        });
+    }
+
+    // listener para preencher o número do lacre automaticamente
+    if (selectLacreRompido) {
+        selectLacreRompido.addEventListener('change', () => {
+            const selectedOption = selectLacreRompido.options[selectLacreRompido.selectedIndex];
+            if (selectedOption && selectedOption.dataset.numLacre) {
+                inputNumeroLacre.value = selectedOption.dataset.numLacre;
+            } else {
+                inputNumeroLacre.value = '';
+            }
         });
     }
 
@@ -527,17 +573,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 const rompimentoLacre = botaoSimRompimento.classList.contains('ativo');
                 let numeroLacre = null, infoRompimento = null, dataRompimento = null;
+                
                 if (rompimentoLacre) {
-                    numeroLacre = inputNumeroLacre.value.trim();
-                    infoRompimento = inputInfoRompimento.value.trim();
-                    dataRompimento = new Date().toISOString().slice(0, 10);
-                    if (!numeroLacre || !infoRompimento) {
-                        showMessage(concluirReparoMessage, 'Preencha os dados do lacre.', 'erro');
+                    infoRompimento = selectLacreRompido.value; // O local do lacre
+                    numeroLacre = inputNumeroLacre.value;     // O número do lacre
+                    dataRompimento = inputDataRompimento.value; // A data
+
+                    if (!infoRompimento) {
+                        showMessage(concluirReparoMessage, 'Selecione o lacre que foi rompido.', 'erro');
+                        return;
+                    }
+                    if (!dataRompimento) {
+                        showMessage(concluirReparoMessage, 'A data do rompimento é obrigatória.', 'erro');
                         return;
                     }
                 }
+
                 const payload = {
                     id_manutencao: currentManutencao.id_manutencao,
+                    id_equipamento: currentManutencao.id_equipamento, // Enviando o ID do equipamento
                     is_installation: false,
                     status_reparo: 'validacao',
                     reparo_finalizado: reparoRealizado,

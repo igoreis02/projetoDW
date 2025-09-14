@@ -65,6 +65,27 @@ require_once 'API/conexao_bd.php';
             font-size: 2em;
         }
 
+        .botao-cancelar {
+            background-color: #6c757d; /* Cinza escuro */
+            color: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border: none;
+            font-size: 1.1rem;
+            cursor: pointer;
+            flex-grow: 1; /* Para ocupar espaço igual ao outro botão */
+        }
+
+        .botao-salvar .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border-left-color: #fff;
+            animation: spin 1s ease infinite;
+            display: inline-block; /* Para ficar ao lado do texto se necessário */
+        }
+
         .filtros-container {
             display: flex;
             flex-direction: column;
@@ -191,7 +212,7 @@ require_once 'API/conexao_bd.php';
             display: flex;
             flex-direction: column;
             gap: 2rem;
-            
+
         }
 
         .cidade-grupo h2 {
@@ -294,6 +315,19 @@ require_once 'API/conexao_bd.php';
             border-radius: 5px;
         }
 
+        .lacre-detalhe {
+            display: block;
+            /* Garante que cada detalhe fique em uma nova linha */
+            font-size: 0.9em;
+            color: #555;
+            margin-left: 5px;
+        }
+
+        .lacre-detalhe.rompido {
+            color: #c81e1e;
+            font-weight: bold;
+        }
+
         .lacre-item strong {
             color: #4338ca;
         }
@@ -318,6 +352,33 @@ require_once 'API/conexao_bd.php';
             transition: background-color 0.3s ease;
         }
 
+         .form-lacre-group {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+        .rompido-toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 8px;
+        }
+        .rompido-label {
+            font-weight: normal !important;
+            color: #555 !important;
+            margin-top: 0 !important;
+        }
+        .obs-lacre {
+            width: 100%;
+            padding: 0.5rem;
+            margin-top: 0.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            resize: vertical;
+        }
+
         .modal {
             display: none;
             position: fixed;
@@ -330,6 +391,9 @@ require_once 'API/conexao_bd.php';
             background-color: rgba(0, 0, 0, 0.4);
             justify-content: center;
             align-items: center;
+            align-items: flex-start; /* Alinha o card no topo */
+            padding: 5vh 2rem; /* Espaçamento do topo */
+            box-sizing: border-box;
         }
 
         .modal.esta-ativo {
@@ -393,7 +457,17 @@ require_once 'API/conexao_bd.php';
         }
 
         .botao-salvar {
-            background-color: #4CAF50;
+            background-color: #4CAF50; /* Verde */
+            color: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border: none;
+            font-size: 1.1rem;
+            cursor: pointer;
+            flex-grow: 1; /* Para ocupar espaço igual ao outro botão */
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .mensagem {
@@ -435,8 +509,9 @@ require_once 'API/conexao_bd.php';
         }
 
         .hidden {
-            display: none;
+            display: none !important;
         }
+
         #btnVoltarAoTopo {
             display: none;
             position: fixed;
@@ -466,7 +541,8 @@ require_once 'API/conexao_bd.php';
                 transform: rotate(360deg);
             }
         }
-         .voltar-btn {
+
+        .voltar-btn {
             display: inline-block;
             width: auto;
             min-width: 200px;
@@ -524,7 +600,7 @@ require_once 'API/conexao_bd.php';
         <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
 
         <button id="btnVoltarAoTopo" title="Voltar ao topo">
-        <i class="fas fa-arrow-up"></i>
+            <i class="fas fa-arrow-up"></i>
         </button>
     </main>
 
@@ -534,30 +610,130 @@ require_once 'API/conexao_bd.php';
                 <h2 id="tituloModalAdicionarLacres">Adicionar Lacres</h2>
                 <button class="fechar-modal" onclick="fecharModal('modalAdicionarLacres')">&times;</button>
             </div>
+
+            
             <form id="formularioAdicionarLacres" class="formulario-modal" onsubmit="prepararEnvio(event)">
                 <input type="hidden" name="id_equipamento">
 
-                <label>Metrológico:</label><input type="text" name="metrologico">
-                <label>Não Metrológico:</label><input type="text" name="nao_metrologico">
-                <label>Fonte:</label><input type="text" name="fonte">
-                <label>Switch:</label><input type="text" name="switch_lacre">
-
-                <label>Câmera(s) Zoom:</label>
-                <div class="botoes-toggle zoom-toggle">
-                    <button type="button" class="ativo" onclick="toggleCameras(1, this, 'zoom')">1</button>
-                    <button type="button" onclick="toggleCameras(2, this, 'zoom')">2</button>
+                <div class="form-lacre-group">
+                    <label>Metrológico:</label>
+                    <input type="text" name="metrologico">
+                    <div class="rompido-toggle-container">
+                        <label class="rompido-label">Lacre rompido?</label>
+                        <div class="botoes-toggle">
+                            <button type="button" onclick="toggleRompido(this, false)">Não</button>
+                            <button type="button" onclick="toggleRompido(this, true)">Sim</button>
+                        </div>
+                    </div>
+                    <textarea name="obs_metrologico" class="obs-lacre hidden" placeholder="Observação..."></textarea>
                 </div>
-                <div id="zoom_camera_unica"><label>Câmera Zoom (fx. A/B):</label><input type="text" name="camera_zoom_ab"></div>
-                <div id="zoom_camera_dupla" class="hidden"><label>Câmera Zoom (fx. A):</label><input type="text" name="camera_zoom_a"><label>Câmera Zoom (fx. B):</label><input type="text" name="camera_zoom_b"></div>
 
-                <label>Câmera(s) PAM:</label>
-                <div class="botoes-toggle pam-toggle">
-                    <button type="button" class="ativo" onclick="toggleCameras(1, this, 'pam')">1</button>
-                    <button type="button" onclick="toggleCameras(2, this, 'pam')">2</button>
+                <div class="form-lacre-group">
+                    <label>Não Metrológico:</label>
+                    <input type="text" name="nao_metrologico">
+                    <div class="rompido-toggle-container">
+                        <label class="rompido-label">Lacre rompido?</label>
+                        <div class="botoes-toggle">
+                            <button type="button" onclick="toggleRompido(this, false)">Não</button>
+                            <button type="button" onclick="toggleRompido(this, true)">Sim</button>
+                        </div>
+                    </div>
+                    <textarea name="obs_nao_metrologico" class="obs-lacre hidden"
+                        placeholder="Observação..."></textarea>
                 </div>
-                <div id="pam_camera_unica"><label>Câmera PAM (fx. A/B):</label><input type="text" name="camera_pam_ab"></div>
-                <div id="pam_camera_dupla" class="hidden"><label>Câmera PAM (fx. A):</label><input type="text" name="camera_pam_a"><label>Câmera PAM (fx. B):</label><input type="text" name="camera_pam_b"></div>
 
+                <div class="form-lacre-group">
+                    <label>Fonte:</label>
+                    <input type="text" name="fonte">
+                    <div class="rompido-toggle-container">
+                        <label class="rompido-label">Lacre rompido?</label>
+                        <div class="botoes-toggle">
+                            <button type="button" onclick="toggleRompido(this, false)">Não</button>
+                            <button type="button" onclick="toggleRompido(this, true)">Sim</button>
+                        </div>
+                    </div>
+                    <textarea name="obs_fonte" class="obs-lacre hidden" placeholder="Observação..."></textarea>
+                </div>
+
+                <div class="form-lacre-group">
+                    <label>Switch:</label>
+                    <input type="text" name="switch_lacre">
+                    <div class="rompido-toggle-container">
+                        <label class="rompido-label">Lacre rompido?</label>
+                        <div class="botoes-toggle">
+                            <button type="button" onclick="toggleRompido(this, false)">Não</button>
+                            <button type="button" onclick="toggleRompido(this, true)">Sim</button>
+                        </div>
+                    </div>
+                    <textarea name="obs_switch_lacre" class="obs-lacre hidden" placeholder="Observação..."></textarea>
+                </div>
+
+                <div class="form-lacre-group">
+                    <label>Câmera(s) Zoom:</label>
+                    <div class="botoes-toggle zoom-toggle">
+                        <button type="button" class="ativo" onclick="toggleCameras(1, this, 'zoom')">1</button>
+                        <button type="button" onclick="toggleCameras(2, this, 'zoom')">2</button>
+                    </div>
+                    <div id="zoom_camera_unica">
+                        <label>Câmera Zoom (fx. A/B):</label><input type="text" name="camera_zoom_ab">
+                        <div class="rompido-toggle-container"><label class="rompido-label">Lacre rompido?</label>
+                            <div class="botoes-toggle"><button type="button"
+                                    onclick="toggleRompido(this, false)">Não</button><button type="button"
+                                    onclick="toggleRompido(this, true)">Sim</button></div>
+                        </div><textarea name="obs_camera_zoom_ab" class="obs-lacre hidden"
+                            placeholder="Observação..."></textarea>
+                    </div>
+                    <div id="zoom_camera_dupla" class="hidden">
+                        <label>Câmera Zoom (fx. A):</label><input type="text" name="camera_zoom_a">
+                        <div class="rompido-toggle-container"><label class="rompido-label">Lacre rompido?</label>
+                            <div class="botoes-toggle"><button type="button"
+                                    onclick="toggleRompido(this, false)">Não</button><button type="button"
+                                    onclick="toggleRompido(this, true)">Sim</button></div>
+                        </div><textarea name="obs_camera_zoom_a" class="obs-lacre hidden"
+                            placeholder="Observação..."></textarea>
+                        <label>Câmera Zoom (fx. B):</label><input type="text" name="camera_zoom_b">
+                        <div class="rompido-toggle-container"><label class="rompido-label">Lacre rompido?</label>
+                            <div class="botoes-toggle"><button type="button"
+                                    onclick="toggleRompido(this, false)">Não</button><button type="button"
+                                    onclick="toggleRompido(this, true)">Sim</button></div>
+                        </div><textarea name="obs_camera_zoom_b" class="obs-lacre hidden"
+                            placeholder="Observação..."></textarea>
+                    </div>
+                </div>
+
+                <div class="form-lacre-group">
+                    <label>Câmera(s) PAM:</label>
+                    <div class="botoes-toggle pam-toggle">
+                        <button type="button" class="ativo" onclick="toggleCameras(1, this, 'pam')">1</button>
+                        <button type="button" onclick="toggleCameras(2, this, 'pam')">2</button>
+                    </div>
+                    <div id="pam_camera_unica">
+                        <label>Câmera PAM (fx. A/B):</label><input type="text" name="camera_pam_ab">
+                        <div class="rompido-toggle-container"><label class="rompido-label">Lacre rompido?</label>
+                            <div class="botoes-toggle"><button type="button"
+                                    onclick="toggleRompido(this, false)">Não</button><button type="button"
+                                    onclick="toggleRompido(this, true)">Sim</button></div>
+                        </div><textarea name="obs_camera_pam_ab" class="obs-lacre hidden"
+                            placeholder="Observação..."></textarea>
+                    </div>
+                    <div id="pam_camera_dupla" class="hidden">
+                        <label>Câmera PAM (fx. A):</label><input type="text" name="camera_pam_a">
+                        <div class="rompido-toggle-container"><label class="rompido-label">Lacre rompido?</label>
+                            <div class="botoes-toggle"><button type="button"
+                                    onclick="toggleRompido(this, false)">Não</button><button type="button"
+                                    onclick="toggleRompido(this, true)">Sim</button></div>
+                        </div><textarea name="obs_camera_pam_a" class="obs-lacre hidden"
+                            placeholder="Observação..."></textarea>
+                        <label>Câmera PAM (fx. B):</label><input type="text" name="camera_pam_b">
+                        <div class="rompido-toggle-container"><label class="rompido-label">Lacre rompido?</label>
+                            <div class="botoes-toggle"><button type="button"
+                                    onclick="toggleRompido(this, false)">Não</button><button type="button"
+                                    onclick="toggleRompido(this, true)">Sim</button></div>
+                        </div><textarea name="obs_camera_pam_b" class="obs-lacre hidden"
+                            placeholder="Observação..."></textarea>
+                    </div>
+                </div>
+                <div id="mensagemAdicionarVazio" class="mensagem erro" style="display: none;"></div>
                 <button type="submit" class="botao-salvar">Avançar</button>
             </form>
         </div>
@@ -565,12 +741,16 @@ require_once 'API/conexao_bd.php';
     <div id="modalConfirmacao" class="modal">
         <div class="conteudo-modal" style="max-width: 400px;">
             <div class="modal-header">
-                <h2 id="tituloConfirmacao">Confirmar Lacres</h2><button class="fechar-modal" onclick="fecharModal('modalConfirmacao')">&times;</button>
+                <h2 id="tituloConfirmacao">Confirmar Lacres</h2><button class="fechar-modal"
+                    onclick="fecharModal('modalConfirmacao')">&times;</button>
             </div>
             <div id="resumoLacres"></div>
-            <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-                <button class="botao-salvar" style="background-color: #6c757d;" onclick="fecharModal('modalConfirmacao')">Cancelar</button>
-                <button id="btnConfirmarSalvar" class="botao-salvar">Confirmar e Salvar</button>
+           <div id="confirmacaoBotoesContainer" style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                <button class="botao-cancelar" onclick="fecharModal('modalConfirmacao')">Cancelar</button>
+                <button id="btnConfirmarSalvar" class="botao-salvar">
+                    <span>Confirmar e Salvar</span>
+                    <div class="spinner hidden"></div>
+                </button>
             </div>
             <div id="mensagemSalvar" class="mensagem" style="display: none;"></div>
         </div>

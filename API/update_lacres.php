@@ -1,66 +1,87 @@
 <?php
-session_start();
+// Este código deve ser usado tanto para add_lacres.php quanto para update_lacres.php
 header('Content-Type: application/json');
+session_start();
 require_once 'conexao_bd.php';
 
-$response = ['success' => false, 'message' => ''];
-
-if (!isset($_SESSION['user_id'])) {
-    $response['message'] = 'Usuário não autenticado.';
-    echo json_encode($response);
-    exit();
-}
-
+$response = ['success' => false, 'message' => 'Ocorreu um erro.'];
 $data = json_decode(file_get_contents('php://input'), true);
-
 $id_equipamento = $data['id_equipamento'] ?? null;
-$lacres_novos = $data['lacres'] ?? [];
-$id_tecnico = $_SESSION['user_id'];
+$lacres = $data['lacres'] ?? [];
 
-if (empty($id_equipamento) || empty($lacres_novos)) {
-    $response['message'] = 'Dados incompletos para atualização.';
+// A verificação do id_tecnico foi removida
+if (!$id_equipamento || empty($lacres)) {
+    $response['message'] = 'Dados insuficientes para realizar a operação.';
     echo json_encode($response);
-    exit();
+    exit;
 }
 
 $conn->begin_transaction();
 
 try {
-    // Passo 1: Marcar os lacres antigos como "Substituído" (lacre_afixado = 0)
-    $sql_update = "UPDATE controle_lacres SET lacre_afixado = 0, acao = 'Substituído' WHERE id_equipamento = ? AND lacre_afixado = 1";
-    $stmt_update = $conn->prepare($sql_update);
-    $stmt_update->bind_param("i", $id_equipamento);
-    if (!$stmt_update->execute()) {
-        throw new Exception("Erro ao remover lacres antigos: " . $stmt_update->error);
+    // Para a operação de SUBSTITUIÇÃO, marca os lacres antigos como substituídos
+    if (basename($_SERVER['PHP_SELF']) === 'update_lacres.php') {
+        $stmt_substituir = $conn->prepare(
+            "UPDATE controle_lacres SET acao = 'Substituído', lacre_afixado = 0 WHERE id_equipamento = ? AND lacre_afixado = 1"
+        );
+        $stmt_substituir->bind_param("i", $id_equipamento);
+        $stmt_substituir->execute();
+        $stmt_substituir->close();
     }
-    $stmt_update->close();
 
-    // Passo 2: Inserir os novos lacres
-    $sql_insert = "INSERT INTO controle_lacres 
-                (id_equipamento, local_lacre, num_lacre, lacre_afixado, dt_fixacao, id_tecnico, acao) 
-               VALUES (?, ?, ?, 1, NOW(), ?, 'Afixado')";
-    $stmt_insert = $conn->prepare($sql_insert);
+    // A coluna 'id_tecnico' foi removida da query
+    $sql = "INSERT INTO controle_lacres 
+                (id_equipamento, local_lacre, num_lacre, num_lacre_rompido, obs_lacre, lacre_rompido, lacre_afixado, dt_fixacao, acao) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, CURDATE(), ?)";
+    $stmt_insert = $conn->prepare($sql);
 
-    foreach ($lacres_novos as $lacre) {
-        $local = $lacre['local'];
-        $numero = $lacre['numero'];
-        $stmt_insert->bind_param("issi", $id_equipamento, $local, $numero, $id_tecnico);
-        if (!$stmt_insert->execute()) {
-            throw new Exception("Erro ao salvar novo lacre para '" . $local . "': " . $stmt_insert->error);
+    // O bind_param foi ajustado para remover o id_tecnico
+    $stmt_insert->bind_param(
+        "issssiis", 
+        $b_id_equipamento, 
+        $b_local_lacre, 
+        $b_num_lacre, 
+        $b_num_lacre_rompido,
+        $b_obs,
+        $b_lacre_rompido_val,
+        $b_lacre_afixado_val,
+        $b_acao
+    );
+
+    foreach ($lacres as $lacre) {
+        $is_rompido = $lacre['rompido'] ?? false;
+        
+        $b_id_equipamento = $id_equipamento;
+        $b_local_lacre = $lacre['local'];
+        $b_obs = $lacre['obs'] ?? null;
+
+        if ($is_rompido) {
+            $b_num_lacre = null;
+            $b_num_lacre_rompido = $lacre['numero'];
+            $b_lacre_rompido_val = 1;
+            $b_lacre_afixado_val = 0;
+            $b_acao = 'Rompido na Aferição';
+        } else {
+            $b_num_lacre = $lacre['numero'];
+            $b_num_lacre_rompido = null;
+            $b_lacre_rompido_val = 0;
+            $b_lacre_afixado_val = 1;
+            $b_acao = 'Afixado';
         }
+        
+        $stmt_insert->execute();
     }
-    $stmt_insert->close();
 
+    $stmt_insert->close();
     $conn->commit();
     $response['success'] = true;
-    $response['message'] = 'Lacres atualizados com sucesso!';
+    $response['message'] = 'Lacres salvos com sucesso!';
 
 } catch (Exception $e) {
     $conn->rollback();
-    $response['message'] = $e->getMessage();
-    http_response_code(500);
-}
+    $response['message'] = 'Erro no banco de dados: ' . $e->getMessage();
+}   
 
-$conn->close();
 echo json_encode($response);
+$conn->close();
 ?>

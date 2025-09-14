@@ -30,7 +30,7 @@ try {
     $manutencoes = [];
 
     $sql = "SELECT DISTINCT
-                m.id_manutencao, m.inicio_reparo, e.nome_equip, e.referencia_equip,
+                m.id_manutencao,m.id_equipamento, m.inicio_reparo, e.nome_equip, e.referencia_equip,
                 m.ocorrencia_reparo, m.tipo_manutencao, m.status_reparo,
                 m.observacao_instalacao,
                 c.nome AS cidade_nome, m.id_cidade,
