@@ -37,6 +37,7 @@ if (isset($user_id)) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/style.css">
     <link rel="icon" type="image/png" href="imagens/favicon.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <title>Menu</title>
     <style>
         /* --- SEU CSS ORIGINAL (INALTERADO) --- */
@@ -344,7 +345,7 @@ if (isset($user_id)) {
             opacity: 1;
         }
     </style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
 </head>
 
 <body>
@@ -418,7 +419,7 @@ if (isset($user_id)) {
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // --- SEU JAVASCRIPT ORIGINAL (INALTERADO) ---
+            
             const sidebar = document.getElementById('sidebar-icons');
             const menuToggleBtn = document.getElementById('menu-toggle-btn');
             const contentContainer = document.querySelector('.content-container');
@@ -453,7 +454,7 @@ if (isset($user_id)) {
                 });
             }
 
-            // Adicionado redirecionamentos para os botões do menu principal
+            
             document.getElementById('manutencao').addEventListener('click', () => window.location.href = 'manutencoes_instalacoes.php');
             document.getElementById('manutencaoPendentes').addEventListener('click', () => window.location.href = 'ocorrenciasPendentes.php');
             document.getElementById('ocorrenciaProvedores').addEventListener('click', () => window.location.href = 'ocorrenciaProvedores.php');
@@ -474,7 +475,7 @@ if (isset($user_id)) {
                 });
             }
 
-            // --- NOVO JAVASCRIPT ADICIONADO PARA A NOTIFICAÇÃO ---
+            
             const toast = document.getElementById('validation-toast');
             const closeToastBtn = toast.querySelector('.close-notification');
 
