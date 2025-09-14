@@ -1165,17 +1165,17 @@ if (!isset($_SESSION['user_id'])) {
                 <div class="modal-footer-buttons">
                     <button class="modal-btn" style="background-color: #ef4444; color: white;"
                         onclick="savePriority(1)">
-                        <span>Urgente (1)</span>
+                        <span>Urgente</span>
                         <div class="spinner hidden"></div>
                     </button>
                     <button class="modal-btn" style="background-color: #112058; color: white;"
                         onclick="savePriority(2)">
-                        <span>Padrão (2)</span>
+                        <span>Nível 1</span>
                         <div class="spinner hidden"></div>
                     </button>
                     <button class="modal-btn" style="background-color: #6b7280; color: white;"
                         onclick="savePriority(3)">
-                        <span>Sem Urgência (3)</span>
+                        <span>Nível 2</span>
                         <div class="spinner hidden"></div>
                     </button>
                 </div>

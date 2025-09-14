@@ -692,6 +692,25 @@ document.addEventListener('DOMContentLoaded', function () {
             errorEl.classList.add('hidden');
             errorEl.classList.remove('success');
         }
+        if (modalId === 'priorityModal') {
+            const footer = document.querySelector('#priorityModal .modal-footer');
+            const errorEl = footer.querySelector('#priorityErrorMessage');
+            const buttonsContainer = footer.querySelector('.modal-footer-buttons');
+            const buttons = buttonsContainer.querySelectorAll('button');
+
+            // Garante que a mensagem de erro/sucesso esteja escondida
+            errorEl.classList.add('hidden');
+            errorEl.classList.remove('success');
+
+            // Garante que o contêiner dos botões volte a aparecer
+            buttonsContainer.classList.remove('hidden');
+
+            // Garante que os botões estejam habilitados e sem spinner
+            buttons.forEach(btn => {
+                btn.disabled = false;
+                btn.querySelector('.spinner').classList.add('hidden');
+            });
+        }
     };
 
     function findOcorrenciaById(id) {
@@ -812,10 +831,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const firstItem = findOcorrenciaById(firstItemId);
         const currentLevel = firstItem ? (firstItem.nivel_ocorrencia || 2) : 2;
 
-        const levelMap = { 1: 'Urgente', 2: 'Padrão', 3: 'Sem Urgência' };
+        const levelMap = { 1: 'Urgente', 2: 'Nível 1', 3: 'Nível 2' };
         document.getElementById('priorityModalInfo').innerHTML = `
             <p><strong>${currentItemsToUpdatePriority.length} ocorrência(s) selecionada(s).</strong></p>
-            <p>Nível atual (primeiro item): <strong>${levelMap[currentLevel]}</strong></p>
+            <p>Nível atual: <strong>${levelMap[currentLevel]}</strong></p>
         `;
 
         openModal('priorityModal');
@@ -823,15 +842,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // <<<  Função para salvar a prioridade selecionada >>>
     window.savePriority = async function (nivel) {
+        // 1. Referências aos elementos do modal
         const footer = document.querySelector('#priorityModal .modal-footer');
         const errorEl = footer.querySelector('#priorityErrorMessage');
-        const buttons = footer.querySelectorAll('button');
+        const buttonsContainer = footer.querySelector('.modal-footer-buttons');
+        const buttons = buttonsContainer.querySelectorAll('button');
 
+        // 2. Trava a interface: desabilita botões e mostra spinners
         buttons.forEach(btn => {
             btn.disabled = true;
             btn.querySelector('.spinner').classList.remove('hidden');
         });
+        // Reseta a mensagem
         errorEl.classList.add('hidden');
+        errorEl.classList.remove('success');
 
         try {
             const response = await fetch('API/update_nivel_prioridade.php', {
@@ -840,15 +864,29 @@ document.addEventListener('DOMContentLoaded', function () {
                 body: JSON.stringify({ ids: currentItemsToUpdatePriority, nivel: nivel })
             });
             const result = await response.json();
-            if (!result.success) throw new Error(result.message);
 
-            closeModal('priorityModal');
-            fetchData();
+            if (!result.success) {
+                throw new Error(result.message || 'Ocorreu um erro desconhecido.');
+            }
+
+            // 5. Lógica de SUCESSO
+            buttonsContainer.classList.add('hidden'); // <<< ALTERAÇÃO PRINCIPAL: ESCONDE OS BOTÕES
+            errorEl.textContent = 'Nível de prioridade alterado com sucesso!';
+            errorEl.classList.add('success');
+            errorEl.classList.remove('hidden');
+
+            setTimeout(() => {
+                closeModal('priorityModal');
+                fetchData();
+            }, 2000);
 
         } catch (error) {
+            // 6. Lógica de ERRO
             errorEl.textContent = error.message;
+            errorEl.classList.remove('success');
             errorEl.classList.remove('hidden');
-        } finally {
+
+            // REATIVA os botões para o usuário tentar novamente
             buttons.forEach(btn => {
                 btn.disabled = false;
                 btn.querySelector('.spinner').classList.add('hidden');
