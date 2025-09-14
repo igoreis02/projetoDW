@@ -642,6 +642,26 @@ try {
         #backToTopBtn:hover {
             background-color: var(--cor-secundaria);
         }
+
+        .ativos-container {
+            width: 100%;
+            margin-bottom: 1rem;
+            margin-top: -0.5rem; /* Puxa um pouco para cima */
+        }
+
+        .botao-adicionar-ativos {
+            background-color: #007bff; /* Azul para diferenciar */
+            color: white;
+            padding: 10px 20px;
+            font-size: 1em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .botao-adicionar-ativos:hover {
+            background-color: #0056b3;
+        }
         @media (max-width: 1200px) {
             .top-controls-wrapper {
                 grid-template-columns: 1fr; /* Muda para coluna única */
@@ -765,6 +785,10 @@ try {
                         ELETRÔNICA</label>
                     <label><input type="checkbox" name="tipo_equip[]" value="LAP"> LAP</label>
                     <label><input type="checkbox" name="tipo_equip[]" value="EDUCATIVO"> EDUCATIVO</label>
+                </div>
+
+                <div id="add-ativos-container" class="ativos-container hidden">
+                    <button type="button" id="addAtivosBtn" class="botao-adicionar-ativos">Adicionar Ativos</button>
                 </div>
 
                 <label for="equipmentName">Nome:</label>

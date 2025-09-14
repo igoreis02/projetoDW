@@ -168,19 +168,31 @@ document.addEventListener('DOMContentLoaded', () => {
         const afericaoContainer = document.getElementById(`${prefix}-afericao-fields-container`);
         const dateContainer = document.getElementById(`${prefix}-date-fields-container`);
 
+        const ativosContainer = document.getElementById(`${prefix}-ativos-container`);
+
+
         const kmInput = form.querySelector(`[name="km"]`);
         const kmLabel = kmInput ? form.querySelector(`label[for="${kmInput.id}"]`) : null;
         const estudoTecInput = form.querySelector(`input[name="dt_estudoTec"]`)?.closest('.custom-date-input');
         const estudoTecLabel = form.querySelector(`label[for="${prefix}_dt_estudoTec"]`);
 
         if (selectedTypes.length === 0) {
-            specificContainer.classList.add('hidden');
-            afericaoContainer.classList.add('hidden');
-            dateContainer.classList.add('hidden');
-            return;
+        specificContainer.classList.add('hidden');
+        afericaoContainer.classList.add('hidden');
+        dateContainer.classList.add('hidden');
+
+        if (ativosContainer) {
+            ativosContainer.classList.add('hidden'); 
         }
+        return; 
+    }
 
         const primaryType = selectedTypes[0];
+
+        const showAtivosButton = primaryType === 'CCO';
+        if (ativosContainer) {
+            ativosContainer.classList.toggle('hidden', !showAtivosButton);
+        }
 
         const needsAfericao = ['RADAR FIXO', 'LOMBADA ELETRONICA'].includes(primaryType);
         const needsSpecifics = ['RADAR FIXO', 'LOMBADA ELETRONICA', 'MONITOR DE SEMAFORO', 'LAP'].includes(primaryType);
