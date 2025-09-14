@@ -13,6 +13,7 @@ if (!isset($_SESSION['user_id'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão de Ocorrências</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="icon" type="image/png" href="imagens/favicon.png">
     <style>
         /* Estilos Gerais */
@@ -663,6 +664,35 @@ if (!isset($_SESSION['user_id'])) {
             border-top: 1px solid #f3f4f6;
             padding-top: 0.8rem;
         }
+        #btnVoltarAoTopo {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 30px;
+            z-index: 99;
+            border: none;
+            outline: none;
+            background-color: #213fadff;
+            color: white;
+            cursor: pointer;
+            padding: 15px;
+            border-radius: 50%;
+            font-size: 18px;
+            width: 50px;
+            height: 50px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s, opacity 0.5s;
+        }
+
+        #btnVoltarAoTopo:hover {
+            background-color: #12287eff;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
     </style>
 </head>
 
@@ -779,8 +809,11 @@ if (!isset($_SESSION['user_id'])) {
         <div id="simplifiedView" class="hidden"></div>
 
         <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
-    </div>
 
+        <button id="btnVoltarAoTopo" title="Voltar ao topo">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="js/gestaoOcorrencias.js"></script>
 </body>

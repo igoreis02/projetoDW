@@ -14,6 +14,7 @@ require_once 'API/conexao_bd.php';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/style.css">
     <link rel="icon" type="image/png" href="imagens/favicon.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <title>Gerenciar Lacres INMETRO</title>
     <style>
         body {
@@ -33,7 +34,7 @@ require_once 'API/conexao_bd.php';
             border-radius: 1rem;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             width: 95%;
-            max-width: 1200px;
+            max-width: 1400px;
             margin-bottom: 2rem;
             text-align: center;
         }
@@ -436,6 +437,53 @@ require_once 'API/conexao_bd.php';
         .hidden {
             display: none;
         }
+        #btnVoltarAoTopo {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 30px;
+            z-index: 99;
+            border: none;
+            outline: none;
+            background-color: #213fadff;
+            color: white;
+            cursor: pointer;
+            padding: 15px;
+            border-radius: 50%;
+            font-size: 18px;
+            width: 50px;
+            height: 50px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s, opacity 0.5s;
+        }
+
+        #btnVoltarAoTopo:hover {
+            background-color: #12287eff;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+         .voltar-btn {
+            display: inline-block;
+            width: auto;
+            min-width: 200px;
+            padding: 15px 30px;
+            margin-top: 3rem;
+            text-align: center;
+            background-color: #112058;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            transition: background-color 0.3s ease;
+        }
+
+        .voltar-btn:hover {
+            background-color: #192e73ff;
+        }
     </style>
 </head>
 
@@ -472,6 +520,12 @@ require_once 'API/conexao_bd.php';
         </div>
 
         <div id="containerListaLacres" class="lista-equipamentos-lacres"></div>
+
+        <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
+
+        <button id="btnVoltarAoTopo" title="Voltar ao topo">
+        <i class="fas fa-arrow-up"></i>
+        </button>
     </main>
 
     <div id="modalAdicionarLacres" class="modal">

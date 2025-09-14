@@ -489,6 +489,35 @@ require_once 'conexao_bd.php';
         .voltar-btn:hover {
             background-color: #09143fff;
         }
+        #btnVoltarAoTopo {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 30px;
+            z-index: 99;
+            border: none;
+            outline: none;
+            background-color: #213fadff;
+            color: white;
+            cursor: pointer;
+            padding: 15px;
+            border-radius: 50%;
+            font-size: 18px;
+            width: 50px;
+            height: 50px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s, opacity 0.5s;
+        }
+
+        #btnVoltarAoTopo:hover {
+            background-color: #12287eff;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
 
         @media (max-width: 768px) {
             body {
@@ -614,6 +643,10 @@ require_once 'conexao_bd.php';
             <div id="loadingMessage" class="spinner"></div>
         </div>
         <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
+
+        <button id="btnVoltarAoTopo" title="Voltar ao topo">
+        <i class="fas fa-arrow-up"></i>
+        
     </main>
 
     <div id="modalAdicionarSolicitacao" class="modal">

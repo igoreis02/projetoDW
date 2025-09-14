@@ -27,7 +27,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const btnSimplificado = document.getElementById('btnSimplificado');
     const simplifiedView = document.getElementById('simplifiedView');
     const dateClearWrapper = document.querySelector('.date-clear-wrapper');
-    const filtersWrapper = document.querySelector('.filters-wrapper'); // <<< ADICIONE ESTA LINHA
+    const filtersWrapper = document.querySelector('.filters-wrapper');  
+    const btnVoltarAoTopo = document.getElementById('btnVoltarAoTopo');
 
 
     // =================================================================================
@@ -834,6 +835,27 @@ document.addEventListener('DOMContentLoaded', function () {
                 fetchOcorrencias();
             }
         }
+    });
+
+     window.onscroll = function () {
+        controlarVisibilidadeBotao();
+    };
+
+    function controlarVisibilidadeBotao() {
+        // Se a página for rolada mais de 20px para baixo...
+        if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+            // ...o botão aparece.
+            btnVoltarAoTopo.style.display = "block";
+        } else {
+            // ...senão, ele desaparece.
+            btnVoltarAoTopo.style.display = "none";
+        }
+    }
+
+    // Adiciona a ação que acontece quando o botão é clicado
+    btnVoltarAoTopo.addEventListener('click', function () {
+        // Manda a página de volta para o topo de forma suave
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     });
 
     // =================================================================================
