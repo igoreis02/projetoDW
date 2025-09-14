@@ -90,17 +90,20 @@ try {
     $result_mttr = $stmt_mttr->get_result()->fetch_assoc();
     $mttr_horas = $result_mttr['mttr_horas'] ?? 0;
 
-    if ($mttr_horas > 0 && $mttr_horas < 24) {
-        $rounded_mttr = round($mttr_horas, 1);
-        $formatted_number = number_format($rounded_mttr, 1, ',', '.');
-        $unit = ($rounded_mttr == 1) ? ' hora' : ' horas';
+    if ($mttr_horas > 0) {
+        // Converte o total de horas para dias
+        $mttr_dias = $mttr_horas / 24;
+        // Arredonda o valor para cima para o próximo dia inteiro
+        $rounded_dias = ceil($mttr_dias); 
+        // Formata o número para exibição
+        $formatted_number = number_format($rounded_dias, 0, ',', '.');
+        // Define a unidade correta (singular ou plural)
+        $unit = ($rounded_dias == 1) ? ' dia' : ' dias';
+        // Salva o resultado final
         $dashboard_data['kpi_mttr'] = $formatted_number . $unit;
     } else {
-        $mttr_dias = $mttr_horas / 24;
-        $rounded_mttr = round($mttr_dias, 1);
-        $formatted_number = number_format($rounded_mttr, 1, ',', '.');
-        $unit = ($rounded_mttr == 1) ? ' dia' : ' dias';
-        $dashboard_data['kpi_mttr'] = ($mttr_horas == 0) ? 'N/A' : $formatted_number . $unit;
+        // Se não houver tempo de reparo, exibe "N/A"
+        $dashboard_data['kpi_mttr'] = 'N/A';
     }
     $stmt_mttr->close();
 
@@ -155,23 +158,52 @@ try {
     $dashboard_data['mttr_provedores'] = $mttr_result_prov['mttr_horas'] ?? null;
 
     // 3. Ocorrências de Processamento por Status + MTTR
-    $sql_processamento = "SELECT status, COUNT(id_ocorrencia_processamento) as total FROM ocorrencia_processamento WHERE 1=1";
-    if (!empty($data_inicio))
-        $sql_processamento .= " AND DATE(dt_ocorrencia) >= '$data_inicio'";
-    if (!empty($data_fim))
-        $sql_processamento .= " AND DATE(dt_ocorrencia) <= '$data_fim'";
-    $sql_processamento .= " GROUP BY status";
-    $result_proc = $conn->query($sql_processamento);
-    $dashboard_data['ocorrencias_processamento'] = $result_proc->fetch_all(MYSQLI_ASSOC);
+    $filtro_proc_sql = "";
+    $params_proc = [];
+    $types_proc = '';
+    if (!empty($data_inicio)) {
+        $filtro_proc_sql .= " AND DATE(dt_ocorrencia) >= ?";
+        $params_proc[] = $data_inicio;
+        $types_proc .= 's';
+    }
+    if (!empty($data_fim)) {
+        $filtro_proc_sql .= " AND DATE(dt_ocorrencia) <= ?";
+        $params_proc[] = $data_fim;
+        $types_proc .= 's';
+    }
 
-    $sql_mttr_proc = "SELECT AVG(TIMESTAMPDIFF(HOUR, dt_ocorrencia, dt_resolucao)) as mttr_horas FROM ocorrencia_processamento WHERE status = 'concluido' AND dt_resolucao IS NOT NULL AND dt_ocorrencia IS NOT NULL";
-    if (!empty($data_inicio))
-        $sql_mttr_proc .= " AND DATE(dt_resolucao) >= '$data_inicio'";
-    if (!empty($data_fim))
-        $sql_mttr_proc .= " AND DATE(dt_resolucao) <= '$data_fim'";
-    $result_mttr_proc = $conn->query($sql_mttr_proc);
-    $mttr_result_proc = $result_mttr_proc->fetch_assoc();
+    $stmt_proc = $conn->prepare("SELECT status, COUNT(id_ocorrencia_processamento) as total FROM ocorrencia_processamento WHERE 1=1 $filtro_proc_sql GROUP BY status");
+    if (!empty($params_proc)) {
+        $stmt_proc->bind_param($types_proc, ...$params_proc);
+    }
+    $stmt_proc->execute();
+    $dashboard_data['ocorrencias_processamento'] = $stmt_proc->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt_proc->close();
+
+    // Filtro para a data de resolução do processamento (para o MTTR)
+    $filtro_proc_concl_sql = "";
+    $params_proc_concl = [];
+    $types_proc_concl = '';
+     if (!empty($data_inicio)) {
+        $filtro_proc_concl_sql .= " AND DATE(dt_resolucao) >= ?";
+        $params_proc_concl[] = $data_inicio;
+        $types_proc_concl .= 's';
+    }
+    if (!empty($data_fim)) {
+        $filtro_proc_concl_sql .= " AND DATE(dt_resolucao) <= ?";
+        $params_proc_concl[] = $data_fim;
+        $types_proc_concl .= 's';
+    }
+    
+    $stmt_mttr_proc = $conn->prepare("SELECT AVG(TIMESTAMPDIFF(HOUR, dt_ocorrencia, dt_resolucao)) as mttr_horas FROM ocorrencia_processamento WHERE status = 'concluido' AND dt_resolucao IS NOT NULL AND dt_ocorrencia IS NOT NULL $filtro_proc_concl_sql");
+    if(!empty($params_proc_concl)) {
+        $stmt_mttr_proc->bind_param($types_proc_concl, ...$params_proc_concl);
+    }
+    $stmt_mttr_proc->execute();
+    $mttr_result_proc = $stmt_mttr_proc->get_result()->fetch_assoc();
     $dashboard_data['mttr_processamento'] = $mttr_result_proc['mttr_horas'] ?? null;
+    $stmt_mttr_proc->close();
+
 
     // 4. Solicitações de Clientes por Status + MTTR
     $sql_clientes = "SELECT status_solicitacao as status, COUNT(id_solicitacao) as total FROM solicitacao_cliente WHERE 1=1";
