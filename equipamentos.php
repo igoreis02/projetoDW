@@ -642,7 +642,7 @@ try {
 
             .container-botao-adicionar-equipamento {
                 grid-column: 1; 
-                justify-self: center; /* Centraliza o botão */
+                justify-self: left; /* Centraliza o botão */
             }
 
             .container-pesquisa {

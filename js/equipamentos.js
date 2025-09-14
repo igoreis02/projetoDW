@@ -349,26 +349,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 const statusClass = `status-${(equip.status || '').toLowerCase()}`;
                 const statusDisplay = (equip.status || 'N/A').charAt(0).toUpperCase() + (equip.status || 'N/A').slice(1);
                 const formatDate = (date) => (!date || date === '0000-00-00') ? 'N/A' : new Date(date + 'T00:00:00').toLocaleDateString('pt-BR');
-
                 const types = equip.tipo_equip ? equip.tipo_equip.split(',').map(t => t.trim()) : [];
                 const typesThatHideFields = ['CCO', 'DOME'];
-                const shouldShowDetails = types.length === 0 || !types.every(type => typesThatHideFields.includes(type));
-
-                // **MODIFICADO**: Formatação do endereço
+                const shouldHideDetails = types.length > 0 && types.every(type => typesThatHideFields.includes(type));
                 const enderecoCompleto = `${equip.logradouro || 'N/A'} - ${equip.bairro || 'N/A'}`;
-
                 const item = document.createElement('div');
                 item.className = 'item-equipamento';
                 item.innerHTML = `
                     <div class="item-equipamento-conteudo">
                         <h3>${equip.nome_equip || 'N/A'} - ${equip.referencia_equip || 'N/A'}</h3>
                         <p><strong>Tipo:</strong> ${equip.tipo_equip || 'N/A'}</p>
-                        ${shouldShowDetails ? `
+                        ${!shouldHideDetails ? `
                             <p><strong>Qtd. Faixa:</strong> ${equip.qtd_faixa || 'N/A'}</p>
                             <p><strong>Sentido:</strong> ${equip.sentido || 'N/A'}</p>
                             <p><strong>Velocidade:</strong> ${equip.km ? equip.km + ' Km/h' : 'N/A'}</p>
-                            <p><strong>Data Instalação:</strong> ${formatDate(equip.dt_instalacao)}</p>
-                            <p><strong>Nº Instrumento:</strong> ${equip.num_instrumento || 'N/A'}</p>
+                            <p><strong>Data Instalação:</strong> ${formatDate(equip.data_instalacao)}</p> <p><strong>Nº Instrumento:</strong> ${equip.num_instrumento || 'N/A'}</p>
                             <p><strong>Data Aferição:</strong> ${formatDate(equip.dt_afericao)}</p>
                             <p><strong>Data Vencimento:</strong> ${formatDate(equip.dt_vencimento)}</p>
                         ` : ''}
@@ -399,9 +394,10 @@ document.addEventListener('DOMContentLoaded', () => {
         addFormButtonsContainer.style.display = 'flex';
     }
 
-    function openEditEquipmentModal(equipmentData) {
+     function openEditEquipmentModal(equipmentData) {
         if (!equipmentData) return;
         editEquipmentForm.reset();
+        editEquipmentForm.querySelectorAll('input[name="tipo_equip[]"]').forEach(cb => { cb.checked = false; });
 
         document.getElementById('editEquipmentId').value = equipmentData.id_equipamento;
         document.getElementById('editEnderecoId').value = equipmentData.id_endereco;
@@ -418,24 +414,28 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('editEquipmentCep').value = equipmentData.cep;
         document.getElementById('editNumInstrumento').value = equipmentData.num_instrumento;
         document.getElementById('editDtAfericao').value = equipmentData.dt_afericao;
-        document.getElementById('edit_dt_instalacao').value = equipmentData.dt_instalacao;
         document.getElementById('edit_dt_estudoTec').value = equipmentData.dt_estudoTec;
+
+        // --- CORREÇÃO AQUI ---
+        document.getElementById('edit_dt_instalacao').value = equipmentData.data_instalacao;
+        // --- FIM DA CORREÇÃO ---
 
         const coordenadas = (equipmentData.latitude && equipmentData.longitude) ? `${equipmentData.latitude}, ${equipmentData.longitude}` : '';
         document.getElementById('editCoordenadas').value = coordenadas;
 
         const selectedTypes = equipmentData.tipo_equip ? equipmentData.tipo_equip.split(',').map(t => t.trim()) : [];
         editEquipmentForm.querySelectorAll('input[name="tipo_equip[]"]').forEach(cb => {
-            cb.checked = selectedTypes.includes(cb.value);
+            if (selectedTypes.includes(cb.value)) {
+                cb.checked = true;
+            }
         });
 
         toggleConditionalFields('editEquipmentForm');
         hideMessage(editEquipmentMessage);
         toggleLoadingState('editEquipmentSpinner', 'saveEditEquipmentButton', 'cancelEditEquipmentButton', false);
         editEquipmentModal.classList.add('is-active');
-        editFormButtonsContainer.style.display = 'flex';
+        document.getElementById('edit-form-buttons').style.display = 'flex';
     }
-
     function setupFormValidationListeners(formElement, messageElement, validationRules) {
         // Seleciona todos os inputs, selects e textareas
         const inputs = formElement.querySelectorAll('input, select, textarea');
@@ -570,21 +570,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     editEquipmentForm.addEventListener('submit', async function (event) {
         event.preventDefault();
-
         const validationResult = validateForm(editEquipmentForm, validationMap);
         if (validationResult !== true) {
             showMessage(editEquipmentMessage, validationResult, 'error');
-            return; // Para a submissão se houver erro
+            return;
         }
-
         toggleLoadingState('editEquipmentSpinner', 'saveEditEquipmentButton', 'cancelEditEquipmentButton', true);
         try {
             const formData = new FormData(editEquipmentForm);
             const data = Object.fromEntries(formData.entries());
-            delete data['tipo_equip[]']; // Remove a chave com colchetes
-
-            // Adiciona a chave correta 'tipo_equip' com o array de valores
-            data.tipo_equip = formData.getAll('tipo_equip');
+            
+            // ===== CORREÇÃO CRÍTICA AQUI =====
+            // O nome correto do campo é 'tipo_equip[]'
+            data.tipo_equip = formData.getAll('tipo_equip[]');
+            delete data['tipo_equip[]'];
+            // ===== FIM DA CORREÇÃO =====
 
             const response = await fetch('API/update_equipment.php', {
                 method: 'POST',
@@ -595,7 +595,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (result.success) {
                 showMessage(editEquipmentMessage, 'Equipamento atualizado com sucesso!', 'success');
-                editFormButtonsContainer.style.display = 'none';
+                document.getElementById('edit-form-buttons').style.display = 'none';
                 setTimeout(() => {
                     editEquipmentModal.classList.remove('is-active');
                     fetchAndRenderEquipments();
@@ -605,7 +605,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 toggleLoadingState('editEquipmentSpinner', 'saveEditEquipmentButton', 'cancelEditEquipmentButton', false);
             }
         } catch (error) {
-            console.error('Erro ao atualizar equipamento:', error);
             showMessage(editEquipmentMessage, 'Ocorreu um erro de conexão. Tente novamente.', 'error');
             toggleLoadingState('editEquipmentSpinner', 'saveEditEquipmentButton', 'cancelEditEquipmentButton', false);
         }
@@ -624,7 +623,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setupValidationListeners(addEquipmentForm, addEquipmentMessage);
     setupValidationListeners(editEquipmentForm, editEquipmentMessage);
-    
+
     const editInputsToWatch = editEquipmentForm.querySelectorAll('input, select');
     editInputsToWatch.forEach(input => {
         input.addEventListener('input', () => hideMessage(editEquipmentMessage));
