@@ -48,7 +48,7 @@ try {
                 e.referencia_equip,
                 c.nome AS cidade,
                 CONCAT(en.logradouro, ', ', en.bairro) AS local_completo,
-                SUBSTRING_INDEX(u.nome, ' ', 1) AS atribuido_por
+                SUBSTRING_INDEX(u.nome, ' ', 2) AS atribuido_por
             FROM manutencoes AS m
             JOIN equipamentos AS e ON m.id_equipamento = e.id_equipamento
             JOIN cidades AS c ON m.id_cidade = c.id_cidade

@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const statusFilterContainer = document.getElementById('statusFilterContainer');
     const cityFilterContainer = document.getElementById('cityFilterContainer');
     const ocorrenciasContainer = document.getElementById('ocorrenciasContainer');
-    const loadingMessage = document.getElementById('loadingMessage');
+    const pageLoader = document.getElementById('pageLoader');
 
     const searchInput = document.getElementById('searchInput');
     const clearFiltersBtn = document.getElementById('clearFiltersBtn');
@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     async function fetchData(isUpdateCheck = false) {
         if (!isUpdateCheck) {
-            loadingMessage.classList.remove('hidden');
+            pageLoader.style.display = 'flex'; 
             ocorrenciasContainer.innerHTML = '';
             cityFilterContainer.innerHTML = '';
         }
@@ -53,7 +53,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 handleUpdateCheck(result);
                 return;
             }
-            loadingMessage.classList.add('hidden');
+
+            pageLoader.style.display = 'none';
+
             if (result.success) {
                 currentChecksum = result.checksum;
                 allData = result.data;
@@ -66,7 +68,9 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         } catch (error) {
             console.error('Erro ao buscar dados:', error);
-            if (!isUpdateCheck) { loadingMessage.classList.add('hidden'); ocorrenciasContainer.innerHTML = `<p class="message error">Ocorreu um erro ao carregar os dados. Verifique a consola.</p>`; }
+            if (!isUpdateCheck) { 
+                pageLoader.style.display = 'none'; 
+                ocorrenciasContainer.innerHTML = `<p class="message error">Ocorreu um erro ao carregar os dados. Verifique a consola.</p>`; }
         }
     }
 
@@ -564,12 +568,12 @@ document.addEventListener('DOMContentLoaded', function () {
     // Ajusta o espaçador também em caso de redimensionamento da janela
     window.addEventListener('resize', adjustSearchSpacer);
 
-      // Adiciona um "ouvinte" para o evento de rolagem da página
+    // Adiciona um "ouvinte" para o evento de rolagem da página
     window.onscroll = function () {
         controlarVisibilidadeBotao();
     };
 
-     function controlarVisibilidadeBotao() {
+    function controlarVisibilidadeBotao() {
         // Se a página for rolada mais de 20px para baixo...
         if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
             // ...o botão aparece.

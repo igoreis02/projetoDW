@@ -4,7 +4,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const statusFilterContainer = document.getElementById('statusFilterContainer');
     const cityFilterContainer = document.getElementById('cityFilterContainer');
     const ocorrenciasContainer = document.getElementById('ocorrenciasContainer');
-    const loadingMessage = document.getElementById('loadingMessage');
     const searchInput = document.getElementById('searchInput');
     const clearFiltersBtn = document.getElementById('clearFiltersBtn');
     const searchSpacer = document.querySelector('.search-spacer');
@@ -12,6 +11,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const endDateInput = document.getElementById('endDate');
     const reparoRealizadoTextarea = document.getElementById('reparoRealizadoTextarea');
     const reparoRealizadoError = document.getElementById('reparoRealizadoError');
+    const pageLoader = document.getElementById('pageLoader');
 
     const btnVoltarAoTopo = document.getElementById("btnVoltarAoTopo");
 
@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     async function initialLoad() {
-        loadingMessage.classList.remove('hidden');
+        pageLoader.style.display = 'flex';
 
         // Busca inicial para verificar a existência de manutenções em validação
         const paramsCheck = new URLSearchParams({ status: 'validacao' });
@@ -93,13 +93,14 @@ document.addEventListener('DOMContentLoaded', function () {
             console.error('Erro na carga inicial:', error);
             ocorrenciasContainer.innerHTML = `<p class="message error">Ocorreu um erro na carga inicial.</p>`;
         } finally {
-            loadingMessage.classList.add('hidden');
+            pageLoader.style.display = 'none';
         }
     }
 
     async function fetchData(isUpdate = false) {
         if (!isUpdate) { // Só mostra o "carregando" na carga inicial ou em filtros manuais
-            ocorrenciasContainer.innerHTML = `<p id="loadingMessage">Carregando ocorrências...</p>`;
+            pageLoader.style.display = 'flex';
+            ocorrenciasContainer.innerHTML = '';
             cityFilterContainer.innerHTML = '';
         }
 
@@ -360,7 +361,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (spinner) { spinner.classList.remove('is-active'); }
     };
 
-     window.onscroll = function () {
+    window.onscroll = function () {
         controlarVisibilidadeBotao();
     };
 
@@ -375,7 +376,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-     btnVoltarAoTopo.addEventListener('click', function () {
+    btnVoltarAoTopo.addEventListener('click', function () {
         // Manda a página de volta para o topo de forma suave
         window.scrollTo({ top: 0, behavior: 'smooth' });
     });

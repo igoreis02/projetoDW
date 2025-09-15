@@ -138,11 +138,12 @@ if (!isset($_SESSION['user_id'])) {
             border-radius: 6px;
             font-family: 'Inter', sans-serif;
         }
-        
+
         /* ALTERADO: Estilos para o container de pesquisa com centralização do campo */
         .search-container {
             display: flex;
-            justify-content: center; /* Centraliza o conjunto de itens */
+            justify-content: center;
+            /* Centraliza o conjunto de itens */
             align-items: center;
             gap: 1rem;
             width: 100%;
@@ -150,8 +151,10 @@ if (!isset($_SESSION['user_id'])) {
         }
 
         #searchInput {
-            width: 100%; /* Ocupa o espaço disponível */
-            max-width: 500px; /* Limita a largura máxima em telas grandes */
+            width: 100%;
+            /* Ocupa o espaço disponível */
+            max-width: 500px;
+            /* Limita a largura máxima em telas grandes */
             padding: 10px 15px;
             font-size: 1em;
             border: 1px solid #d1d5db;
@@ -177,14 +180,15 @@ if (!isset($_SESSION['user_id'])) {
             transition: all 0.2s ease;
             white-space: nowrap;
         }
-        
+
         #clearFiltersBtn:hover {
             background-color: #e5e7eb;
         }
-        
+
         /* NOVO: Estilo para o espaçador invisível que garante a centralização */
         .search-spacer {
-            visibility: hidden; /* Ocupa espaço mas não é visível */
+            visibility: hidden;
+            /* Ocupa espaço mas não é visível */
         }
 
 
@@ -264,7 +268,7 @@ if (!isset($_SESSION['user_id'])) {
             grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
             gap: 1.5rem;
         }
-        
+
         .ocorrencia-item {
             background-color: #ffffff;
             border: 1px solid #e5e7eb;
@@ -275,8 +279,8 @@ if (!isset($_SESSION['user_id'])) {
             display: flex;
             flex-direction: column;
             align-items: flex-start;
-            height: 100%; 
-            box-sizing: border-box; 
+            height: 100%;
+            box-sizing: border-box;
         }
 
         .ocorrencia-item:hover {
@@ -362,7 +366,7 @@ if (!isset($_SESSION['user_id'])) {
             background-color: #fee2e2;
             color: #b91c1c;
         }
-        
+
         .completion-tag {
             font-size: 0.85em;
             font-weight: 500;
@@ -532,7 +536,7 @@ if (!isset($_SESSION['user_id'])) {
         .form-group p {
             background-color: #f3f4f6;
         }
-        
+
         .error-message {
             padding: 1rem;
             border-radius: 8px;
@@ -540,7 +544,7 @@ if (!isset($_SESSION['user_id'])) {
             text-align: center;
             width: 100%;
             box-sizing: border-box;
-             background-color: #f8d7da;
+            background-color: #f8d7da;
             /* Caixa vermelha clara */
             color: #721c24;
             /* Letras vermelhas escuras */
@@ -548,9 +552,9 @@ if (!isset($_SESSION['user_id'])) {
             /* Borda vermelha */
             font-weight: bold;
             /* Letras em negrito */
-            display: none; 
+            display: none;
         }
-        
+
         .conclusion-options {
             display: flex;
             gap: 10px;
@@ -573,7 +577,7 @@ if (!isset($_SESSION['user_id'])) {
             color: white;
             border-color: #4f46e5;
         }
-        
+
         .modal-footer {
             display: flex;
             flex-direction: column;
@@ -638,7 +642,7 @@ if (!isset($_SESSION['user_id'])) {
             text-align: center;
             width: 100%;
             box-sizing: border-box;
-             background-color: #f8d7da;
+            background-color: #f8d7da;
             /* Caixa vermelha clara */
             color: #721c24;
             /* Letras vermelhas escuras */
@@ -646,10 +650,11 @@ if (!isset($_SESSION['user_id'])) {
             /* Borda vermelha */
             font-weight: bold;
             /* Letras em negrito */
-            display: none; 
+            display: none;
         }
+
         .message.success {
-             background-color: #d4edda;
+            background-color: #d4edda;
             /* Caixa verde clara */
             color: #155724;
             /* Letras verdes escuras */
@@ -659,7 +664,7 @@ if (!isset($_SESSION['user_id'])) {
             /* Letras em negrito */
         }
 
-        
+
 
         .spinner {
             border: 4px solid rgba(255, 255, 255, 0.3);
@@ -675,7 +680,7 @@ if (!isset($_SESSION['user_id'])) {
         .spinner.is-active {
             display: inline-block;
         }
-        
+
         #btnVoltarAoTopo {
             display: none;
             position: fixed;
@@ -704,6 +709,27 @@ if (!isset($_SESSION['user_id'])) {
             to {
                 transform: rotate(360deg);
             }
+        }
+
+        #pageLoader.main-loading-state {
+            display: none;
+            /* Começa escondido, o JS controla a exibição */
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 15px;
+            color: #555;
+            padding: 40px 0;
+        }
+
+        #pageLoader .main-loading-spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #112058;
+            /* Cor principal do tema */
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
         }
     </style>
 </head>
@@ -745,14 +771,17 @@ if (!isset($_SESSION['user_id'])) {
         <div id="cityFilterContainer" class="filter-container" style="padding-top: 0; margin-bottom: 2rem;"></div>
 
         <div id="ocorrenciasContainer" class="ocorrencias-container">
-            <p id="loadingMessage">A carregar ocorrências...</p>
+            <div id="pageLoader" class="main-loading-state">
+                <div class="main-loading-spinner"></div>
+                <span>Carregando ocorrências...</span>
+            </div>
         </div>
 
         <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
 
         <button id="btnVoltarAoTopo" title="Voltar ao topo">
-        <i class="fas fa-arrow-up"></i>
-    </button>
+            <i class="fas fa-arrow-up"></i>
+        </button>
     </div>
     <div id="concluirModal" class="modal">
         <div class="modal-content">
@@ -766,27 +795,27 @@ if (!isset($_SESSION['user_id'])) {
                     <label>Problema Reportado</label>
                     <p id="concluirOcorrenciaText"></p>
                 </div>
-                
+
                 <div class="conclusion-options">
                     <button id="btnProvedor" class="option-btn">Provedor</button>
                     <button id="btnInLoco" class="option-btn">Técnico inLoco</button>
                     <button id="btnSemIntervencao" class="option-btn">Sem Intervenção</button>
                     <button id="btnTecnicoDw" class="option-btn">Técnico DW</button>
                 </div>
-                        <p class="error-message" id="concluirModalError"></p>
+                <p class="error-message" id="concluirModalError"></p>
 
                 <div id="reparoRealizadoContainer" class="form-group">
                     <label for="reparoRealizadoTextarea">Descrição do Reparo</label>
                     <textarea id="reparoRealizadoTextarea" placeholder="Descreva o serviço que foi realizado..."></textarea>
                 </div>
                 <p class="error-message" id="reparoRealizadoError"></p>
-                
+
                 <div id="problemaTecnicoDwContainer" class="form-group hidden">
                     <label for="problemaTecnicoDwTextarea">Reportar Problema para Técnico DW</label>
                     <textarea id="problemaTecnicoDwTextarea" placeholder="Descreva o problema a ser resolvido pelo técnico..."></textarea>
                 </div>
                 <p class="error-message" id="problemaTecnicoDwError"></p>
-                </div>
+            </div>
             <div class="modal-footer">
                 <div class="modal-footer-buttons">
                     <button class="modal-btn btn-secondary" onclick="closeModal('concluirModal')">Cancelar</button>

@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // =================================================================================
     // 1. REFERÊNCIAS AOS ELEMENTOS DO DOM
     // =================================================================================
-    const loadingMessage = document.getElementById('loadingMessage');
+    const pageLoader = document.getElementById('pageLoader');
     const cityFilters = document.getElementById('cityFilters');
     const statusFilters = document.getElementById('statusFilters');
     const startDateInput = document.getElementById('startDate');
@@ -517,7 +517,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // 7. LÓGICA DA LISTA DE OCORRÊNCIAS
     // =================================================================================
     async function fetchOcorrencias() {
-        loadingMessage.classList.remove('hidden');
+        pageLoader.style.display = 'flex';
         ocorrenciasContainer.innerHTML = '';
         const params = new URLSearchParams({ type: activeType, status: activeStatus, data_inicio: startDateInput.value, data_fim: endDateInput.value, search: searchInput.value });
         try {
@@ -544,7 +544,7 @@ document.addEventListener('DOMContentLoaded', function () {
             console.error('Erro ao buscar dados de ocorrências:', error);
             ocorrenciasContainer.innerHTML = `<p>Ocorreu um erro ao carregar os dados.</p>`;
         } finally {
-            loadingMessage.classList.add('hidden');
+            pageLoader.style.display = 'none';
         }
     }
 

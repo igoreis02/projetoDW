@@ -655,7 +655,7 @@ if (!isset($_SESSION['user_id'])) {
             transition: transform 0.2s ease-in-out;
         }
 
-         .mttr-label {
+        .mttr-label {
             text-align: center;
             font-size: 0.9em;
             color: #6b7280;
@@ -664,6 +664,7 @@ if (!isset($_SESSION['user_id'])) {
             border-top: 1px solid #f3f4f6;
             padding-top: 0.8rem;
         }
+
         #btnVoltarAoTopo {
             display: none;
             position: fixed;
@@ -692,6 +693,27 @@ if (!isset($_SESSION['user_id'])) {
             to {
                 transform: rotate(360deg);
             }
+        }
+
+        #pageLoader.main-loading-state {
+            display: none;
+            /* Começa escondido, o JS controla a exibição */
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 15px;
+            color: #555;
+            padding: 40px 0;
+        }
+
+        #pageLoader .main-loading-spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #112058;
+            /* Cor principal do tema */
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
         }
     </style>
 </head>
@@ -803,7 +825,10 @@ if (!isset($_SESSION['user_id'])) {
         <div id="ocorrenciasView" class="hidden">
 
             <div id="ocorrenciasContainer" class="ocorrencias-container">
-                <p id="loadingMessage">A carregar ocorrências...</p>
+                <div id="pageLoader" class="main-loading-state">
+                    <div class="main-loading-spinner"></div>
+                    <span>Carregando ocorrências...</span>
+                </div>
             </div>
         </div>
         <div id="simplifiedView" class="hidden"></div>
@@ -811,8 +836,8 @@ if (!isset($_SESSION['user_id'])) {
         <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
 
         <button id="btnVoltarAoTopo" title="Voltar ao topo">
-        <i class="fas fa-arrow-up"></i>
-    </button>
+            <i class="fas fa-arrow-up"></i>
+        </button>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="js/gestaoOcorrencias.js"></script>

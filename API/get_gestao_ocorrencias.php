@@ -37,7 +37,7 @@ try {
                 m.inst_prov, m.data_provedor, e.nome_equip, e.referencia_equip,
                 e.tipo_equip, c.nome AS cidade, p.nome_prov,
                 CONCAT(en.logradouro, ', ', en.bairro) AS local_completo,
-                SUBSTRING_INDEX(u.nome, ' ', 1) AS atribuido_por, -- << NOVO CAMPO ADICIONADO
+                SUBSTRING_INDEX(u.nome, ' ', 2) AS atribuido_por, -- << NOVO CAMPO ADICIONADO
                 GROUP_CONCAT(DISTINCT u_tec.nome SEPARATOR ', ') AS tecnicos_nomes
             FROM manutencoes AS m
             JOIN equipamentos AS e ON m.id_equipamento = e.id_equipamento

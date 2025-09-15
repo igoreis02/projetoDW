@@ -210,6 +210,11 @@ try {
 
         if ($origem === 'ocorrencia_provedor') {
             $stmt = $conn->prepare("UPDATE ocorrencia_provedor SET status = ? WHERE id_ocorrencia_provedor = ?");
+            $stmt->bind_param('si', $new_status, $id); 
+            if (!$stmt->execute()) { 
+                throw new Exception('Falha ao atualizar status do provedor.'); 
+            }
+            $stmt->close();
         } elseif ($origem === 'ocorrencia_processamento') {
             // 1. Atualiza o status na tabela de processamento
             $stmt = $conn->prepare("UPDATE ocorrencia_processamento SET status = ? WHERE id_ocorrencia_processamento = ?");

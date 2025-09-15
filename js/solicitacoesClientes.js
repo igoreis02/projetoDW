@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     const filterContainer = document.getElementById('filterContainer');
     const solicitacoesContainer = document.getElementById('solicitacoesContainer');
-    const loadingMessage = document.getElementById('loadingMessage');
+    const pageLoader = document.getElementById('pageLoader');
     const campoPesquisa = document.getElementById('campoPesquisa');
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');
@@ -19,6 +19,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- FUNÇÕES DE LÓGICA PRINCIPAL ---
     async function fetchData() {
+        pageLoader.style.display = 'flex';
+        solicitacoesContainer.innerHTML = '';
+
         const searchTerm = campoPesquisa.value;
         const startDate = startDateInput.value;
         const endDate = endDateInput.value;
@@ -33,8 +36,9 @@ document.addEventListener('DOMContentLoaded', function () {
             const response = await fetch(`API/get_solicitacoes.php?${params.toString()}`);
             const result = await response.json();
 
+            pageLoader.style.display = 'none';
+
             if (result.success) {
-                loadingMessage.style.display = 'none';
                 allData = result.data;
                 totalSolicitacoes = result.total_count; // Atualiza a contagem total
                 currentChecksum = result.checksum; //
@@ -43,27 +47,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 updateCityFilters(allData.cidades || []);
                 updateDisplay();
             } else {
-                loadingMessage.style.display = 'none';
                 solicitacoesContainer.innerHTML = `<p class="mensagem erro">${result.message || 'Nenhuma solicitação encontrada.'}</p>`;
                 updateCityFilters([]);
             }
         } catch (error) {
-            loadingMessage.style.display = 'none';
+            pageLoader.style.display = 'none';
             console.error('Erro ao buscar dados:', error);
             solicitacoesContainer.innerHTML = `<p class="mensagem erro">Ocorreu um erro ao carregar os dados.</p>`;
-        }
-    }
-
-    async function checkForUpdates() {
-        try {
-            const response = await fetch('API/get_solicitacoes_count.php');
-            const result = await response.json();
-            if (result.success && result.total_count !== totalSolicitacoes) {
-                console.log('Novas atualizações encontradas, atualizando a lista...');
-                fetchData();
-            }
-        } catch (error) {
-            console.error('Erro ao verificar atualizações:', error);
         }
     }
 
@@ -475,7 +465,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // 2. Compara o checksum do servidor com o checksum local
             if (checkResult.success && checkResult.checksum !== currentChecksum) {
                 console.log('Novas atualizações detectadas. Recarregando dados...');
-                
+
                 // 3. Se houver mudança, busca os dados completos. A API get_solicitacoes.php já retorna o checksum mais recente.
                 await fetchData(); // fetchData irá buscar os dados e ATUALIZAR a variável 'currentChecksum' localmente.
 
@@ -509,7 +499,7 @@ document.addEventListener('DOMContentLoaded', function () {
             btnVoltarAoTopo.style.display = "none";
         }
     }
-     btnVoltarAoTopo.addEventListener('click', function () {
+    btnVoltarAoTopo.addEventListener('click', function () {
         // Manda a página de volta para o topo de forma suave
         window.scrollTo({ top: 0, behavior: 'smooth' });
     });

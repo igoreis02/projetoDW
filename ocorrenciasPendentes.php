@@ -745,14 +745,6 @@ if (!isset($_SESSION['user_id'])) {
         }
 
         /* <-- NOVOS ESTILOS ADICIONADOS SEM ALTERAR OS SEUS --> */
-        #pageLoader {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 4rem 0;
-            gap: 1.5rem;
-        }
 
         .page-spinner {
             border: 8px solid rgba(0, 0, 0, 0.1);
@@ -763,11 +755,28 @@ if (!isset($_SESSION['user_id'])) {
             animation: spin 1s ease infinite;
         }
 
-        #pageLoader p {
-            font-size: 1.5em;
-            color: #374151;
-            font-weight: 600;
+        #pageLoader.main-loading-state {
+            display: none;
+            /* Começa escondido, o JS controla a exibição */
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 15px;
+            color: #555;
+            padding: 40px 0;
         }
+
+        #pageLoader .main-loading-spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #112058;
+            /* Usando a cor principal do seu tema */
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
+    
 
         #clearFiltersBtn {
             position: absolute;
@@ -862,6 +871,7 @@ if (!isset($_SESSION['user_id'])) {
             margin-top: 1.8rem;
             margin-bottom: 0.5rem;
         }
+
         .toggle-dias-btn {
             padding: 4px 8px;
             font-size: 11px;
@@ -1012,9 +1022,9 @@ if (!isset($_SESSION['user_id'])) {
         <div id="simplifiedView" class="hidden">
         </div>
         <div id="ocorrenciasContainer" class="ocorrencias-container">
-            <div id="pageLoader">
-                <div class="page-spinner"></div>
-                <p>Carregando ocorrências...</p>
+            <div id="pageLoader" class="main-loading-state" style="display: flex;">
+                <div class="main-loading-spinner"></div>
+                <span>Carregando ocorrências...</span>
             </div>
         </div>
         <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>

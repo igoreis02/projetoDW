@@ -168,10 +168,11 @@ if (!isset($_SESSION['user_id'])) {
             transition: all 0.2s ease;
             white-space: nowrap;
         }
-        
+
         #clearFiltersBtn:hover {
             background-color: #e5e7eb;
         }
+
         .search-spacer {
             visibility: hidden;
         }
@@ -603,6 +604,27 @@ if (!isset($_SESSION['user_id'])) {
                 transform: rotate(360deg);
             }
         }
+
+        #pageLoader.main-loading-state {
+            display: none;
+            /* Começa escondido, o JS controla a exibição */
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 15px;
+            color: #555;
+            padding: 40px 0;
+        }
+
+        #pageLoader .main-loading-spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #112058;
+            /* Cor principal do tema */
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
     </style>
 </head>
 
@@ -645,13 +667,16 @@ if (!isset($_SESSION['user_id'])) {
         <div id="cityFilterContainer" class="filter-container" style="padding-top: 0; margin-bottom: 2rem;"></div>
 
         <div id="ocorrenciasContainer" class="ocorrencias-container">
-            <p id="loadingMessage">A carregar ocorrências...</p>
+            <div id="pageLoader" class="main-loading-state">
+                <div class="main-loading-spinner"></div>
+                <span>Carregando ocorrências...</span>
+            </div>
         </div>
 
         <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
 
         <button id="btnVoltarAoTopo" title="Voltar ao topo">
-        <i class="fas fa-arrow-up"></i> 
+            <i class="fas fa-arrow-up"></i>
         </button>
     </div>
 
@@ -730,7 +755,7 @@ if (!isset($_SESSION['user_id'])) {
             </div>
         </div>
     </div>
- <div id="validarModal" class="modal">
+    <div id="validarModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Validar Reparo Técnico</h3>
@@ -789,4 +814,5 @@ if (!isset($_SESSION['user_id'])) {
 
     <script src="js/ocorrenciaProcessamento.js"></script>
 </body>
+
 </html>

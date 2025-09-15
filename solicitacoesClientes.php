@@ -122,10 +122,12 @@ require_once 'conexao_bd.php';
         #campoPesquisa {
             width: 100%;
             padding: 10px;
-            border-radius: 20px; /* Bordas arredondadas */
+            border-radius: 20px;
+            /* Bordas arredondadas */
             border: 1px solid #d1d5db;
             font-size: 1em;
-            outline: none; /* Remove a borda de foco */
+            outline: none;
+            /* Remove a borda de foco */
             transition: border-color 0.3s, box-shadow 0.3s;
         }
 
@@ -416,15 +418,27 @@ require_once 'conexao_bd.php';
             text-align: center;
         }
 
-        .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            border-left-color: #09f;
-            animation: spin 1s ease infinite;
-            margin: auto;
+        #pageLoader.main-loading-state {
+            display: none;
+            /* Começa escondido, o JS controla a exibição */
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 15px;
+            color: #555;
+            padding: 40px 0;
         }
+
+        #pageLoader .main-loading-spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #112058;
+            /* Cor principal do tema */
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
 
         .hidden {
             display: none !important;
@@ -472,6 +486,7 @@ require_once 'conexao_bd.php';
         .desdobramento-container {
             display: none;
         }
+
         .voltar-btn {
             display: inline-block;
             width: 30%;
@@ -489,6 +504,7 @@ require_once 'conexao_bd.php';
         .voltar-btn:hover {
             background-color: #09143fff;
         }
+
         #btnVoltarAoTopo {
             display: none;
             position: fixed;
@@ -539,18 +555,21 @@ require_once 'conexao_bd.php';
             .back-btn-icon {
                 font-size: 1.5em;
             }
-            
+
             /* Controles superiores empilhados */
             .top-controls-container {
                 flex-direction: column;
-                align-items: stretch; /* Faz os itens ocuparem a largura total */
+                align-items: stretch;
+                /* Faz os itens ocuparem a largura total */
                 gap: 1rem;
             }
+
             .status-filters {
                 flex-wrap: wrap;
                 gap: 0.5rem;
                 justify-content: center;
-        }
+            }
+
             .botao-adicionar-solicitacao {
                 width: 100%;
                 padding: 15px;
@@ -562,7 +581,8 @@ require_once 'conexao_bd.php';
             }
 
             .container-pesquisa input {
-                max-width: none; /* Permite ocupar a largura total */
+                max-width: none;
+                /* Permite ocupar a largura total */
             }
 
             /* Grade de solicitações vira coluna única */
@@ -573,7 +593,7 @@ require_once 'conexao_bd.php';
             .city-group-title {
                 font-size: 1.5em;
             }
-            
+
             /* Botões de ação com melhor espaçamento */
             .item-actions {
                 flex-wrap: wrap;
@@ -581,7 +601,8 @@ require_once 'conexao_bd.php';
             }
 
             .item-btn {
-                flex-grow: 1; /* Faz os botões crescerem para preencher o espaço */
+                flex-grow: 1;
+                /* Faz os botões crescerem para preencher o espaço */
                 text-align: center;
             }
 
@@ -603,7 +624,6 @@ require_once 'conexao_bd.php';
                 margin-top: 12px;
             }
         }
-
     </style>
 </head>
 
@@ -639,14 +659,18 @@ require_once 'conexao_bd.php';
         </div>
 
         <div id="filterContainer" class="filter-container"></div>
+
         <div id="solicitacoesContainer" class="solicitacoes-container">
-            <div id="loadingMessage" class="spinner"></div>
+            <div id="pageLoader" class="main-loading-state">
+                <div class="main-loading-spinner"></div>
+                <span>Carregando solicitações...</span>
+            </div>
         </div>
         <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
 
         <button id="btnVoltarAoTopo" title="Voltar ao topo">
-        <i class="fas fa-arrow-up"></i>
-        
+            <i class="fas fa-arrow-up"></i>
+
     </main>
 
     <div id="modalAdicionarSolicitacao" class="modal">

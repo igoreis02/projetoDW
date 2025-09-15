@@ -44,7 +44,7 @@ try {
         c.nome AS cidade,
         p.nome_prov,
         CONCAT(en.logradouro, ', ', en.bairro) AS local_completo,
-        SUBSTRING_INDEX(u_ini.nome, ' ', 1) AS atribuido_por,
+        SUBSTRING_INDEX(u_ini.nome, ' ', 2) AS atribuido_por,
         'ocorrencia_provedor' as origem
     FROM ocorrencia_provedor AS op
     JOIN equipamentos AS e ON op.id_equipamento = e.id_equipamento
@@ -70,7 +70,7 @@ try {
         c.nome AS cidade,
         p.nome_prov,
         CONCAT(en.logradouro, ', ', en.bairro) AS local_completo,
-        SUBSTRING_INDEX(u.nome, ' ', 1) AS atribuido_por,
+        SUBSTRING_INDEX(u.nome, ' ', 2) AS atribuido_por,
         'manutencoes' as origem
     FROM manutencoes AS m
     JOIN equipamentos AS e ON m.id_equipamento = e.id_equipamento
