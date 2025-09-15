@@ -138,34 +138,32 @@ try {
             throw new Exception('A descrição da solução é obrigatória.');
         }
 
-        // 1. Atualiza a tabela de ocorrência de processamento
-        $stmt = $conn->prepare("UPDATE ocorrencia_processamento SET status = 'concluido', dt_resolucao = NOW() WHERE id_ocorrencia_processamento = ?");
-        $stmt->bind_param('i', $id);
+        // Busca a data de ocorrência para calcular o tempo de reparo
+        $stmt_get_date = $conn->prepare("SELECT dt_ocorrencia FROM ocorrencia_processamento WHERE id_ocorrencia_processamento = ?");
+        $stmt_get_date->bind_param('i', $id);
+        $stmt_get_date->execute();
+        $ocorrencia_data = $stmt_get_date->get_result()->fetch_assoc();
+        $stmt_get_date->close();
+
+        if (!$ocorrencia_data) {
+            throw new Exception('Ocorrência de processamento não encontrada.');
+        }
+
+        // Atualiza a ocorrência de processamento
+        $sql = "UPDATE ocorrencia_processamento SET 
+                    status = 'concluido', 
+                    dt_resolucao = NOW(), 
+                    reparo = ?,
+                    tempo_reparo = TIMEDIFF(NOW(), ?) 
+                WHERE id_ocorrencia_processamento = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param('ssi', $reparo_finalizado, $ocorrencia_data['dt_ocorrencia'], $id);
+
         if (!$stmt->execute()) {
             throw new Exception('Falha ao concluir a ocorrência de processamento.');
         }
         $stmt->close();
-
-        // 2. Busca o ID da manutenção e a data de início para calcular o tempo de reparo
-        // <-- CORREÇÃO: Especificando a tabela (m.id_manutencao e m.inicio_reparo) para evitar ambiguidade
-        $stmt_get_manut_id = $conn->prepare("SELECT m.id_manutencao, m.inicio_reparo FROM ocorrencia_processamento op JOIN manutencoes m ON op.id_manutencao = m.id_manutencao WHERE op.id_ocorrencia_processamento = ?");
-        $stmt_get_manut_id->bind_param('i', $id);
-        $stmt_get_manut_id->execute();
-        $manut_data = $stmt_get_manut_id->get_result()->fetch_assoc();
-        $stmt_get_manut_id->close();
-
-        if ($manut_data) {
-            $id_manutencao = $manut_data['id_manutencao'];
-            $inicio_reparo = $manut_data['inicio_reparo'];
-
-            $sql_update_manut = "UPDATE manutencoes SET status_reparo = 'concluido', fim_reparo = NOW(), reparo_finalizado = ?, tempo_reparo = TIMEDIFF(NOW(), ?) WHERE id_manutencao = ?";
-            $stmt_update_manut = $conn->prepare($sql_update_manut);
-            $stmt_update_manut->bind_param('ssi', $reparo_finalizado, $inicio_reparo, $id_manutencao);
-            $stmt_update_manut->execute();
-            $stmt_update_manut->close();
-        }
-
-        echo json_encode(['success' => true, 'message' => 'Ocorrência de processamento concluída com sucesso.']);
+        echo json_encode(['success' => true, 'message' => 'Ocorrência concluída com sucesso.']);
     } elseif ($action === 'update_status_batch') {
         $ids = $input['ids'] ?? [];
         $new_status = $input['status'] ?? null;
@@ -214,28 +212,12 @@ try {
             $stmt = $conn->prepare("UPDATE ocorrencia_provedor SET status = ? WHERE id_ocorrencia_provedor = ?");
         } elseif ($origem === 'ocorrencia_processamento') {
             // 1. Atualiza o status na tabela de processamento
-            $stmt_proc = $conn->prepare("UPDATE ocorrencia_processamento SET status = ? WHERE id_ocorrencia_processamento = ?");
-            $stmt_proc->bind_param('si', $new_status, $id);
-            if (!$stmt_proc->execute()) {
+            $stmt = $conn->prepare("UPDATE ocorrencia_processamento SET status = ? WHERE id_ocorrencia_processamento = ?");
+            $stmt->bind_param('si', $new_status, $id);
+            if (!$stmt->execute()) {
                 throw new Exception('Falha ao atualizar status do processamento.');
             }
-            $stmt_proc->close();
-
-            // 2. Busca o ID da manutenção para sincronizar
-            $stmt_get_manut_id = $conn->prepare("SELECT id_manutencao FROM ocorrencia_processamento WHERE id_ocorrencia_processamento = ?");
-            $stmt_get_manut_id->bind_param('i', $id);
-            $stmt_get_manut_id->execute();
-            $manut_id_result = $stmt_get_manut_id->get_result()->fetch_assoc();
-            $stmt_get_manut_id->close();
-
-            // 3. Atualiza o status na tabela de manutenções
-            if ($manut_id_result) {
-                $id_manutencao = $manut_id_result['id_manutencao'];
-                $stmt_manut = $conn->prepare("UPDATE manutencoes SET status_reparo = ? WHERE id_manutencao = ?");
-                $stmt_manut->bind_param('si', $new_status, $id_manutencao);
-                $stmt_manut->execute();
-                $stmt_manut->close();
-            }
+            $stmt->close();
         } else { // Fallback para a tabela 'manutencoes'
             // 1. Atualiza o status na tabela 'manutencoes' 
             $stmt = $conn->prepare("UPDATE manutencoes SET status_reparo = ? WHERE id_manutencao = ?");
@@ -374,89 +356,74 @@ try {
 
         echo json_encode(['success' => true, 'message' => 'Reparo concluído e registrado com sucesso.']);
     } elseif ($action === 'edit_ocorrencia') {
-         $ocorrencia = $input['ocorrencia_reparo'] ?? null;
-    $reparo_finalizado = $input['reparo_finalizado'] ?? null;
-    $origem = $input['origem'] ?? null;
-    if (empty($ocorrencia)) {
-        throw new Exception('O texto da ocorrência não pode ser vazio.');
-    }
-
-    if ($origem === 'ocorrencia_provedor') {
-        // Lógica original para provedor (inalterada)
-        $sql = "UPDATE ocorrencia_provedor SET des_ocorrencia = ?, des_reparo = ? WHERE id_ocorrencia_provedor = ?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param('ssi', $ocorrencia, $reparo_finalizado, $id);
-        if (!$stmt->execute()) {
-            throw new Exception('Falha ao atualizar a ocorrência do provedor: ' . $stmt->error);
+        $ocorrencia = $input['ocorrencia_reparo'] ?? null;
+        $reparo_finalizado = $input['reparo_finalizado'] ?? null;
+        $origem = $input['origem'] ?? null;
+        if (empty($ocorrencia)) {
+            throw new Exception('O texto da ocorrência não pode ser vazio.');
         }
-        $stmt->close();
 
-    } elseif ($origem === 'ocorrencia_processamento') {
-        // Lógica original para processamento (inalterada)
-        $stmt_proc = $conn->prepare("UPDATE ocorrencia_processamento SET descricao = ? WHERE id_ocorrencia_processamento = ?");
-        $stmt_proc->bind_param('si', $ocorrencia, $id);
-        if (!$stmt_proc->execute()) {
-            throw new Exception('Falha ao editar a ocorrência de processamento.');
-        }
-        $stmt_proc->close();
-        
-        $stmt_get_manut_id = $conn->prepare("SELECT id_manutencao FROM ocorrencia_processamento WHERE id_ocorrencia_processamento = ?");
-        $stmt_get_manut_id->bind_param('i', $id);
-        $stmt_get_manut_id->execute();
-        $manut_id_result = $stmt_get_manut_id->get_result()->fetch_assoc();
-        $stmt_get_manut_id->close();
-        if ($manut_id_result) {
-            $id_manutencao = $manut_id_result['id_manutencao'];
-            $stmt_manut = $conn->prepare("UPDATE manutencoes SET ocorrencia_reparo = ?, reparo_finalizado = ? WHERE id_manutencao = ?");
-            $stmt_manut->bind_param('ssi', $ocorrencia, $reparo_finalizado, $id_manutencao);
-            if (!$stmt_manut->execute()) {
-                throw new Exception('Falha ao sincronizar edição com a manutenção.');
+        if ($origem === 'ocorrencia_provedor') {
+            // Lógica original para provedor (inalterada)
+            $sql = "UPDATE ocorrencia_provedor SET des_ocorrencia = ?, des_reparo = ? WHERE id_ocorrencia_provedor = ?";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param('ssi', $ocorrencia, $reparo_finalizado, $id);
+            if (!$stmt->execute()) {
+                throw new Exception('Falha ao atualizar a ocorrência do provedor: ' . $stmt->error);
             }
-            $stmt_manut->close();
-        }
-    } else {
-        // --- LÓGICA ATUALIZADA PARA MANUTENÇÕES GERAIS E SEMAFÓRICAS ---
+            $stmt->close();
+        } elseif ($origem === 'ocorrencia_processamento') {
 
-        // 1. Atualiza a tabela 'manutencoes' como sempre fez (lógica original)
-        $params = [$ocorrencia];
-        $types = 's';
-        $sql = "UPDATE manutencoes SET ocorrencia_reparo = ?";
-        if (isset($reparo_finalizado)) {
-            $sql .= ", reparo_finalizado = ?";
-            $types .= 's';
-            $params[] = $reparo_finalizado;
-        }
-        $sql .= " WHERE id_manutencao = ?";
-        $types .= 'i';
-        $params[] = $id;
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param($types, ...$params);
-        if (!$stmt->execute()) {
-            throw new Exception('Falha ao atualizar a ocorrência: ' . $stmt->error);
-        }
-        $stmt->close();
-        
-        //    Verifica se a manutenção editada está ligada a uma ocorrência semafórica.
-        $stmt_get_semaforica = $conn->prepare("SELECT id_ocorrencia_semaforica FROM manutencoes WHERE id_manutencao = ?");
-        $stmt_get_semaforica->bind_param('i', $id);
-        $stmt_get_semaforica->execute();
-        $result_semaforica = $stmt_get_semaforica->get_result();
-
-        if ($result_semaforica->num_rows > 0) {
-            $row = $result_semaforica->fetch_assoc();
-            $id_semaforica = $row['id_ocorrencia_semaforica'];
-            // Se houver um ID, atualiza a descrição do problema na tabela original.
-            if ($id_semaforica) {
-                $stmt_update_semaforica = $conn->prepare("UPDATE ocorrencia_semaforica SET descricao_problema = ? WHERE id = ?");
-                $stmt_update_semaforica->bind_param('si', $ocorrencia, $id_semaforica);
-                $stmt_update_semaforica->execute();
-                $stmt_update_semaforica->close();
+            $sql = "UPDATE ocorrencia_processamento SET descricao = ?, reparo = ? WHERE id_ocorrencia_processamento = ?";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param('ssi', $ocorrencia, $reparo_finalizado, $id);
+            if (!$stmt->execute()) {
+                throw new Exception('Falha ao editar a ocorrência de processamento.');
             }
-        }
-        $stmt_get_semaforica->close();
-    }
+            $stmt->close();
+        } else {
+            // --- LÓGICA ATUALIZADA PARA MANUTENÇÕES GERAIS E SEMAFÓRICAS ---
 
-    echo json_encode(['success' => true, 'message' => 'Ocorrência atualizada com sucesso.']);
+            // 1. Atualiza a tabela 'manutencoes' como sempre fez (lógica original)
+            $params = [$ocorrencia];
+            $types = 's';
+            $sql = "UPDATE manutencoes SET ocorrencia_reparo = ?";
+            if (isset($reparo_finalizado)) {
+                $sql .= ", reparo_finalizado = ?";
+                $types .= 's';
+                $params[] = $reparo_finalizado;
+            }
+            $sql .= " WHERE id_manutencao = ?";
+            $types .= 'i';
+            $params[] = $id;
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param($types, ...$params);
+            if (!$stmt->execute()) {
+                throw new Exception('Falha ao atualizar a ocorrência: ' . $stmt->error);
+            }
+            $stmt->close();
+
+            //    Verifica se a manutenção editada está ligada a uma ocorrência semafórica.
+            $stmt_get_semaforica = $conn->prepare("SELECT id_ocorrencia_semaforica FROM manutencoes WHERE id_manutencao = ?");
+            $stmt_get_semaforica->bind_param('i', $id);
+            $stmt_get_semaforica->execute();
+            $result_semaforica = $stmt_get_semaforica->get_result();
+
+            if ($result_semaforica->num_rows > 0) {
+                $row = $result_semaforica->fetch_assoc();
+                $id_semaforica = $row['id_ocorrencia_semaforica'];
+                // Se houver um ID, atualiza a descrição do problema na tabela original.
+                if ($id_semaforica) {
+                    $stmt_update_semaforica = $conn->prepare("UPDATE ocorrencia_semaforica SET descricao_problema = ? WHERE id = ?");
+                    $stmt_update_semaforica->bind_param('si', $ocorrencia, $id_semaforica);
+                    $stmt_update_semaforica->execute();
+                    $stmt_update_semaforica->close();
+                }
+            }
+            $stmt_get_semaforica->close();
+        }
+
+        echo json_encode(['success' => true, 'message' => 'Ocorrência atualizada com sucesso.']);
     } elseif ($action === 'edit_ocorrencia_batch') {
         $updates = $input['updates'] ?? null;
 

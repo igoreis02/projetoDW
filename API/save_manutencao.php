@@ -1,4 +1,6 @@
 <?php
+// /API/save_manutencao.php
+
 session_start();
 header('Content-Type: application/json');
 require_once 'conexao_bd.php';
@@ -19,67 +21,57 @@ $status_reparo = $data['status_reparo'] ?? 'pendente';
 $tipo_manutencao = $data['tipo_manutencao'] ?? 'corretiva';
 $reparo_finalizado = $data['reparo_finalizado'] ?? null;
 $observacao_instalacao = $data['observacao_instalacao'] ?? null;
-$id_provedor = $data['id_provedor'] ?? null;
 $id_manutencao_existente = $data['id_manutencao_existente'] ?? null;
 
-if (empty($id_equipamento) || empty($id_cidade) || empty($ocorrencia_reparo)) {
-    echo json_encode(['success' => false, 'message' => 'Dados incompletos.']);
+if (empty($id_equipamento) && $tipo_manutencao !== 'instalação') {
+    // Equipamento é obrigatório para tudo, exceto novas instalações que ainda não têm ID
+    echo json_encode(['success' => false, 'message' => 'ID do equipamento é obrigatório.']);
+    exit();
+}
+if (empty($id_cidade) || empty($ocorrencia_reparo)) {
+    echo json_encode(['success' => false, 'message' => 'Cidade e descrição da ocorrência são obrigatórios.']);
     exit();
 }
 
 try {
     $conn->begin_transaction();
     $id_retorno = null;
+    $stmt = null;
 
     if ($id_manutencao_existente && $tipo_manutencao === 'corretiva') {
-        // FLUXO DE ATUALIZAÇÃO PARA CONCATENAR PROBLEMAS 
-        $ocorrencia_nova_concatenada = $data['ocorrencia_concatenada'] ?? $ocorrencia_reparo;
-        $sql = "UPDATE manutencoes SET ocorrencia_reparo = ? WHERE id_manutencao = ?";
+        // FLUXO DE ATUALIZAÇÃO PARA CONCATENAR PROBLEMAS (Matriz Técnica)
+        $sql = "UPDATE manutencoes SET ocorrencia_reparo = CONCAT(ocorrencia_reparo, '; ', ?) WHERE id_manutencao = ?";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("si", $ocorrencia_nova_concatenada, $id_manutencao_existente);
+        $stmt->bind_param("si", $ocorrencia_reparo, $id_manutencao_existente);
         $id_retorno = $id_manutencao_existente;
-
     } else {
-        // FLUXO DE INSERÇÃO
-        if ($tipo_manutencao === 'preditiva' && ($data['realizado_por'] ?? null) === 'processamento') {
-            
-            if ($status_reparo === 'concluido') {
-                if (empty($reparo_finalizado)) { throw new Exception('A descrição do reparo é obrigatória para concluir.'); }
-                $sql = "INSERT INTO manutencoes (id_usuario, id_equipamento, id_cidade, status_reparo, tipo_manutencao, ocorrencia_reparo, reparo_finalizado, fim_reparo, tempo_reparo) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP(), '00:00:00')";
-                $stmt = $conn->prepare($sql);
-                $stmt->bind_param("iiissss", $id_usuario_logado, $id_equipamento, $id_cidade, $status_reparo, $tipo_manutencao, $ocorrencia_reparo, $reparo_finalizado);
-            } else { // 'pendente'
-                $sql = "INSERT INTO manutencoes (id_usuario, id_equipamento, id_cidade, status_reparo, tipo_manutencao, ocorrencia_reparo) VALUES (?, ?, ?, ?, ?, ?)";
-                $stmt = $conn->prepare($sql);
-                $stmt->bind_param("iiisss", $id_usuario_logado, $id_equipamento, $id_cidade, $status_reparo, $tipo_manutencao, $ocorrencia_reparo);
-            }
-        } else if ($tipo_manutencao === 'instalação') {
-            
+        // FLUXO DE INSERÇÃO PARA NOVAS OCORRÊNCIAS
+        if ($tipo_manutencao === 'instalação') {
             $sql = "INSERT INTO manutencoes (id_usuario, id_equipamento, id_cidade, status_reparo, tipo_manutencao, ocorrencia_reparo, observacao_instalacao) VALUES (?, ?, ?, ?, ?, ?, ?)";
             $stmt = $conn->prepare($sql);
             $stmt->bind_param("iiissss", $id_usuario_logado, $id_equipamento, $id_cidade, $status_reparo, $tipo_manutencao, $ocorrencia_reparo, $observacao_instalacao);
-        
         } else { 
-            $sql = "INSERT INTO manutencoes (id_usuario, id_equipamento, id_cidade, status_reparo, tipo_manutencao, ocorrencia_reparo) VALUES (?, ?, ?, ?, ?, ?)";
+            // Lógica para 'corretiva' (Matriz Técnica) e outros tipos que podem ser adicionados no futuro
+            $sql = "INSERT INTO manutencoes (id_usuario, id_equipamento, id_cidade, status_reparo, tipo_manutencao, ocorrencia_reparo, nivel_ocorrencia) VALUES (?, ?, ?, ?, ?, ?, ?)";
             $stmt = $conn->prepare($sql);
-            $stmt->bind_param("iiisss", $id_usuario_logado, $id_equipamento, $id_cidade, $status_reparo, $tipo_manutencao, $ocorrencia_reparo);
+            // Definindo um nível de prioridade padrão (2) para novas ocorrências corretivas
+            $nivel_ocorrencia = '2'; 
+            $stmt->bind_param("iiisssi", $id_usuario_logado, $id_equipamento, $id_cidade, $status_reparo, $tipo_manutencao, $ocorrencia_reparo, $nivel_ocorrencia);
         }
     }
 
-    if ($stmt->execute()) {
+    if ($stmt && $stmt->execute()) {
         if (!$id_manutencao_existente) {
             $id_retorno = $conn->insert_id;
         }
-
         $conn->commit();
-        $message = $id_manutencao_existente ? 'Problema adicionado com sucesso!' : 'Cadastrada com sucesso!';
-        
+        $message = $id_manutencao_existente ? 'Problema adicionado à ocorrência existente com sucesso!' : 'Ocorrência cadastrada com sucesso!';
         echo json_encode(['success' => true, 'message' => $message, 'id_manutencao' => $id_retorno]);
     } else {
-        throw new Exception($stmt->error);
+        throw new Exception($stmt ? $stmt->error : "Falha na preparação da consulta.");
     }
 
-    $stmt->close();
+    if ($stmt) $stmt->close();
     
 } catch (Exception $e) {
     $conn->rollback();

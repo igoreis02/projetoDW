@@ -4,7 +4,7 @@ header('Content-Type: application/json');
 require_once 'conexao_bd.php';
 
 // A consulta SQL agora usa o nome da tabela 'usuario' (minúsculo) e o alias 'id_tecnico'
-$sql = "SELECT id_usuario AS id_tecnico, nome FROM usuario WHERE tipo_usuario = 'tecnico' ORDER BY nome ASC";
+$sql = "SELECT id_usuario AS id_tecnico, nome FROM usuario WHERE tipo_usuario = 'tecnico' and status_usuario = 'ativo' ORDER BY nome ASC";
 $result = $conn->query($sql);
 
 $tecnicos = [];

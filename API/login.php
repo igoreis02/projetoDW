@@ -22,8 +22,7 @@ if (empty($email) || empty($senha)) {
     exit();
 }
 
-// Prepara a consulta SQL para buscar o usuário pelo e-mail
-$stmt = $conn->prepare("SELECT id_usuario, nome, email, senha, senha_alterada, tipo_usuario FROM Usuario WHERE email = ?");
+$stmt = $conn->prepare("SELECT id_usuario, nome, email, senha, senha_alterada, tipo_usuario, status_usuario FROM Usuario WHERE email = ?");
 $stmt->bind_param("s", $email);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -31,6 +30,15 @@ $result = $stmt->get_result();
 if ($result->num_rows > 0) {
     $user = $result->fetch_assoc();
     
+    // --- MUDANÇA 2: Verificação de Status ---
+    // Agora, a primeira coisa que fazemos após encontrar o usuário é verificar seu status.
+    if ($user['status_usuario'] !== 'ativo') {
+        // Se o usuário não estiver ativo, retorna a mensagem específica e encerra.
+        echo json_encode(['success' => false, 'message' => 'Usuário inativo. Por favor, entre em contato com o administrador.']);
+        exit();
+    }
+    
+    // Se o usuário estiver ativo, o código continua para verificar a senha.
     if ($senha === $user['senha']) {
         // Define variáveis de sessão para o usuário logado
         $_SESSION['user_id'] = $user['id_usuario'];
@@ -38,14 +46,14 @@ if ($result->num_rows > 0) {
         $_SESSION['tipo_usuario'] = $user['tipo_usuario'];
         $_SESSION['redefinir_senha_obrigatoria'] = false;
 
-        // Verifica se a senha é a padrão '12345' ou se a flag 'senha_alterada' é FALSE
+        // Verifica se a senha é a padrão ou se precisa ser alterada
         if ($user['senha'] === '12345' || $user['senha_alterada'] == 0) {
             $_SESSION['redefinir_senha_obrigatoria'] = true;
             echo json_encode([
                 'success' => true,
                 'message' => 'Sua senha é padrão ou precisa ser alterada. Redirecionando para alteração de senha.',
                 'needsPasswordChange' => true,
-                'userType' => $user['tipo_usuario'], // <-- CORREÇÃO APLICADA AQUI
+                'userType' => $user['tipo_usuario'],
                 'redirectUrl' => 'menu.php'
             ]);
         } else if ($user['tipo_usuario'] === 'tecnico') {
@@ -57,7 +65,7 @@ if ($result->num_rows > 0) {
                 'redirectUrl' => 'manutencao_tecnico.php'
             ]);
         } else {
-            // Login bem-sucedido para outros tipos de usuário, senha já redefinida
+            // Login bem-sucedido para outros tipos de usuário
             echo json_encode([
                 'success' => true,
                 'message' => 'Login realizado com sucesso!',

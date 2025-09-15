@@ -638,18 +638,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
             } else {
 
-                if (currentMaintenanceType === 'preditiva' && realizadoPor === 'provedor') {
-
+                if (currentMaintenanceType === 'preditiva' && realizadoPor === 'processamento') {
+                    
                     const payload = {
                         city_id: selectedCityId,
                         equipment_id: selectedEquipment.id_equipamento,
-                        id_provedor: selectedEquipment.id_provedor,
                         problem_description: selectedProblemDescription,
                         reparo_finalizado: selectedRepairDescription,
-                        tecnico_in_loco: tecnicoInLoco,
-                        tipo_ocorrencia: 'manutencao'
+                        reparo_concluido: reparoConcluido // true para 'Sim', false para 'Não'
                     };
+                    const response = await fetch('API/save_ocorrencia_processamento.php', { // <-- CHAMA O SCRIPT CORRETO
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await response.json();
+                    if (!data.success) throw new Error(data.message || 'Ocorreu um erro ao salvar o controle de ocorrência.');
 
+                } else if (currentMaintenanceType === 'preditiva' && realizadoPor === 'provedor') {
+                   
+                    const payload = { city_id: selectedCityId, equipment_id: selectedEquipment.id_equipamento, id_provedor: selectedEquipment.id_provedor, problem_description: selectedProblemDescription, reparo_finalizado: selectedRepairDescription, tecnico_in_loco: tecnicoInLoco, tipo_ocorrencia: 'manutencao' };
                     const response = await fetch('API/save_ocorrencia_provedor.php', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -659,38 +667,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!data.success) throw new Error(data.message || 'Ocorreu um erro ao salvar a ocorrência do provedor.');
 
                 } else {
-                    // FLUXO 2: PARA TODOS OS OUTROS CASOS (MATRIZ TÉCNICA E PROCESSAMENTO)
-                    let statusParaSalvar = (realizadoPor === 'processamento') ? (reparoConcluido ? 'concluido' : 'pendente') : currentRepairStatus;
-
+                    
                     const payload = {
                         city_id: selectedCityId,
                         equipment_id: selectedEquipment.id_equipamento,
-                        id_provedor: selectedEquipment.id_provedor,
                         problem_description: selectedProblemDescription,
-                        reparo_finalizado: selectedRepairDescription,
                         tipo_manutencao: currentMaintenanceType,
-                        status_reparo: statusParaSalvar,
-                        realizado_por: realizadoPor
-                        
+                        status_reparo: currentRepairStatus,
+                        id_manutencao_existente: existingMaintenanceData ? existingMaintenanceData.id : null
                     };
-
-                    const response = await fetch('API/save_manutencao.php', {
+                    const response = await fetch('API/save_manutencao.php', { // <-- CHAMA O SCRIPT PADRÃO
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
                     const data = await response.json();
-                    if (!data.success) throw new Error(data.message || 'Ocorreu um erro.');
-
-                    if (realizadoPor === 'processamento' && !reparoConcluido) {
-                        // Sua lógica de Ocorrência de Processamento (permanece intacta)
-                        const idManutencaoSalva = data.id_manutencao;
-                        if (!idManutencaoSalva) { throw new Error('Não foi possível obter o ID da manutenção para registrar o processamento.'); }
-                        const processamentoPayload = { id_manutencao: idManutencaoSalva, tipo_ocorrencia: 'preditiva', descricao: selectedProblemDescription };
-                        const processamentoResponse = await fetch('API/save_ocorrencia_processamento.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(processamentoPayload) });
-                        const processamentoData = await processamentoResponse.json();
-                        if (!processamentoData.success) throw new Error(processamentoData.message || 'Falha ao salvar na tabela de processamento.');
-                    }
+                    if (!data.success) throw new Error(data.message || 'Ocorreu um erro ao salvar a manutenção.');
                 }
             }
 
@@ -717,6 +709,7 @@ document.addEventListener('DOMContentLoaded', () => {
             cancelSaveButton.disabled = false;
         }
     });
+
     window.closeConfirmationModal = function () {
         if (confirmationModal) confirmationModal.classList.remove('is-active');
     }

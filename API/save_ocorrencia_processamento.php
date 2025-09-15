@@ -1,7 +1,9 @@
 <?php
+// /API/save_ocorrencia_processamento.php
+
 session_start();
 header('Content-Type: application/json');
-require_once 'conexao_bd.php';
+require_once '../conexao_bd.php';
 
 if (!isset($_SESSION['user_id'])) {
     echo json_encode(['success' => false, 'message' => 'Usuário não autenticado.']);
@@ -12,34 +14,54 @@ $id_usuario_logado = $_SESSION['user_id'];
 $input = file_get_contents('php://input');
 $data = json_decode($input, true);
 
-// Dados da ocorrência de processamento
-$id_manutencao = $data['id_manutencao'] ?? null;
-$tipo_ocorrencia = $data['tipo_ocorrencia'] ?? null;
-$descricao = $data['descricao'] ?? null;
+// Dados recebidos do JavaScript
+$city_id = $data['city_id'] ?? null;
+$equipment_id = $data['equipment_id'] ?? null;
+$problem_description = $data['problem_description'] ?? null;
+$reparo_finalizado_desc = $data['reparo_finalizado'] ?? null;
+$reparo_concluido = $data['reparo_concluido'] ?? false; // true para 'Sim', false para 'Não'
 
-// Validação
-if (empty($id_manutencao) || empty($tipo_ocorrencia) || empty($descricao)) {
-    echo json_encode(['success' => false, 'message' => 'Dados incompletos para registrar ocorrência de processamento.']);
+// Validação dos dados essenciais
+if (empty($city_id) || empty($equipment_id) || empty($problem_description)) {
+    echo json_encode(['success' => false, 'message' => 'Dados incompletos para registrar a ocorrência.']);
     exit();
 }
 
-$status = 'pendente'; // Status sempre pendente ao criar
+// Determina o status e a data de resolução com base na resposta do usuário
+$status = $reparo_concluido ? 'concluido' : 'pendente';
+$dt_resolucao = $reparo_concluido ? date('Y-m-d H:i:s') : null;
+$tipo_ocorrencia = 'preditiva';
+
+
+$tempo_reparo = $reparo_concluido ? '00:00:00' : null;
 
 try {
+    // A inserção agora inclui o tempo_reparo
     $sql = "INSERT INTO ocorrencia_processamento 
-                (id_manutencao, id_usuario_registro, tipo_ocorrencia, descricao, status) 
-            VALUES (?, ?, ?, ?, ?)";
+                (id_equipamento, id_usuario_registro, tipo_ocorrencia, descricao, status, dt_resolucao, reparo, tempo_reparo, id_cidade) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("iisss", $id_manutencao, $id_usuario_logado, $tipo_ocorrencia, $descricao, $status);
+    // Adicionado 's' para tempo_reparo e a variável na lista de bind
+    $stmt->bind_param("iissssssi", 
+        $equipment_id, 
+        $id_usuario_logado, 
+        $tipo_ocorrencia, 
+        $problem_description, 
+        $status, 
+        $dt_resolucao, 
+        $reparo_finalizado_desc, 
+        $tempo_reparo, // <-- Variável adicionada
+        $city_id
+    );
     
     $stmt->execute();
     $stmt->close();
 
-    echo json_encode(['success' => true, 'message' => 'Ocorrência de processamento registrada com sucesso!']);
+    echo json_encode(['success' => true, 'message' => 'Controle de ocorrência registrado com sucesso!']);
 
 } catch (Exception $e) {
-    echo json_encode(['success' => false, 'message' => 'Erro ao registrar ocorrência de processamento: ' . $e->getMessage()]);
+    echo json_encode(['success' => false, 'message' => 'Erro ao registrar controle de ocorrência: ' . $e->getMessage()]);
 }
 
 $conn->close();
