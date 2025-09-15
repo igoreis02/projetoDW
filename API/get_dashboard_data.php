@@ -80,7 +80,7 @@ try {
     $stmt_concluidas->execute();
     $dashboard_data['kpi_concluidas_mes'] = $stmt_concluidas->get_result()->fetch_assoc()['total'] ?? 0;
     $stmt_concluidas->close();
-    // 3. Tempo Médio de Reparo (MTTR) - CORREÇÃO APLICADA AQUI
+    // 3. Tempo Médio de Reparo (MTTR) - 
 // A consulta foi alterada para calcular em HORAS e a formatação agora imita a do JavaScript para garantir consistência.
     $stmt_mttr = $conn->prepare("SELECT AVG(TIMESTAMPDIFF(HOUR, inicio_reparo, fim_reparo)) as mttr_horas FROM manutencoes WHERE status_reparo = 'concluido' AND inicio_reparo IS NOT NULL AND fim_reparo IS NOT NULL and tipo_manutencao = 'corretiva' $filtro_conclusao_sql");
     if (!empty($params_conclusao)) {
@@ -232,7 +232,7 @@ try {
     $stmt->execute();
     $dashboard_data['manutencoes_abertas_cidade'] = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
-    // LÓGICA REVERTIDA: Evolução
+    //  Evolução
     if (!empty($data_inicio) && !empty($data_fim)) {
         // Se houver filtro, gera a série de dias DENTRO do período
         $sql_evolucao = "WITH RECURSIVE date_range AS (SELECT ? as a_date UNION ALL SELECT a_date + INTERVAL 1 DAY FROM date_range WHERE a_date < ?) SELECT dr.a_date AS dia, (SELECT COUNT(id_manutencao) FROM manutencoes WHERE DATE(inicio_reparo) = dr.a_date) AS abertas, (SELECT COUNT(id_manutencao) FROM manutencoes WHERE DATE(fim_reparo) = dr.a_date AND status_reparo = 'concluido') AS fechadas FROM date_range dr ORDER BY dr.a_date ASC";
