@@ -719,7 +719,6 @@ if (!isset($_SESSION['user_id'])) {
         /* --- NOVOS ESTILOS - VISÃO SIMPLIFICADA --- */
         #simplifiedView {
             text-align: left;
-            font-size: 1.3em;
             padding: 1rem 0.2rem;
             border-bottom: 1px solid #e5e7eb;
             margin-bottom: 2rem;

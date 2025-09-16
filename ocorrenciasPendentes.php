@@ -830,7 +830,6 @@ if (!isset($_SESSION['user_id'])) {
         #simplifiedView {
             text-align: left;
             padding: 1rem 0;
-            border-top: 1px solid #e5e7eb;
             border-bottom: 1px solid #e5e7eb;
             margin-bottom: 2rem;
         }
