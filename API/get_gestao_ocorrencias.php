@@ -37,7 +37,7 @@ try {
                 m.inst_prov, m.data_provedor, e.nome_equip, e.referencia_equip,
                 e.tipo_equip, c.nome AS cidade, p.nome_prov,
                 CONCAT(en.logradouro, ', ', en.bairro) AS local_completo,
-                SUBSTRING_INDEX(u.nome, ' ', 2) AS atribuido_por, -- << NOVO CAMPO ADICIONADO
+                SUBSTRING_INDEX(u.nome, ' ', 2) AS atribuido_por, 
                 GROUP_CONCAT(DISTINCT u_tec.nome SEPARATOR ', ') AS tecnicos_nomes
             FROM manutencoes AS m
             JOIN equipamentos AS e ON m.id_equipamento = e.id_equipamento
@@ -46,7 +46,7 @@ try {
             LEFT JOIN provedor AS p ON m.id_provedor = p.id_provedor
             LEFT JOIN manutencoes_tecnicos AS mt ON m.id_manutencao = mt.id_manutencao
             LEFT JOIN usuario AS u_tec ON mt.id_tecnico = u_tec.id_usuario
-            LEFT JOIN usuario AS u ON m.id_usuario = u.id_usuario -- << NOVO JOIN ADICIONADO
+            LEFT JOIN usuario AS u ON m.id_usuario = u.id_usuario 
             WHERE 1=1";
 
     $params = [];
@@ -79,7 +79,7 @@ try {
     if (!empty($search_term)) {
         $search_like = "%" . $search_term . "%";
         $sql .= " AND (e.nome_equip LIKE ? OR e.referencia_equip LIKE ? OR c.nome LIKE ? OR m.status_reparo LIKE ? OR m.ocorrencia_reparo LIKE ? OR u_tec.nome LIKE ? OR u.nome LIKE ?)"; // Adicionado u.nome na busca
-        for ($i = 0; $i < 7; $i++) { // Aumentado para 7
+        for ($i = 0; $i < 7; $i++) { 
             $params[] = $search_like;
             $types .= 's';
         }

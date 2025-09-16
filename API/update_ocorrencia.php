@@ -154,10 +154,12 @@ try {
                     status = 'concluido', 
                     dt_resolucao = NOW(), 
                     reparo = ?,
+                    id_usuario_concluiu = ?,
                     tempo_reparo = TIMEDIFF(NOW(), ?) 
                 WHERE id_ocorrencia_processamento = ?";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param('ssi', $reparo_finalizado, $ocorrencia_data['dt_ocorrencia'], $id);
+        $stmt->bind_param('sisi', $reparo_finalizado, $id_usuario_concluiu, $ocorrencia_data['dt_ocorrencia'], $id);
+
 
         if (!$stmt->execute()) {
             throw new Exception('Falha ao concluir a ocorrência de processamento.');

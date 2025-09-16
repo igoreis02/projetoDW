@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- Variáveis de Estado ---
     let filters = { type: 'manutencao', status: 'todos', startDate: '', endDate: '', city: 'todos' };
     let allData = null, currentItem = null;
+    let groupedDataForEditing = {};
 
     let currentChecksum = null;
     let updateTimeoutId = null;
@@ -134,10 +135,32 @@ document.addEventListener('DOMContentLoaded', function () {
                 const cityGroup = document.createElement('div');
                 cityGroup.className = 'city-group';
                 cityGroup.dataset.city = cidade;
-                let cityGridHTML = '';
-                data.ocorrencias[cidade].forEach(item => {
-                    cityGridHTML += `<div class="ocorrencia-item-wrapper">${createOcorrenciaHTML(item)}</div>`;
+
+                const itemsToRender = [];
+                const groupedItems = {};
+
+                (data.ocorrencias[cidade] || []).forEach(item => {
+                    if (item.status === 'concluido') {
+                        const key = `${item.nome_equip}|${item.referencia_equip}`;
+                        if (!groupedItems[key]) {
+                            groupedItems[key] = { ...item, isGrouped: true, ocorrencias_detalhadas: [] };
+                        }
+                        groupedItems[key].ocorrencias_detalhadas.push(item);
+                    } else {
+                        itemsToRender.push({ ...item, isGrouped: false, ocorrencias_detalhadas: [item] });
+                    }
                 });
+
+                // LÓGICA CORRIGIDA: Trata grupos com 1 item como individuais
+                Object.values(groupedItems).forEach(group => {
+                    if (group.ocorrencias_detalhadas.length === 1) {
+                        group.isGrouped = false;
+                    }
+                    itemsToRender.push(group);
+                });
+
+                let cityGridHTML = itemsToRender.map(item => createOcorrenciaHTML(item)).join('');
+
                 cityGroup.innerHTML = `<h2 class="city-group-title">${cidade}</h2><div class="city-ocorrencias-grid">${cityGridHTML}</div>`;
                 ocorrenciasContainer.appendChild(cityGroup);
             }
@@ -146,68 +169,142 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // SUBSTITUA a função createOcorrenciaHTML
     function createOcorrenciaHTML(item) {
-        const statusClass = (item.status || 'pendente').toLowerCase();
+        const firstItem = item.ocorrencias_detalhadas[0];
+        const statusClass = (firstItem.status || 'pendente').toLowerCase();
+        let detailsHTML = '';
+        let actionsContent = '';
 
-        const inicioReparoFormatted = item.inicio_reparo ? new Date(item.inicio_reparo).toLocaleString('pt-BR') : 'N/A';
-        const fimReparoFormatted = item.fim_reparo ? new Date(item.fim_reparo).toLocaleString('pt-BR') : 'N/A';
-        let atribuidoPorHTML = item.atribuido_por ? `<div class="detail-item"><strong>Reportado por</strong> <span>${item.atribuido_por}</span></div>` : '';
-        let reparoFinalizadoHTML = '';
+        if (item.isGrouped) {
+            const uniqueId = `list-${firstItem.id}-${Math.random().toString(36).substr(2, 9)}`;
+            const groupId = `group-${firstItem.id_equipamento || firstItem.id}`; // Cria uma chave única para o grupo
 
-        if ((statusClass === 'concluido' || statusClass === 'validacao') && item.reparo_finalizado) {
-            reparoFinalizadoHTML = `<div class="detail-item reparo-info"><strong>Solução</strong> <span>${item.reparo_finalizado}</span></div>`;
-        }
+            // Armazena os dados detalhados na variável global
+            groupedDataForEditing[groupId] = item.ocorrencias_detalhadas;
 
-        const detailsHTML = `
-            <div class="detail-item"><strong>Problema</strong> <span class="searchable">${item.ocorrencia_reparo || 'N/A'}</span></div>
-            ${reparoFinalizadoHTML}
-            <div class="detail-item"><strong>Início Ocorrência</strong> <span>${inicioReparoFormatted}</span></div>
-            ${statusClass === 'concluido' ? `<div class="detail-item"><strong>Fim Ocorrência</strong> <span>${fimReparoFormatted}</span></div>` : ''}
-            ${atribuidoPorHTML}
-            <div class="detail-item"><strong>Status</strong> <span class="status-tag ${statusClass}">${item.status}</span></div>
-            <div class="detail-item"><strong>Local</strong> <span class="searchable">${item.local_completo || 'N/A'}</span></div>
+            let ocorrenciasListHTML = item.ocorrencias_detalhadas.map((ocor, index) => {
+                const dataOcorrencia = ocor.inicio_reparo ? new Date(ocor.inicio_reparo).toLocaleDateString('pt-BR') : 'N/A';
+                const dataConclusao = ocor.fim_reparo ? new Date(ocor.fim_reparo).toLocaleDateString('pt-BR') : 'N/A';
+
+                return `
+                <li style="padding-bottom: 15px; margin-bottom: 15px; border-bottom: 1px solid #f0f0f0; list-style: none;">
+                    <div class="detail-item"><strong>${index + 1}. Ocorrência:</strong> <span class="status-tag concluido">${ocor.ocorrencia_reparo}</span></div>
+                    <div style="margin-left: 25px;">
+                        <div class="detail-item"><small><strong>Data Ocorrência:</strong> ${dataOcorrencia}</small></div>
+                        <div class="detail-item"><small><strong>Solicitado por:</strong> ${ocor.atribuido_por || 'N/A'}</small></div>
+                    </div>
+                    <div class="detail-item reparo-info"><strong>Reparo Realizado:</strong> <span class="status-tag concluido">${ocor.reparo_finalizado || 'N/A'}</span></div>
+                    <div style="margin-left: 25px;">
+                        <div class="detail-item"><small><strong>Data Conclusão:</strong> ${dataConclusao}</small></div>
+                        <div class="detail-item"><small><strong>Concluído por:</strong> ${ocor.concluido_por || 'N/A'}</small></div>
+                    </div>
+                </li>
+            `;
+            }).join('');
+
+            let toggleButtonHTML = '';
+            if (item.ocorrencias_detalhadas.length > 2) {
+                toggleButtonHTML = `<button class="toggle-ocorrencias-btn" onclick="toggleOcorrencias('${uniqueId}', this)">Todas ocorrências</button>`;
+            }
+
+            detailsHTML = `
+            <div id="${uniqueId}" class="ocorrencia-list-container collapsed">
+                <ol style="color: black; padding-left: 0;">${ocorrenciasListHTML}</ol>
+            </div>
+            ${toggleButtonHTML}
+            <div class="detail-item" style="margin-top: 1rem;"><strong>Status</strong> <span class="status-tag ${statusClass}">${firstItem.status}</span></div>
+            <div class="detail-item"><strong>Local</strong> <span class="searchable">${firstItem.local_completo || 'N/A'}</span></div>
         `;
 
-        let actionsContent = '';
-        if (statusClass === 'validacao') {
-            actionsContent = `<button class="item-btn validar-btn" onclick="openValidarModal(${item.id})">Validar</button>`;
-        } else if (statusClass === 'pendente') {
-            actionsContent = `<button class="item-btn concluir-btn" onclick="openConcluirModal(${item.id}, '${item.origem}')">Concluir</button><button class="item-btn edit-btn" onclick="openEditModal(${item.id}, '${item.origem}')">Editar</button><button class="item-btn cancel-btn" onclick="openConfirmationModal('cancelar', ${item.id}, '${item.origem}')">Cancelar</button>`;
-        } else if (statusClass === 'concluido') {
-            actionsContent = `<button class="item-btn edit-btn" onclick="openEditModal(${item.id}, '${item.origem}')">Editar</button>`;
+            actionsContent = `<button class="item-btn edit-btn" onclick="openGroupedEditModal('${groupId}')">Editar</button>`;
+
+        } else {
+            // Lógica para cards individuais 
+            const inicioReparoFormatted = firstItem.inicio_reparo ? new Date(firstItem.inicio_reparo).toLocaleString('pt-BR') : 'N/A';
+            const fimReparoFormatted = firstItem.fim_reparo ? new Date(firstItem.fim_reparo).toLocaleString('pt-BR') : 'N/A';
+            let atribuidoPorHTML = firstItem.atribuido_por ? `<div class="detail-item"><strong>Reportado por</strong> <span>${firstItem.atribuido_por}</span></div>` : '';
+            let reparoFinalizadoHTML = (statusClass === 'concluido' || statusClass === 'validacao') && firstItem.reparo_finalizado ? `<div class="detail-item reparo-info "><strong>Reparo realizado</strong> <span class="status-tag concluido">${firstItem.reparo_finalizado}</span></div>` : '';
+
+            detailsHTML = `
+            <div class="detail-item"><strong>Ocorrência</strong> <span class="searchable  status-tag concluido">${firstItem.ocorrencia_reparo || 'N/A'}</span></div>
+            <div class="detail-item"><strong>Início Ocorrência</strong> <span>${inicioReparoFormatted}</span></div>
+            ${atribuidoPorHTML}
+            ${reparoFinalizadoHTML}
+            ${statusClass === 'concluido' ? `<div class="detail-item"><strong>Fim Ocorrência</strong> <span>${fimReparoFormatted}</span></div>` : ''}
+            ${statusClass === 'concluido' && firstItem.concluido_por ? `<div class="detail-item"><strong>Concluído por</strong> <span>${firstItem.concluido_por}</span></div>` : ''}
+            <div class="detail-item"><strong>Status</strong> <span class="status-tag ${statusClass}">${firstItem.status}</span></div>
+            <div class="detail-item"><strong>Local</strong> <span class="searchable">${firstItem.local_completo || 'N/A'}</span></div>
+        `;
+
+            if (statusClass === 'validacao') {
+                actionsContent = `<button class="item-btn validar-btn" onclick="openValidarModal(${firstItem.id})">Validar</button>`;
+            } else if (statusClass === 'pendente') {
+                actionsContent = `<button class="item-btn concluir-btn" onclick="openConcluirModal(${firstItem.id}, '${firstItem.origem}')">Concluir</button><button class="item-btn edit-btn" onclick="openEditModal(${firstItem.id}, '${firstItem.origem}')">Editar</button><button class="item-btn cancel-btn" onclick="openConfirmationModal('cancelar', ${firstItem.id}, '${firstItem.origem}')">Cancelar</button>`;
+            } else if (statusClass === 'concluido') {
+                actionsContent = `<button class="item-btn edit-btn" onclick="openEditModal(${firstItem.id}, '${firstItem.origem}')">Editar</button>`;
+            }
         }
+
         const actionsHTML = actionsContent ? `<div class="item-actions">${actionsContent}</div>` : `<div class="item-actions" style="min-height: 40px;"></div>`;
 
-        return `<div class="ocorrencia-item status-${statusClass}" data-id="${item.id}" data-origem="${item.origem}">
-                    <div class="ocorrencia-header"><h3><span class="searchable">${item.nome_equip}</span> - <span class="searchable">${item.referencia_equip}</span></h3></div>
-                    <div class="ocorrencia-details">${detailsHTML}</div>
-                    ${actionsHTML}
-                </div>`;
+        return `<div class="ocorrencia-item status-${statusClass}" data-id="${firstItem.id}" data-origem="${firstItem.origem}">
+                <div class="ocorrencia-header"><h3><span class="searchable">${firstItem.nome_equip}</span> - <span class="searchable">${firstItem.referencia_equip}</span></h3></div>
+                <div class="ocorrencia-details">${detailsHTML}</div>
+                ${actionsHTML}
+            </div>`;
     }
 
     function updateDisplay() {
         const searchTerm = searchInput.value.toLowerCase().trim();
         const currentCity = filters.city;
+
         document.querySelectorAll('.city-group').forEach(group => {
-            let hasVisibleItemsInGroup = false;
             const groupCity = group.dataset.city;
-            const isCityVisible = currentCity === 'todos' || groupCity === currentCity;
+            const isCityVisible = currentCity === 'todos' || currentCity === groupCity;
+            let hasVisibleItemsInGroup = false;
+
             if (isCityVisible) {
-                group.querySelectorAll('.ocorrencia-item-wrapper').forEach(wrapper => {
-                    const item = wrapper.querySelector('.ocorrencia-item');
+                group.querySelectorAll('.ocorrencia-item').forEach(item => {
                     const searchableSpans = item.querySelectorAll('.searchable');
                     let searchableText = '';
-                    searchableSpans.forEach(span => { searchableText += (span.textContent || span.innerText) + ' '; });
+                    searchableSpans.forEach(span => {
+                        searchableText += (span.textContent || span.innerText) + ' ';
+                    });
+                    const headerText = item.querySelector('.ocorrencia-header h3')?.textContent || '';
+                    searchableText += headerText;
+
+                    const internalItems = item.querySelectorAll('.ocorrencia-list-container li');
+                    internalItems.forEach(li => { searchableText += li.textContent + ' '; });
+
                     searchableText = searchableText.toLowerCase();
                     const isSearchMatch = searchTerm === '' || searchableText.includes(searchTerm);
+
                     if (isSearchMatch) {
-                        wrapper.style.display = 'block';
+                        item.style.display = '';
                         hasVisibleItemsInGroup = true;
+
+                        // --- LÓGICA DE EXPANDIR/RECOLHER ADICIONADA AQUI ---
+                        const listContainer = item.querySelector('.ocorrencia-list-container');
+                        const btn = item.querySelector('.toggle-ocorrencias-btn');
+
+                        // Se há um termo de busca e uma lista, expande para mostrar o resultado
+                        if (searchTerm !== '' && listContainer) {
+                            listContainer.classList.remove('collapsed');
+                            if (btn) btn.textContent = 'Ocultar ocorrências';
+                        }
+                        // Se a busca for limpa (termo vazio) e houver uma lista, garante que ela volte ao estado recolhido
+                        else if (listContainer) {
+                            listContainer.classList.add('collapsed');
+                            if (btn) btn.textContent = 'Todas ocorrências';
+                        }
+
                     } else {
-                        wrapper.style.display = 'none';
+                        item.style.display = 'none';
                     }
                 });
             }
+
             group.style.display = isCityVisible && hasVisibleItemsInGroup ? 'block' : 'none';
         });
     }
@@ -217,6 +314,49 @@ document.addEventListener('DOMContentLoaded', function () {
             searchSpacer.style.width = `${clearFiltersBtn.offsetWidth}px`;
         }
     }
+
+    window.toggleOcorrencias = function (listId, buttonEl) {
+        const listContainer = document.getElementById(listId);
+        if (listContainer) {
+            listContainer.classList.toggle('collapsed');
+            if (listContainer.classList.contains('collapsed')) {
+                buttonEl.textContent = 'Todas ocorrências';
+            } else {
+                buttonEl.textContent = 'Ocultar ocorrências';
+            }
+        }
+    }
+
+    // Função para abrir o novo modal de seleção de edição
+    window.openGroupedEditModal = function (groupId) {
+        // Busca os dados do grupo na variável global usando a chave
+        const ocorrencias = groupedDataForEditing[groupId];
+
+        if (!ocorrencias || !Array.isArray(ocorrencias) || ocorrencias.length === 0) {
+            console.error("Dados não encontrados para o grupo de edição:", groupId);
+            return;
+        }
+
+        const firstItem = ocorrencias[0];
+        const container = document.getElementById('editSelectionContainer');
+
+        document.getElementById('editSelectionEquipName').textContent = `${firstItem.nome_equip} - ${firstItem.referencia_equip}`;
+        container.innerHTML = ''; // Limpa o conteúdo anterior
+
+        ocorrencias.forEach(ocor => {
+            const btn = document.createElement('button');
+            btn.className = 'edit-selection-btn';
+            btn.innerHTML = `<strong>${ocor.ocorrencia_reparo}</strong><br><small>Data: ${new Date(ocor.inicio_reparo).toLocaleDateString('pt-BR')}</small>`;
+            btn.onclick = () => {
+                closeModal('editSelectionModal');
+                openEditModal(ocor.id, ocor.origem);
+            };
+            container.appendChild(btn);
+        });
+
+        openModal('editSelectionModal');
+    }
+
 
     function initializeFilters() {
         typeFilterContainer.addEventListener('click', (e) => { if (e.target.matches('.action-btn')) { document.querySelectorAll('#typeFilterContainer .action-btn').forEach(btn => btn.classList.remove('active')); e.target.classList.add('active'); filters.type = e.target.dataset.type; fetchData(); } });

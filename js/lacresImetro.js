@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let lacresParaConfirmar = {};
     let operacaoAtual = '';
     let filtroCidadeAtivo = 'Todas';
+    let lacresRompimentoParaConfirmar = {};
 
     const LacreMap = {
         'metrologico': { dbValue: 'metrologico', displayName: 'Metrológico' },
@@ -15,6 +16,182 @@ document.addEventListener('DOMContentLoaded', () => {
         'camera_pam_ab': { dbValue: 'camera pam (fx. A/B)', displayName: 'Câmera PAM (fx. A/B)' },
         'camera_pam_a': { dbValue: 'camera pam (fx. A)', displayName: 'Câmera PAM (fx. A)' },
         'camera_pam_b': { dbValue: 'camera pam (fx. B)', displayName: 'Câmera PAM (fx. B)' }
+    };
+
+    // Função chamada pelo novo botão "Lacre Rompido"
+    window.abrirModalLacreRompido = async (btn) => {
+        const idEquipamento = btn.dataset.equipId;
+        const nomeEquipamento = btn.dataset.equipName;
+
+        const modal = document.getElementById('modalLacreRompido');
+        const form = document.getElementById('formLacreRompido');
+        const containerLacres = document.getElementById('listaLacresAfixados');
+        const containerDetalhes = document.getElementById('detalhesLacresSelecionados');
+
+        // Resetar o estado do modal
+        form.reset();
+        containerDetalhes.innerHTML = '';
+        containerDetalhes.classList.add('hidden');
+        document.getElementById('mensagemErroRompimento').style.display = 'none';
+
+        document.getElementById('tituloModalLacreRompido').textContent = `Lacre Rompido no equipamento - ${nomeEquipamento}`;
+        form.querySelector('[name="id_equipamento"]').value = idEquipamento;
+        containerLacres.innerHTML = '<p>Carregando lacres afixados...</p>';
+        abrirModal('modalLacreRompido');
+
+        try {
+            // Nova API para buscar apenas os lacres afixados de um equipamento
+            const response = await fetch(`API/get_lacres_por_equipamento.php?id_equipamento=${idEquipamento}`);
+            const data = await response.json();
+
+            if (data.success && data.lacres.length > 0) {
+                containerLacres.innerHTML = '';
+                data.lacres.forEach(lacre => {
+                    const div = document.createElement('div');
+                    div.innerHTML = `
+                    <label>
+                        <input type="checkbox" name="lacres_rompidos" value="${lacre.local_lacre}|${lacre.num_lacre}">
+                        <strong>${lacre.local_lacre}:</strong> ${lacre.num_lacre}
+                    </label>
+                `;
+                    containerLacres.appendChild(div);
+                });
+
+                // Adiciona o evento para mostrar/esconder as caixas de observação
+                containerLacres.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.addEventListener('change', () => toggleDetalhesLacreRompido(checkbox));
+                });
+
+            } else {
+                containerLacres.innerHTML = '<p>Nenhum lacre afixado encontrado para este equipamento.</p>';
+            }
+        } catch (error) {
+            containerLacres.innerHTML = '<p class="mensagem erro">Erro ao buscar lacres do equipamento.</p>';
+        }
+    };
+
+    // Mostra a caixa de observação quando um lacre é selecionado
+    function toggleDetalhesLacreRompido(checkbox) {
+        const containerDetalhes = document.getElementById('detalhesLacresSelecionados');
+        const [local, numero] = checkbox.value.split('|');
+        const detalheId = `detalhe-${local.replace(/[^a-zA-Z0-9]/g, '')}`; // Cria um ID seguro
+
+        if (checkbox.checked) {
+            containerDetalhes.classList.remove('hidden');
+            const div = document.createElement('div');
+            div.id = detalheId;
+            div.className = 'form-lacre-group';
+            div.innerHTML = `
+            <label for="obs-${detalheId}">${local}</label>
+            <p><strong>Número:</strong> ${numero}</p>
+            <textarea name="obs_${local}" class="obs-lacre" placeholder="Observações (opcional)..."></textarea>
+        `;
+            containerDetalhes.appendChild(div);
+        } else {
+            const detalheExistente = document.getElementById(detalheId);
+            if (detalheExistente) {
+                detalheExistente.remove();
+            }
+            // Se não houver mais checkboxes marcados, esconde o container
+            if (containerDetalhes.children.length === 0) {
+                containerDetalhes.classList.add('hidden');
+            }
+        }
+    }
+
+    // Prepara os dados e abre o modal de confirmação
+    window.prepararConfirmacaoRompimento = (event) => {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+        const lacresSelecionados = formData.getAll('lacres_rompidos');
+        const dataRompimento = formData.get('data_rompimento');
+        const msgErro = document.getElementById('mensagemErroRompimento');
+
+        if (lacresSelecionados.length === 0) {
+            msgErro.textContent = 'Você precisa selecionar pelo menos um lacre rompido.';
+            msgErro.style.display = 'block';
+            return;
+        }
+        msgErro.style.display = 'none';
+
+        lacresRompimentoParaConfirmar = {
+            id_equipamento: formData.get('id_equipamento'),
+            data_rompimento: dataRompimento,
+            lacres: []
+        };
+
+        const resumoContainer = document.getElementById('resumoLacresRompimento');
+        resumoContainer.innerHTML = '';
+        let resumoHTML = '<ul>';
+
+        lacresSelecionados.forEach(valor => {
+            const [local, numero] = valor.split('|');
+            const obs = formData.get(`obs_${local}`) || '';
+            lacresRompimentoParaConfirmar.lacres.push({ local, numero, obs });
+
+            resumoHTML += `<li><strong>${local}:</strong> ${numero}`;
+            if (obs) {
+                resumoHTML += `<br><small><em>Obs: ${obs}</em></small>`;
+            }
+            resumoHTML += `</li>`;
+        });
+
+        resumoHTML += `</ul><p><strong>Data do Rompimento:</strong> ${new Date(dataRompimento + 'T00:00:00').toLocaleDateString('pt-BR')}</p>`;
+        resumoContainer.innerHTML = resumoHTML;
+
+        // Resetar o estado do modal de confirmação
+        document.getElementById('mensagemSalvarRompimento').style.display = 'none';
+        document.getElementById('botoesConfirmarRompimento').style.display = 'flex';
+        document.getElementById('btnSalvarRompimento').disabled = false;
+        document.getElementById('btnSalvarRompimento').querySelector('span').style.display = 'inline';
+        document.getElementById('btnSalvarRompimento').querySelector('.spinner').classList.add('hidden');
+
+        fecharModal('modalLacreRompido');
+        abrirModal('modalConfirmarRompimento');
+    };
+
+    // Envia os dados para a API
+    window.executarRompimento = async () => {
+        const btnConfirmar = document.getElementById('btnSalvarRompimento');
+        const spinner = btnConfirmar.querySelector('.spinner');
+        const span = btnConfirmar.querySelector('span');
+        const msgDiv = document.getElementById('mensagemSalvarRompimento');
+        const btnContainer = document.getElementById('botoesConfirmarRompimento');
+
+        btnConfirmar.disabled = true;
+        span.style.display = 'none';
+        spinner.classList.remove('hidden');
+        msgDiv.style.display = 'none';
+
+        try {
+            const response = await fetch('API/registrar_lacre_rompido.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(lacresRompimentoParaConfirmar)
+            });
+            const result = await response.json();
+
+            if (!result.success) { throw new Error(result.message); }
+
+            btnContainer.style.display = 'none';
+            msgDiv.className = 'mensagem sucesso';
+            msgDiv.textContent = result.message;
+            msgDiv.style.display = 'block';
+
+            setTimeout(() => {
+                fecharModal('modalConfirmarRompimento');
+                buscarEquipamentosELacres(); // Atualiza a lista principal
+            }, 2000);
+
+        } catch (error) {
+            msgDiv.className = 'mensagem erro';
+            msgDiv.textContent = `Erro: ${error.message}`;
+            msgDiv.style.display = 'block';
+            btnConfirmar.disabled = false;
+            span.style.display = 'inline';
+            spinner.classList.add('hidden');
+        }
     };
 
     const dbValueToFormName = {};
@@ -39,8 +216,8 @@ document.addEventListener('DOMContentLoaded', () => {
     window.abrirModal = (id) => document.getElementById(id).classList.add('esta-ativo');
     window.fecharModal = (id) => {
         const modal = document.getElementById(id);
-        if(modal) modal.classList.remove('esta-ativo');
-        
+        if (modal) modal.classList.remove('esta-ativo');
+
         // Lógica específica para resetar o modal de confirmação ao fechar
         if (id === 'modalConfirmacao') {
             const msgDiv = document.getElementById('mensagemSalvar');
@@ -266,7 +443,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const vencimentoTexto = equip.dt_vencimento ? new Date(equip.dt_vencimento + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A';
 
-                const itemHTML = `<div class="${itemClass}"><div class="equipamento-info"><div class="info-bloco"><h4>Equipamento</h4><p class="equipamento-identificacao">${equip.nome_equip} - ${equip.referencia_equip}</p></div><div class="info-bloco"><h4>Detalhes</h4><p><strong>Qtd. Faixas:</strong> ${equip.qtd_faixa || 'N/A'}</p><p><strong>KM via:</strong> ${equip.km || 'N/A'}</p></div><div class="info-bloco"><h4>Aferição</h4><p><strong>N° Instrumento:</strong> ${equip.num_instrumento || 'N/A'}</p><p><strong>Data:</strong> ${equip.dt_afericao ? new Date(equip.dt_afericao + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}</p><p class="${vencimentoClass}"><strong>Vencimento:</strong> ${vencimentoTexto}</p></div></div><h4>Lacres</h4><div class="lacres-grid">${lacresHTML}</div><div class="equipamento-actions"><button class="botao-adicionar-lacres" data-equip-id="${equip.id_equipamento}" data-equip-name="${equip.nome_equip}" data-lacres="${lacresData}" onclick="abrirModalLacres(this)">${temLacres ? 'Substituir Lacres' : 'Adicionar Lacres'}</button></div></div>`;
+                const itemHTML = `<div class="${itemClass}"><div class="equipamento-info"><div class="info-bloco"><h4>Equipamento</h4><p class="equipamento-identificacao">${equip.nome_equip} - ${equip.referencia_equip}</p></div><div class="info-bloco"><h4>Detalhes</h4><p><strong>Qtd. Faixas:</strong> ${equip.qtd_faixa || 'N/A'}</p><p><strong>KM via:</strong> ${equip.km || 'N/A'}</p></div><div class="info-bloco"><h4>Aferição</h4><p><strong>N° Instrumento:</strong> ${equip.num_instrumento || 'N/A'}</p><p><strong>Data:</strong> ${equip.dt_afericao ? new Date(equip.dt_afericao + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}</p><p class="${vencimentoClass}"><strong>Vencimento:</strong> ${vencimentoTexto}</p></div></div><h4>Lacres</h4><div class="lacres-grid">${lacresHTML}</div><div class="equipamento-actions"><button class="botao-lacre-rompido" style="background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;" data-equip-id="${equip.id_equipamento}" data-equip-name="${equip.nome_equip}" onclick="abrirModalLacreRompido(this)">Lacre Rompido</button><button class="botao-adicionar-lacres" data-equip-id="${equip.id_equipamento}" data-equip-name="${equip.nome_equip}" data-lacres="${lacresData}" onclick="abrirModalLacres(this)">${temLacres ? 'Substituir Lacres' : 'Adicionar Lacres'}</button></div></div>`;
                 grupoDiv.innerHTML += itemHTML;
             });
             containerListaLacres.appendChild(grupoDiv);
@@ -463,7 +640,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('btnConfirmarSalvar').addEventListener('click', async () => {
         const endpoint = operacaoAtual === 'substitute' ? 'API/update_lacres.php' : 'API/add_lacres.php';
-        
+
         // Referências aos elementos do modal
         const msgDiv = document.getElementById('mensagemSalvar');
         const btnContainer = document.getElementById('confirmacaoBotoesContainer');

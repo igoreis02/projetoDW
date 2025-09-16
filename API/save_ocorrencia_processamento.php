@@ -30,28 +30,27 @@ if (empty($city_id) || empty($equipment_id) || empty($problem_description)) {
 // Determina o status e a data de resolução com base na resposta do usuário
 $status = $reparo_concluido ? 'concluido' : 'pendente';
 $dt_resolucao = $reparo_concluido ? date('Y-m-d H:i:s') : null;
+$id_usuario_concluiu = $reparo_concluido ? $id_usuario_logado : null; // Define o ID de quem concluiu
 $tipo_ocorrencia = 'preditiva';
-
-
-$tempo_reparo = $reparo_concluido ? '00:00:00' : null;
+$tempo_reparo = $reparo_concluido ? '00:00:00' : null; // Inicializa como zero se concluído, null se pendente
 
 try {
-    // A inserção agora inclui o tempo_reparo
-    $sql = "INSERT INTO ocorrencia_processamento 
-                (id_equipamento, id_usuario_registro, tipo_ocorrencia, descricao, status, dt_resolucao, reparo, tempo_reparo, id_cidade) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+   $sql = "INSERT INTO ocorrencia_processamento 
+                (id_equipamento, id_usuario_registro, id_usuario_concluiu, tipo_ocorrencia, descricao, status, dt_resolucao, reparo, tempo_reparo, id_cidade) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     
     $stmt = $conn->prepare($sql);
-    // Adicionado 's' para tempo_reparo e a variável na lista de bind
-    $stmt->bind_param("iissssssi", 
+    
+    $stmt->bind_param("iiissssssi", 
         $equipment_id, 
         $id_usuario_logado, 
+        $id_usuario_concluiu,
         $tipo_ocorrencia, 
         $problem_description, 
         $status, 
         $dt_resolucao, 
         $reparo_finalizado_desc, 
-        $tempo_reparo, // <-- Variável adicionada
+        $tempo_reparo, 
         $city_id
     );
     

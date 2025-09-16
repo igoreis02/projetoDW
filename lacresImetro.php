@@ -66,14 +66,16 @@ require_once 'API/conexao_bd.php';
         }
 
         .botao-cancelar {
-            background-color: #6c757d; /* Cinza escuro */
+            background-color: #6c757d;
+            /* Cinza escuro */
             color: white;
             padding: 1rem;
             border-radius: 0.5rem;
             border: none;
             font-size: 1.1rem;
             cursor: pointer;
-            flex-grow: 1; /* Para ocupar espaço igual ao outro botão */
+            flex-grow: 1;
+            /* Para ocupar espaço igual ao outro botão */
         }
 
         .botao-salvar .spinner {
@@ -83,7 +85,8 @@ require_once 'API/conexao_bd.php';
             border-radius: 50%;
             border-left-color: #fff;
             animation: spin 1s ease infinite;
-            display: inline-block; /* Para ficar ao lado do texto se necessário */
+            display: inline-block;
+            /* Para ficar ao lado do texto se necessário */
         }
 
         .filtros-container {
@@ -352,23 +355,26 @@ require_once 'API/conexao_bd.php';
             transition: background-color 0.3s ease;
         }
 
-         .form-lacre-group {
+        .form-lacre-group {
             padding: 1rem;
             margin-bottom: 1rem;
             border: 1px solid #e2e8f0;
             border-radius: 8px;
         }
+
         .rompido-toggle-container {
             display: flex;
             align-items: center;
             gap: 15px;
             margin-top: 8px;
         }
+
         .rompido-label {
             font-weight: normal !important;
             color: #555 !important;
             margin-top: 0 !important;
         }
+
         .obs-lacre {
             width: 100%;
             padding: 0.5rem;
@@ -391,8 +397,10 @@ require_once 'API/conexao_bd.php';
             background-color: rgba(0, 0, 0, 0.4);
             justify-content: center;
             align-items: center;
-            align-items: flex-start; /* Alinha o card no topo */
-            padding: 5vh 2rem; /* Espaçamento do topo */
+            align-items: flex-start;
+            /* Alinha o card no topo */
+            padding: 5vh 2rem;
+            /* Espaçamento do topo */
             box-sizing: border-box;
         }
 
@@ -457,14 +465,16 @@ require_once 'API/conexao_bd.php';
         }
 
         .botao-salvar {
-            background-color: #4CAF50; /* Verde */
+            background-color: #4CAF50;
+            /* Verde */
             color: white;
             padding: 1rem;
             border-radius: 0.5rem;
             border: none;
             font-size: 1.1rem;
             cursor: pointer;
-            flex-grow: 1; /* Para ocupar espaço igual ao outro botão */
+            flex-grow: 1;
+            /* Para ocupar espaço igual ao outro botão */
             display: flex;
             align-items: center;
             justify-content: center;
@@ -560,6 +570,15 @@ require_once 'API/conexao_bd.php';
         .voltar-btn:hover {
             background-color: #192e73ff;
         }
+
+        .botao-lacre-rompido {
+            padding: 10px 20px;
+            font-size: 1em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
     </style>
 </head>
 
@@ -611,7 +630,7 @@ require_once 'API/conexao_bd.php';
                 <button class="fechar-modal" onclick="fecharModal('modalAdicionarLacres')">&times;</button>
             </div>
 
-            
+
             <form id="formularioAdicionarLacres" class="formulario-modal" onsubmit="prepararEnvio(event)">
                 <input type="hidden" name="id_equipamento">
 
@@ -745,7 +764,7 @@ require_once 'API/conexao_bd.php';
                     onclick="fecharModal('modalConfirmacao')">&times;</button>
             </div>
             <div id="resumoLacres"></div>
-           <div id="confirmacaoBotoesContainer" style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+            <div id="confirmacaoBotoesContainer" style="display: flex; gap: 1rem; margin-top: 1.5rem;">
                 <button class="botao-cancelar" onclick="fecharModal('modalConfirmacao')">Cancelar</button>
                 <button id="btnConfirmarSalvar" class="botao-salvar">
                     <span>Confirmar e Salvar</span>
@@ -753,6 +772,56 @@ require_once 'API/conexao_bd.php';
                 </button>
             </div>
             <div id="mensagemSalvar" class="mensagem" style="display: none;"></div>
+        </div>
+    </div>
+    <div id="modalLacreRompido" class="modal">
+        <div class="conteudo-modal" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 id="tituloModalLacreRompido">Lacre Rompido</h2>
+                <button class="fechar-modal" onclick="fecharModal('modalLacreRompido')">&times;</button>
+            </div>
+            <form id="formLacreRompido" onsubmit="prepararConfirmacaoRompimento(event)">
+                <input type="hidden" name="id_equipamento">
+                <p><strong>Qual lacre foi rompido?</strong> (Selecione um ou mais)</p>
+
+                <div id="listaLacresAfixados" style="max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 5px;">
+                </div>
+
+                <div id="detalhesLacresSelecionados" class="hidden" style="margin-top: 1.5rem;">
+                </div>
+
+                <div class="form-lacre-group" style="margin-top: 1.5rem;">
+                    <label for="dataRompimento">Data do Rompimento:</label>
+                    <input type="date" id="dataRompimento" name="data_rompimento" required>
+                </div>
+
+                <div id="mensagemErroRompimento" class="mensagem erro" style="display: none;"></div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                    <button type="button" class="botao-cancelar" onclick="fecharModal('modalLacreRompido')">Cancelar</button>
+                    <button type="submit" class="botao-salvar">Avançar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modalConfirmarRompimento" class="modal">
+        <div class="conteudo-modal" style="max-width: 450px;">
+            <div class="modal-header">
+                <h2>Confirmar Rompimento</h2>
+                <button class="fechar-modal" onclick="fecharModal('modalConfirmarRompimento')">&times;</button>
+            </div>
+            <p>Por favor, confirme os detalhes do rompimento:</p>
+            <div id="resumoLacresRompimento">
+            </div>
+            <div id="botoesConfirmarRompimento" style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                <button type="button" class="botao-cancelar" onclick="fecharModal('modalConfirmarRompimento')">Cancelar</button>
+                <button id="btnSalvarRompimento" type="button" class="botao-salvar" onclick="executarRompimento()">
+                    <span>Confirmar</span>
+                    <div class="spinner hidden"></div>
+                </button>
+            </div>
+            <div id="mensagemSalvarRompimento" class="mensagem" style="display: none;"></div>
         </div>
     </div>
 

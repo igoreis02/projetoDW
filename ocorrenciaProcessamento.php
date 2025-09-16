@@ -625,6 +625,64 @@ if (!isset($_SESSION['user_id'])) {
             height: 50px;
             animation: spin 1s linear infinite;
         }
+
+        .ocorrencia-list-container ol {
+            color: black;
+            /* Garante que os índices da lista sejam pretos */
+            padding-left: 20px;
+            /* Alinha a lista corretamente */
+        }
+
+        .ocorrencia-list-container.collapsed ol li:nth-child(n+3) {
+            display: none;
+            /* Esconde os itens da lista a partir do terceiro */
+        }
+
+        .toggle-ocorrencias-btn {
+            display: block;
+            margin: 1rem auto 0;
+            /* Centraliza o botão */
+            padding: 8px 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background-color: #dcfce7;
+            /* Tom de verde claro */
+            color: #166534;
+            /* Tom de verde escuro */
+            transition: background-color 0.2s;
+        }
+
+        .toggle-ocorrencias-btn:hover {
+            background-color: #bbf7d0;
+        }
+
+        /* Estilo para os botões de seleção no novo modal de edição */
+        .edit-selection-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            max-height: 40vh;
+            overflow-y: auto;
+        }
+
+        .edit-selection-btn {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1em;
+            text-align: left;
+            background-color: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+
+        .edit-selection-btn:hover {
+            background-color: #e5e7eb;
+            border-color: #9ca3af;
+        }
     </style>
 </head>
 
@@ -811,6 +869,19 @@ if (!isset($_SESSION['user_id'])) {
             </div>
         </div>
     </div>
+    <div id="editSelectionModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Qual ocorrência você deseja editar?</h3>
+            <button class="modal-close" onclick="closeModal('editSelectionModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <h4 id="editSelectionEquipName" style="font-size: 1.2em; text-align: center; margin-top: 0;"></h4>
+            <div id="editSelectionContainer">
+                </div>
+        </div>
+    </div>
+</div>
 
     <script src="js/ocorrenciaProcessamento.js"></script>
 </body>
