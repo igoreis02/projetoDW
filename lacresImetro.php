@@ -579,6 +579,19 @@ require_once 'API/conexao_bd.php';
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
+
+        .form-lacre-group.is-locked {
+            background-color: #f1f1f1;
+            /* Um cinza bem claro de fundo */
+            opacity: 0.7;
+            pointer-events: none;
+            /* Impede cliques nos elementos filhos */
+        }
+
+        .form-lacre-group.is-locked label {
+            color: #6c757d;
+            /* Deixa o texto do label mais claro */
+        }
     </style>
 </head>
 

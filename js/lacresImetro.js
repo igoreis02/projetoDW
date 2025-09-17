@@ -443,30 +443,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const vencimentoTexto = equip.dt_vencimento ? new Date(equip.dt_vencimento + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A';
 
-                const itemHTML = `<div class="${itemClass}"><div class="equipamento-info"><div class="info-bloco"><h4>Equipamento</h4><p class="equipamento-identificacao">${equip.nome_equip} - ${equip.referencia_equip}</p></div><div class="info-bloco"><h4>Detalhes</h4><p><strong>Qtd. Faixas:</strong> ${equip.qtd_faixa || 'N/A'}</p><p><strong>KM via:</strong> ${equip.km || 'N/A'}</p></div><div class="info-bloco"><h4>Aferição</h4><p><strong>N° Instrumento:</strong> ${equip.num_instrumento || 'N/A'}</p><p><strong>Data:</strong> ${equip.dt_afericao ? new Date(equip.dt_afericao + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}</p><p class="${vencimentoClass}"><strong>Vencimento:</strong> ${vencimentoTexto}</p></div></div><h4>Lacres</h4><div class="lacres-grid">${lacresHTML}</div><div class="equipamento-actions"><button class="botao-lacre-rompido" style="background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;" data-equip-id="${equip.id_equipamento}" data-equip-name="${equip.nome_equip}" onclick="abrirModalLacreRompido(this)">Lacre Rompido</button><button class="botao-adicionar-lacres" data-equip-id="${equip.id_equipamento}" data-equip-name="${equip.nome_equip}" data-lacres="${lacresData}" onclick="abrirModalLacres(this)">${temLacres ? 'Substituir Lacres' : 'Adicionar Lacres'}</button></div></div>`;
+                const itemHTML = `<div class="${itemClass}"><div class="equipamento-info"><div class="info-bloco"><h4>Equipamento</h4><p class="equipamento-identificacao">${equip.nome_equip} - ${equip.referencia_equip}</p></div><div class="info-bloco"><h4>Detalhes</h4><p><strong>Qtd. Faixas:</strong> ${equip.qtd_faixa || 'N/A'}</p><p><strong>KM via:</strong> ${equip.km || 'N/A'}</p></div><div class="info-bloco"><h4>Aferição</h4><p><strong>N° Instrumento:</strong> ${equip.num_instrumento || 'N/A'}</p><p><strong>Data:</strong> ${equip.dt_afericao ? new Date(equip.dt_afericao + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}</p><p class="${vencimentoClass}"><strong>Vencimento:</strong> ${vencimentoTexto}</p></div></div><h4>Lacres</h4><div class="lacres-grid">${lacresHTML}</div><div class="equipamento-actions"><button class="botao-distribuir-lacres" style="background-color: #cff4fc; color: #055160; border: 1px solid #b6effb;" data-equip-id="${equip.id_equipamento}" data-equip-name="${equip.nome_equip}" data-lacres="${lacresData}" onclick="abrirModalDistribuir(this)">Distribuir Lacre</button><button class="botao-lacre-rompido" style="background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;" data-equip-id="${equip.id_equipamento}" data-equip-name="${equip.nome_equip}" onclick="abrirModalLacreRompido(this)">Lacre Rompido</button><button class="botao-adicionar-lacres" data-equip-id="${equip.id_equipamento}" data-equip-name="${equip.nome_equip}" data-lacres="${lacresData}" onclick="abrirModalLacres(this)">${temLacres ? 'Substituir Lacres' : 'Adicionar Lacres'}</button></div></div>`;
                 grupoDiv.innerHTML += itemHTML;
             });
             containerListaLacres.appendChild(grupoDiv);
         }
     }
 
-    // --- LÓGICA DE ABRIR MODAL COMPLETAMENTE REFEITA E CORRIGIDA ---
     window.abrirModalLacres = (btn) => {
         const form = document.getElementById('formularioAdicionarLacres');
         form.reset();
 
+        //  Garante que todos os campos fiquem visíveis por padrão ---
+        form.querySelectorAll('.form-lacre-group').forEach(group => group.style.display = 'block');
+
         form.querySelectorAll('.botoes-toggle').forEach(container => {
             container.dataset.rompido = 'false';
             const buttons = container.querySelectorAll('button');
-            if (buttons.length === 2) { // Garante que só afeta os botões Sim/Não
-                buttons[0].classList.add('ativo');  // Ativa o "Não"
-                buttons[1].classList.remove('ativo'); // Desativa o "Sim"
+            if (buttons.length === 2) {
+                buttons[0].classList.add('ativo');
+                buttons[1].classList.remove('ativo');
             }
         });
         form.querySelectorAll('.obs-lacre').forEach(textarea => textarea.classList.add('hidden'));
 
-
-        const lacresAtuais = btn.dataset.lacres ? JSON.parse(btn.dataset.lacres) : [];
+        const lacresAtuais = btn.dataset.lacres ? JSON.parse(btn.dataset.lacres.replace(/&quot;/g, '"')) : [];
         const temLacres = lacresAtuais.length > 0;
         operacaoAtual = temLacres ? 'substitute' : 'add';
 
@@ -474,18 +475,14 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('tituloModalAdicionarLacres').textContent = `${temLacres ? 'Substituir' : 'Adicionar'} Lacres para: ${btn.dataset.equipName}`;
 
         if (!temLacres) {
-            // Se for ADICIONAR, apenas reseta os toggles para o padrão e abre o modal
             toggleCameras(1, form.querySelector('.zoom-toggle button'), 'zoom');
             toggleCameras(1, form.querySelector('.pam-toggle button'), 'pam');
             abrirModal('modalAdicionarLacres');
             return;
         }
 
-        // Se for SUBSTITUIR, executa a lógica de preenchimento
-        // Cria um mapa simples com os lacres existentes para facilitar a busca
         const lacresMap = new Map(lacresAtuais.map(l => [l.local_lacre.toLowerCase(), l.num_lacre]));
 
-        // Lógica para Câmera ZOOM
         const zoomA = lacresMap.get('camera zoom (fx. a)');
         const zoomB = lacresMap.get('camera zoom (fx. b)');
         const zoomAB = lacresMap.get('camera zoom (fx. a/b)');
@@ -498,10 +495,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (zoomAB) form.querySelector('[name="camera_zoom_ab"]').value = zoomAB;
         }
 
-        // Lógica para Câmera PAM
         const pamA = lacresMap.get('camera pam (fx. a)');
         const pamB = lacresMap.get('camera pam (fx. b)');
-        const pamAB = lacresMap.get('camera pam (fx. a/b)') || lacresMap.get('camera pam'); // Compatibilidade com dado antigo
+        const pamAB = lacresMap.get('camera pam (fx. a/b)') || lacresMap.get('camera pam');
         if (pamA || pamB) {
             toggleCameras(2, form.querySelector('.pam-toggle button'), 'pam');
             if (pamA) form.querySelector('[name="camera_pam_a"]').value = pamA;
@@ -511,7 +507,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (pamAB) form.querySelector('[name="camera_pam_ab"]').value = pamAB;
         }
 
-        // Lógica para outros lacres
         const outrosLacres = {
             'metrologico': 'metrologico',
             'nao metrologico': 'nao_metrologico',
@@ -538,23 +533,21 @@ document.addEventListener('DOMContentLoaded', () => {
         let temLacre = false;
 
         formData.forEach((value, formName) => {
-            // Ignora os campos de observação e o id do equipamento na iteração principal
             if (formName.startsWith('obs_') || formName === 'id_equipamento') return;
 
             const lacreInfo = LacreMap[formName];
             if (lacreInfo && value.trim() !== '') {
                 temLacre = true;
-
                 const input = form.querySelector(`[name="${formName}"]`);
 
-                // --- INÍCIO DA CORREÇÃO SIMPLIFICADA ---
-                // A lógica agora é mais direta: o container com os botões é sempre o "irmão" seguinte do input.
-                // Isso funciona para todos os campos: simples, câmera única e câmeras duplas.
-                const rompidoContainer = input.nextElementSibling;
-                const toggleContainer = rompidoContainer ? rompidoContainer.querySelector('.botoes-toggle') : null;
-                // --- FIM DA CORREÇÃO ---
+                // Para distribuição, rompido é sempre false
+                let isRompido = false;
+                if (operacaoAtual !== 'distribute') {
+                    const rompidoContainer = input.nextElementSibling;
+                    const toggleContainer = rompidoContainer ? rompidoContainer.querySelector('.botoes-toggle') : null;
+                    isRompido = (toggleContainer && toggleContainer.dataset.rompido === 'true');
+                }
 
-                const isRompido = (toggleContainer && toggleContainer.dataset.rompido === 'true');
                 const observacao = formData.get(`obs_${formName}`) || '';
 
                 lacresParaConfirmar.lacres.push({
@@ -577,7 +570,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (temLacre) {
-            document.getElementById('tituloConfirmacao').textContent = (operacaoAtual === 'substitute' ? 'Confirmar Substituição' : 'Confirmar Novos Lacres');
+            let tituloConfirmacao = '';
+            if (operacaoAtual === 'substitute') {
+                tituloConfirmacao = 'Confirmar Substituição';
+            } else if (operacaoAtual === 'add') {
+                tituloConfirmacao = 'Confirmar Novos Lacres';
+            } else if (operacaoAtual === 'distribute') {
+                tituloConfirmacao = 'Confirmar Lacres a Distribuir';
+            }
+            document.getElementById('tituloConfirmacao').textContent = tituloConfirmacao;
             fecharModal('modalAdicionarLacres');
             abrirModal('modalConfirmacao');
         } else {
@@ -587,7 +588,6 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => { msgDiv.style.display = 'none'; }, 3000);
         }
     };
-
     function darFeedbackBotoes(botaoAtivo, botaoInativo) {
         botaoAtivo.classList.add('btn-active');
         botaoInativo.classList.add('btn-inactive');
@@ -639,16 +639,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('btnConfirmarSalvar').addEventListener('click', async () => {
-        const endpoint = operacaoAtual === 'substitute' ? 'API/update_lacres.php' : 'API/add_lacres.php';
+        let endpoint = '';
+        // Define qual script chamar com base na operação
+        if (operacaoAtual === 'add') {
+            endpoint = 'API/add_lacres.php';
+        } else if (operacaoAtual === 'substitute') {
+            endpoint = 'API/update_lacres.php';
+        } else if (operacaoAtual === 'distribute') {
+            endpoint = 'API/distribute_lacres.php'; // Nosso novo script
+        } else {
+            alert('Operação desconhecida!');
+            return;
+        }
 
-        // Referências aos elementos do modal
         const msgDiv = document.getElementById('mensagemSalvar');
         const btnContainer = document.getElementById('confirmacaoBotoesContainer');
         const btnConfirmar = document.getElementById('btnConfirmarSalvar');
         const btnSpan = btnConfirmar.querySelector('span');
         const btnSpinner = btnConfirmar.querySelector('.spinner');
 
-        // 1. Esconde mensagens antigas, desativa botões e mostra o spinner
         msgDiv.style.display = 'none';
         btnContainer.querySelectorAll('button').forEach(b => b.disabled = true);
         btnSpan.classList.add('hidden');
@@ -663,8 +672,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
             if (!result.success) { throw new Error(result.message); }
 
-            // 2. Lógica de SUCESSO
-            btnContainer.style.display = 'none'; // Esconde os botões
+            btnContainer.style.display = 'none';
             msgDiv.className = 'mensagem sucesso';
             msgDiv.textContent = result.message;
             msgDiv.style.display = 'block';
@@ -674,12 +682,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 2000);
 
         } catch (error) {
-            // 3. Lógica de ERRO
             msgDiv.className = 'mensagem erro';
             msgDiv.textContent = `Erro: ${error.message}`;
             msgDiv.style.display = 'block';
-
-            // Reativa os botões para nova tentativa
             btnContainer.querySelectorAll('button').forEach(b => b.disabled = false);
             btnSpan.classList.remove('hidden');
             btnSpinner.classList.add('hidden');
@@ -706,6 +711,74 @@ document.addEventListener('DOMContentLoaded', () => {
         // Manda a página de volta para o topo de forma suave
         window.scrollTo({ top: 0, behavior: 'smooth' });
     });
+
+    window.abrirModalDistribuir = (btn) => {
+        // 1. Chama a função base, que já faz o reset do formulário e PREENCHE os campos com os lacres atuais.
+        abrirModalLacres(btn);
+
+        // 2. Altera o título e o modo de operação para "Distribuir"
+        operacaoAtual = 'distribute';
+        const modal = document.getElementById('modalAdicionarLacres');
+        modal.querySelector('#tituloModalAdicionarLacres').textContent = `Distribuir Lacres para: ${btn.dataset.equipName}`;
+
+        // 3. Esconde os controles de "rompido"
+        modal.querySelectorAll('.rompido-toggle-container').forEach(el => el.style.display = 'none');
+        modal.querySelectorAll('.obs-lacre').forEach(el => el.classList.add('hidden'));
+
+        // 4. --- LÓGICA CORRIGIDA ---
+        const lacresAtuais = btn.dataset.lacres ? JSON.parse(btn.dataset.lacres.replace(/&quot;/g, '"')) : [];
+        const form = document.getElementById('formularioAdicionarLacres');
+
+        const lacresAfixadosMap = new Map(
+            lacresAtuais
+                .filter(lacre => lacre.lacre_afixado == 1 && lacre.num_lacre)
+                .map(lacre => [lacre.local_lacre, lacre.num_lacre])
+        );
+
+        // Itera sobre os campos para TRAVAR os que já estão preenchidos
+        for (const formName in LacreMap) {
+            const lacreInfo = LacreMap[formName];
+            const input = form.querySelector(`[name="${formName}"]`);
+
+            if (input) {
+                const groupContainer = input.closest('.form-lacre-group') || input.parentElement;
+
+                if (groupContainer) {
+                    // Se o local do lacre já está na lista de ocupados...
+                    if (lacresAfixadosMap.has(lacreInfo.dbValue)) {
+                        // A função abrirModalLacres JÁ PREENCHEU o valor.
+                        // Nós apenas travamos o campo.
+                        input.disabled = true;
+                        groupContainer.classList.add('is-locked');
+                    } else {
+                        // Garante que o campo esteja habilitado e sem o estilo de travado
+                        input.disabled = false;
+                        groupContainer.classList.remove('is-locked');
+                        // input.value = ''; // <-- LINHA REMOVIDA QUE CAUSAVA O ERRO
+                    }
+                }
+            }
+        }
+
+        // 5. Garante que os botões de toggle de câmera também sejam travados se necessário
+        ['zoom', 'pam'].forEach(groupPrefix => {
+            const duplaDiv = modal.querySelector(`#${groupPrefix}_camera_dupla`);
+            const unicaDiv = modal.querySelector(`#${groupPrefix}_camera_unica`);
+            const toggleButtonContainer = modal.querySelector(`.${groupPrefix}-toggle`);
+
+            if (duplaDiv && unicaDiv && toggleButtonContainer) {
+                const isLockedA = duplaDiv.querySelector('input[name*="_a"]').disabled;
+                const isLockedB = duplaDiv.querySelector('input[name*="_b"]').disabled;
+                const isLockedAB = unicaDiv.querySelector('input[name*="_ab"]').disabled;
+
+                if (isLockedA || isLockedB || isLockedAB) {
+                    toggleButtonContainer.querySelectorAll('button').forEach(button => button.disabled = true);
+                } else {
+                    toggleButtonContainer.querySelectorAll('button').forEach(button => button.disabled = false);
+                }
+            }
+        });
+    };
 
     carregarDadosIniciais();
 });

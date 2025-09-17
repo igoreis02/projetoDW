@@ -38,13 +38,6 @@ try {
     $id_retorno = null;
     $stmt = null;
 
-    if ($id_manutencao_existente && $tipo_manutencao === 'corretiva') {
-        // FLUXO DE ATUALIZAÇÃO PARA CONCATENAR PROBLEMAS (Matriz Técnica)
-        $sql = "UPDATE manutencoes SET ocorrencia_reparo = CONCAT(ocorrencia_reparo, '; ', ?) WHERE id_manutencao = ?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("si", $ocorrencia_reparo, $id_manutencao_existente);
-        $id_retorno = $id_manutencao_existente;
-    } else {
         // FLUXO DE INSERÇÃO PARA NOVAS OCORRÊNCIAS
         if ($tipo_manutencao === 'instalação') {
             $sql = "INSERT INTO manutencoes (id_usuario, id_equipamento, id_cidade, status_reparo, tipo_manutencao, ocorrencia_reparo, observacao_instalacao) VALUES (?, ?, ?, ?, ?, ?, ?)";
@@ -58,8 +51,7 @@ try {
             $nivel_ocorrencia = '2'; 
             $stmt->bind_param("iiisssi", $id_usuario_logado, $id_equipamento, $id_cidade, $status_reparo, $tipo_manutencao, $ocorrencia_reparo, $nivel_ocorrencia);
         }
-    }
-
+        
     if ($stmt && $stmt->execute()) {
         if (!$id_manutencao_existente) {
             $id_retorno = $conn->insert_id;
