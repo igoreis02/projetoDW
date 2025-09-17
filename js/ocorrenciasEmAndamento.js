@@ -172,7 +172,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             let typeMatch = false;
             if (activeType === 'manutencao') {
-                typeMatch = ['corretiva', 'preventiva', 'preditiva'].includes(item.tipo_manutencao);
+                typeMatch = ['corretiva', 'preventiva', 'preditiva', 'afixar'].includes(item.tipo_manutencao);
             } else {
                 typeMatch = item.tipo_manutencao === activeType;
             }
@@ -397,7 +397,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         allCorretivas.forEach(item => {
             if (cityFilter !== 'todos' && item.cidade !== cityFilter) return;
-            // CORREÇÃO: Compara o nível de prioridade como string, que é como ele vem da API.
             switch (String(item.nivel_ocorrencia)) {
                 case '1': urgentes.push(item); break;
                 case '3': semUrgencia.push(item); break;

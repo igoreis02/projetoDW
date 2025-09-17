@@ -94,7 +94,6 @@ try {
         os.endereco COLLATE utf8mb4_general_ci AS local_completo,
         GROUP_CONCAT(DISTINCT u.nome SEPARATOR ', ') COLLATE utf8mb4_general_ci AS tecnicos_nomes,
         GROUP_CONCAT(DISTINCT CONCAT(v.nome, ' (', v.placa, ')') SEPARATOR ', ') COLLATE utf8mb4_general_ci AS veiculos_nomes,
-        -- CORREÇÃO APLICADA AQUI TAMBÉM
         mt_dates.inicio_reparoTec AS inicio_periodo_reparo,
         mt_dates.fim_reparoT AS fim_periodo_reparo,
         NULL as inst_laco, NULL as dt_laco,

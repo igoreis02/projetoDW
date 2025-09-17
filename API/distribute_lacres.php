@@ -1,5 +1,5 @@
 <?php
-// API/distribute_lacres.php - VERSÃO CORRIGIDA
+// API/distribute_lacres.php - VERSÃO CORRIGIDA FINAL
 
 header('Content-Type: application/json');
 session_start();
@@ -38,24 +38,39 @@ try {
     $equip_data = $result_equip->fetch_assoc();
     $id_cidade = $equip_data['id_cidade'];
     $stmt_equip->close();
+    
+    // 1. Prepara a query para ATUALIZAR os registros de lacres
+    $sql_lacre_update = "UPDATE controle_lacres SET
+                            num_lacre_distribuido = ?,
+                            lacre_distribuido = 1,
+                            dt_fixacao = NULL,
+                            acao = 'Distribuído',
+                            id_usuario_distribuiu = ?
+                        WHERE id_equipamento = ? AND local_lacre = ? AND (lacre_rompido = 1 OR lacre_distribuido = 1)";
+    $stmt_update = $conn->prepare($sql_lacre_update);
 
-    // 1. Prepara a query para inserir os registros de lacres distribuídos
-    $sql_lacre = "INSERT INTO controle_lacres 
-                    (id_equipamento, local_lacre, num_lacre_distribuido, lacre_distribuido, dt_fixacao, acao, id_usuario_distribuiu) 
-                  VALUES (?, ?, ?, 1, CURDATE(), 'Distribuído', ?)";
-    $stmt_lacre = $conn->prepare($sql_lacre);
-
+    // Prepara uma segunda query para buscar o ID do registro que acabamos de atualizar
+    $sql_get_id = "SELECT id_controle_lacres FROM controle_lacres WHERE id_equipamento = ? AND local_lacre = ? ORDER BY id_controle_lacres DESC LIMIT 1";
+    $stmt_get_id = $conn->prepare($sql_get_id);
+    
     $lacres_para_ocorrencia = [];
-    $ids_lacres_distribuidos = []; // --- NOVO: Array para guardar os IDs
+    $ids_lacres_distribuidos = []; // Array para guardar os IDs
 
     foreach ($lacres as $lacre) {
         $b_local_lacre = $lacre['local'];
-        $b_num_lacre = $lacre['numero'];
+        $b_num_lacre_novo = $lacre['numero'];
 
-        $stmt_lacre->bind_param("issi", $id_equipamento, $b_local_lacre, $b_num_lacre, $id_usuario_distribuiu);
-        $stmt_lacre->execute();
+        // Executa o UPDATE
+        $stmt_update->bind_param("siis", $b_num_lacre_novo, $id_usuario_distribuiu, $id_equipamento, $b_local_lacre);
+        $stmt_update->execute();
 
-        $ids_lacres_distribuidos[] = $conn->insert_id;
+        // Busca o ID do registro que foi atualizado
+        $stmt_get_id->bind_param("is", $id_equipamento, $b_local_lacre);
+        $stmt_get_id->execute();
+        $result_id = $stmt_get_id->get_result();
+        if($row_id = $result_id->fetch_assoc()) {
+            $ids_lacres_distribuidos[] = $row_id['id_controle_lacres'];
+        }
 
         // Monta o texto para a ocorrência
         $texto_item = $b_local_lacre;
@@ -65,11 +80,13 @@ try {
         $lacres_para_ocorrencia[] = $texto_item;
     }
     $ocorrencia_reparo_texto = "Afixar lacre: " . implode('; ', $lacres_para_ocorrencia);
-    $stmt_lacre->close();
+    $stmt_update->close();
+    $stmt_get_id->close();
 
+    // Converte o array de IDs em uma string separada por vírgula
     $ids_lacres_string = implode(',', $ids_lacres_distribuidos);
 
-    // 2. Prepara e insere a nova ocorrência de manutenção, agora com os IDs dos lacres
+    // 2. Prepara e insere a nova ocorrência de manutenção, incluindo os IDs dos lacres
     $sql_manutencao = "INSERT INTO manutencoes 
                         (id_equipamento, id_usuario, id_cidade, status_reparo, tipo_manutencao, nivel_ocorrencia, ocorrencia_reparo, inicio_reparo, id_controle_lacres_dist) 
                        VALUES (?, ?, ?, 'pendente', 'afixar', 2, ?, NOW(), ?)";
