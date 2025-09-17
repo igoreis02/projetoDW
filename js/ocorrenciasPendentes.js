@@ -599,10 +599,13 @@ document.addEventListener('DOMContentLoaded', function () {
             let ocorrenciasListHTML = item.ocorrencias_detalhadas.map((ocor, i) => {
                 const dataInicioFormatada = new Date(ocor.inicio_reparo).toLocaleDateString('pt-BR');
                 const diasEmAberto = calculateDaysOpen(ocor.inicio_reparo);
+                const solicitadoPorHTML = ocor.atribuido_por ? `<div><strong>Solicitado por:</strong> ${ocor.atribuido_por}</div>` : '';
+
                 return `<li>
                 <strong>${i + 1}.</strong> <span class="status-tag status-pendente">${ocor.ocorrencia_reparo.toUpperCase() || 'Não especificada'}</span>
                 <div style="font-size: 0.9em; color: #6b7280; padding-left: 20px;">
                     <strong>Data Ocorrência:</strong> ${dataInicioFormatada} ${diasEmAberto}
+                    ${solicitadoPorHTML} 
                 </div>
             </li>`;
             }).join('');
@@ -616,11 +619,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div style="font-size: 0.9em; color: #6b7280; padding-left: 0px; margin-top: 5px;">
                     <strong>Data Ocorrência:</strong> ${dataInicioFormatada} ${diasEmAberto}
                 </div>
-            </div>`;
+            </div> 
+            ${atribuidoPorHTML}`;
         }
 
         const commonDetails = `
-        ${atribuidoPorHTML}
+        
         <div class="detail-item"><strong>Status</strong> ${statusHTML}</div>
         <div class="detail-item"><strong>Local</strong> <span>${firstOcorrencia.local_completo || 'N/A'}</span></div>
         ${firstOcorrencia.motivo_devolucao ? `<div class="detail-item"><strong>Devolvida</strong> <span class="status-tag status-pendente">${firstOcorrencia.motivo_devolucao}</span></div>` : ''}
@@ -1238,7 +1242,7 @@ document.addEventListener('DOMContentLoaded', function () {
         console.log('Carga inicial de ocorrências pendentes completa. Iniciando ciclo de verificação.');
         scheduleNextCheck();
     });
-    
+
 
     // Primeiro, eu pego a referência do botão que criei no HTML.
     const btnVoltarAoTopo = document.getElementById("btnVoltarAoTopo");
