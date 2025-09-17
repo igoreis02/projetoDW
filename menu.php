@@ -73,7 +73,7 @@ if (isset($user_id)) {
                 <div class="menu-buttons-container">
                     <div class="menu-row">
                         <a href="manutencoes_instalacoes.php" class="menu-button" id="manutencao"><i
-                                class="fas fa-tools"></i><span>Ocorrências e Instalações</span></a>
+                                class="fas fa-tools"></i><span>Adiciona</span><span>Ocorrências e Instalações</span></a>
                         <a href="ocorrenciasPendentes.php" class="menu-button" id="manutencaoPendentes"><i
                                 class="fas fa-clock"></i><span>Atribuir Técnico </span><span>Ocorrências Pendentes</span></a>
                         <a href="ocorrenciaProvedores.php" class="menu-button" id="ocorrenciaProvedores"><i

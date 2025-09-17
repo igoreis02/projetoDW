@@ -1,16 +1,24 @@
 <?php
+
+
 header('Content-Type: application/json');
 session_start();
 require_once 'conexao_bd.php';
 
 $response = ['success' => false, 'message' => 'Ocorreu um erro.'];
-$data = json_decode(file_get_contents('php://input'), true);
 
+if (!isset($_SESSION['user_id'])) {
+    $response['message'] = 'Usuário não autenticado.';
+    echo json_encode($response);
+    exit;
+}
+$id_usuario_rompeu = $_SESSION['user_id'];
+
+$data = json_decode(file_get_contents('php://input'), true);
 $id_equipamento = $data['id_equipamento'] ?? null;
-$data_rompimento = $data['data_rompimento'] ?? null;
 $lacres = $data['lacres'] ?? [];
 
-if (!$id_equipamento || empty($lacres) || !$data_rompimento) {
+if (!$id_equipamento || empty($lacres)) {
     $response['message'] = 'Dados insuficientes para registrar o rompimento.';
     echo json_encode($response);
     exit;
@@ -27,7 +35,8 @@ try {
                 lacre_afixado = 0,
                 dt_rompimento = ?,
                 obs_lacre = ?,
-                acao = 'Rompido'
+                acao = 'Rompido',
+                id_usuario_rompeu = ?
             WHERE id_equipamento = ? AND local_lacre = ? AND num_lacre = ?";
 
     $stmt = $conn->prepare($sql);
@@ -36,12 +45,15 @@ try {
         $local = $lacre['local'];
         $numero = $lacre['numero'];
         $obs = !empty($lacre['obs']) ? $lacre['obs'] : null;
+        $data_rompimento = $lacre['data_rompimento'] ?? null; 
 
-        // Vincula os parâmetros para cada lacre e executa
-        $stmt->bind_param("ssiss", $data_rompimento, $obs, $id_equipamento, $local, $numero);
+        if (empty($data_rompimento)) {
+            throw new Exception("Data de rompimento não fornecida para o lacre '{$local}'.");
+        }
+
+        $stmt->bind_param("ssiiss", $data_rompimento, $obs, $id_usuario_rompeu, $id_equipamento, $local, $numero);
 
         if (!$stmt->execute()) {
-            // Se um falhar, joga uma exceção para cancelar tudo
             throw new Exception("Falha ao atualizar o lacre '{$local}' com número '{$numero}'. Erro: " . $stmt->error);
         }
     }
@@ -54,7 +66,7 @@ try {
 } catch (Exception $e) {
     $conn->rollback();
     $response['message'] = 'Erro no banco de dados: ' . $e->getMessage();
-    http_response_code(500); // Informa que foi um erro de servidor
+    http_response_code(500);
 }
 
 echo json_encode($response);

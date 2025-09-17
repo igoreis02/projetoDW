@@ -1,7 +1,7 @@
 <?php
 // Define o cabeçalho da resposta como JSON.
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *'); 
+header('Access-Control-Allow-Origin: *');
 
 // --- Configurações do Banco de Dados ---
 require_once 'conexao_bd.php';
@@ -54,7 +54,7 @@ try {
             JOIN cidades AS c ON m.id_cidade = c.id_cidade
             LEFT JOIN endereco AS en ON e.id_endereco = en.id_endereco
             LEFT JOIN usuario AS u ON m.id_usuario = u.id_usuario
-            WHERE m.status_reparo = 'pendente' and m.id_provedor IS NULL";
+            WHERE (m.status_reparo = 'pendente' OR m.tipo_manutencao = 'afixar') AND m.id_provedor IS NULL";
 
     $params = [];
     $types = "";
@@ -75,17 +75,17 @@ try {
 
     $sql .= " GROUP BY m.id_manutencao
               ORDER BY c.nome, m.inicio_reparo DESC";
-    
+
     $stmt = $conn->prepare($sql);
 
     if ($stmt === false) {
         throw new Exception("Erro na consulta SQL: " . $conn->error);
     }
-    
+
     if (!empty($params)) {
         $stmt->bind_param($types, ...$params);
     }
-    
+
     $stmt->execute();
     $result = $stmt->get_result();
 
@@ -99,31 +99,29 @@ try {
                 $ocorrencias_por_cidade[$cidade] = [];
             }
             $ocorrencias_por_cidade[$cidade][] = $row;
-            
+
             if (!in_array($cidade, $cidades_com_ocorrencias)) {
                 $cidades_com_ocorrencias[] = $cidade;
             }
         }
         sort($cidades_com_ocorrencias);
-        
+
         $response_data['ocorrencias'] = $ocorrencias_por_cidade;
         $response_data['cidades'] = $cidades_com_ocorrencias;
-        
+
         echo json_encode([
             'success' => true,
             'checksum' => $totalChecksum, // Adiciona o checksum
             'data' => $response_data
         ]);
-
     } else {
         echo json_encode([
-            'success' => true, 
+            'success' => true,
             'checksum' => $totalChecksum,
             'data' => ['ocorrencias' => [], 'cidades' => []],
             'message' => 'Nenhuma ocorrência pendente encontrada para os filtros selecionados.'
         ]);
     }
-
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'message' => 'Erro ao carregar dados: ' . $e->getMessage()]);
 } finally {
@@ -132,4 +130,3 @@ try {
     }
     $conn->close();
 }
-?>

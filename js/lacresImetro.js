@@ -82,9 +82,11 @@ document.addEventListener('DOMContentLoaded', () => {
             div.id = detalheId;
             div.className = 'form-lacre-group';
             div.innerHTML = `
-            <label for="obs-${detalheId}">${local}</label>
+            <label>${local}</label>
             <p><strong>Número:</strong> ${numero}</p>
             <textarea name="obs_${local}" class="obs-lacre" placeholder="Observações (opcional)..."></textarea>
+            <label for="data_${local}" style="margin-top: 8px;">Data do Rompimento:</label>
+            <input type="date" name="data_${local}" required style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
         `;
             containerDetalhes.appendChild(div);
         } else {
@@ -92,7 +94,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (detalheExistente) {
                 detalheExistente.remove();
             }
-            // Se não houver mais checkboxes marcados, esconde o container
             if (containerDetalhes.children.length === 0) {
                 containerDetalhes.classList.add('hidden');
             }
@@ -105,8 +106,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const form = event.target;
         const formData = new FormData(form);
         const lacresSelecionados = formData.getAll('lacres_rompidos');
-        const dataRompimento = formData.get('data_rompimento');
         const msgErro = document.getElementById('mensagemErroRompimento');
+        let isDataValid = true;
 
         if (lacresSelecionados.length === 0) {
             msgErro.textContent = 'Você precisa selecionar pelo menos um lacre rompido.';
@@ -117,7 +118,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         lacresRompimentoParaConfirmar = {
             id_equipamento: formData.get('id_equipamento'),
-            data_rompimento: dataRompimento,
             lacres: []
         };
 
@@ -128,19 +128,32 @@ document.addEventListener('DOMContentLoaded', () => {
         lacresSelecionados.forEach(valor => {
             const [local, numero] = valor.split('|');
             const obs = formData.get(`obs_${local}`) || '';
-            lacresRompimentoParaConfirmar.lacres.push({ local, numero, obs });
+            const dataRompimento = formData.get(`data_${local}`);
 
-            resumoHTML += `<li><strong>${local}:</strong> ${numero}`;
+            if (!dataRompimento) {
+                isDataValid = false;
+            }
+
+            lacresRompimentoParaConfirmar.lacres.push({ local, numero, obs, data_rompimento: dataRompimento });
+
+            const dataFormatada = dataRompimento ? new Date(dataRompimento + 'T00:00:00').toLocaleDateString('pt-BR') : '<span style="color: red;">Data não informada</span>';
+            resumoHTML += `<li><strong>${local} (${numero}):</strong> Rompido em ${dataFormatada}`;
             if (obs) {
                 resumoHTML += `<br><small><em>Obs: ${obs}</em></small>`;
             }
             resumoHTML += `</li>`;
         });
 
-        resumoHTML += `</ul><p><strong>Data do Rompimento:</strong> ${new Date(dataRompimento + 'T00:00:00').toLocaleDateString('pt-BR')}</p>`;
+        if (!isDataValid) {
+            msgErro.textContent = 'Por favor, preencha a data de rompimento para todos os lacres selecionados.';
+            msgErro.style.display = 'block';
+            return;
+        }
+
+        resumoHTML += `</ul>`;
         resumoContainer.innerHTML = resumoHTML;
 
-        // Resetar o estado do modal de confirmação
+        // Resetar o estado do modal de confirmação (lógica inalterada)
         document.getElementById('mensagemSalvarRompimento').style.display = 'none';
         document.getElementById('botoesConfirmarRompimento').style.display = 'flex';
         document.getElementById('btnSalvarRompimento').disabled = false;
@@ -412,38 +425,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 const isExpiring = expiringItems.some(item => item.id_equipamento === equip.id_equipamento);
                 const itemClass = isExpiring ? 'item-equipamento-lacre vencimento-proximo' : 'item-equipamento-lacre';
                 const vencimentoClass = isExpiring ? 'vencimento-proximo-texto' : '';
-                const temLacres = equip.lacres && equip.lacres.length > 0;
 
-                const lacresValidos = temLacres ? equip.lacres.filter(lacre => lacre.local_lacre && lacre.local_lacre.trim() !== '') : [];
+                // Lógica corrigida para o texto do botão
+                const temLacresAfixados = equip.lacres && equip.lacres.some(l => l.lacre_afixado == 1 && l.num_lacre);
+
+                const lacresValidos = equip.lacres ? equip.lacres.filter(lacre => lacre.local_lacre && lacre.local_lacre.trim() !== '') : [];
 
                 const lacresHTML = lacresValidos.length > 0 ? lacresValidos.map(lacre => {
-                    const localLacreLimpo = lacre.local_lacre.trim(); // Limpa espaços extras
+                    const localLacreLimpo = lacre.local_lacre.trim();
                     const formName = dbValueToFormName[localLacreLimpo];
                     const displayName = formName ? LacreMap[formName].displayName : localLacreLimpo;
 
-                    // Constrói o HTML para cada lacre
                     let itemLacreHTML = `<div class="lacre-item">`;
                     itemLacreHTML += `<strong>${displayName}:</strong> ${lacre.num_lacre || ''}`;
 
-                    // Adiciona informações de rompimento, se existirem
                     if (lacre.lacre_rompido == 1 && lacre.num_lacre_rompido) {
                         itemLacreHTML += `<span class="lacre-detalhe rompido">Rompido: ${lacre.num_lacre_rompido}</span>`;
                     }
-
-                    // Adiciona observações, se existirem
+                    if (lacre.lacre_distribuido == 1 && lacre.num_lacre_distribuido) {
+                        itemLacreHTML += `<span class="lacre-detalhe" style="color: #0d6efd;">Distribuído: ${lacre.num_lacre_distribuido}</span>`;
+                    }
                     if (lacre.obs_lacre) {
                         itemLacreHTML += `<span class="lacre-detalhe">Obs: ${lacre.obs_lacre}</span>`;
                     }
-
                     itemLacreHTML += `</div>`;
                     return itemLacreHTML;
                 }).join('') : '<p>Nenhum lacre cadastrado.</p>';
 
                 const lacresData = JSON.stringify(equip.lacres).replace(/"/g, '&quot;');
-
                 const vencimentoTexto = equip.dt_vencimento ? new Date(equip.dt_vencimento + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A';
 
-                const itemHTML = `<div class="${itemClass}"><div class="equipamento-info"><div class="info-bloco"><h4>Equipamento</h4><p class="equipamento-identificacao">${equip.nome_equip} - ${equip.referencia_equip}</p></div><div class="info-bloco"><h4>Detalhes</h4><p><strong>Qtd. Faixas:</strong> ${equip.qtd_faixa || 'N/A'}</p><p><strong>KM via:</strong> ${equip.km || 'N/A'}</p></div><div class="info-bloco"><h4>Aferição</h4><p><strong>N° Instrumento:</strong> ${equip.num_instrumento || 'N/A'}</p><p><strong>Data:</strong> ${equip.dt_afericao ? new Date(equip.dt_afericao + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}</p><p class="${vencimentoClass}"><strong>Vencimento:</strong> ${vencimentoTexto}</p></div></div><h4>Lacres</h4><div class="lacres-grid">${lacresHTML}</div><div class="equipamento-actions"><button class="botao-distribuir-lacres" style="background-color: #cff4fc; color: #055160; border: 1px solid #b6effb;" data-equip-id="${equip.id_equipamento}" data-equip-name="${equip.nome_equip}" data-lacres="${lacresData}" onclick="abrirModalDistribuir(this)">Distribuir Lacre</button><button class="botao-lacre-rompido" style="background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;" data-equip-id="${equip.id_equipamento}" data-equip-name="${equip.nome_equip}" onclick="abrirModalLacreRompido(this)">Lacre Rompido</button><button class="botao-adicionar-lacres" data-equip-id="${equip.id_equipamento}" data-equip-name="${equip.nome_equip}" data-lacres="${lacresData}" onclick="abrirModalLacres(this)">${temLacres ? 'Substituir Lacres' : 'Adicionar Lacres'}</button></div></div>`;
+                const itemHTML = `<div class="${itemClass}"><div class="equipamento-info"><div class="info-bloco"><h4>Equipamento</h4><p class="equipamento-identificacao">${equip.nome_equip} - ${equip.referencia_equip}</p></div><div class="info-bloco"><h4>Detalhes</h4><p><strong>Qtd. Faixas:</strong> ${equip.qtd_faixa || 'N/A'}</p><p><strong>KM via:</strong> ${equip.km || 'N/A'}</p></div><div class="info-bloco"><h4>Aferição</h4><p><strong>N° Instrumento:</strong> ${equip.num_instrumento || 'N/A'}</p><p><strong>Data:</strong> ${equip.dt_afericao ? new Date(equip.dt_afericao + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}</p><p class="${vencimentoClass}"><strong>Vencimento:</strong> ${vencimentoTexto}</p></div></div><h4>Lacres</h4><div class="lacres-grid">${lacresHTML}</div><div class="equipamento-actions"><button class="botao-distribuir-lacres botao-lacre-rompido" style="background-color: #cff4fc; color: #055160; border: 1px solid #b6effb;" data-equip-id="${equip.id_equipamento}" data-equip-name="${equip.nome_equip}" data-lacres="${lacresData}" onclick="abrirModalDistribuir(this)">Distribuir Lacre</button><button class="botao-lacre-rompido" style="background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;" data-equip-id="${equip.id_equipamento}" data-equip-name="${equip.nome_equip}" onclick="abrirModalLacreRompido(this)">Lacre Rompido</button><button class="botao-adicionar-lacres" data-equip-id="${equip.id_equipamento}" data-equip-name="${equip.nome_equip}" data-lacres="${lacresData}" onclick="abrirModalLacres(this)">${temLacresAfixados ? 'Substituir Lacres' : 'Adicionar Lacres'}</button></div></div>`;
                 grupoDiv.innerHTML += itemHTML;
             });
             containerListaLacres.appendChild(grupoDiv);
@@ -534,50 +546,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
         formData.forEach((value, formName) => {
             if (formName.startsWith('obs_') || formName === 'id_equipamento') return;
-
             const lacreInfo = LacreMap[formName];
             if (lacreInfo && value.trim() !== '') {
                 temLacre = true;
-                const input = form.querySelector(`[name="${formName}"]`);
-
-                // Para distribuição, rompido é sempre false
-                let isRompido = false;
-                if (operacaoAtual !== 'distribute') {
-                    const rompidoContainer = input.nextElementSibling;
-                    const toggleContainer = rompidoContainer ? rompidoContainer.querySelector('.botoes-toggle') : null;
-                    isRompido = (toggleContainer && toggleContainer.dataset.rompido === 'true');
-                }
-
-                const observacao = formData.get(`obs_${formName}`) || '';
-
                 lacresParaConfirmar.lacres.push({
                     local: lacreInfo.dbValue,
                     numero: value,
-                    rompido: isRompido,
-                    obs: observacao
+                    obs: formData.get(`obs_${formName}`) || ''
                 });
-
-                let resumoHTML = `<p><strong>${lacreInfo.displayName}:</strong> ${value}`;
-                if (isRompido) {
-                    resumoHTML += ` <span style="color: #c81e1e; font-weight: bold;">(Rompido)</span>`;
-                    if (observacao) {
-                        resumoHTML += `<br><small><em>Obs: ${observacao}</em></small>`;
-                    }
-                }
-                resumoHTML += `</p>`;
-                resumo.innerHTML += resumoHTML;
+                resumo.innerHTML += `<p><strong>${lacreInfo.displayName}:</strong> ${value}</p>`;
             }
         });
 
         if (temLacre) {
             let tituloConfirmacao = '';
-            if (operacaoAtual === 'substitute') {
-                tituloConfirmacao = 'Confirmar Substituição';
-            } else if (operacaoAtual === 'add') {
-                tituloConfirmacao = 'Confirmar Novos Lacres';
-            } else if (operacaoAtual === 'distribute') {
-                tituloConfirmacao = 'Confirmar Lacres a Distribuir';
-            }
+            if (operacaoAtual === 'substitute') tituloConfirmacao = 'Confirmar Substituição';
+            else if (operacaoAtual === 'add') tituloConfirmacao = 'Confirmar Novos Lacres';
+            else if (operacaoAtual === 'distribute') tituloConfirmacao = 'Confirmar Lacres a Distribuir';
+
             document.getElementById('tituloConfirmacao').textContent = tituloConfirmacao;
             fecharModal('modalAdicionarLacres');
             abrirModal('modalConfirmacao');
@@ -588,6 +574,8 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => { msgDiv.style.display = 'none'; }, 3000);
         }
     };
+
+
     function darFeedbackBotoes(botaoAtivo, botaoInativo) {
         botaoAtivo.classList.add('btn-active');
         botaoInativo.classList.add('btn-inactive');
@@ -713,72 +701,133 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     window.abrirModalDistribuir = (btn) => {
-        // 1. Chama a função base, que já faz o reset do formulário e PREENCHE os campos com os lacres atuais.
+    const lacresAtuais = btn.dataset.lacres ? JSON.parse(btn.dataset.lacres.replace(/&quot;/g, '"')) : [];
+    const lacresRompidoOuDistrib = lacresAtuais.filter(l => l.lacre_rompido == 1 || l.lacre_distribuido == 1);
+    
+    // CONDIÇÃO 1: Se não há lacres, abre o modal de Adicionar.
+    if (lacresAtuais.length === 0) {
         abrirModalLacres(btn);
+        operacaoAtual = 'distribute'; 
+        document.getElementById('tituloModalAdicionarLacres').textContent = `Distribuir Lacres para: ${btn.dataset.equipName}`;
+        document.querySelectorAll('.rompido-toggle-container').forEach(el => el.style.display = 'none');
+        return;
+    }
 
-        // 2. Altera o título e o modo de operação para "Distribuir"
-        operacaoAtual = 'distribute';
-        const modal = document.getElementById('modalAdicionarLacres');
-        modal.querySelector('#tituloModalAdicionarLacres').textContent = `Distribuir Lacres para: ${btn.dataset.equipName}`;
+    // CONDIÇÃO 2: Se há lacres, mas NENHUM está rompido ou pendente de distribuição.
+    if (lacresRompidoOuDistrib.length === 0) {
+        alert('Equipamento com todos os lacres afixados.');
+        return;
+    }
 
-        // 3. Esconde os controles de "rompido"
-        modal.querySelectorAll('.rompido-toggle-container').forEach(el => el.style.display = 'none');
-        modal.querySelectorAll('.obs-lacre').forEach(el => el.classList.add('hidden'));
+    // CONDIÇÃO 3: Se existem lacres rompidos/distribuídos, abre o modal de substituição.
+    const modal = document.getElementById('modalDistribuirRompido');
+    const form = document.getElementById('formDistribuirRompido');
+    const containerLacres = document.getElementById('listaLacresRompidoDistribuir');
+    const containerDetalhes = document.getElementById('detalhesLacresDistribuir');
 
-        // 4. --- LÓGICA CORRIGIDA ---
-        const lacresAtuais = btn.dataset.lacres ? JSON.parse(btn.dataset.lacres.replace(/&quot;/g, '"')) : [];
-        const form = document.getElementById('formularioAdicionarLacres');
+    form.reset();
+    containerDetalhes.innerHTML = '';
+    containerDetalhes.classList.add('hidden');
+    document.getElementById('mensagemErroDistribuir').style.display = 'none';
 
-        const lacresAfixadosMap = new Map(
-            lacresAtuais
-                .filter(lacre => lacre.lacre_afixado == 1 && lacre.num_lacre)
-                .map(lacre => [lacre.local_lacre, lacre.num_lacre])
-        );
+    document.getElementById('tituloModalDistribuirRompido').textContent = `Distribuir para Lacres Pendentes - ${btn.dataset.equipName}`;
+    form.querySelector('[name="id_equipamento"]').value = btn.dataset.equipId;
+    containerLacres.innerHTML = '';
 
-        // Itera sobre os campos para TRAVAR os que já estão preenchidos
-        for (const formName in LacreMap) {
-            const lacreInfo = LacreMap[formName];
-            const input = form.querySelector(`[name="${formName}"]`);
-
-            if (input) {
-                const groupContainer = input.closest('.form-lacre-group') || input.parentElement;
-
-                if (groupContainer) {
-                    // Se o local do lacre já está na lista de ocupados...
-                    if (lacresAfixadosMap.has(lacreInfo.dbValue)) {
-                        // A função abrirModalLacres JÁ PREENCHEU o valor.
-                        // Nós apenas travamos o campo.
-                        input.disabled = true;
-                        groupContainer.classList.add('is-locked');
-                    } else {
-                        // Garante que o campo esteja habilitado e sem o estilo de travado
-                        input.disabled = false;
-                        groupContainer.classList.remove('is-locked');
-                        // input.value = ''; // <-- LINHA REMOVIDA QUE CAUSAVA O ERRO
-                    }
-                }
-            }
+    lacresRompidoOuDistrib.forEach(lacre => {
+        let statusTexto = '';
+        if (lacre.lacre_rompido == 1) {
+            statusTexto = `<span style="color: #c81e1e;">(Rompido: ${lacre.num_lacre_rompido})</span>`;
+        } else if (lacre.lacre_distribuido == 1) {
+            statusTexto = `<span style="color: #0d6efd;">(Já distribuído: ${lacre.num_lacre_distribuido})</span>`;
         }
 
-        // 5. Garante que os botões de toggle de câmera também sejam travados se necessário
-        ['zoom', 'pam'].forEach(groupPrefix => {
-            const duplaDiv = modal.querySelector(`#${groupPrefix}_camera_dupla`);
-            const unicaDiv = modal.querySelector(`#${groupPrefix}_camera_unica`);
-            const toggleButtonContainer = modal.querySelector(`.${groupPrefix}-toggle`);
+        const div = document.createElement('div');
+        div.innerHTML = `
+            <label>
+                <input type="checkbox" name="lacres_a_substituir" value="${lacre.local_lacre}">
+                <strong>${lacre.local_lacre}:</strong> ${statusTexto}
+            </label>
+        `;
+        containerLacres.appendChild(div);
+    });
 
-            if (duplaDiv && unicaDiv && toggleButtonContainer) {
-                const isLockedA = duplaDiv.querySelector('input[name*="_a"]').disabled;
-                const isLockedB = duplaDiv.querySelector('input[name*="_b"]').disabled;
-                const isLockedAB = unicaDiv.querySelector('input[name*="_ab"]').disabled;
+    containerLacres.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', () => toggleDetalhesDistribuicao(checkbox));
+    });
 
-                if (isLockedA || isLockedB || isLockedAB) {
-                    toggleButtonContainer.querySelectorAll('button').forEach(button => button.disabled = true);
-                } else {
-                    toggleButtonContainer.querySelectorAll('button').forEach(button => button.disabled = false);
-                }
-            }
+    abrirModal('modalDistribuirRompido');
+};
+
+    function toggleDetalhesDistribuicao(checkbox) {
+        const containerDetalhes = document.getElementById('detalhesLacresDistribuir');
+        const local = checkbox.value;
+        const detalheId = `detalhe-dist-${local.replace(/[^a-zA-Z0-9]/g, '')}`;
+
+        if (checkbox.checked) {
+            containerDetalhes.classList.remove('hidden');
+            const div = document.createElement('div');
+            div.id = detalheId;
+            div.className = 'form-lacre-group';
+            div.innerHTML = `
+            <label for="num_${local}">Novo Lacre para: ${local}</label>
+            <input type="text" name="num_${local}" placeholder="Digite o n° do novo lacre" required>
+            <textarea name="obs_${local}" class="obs-lacre" placeholder="Observações (opcional)..."></textarea>
+        `;
+            containerDetalhes.appendChild(div);
+        } else {
+            const detalheExistente = document.getElementById(detalheId);
+            if (detalheExistente) detalheExistente.remove();
+            if (containerDetalhes.children.length === 0) containerDetalhes.classList.add('hidden');
+        }
+    }
+
+    // NOVA FUNÇÃO: Prepara a confirmação para o novo modal
+    window.prepararConfirmacaoDistribuicao = (event) => {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+        const lacresSelecionados = formData.getAll('lacres_a_substituir');
+        const msgErro = document.getElementById('mensagemErroDistribuir');
+
+        if (lacresSelecionados.length === 0) {
+            msgErro.textContent = 'Selecione pelo menos um lacre para distribuir.';
+            msgErro.style.display = 'block';
+            return;
+        }
+
+        lacresParaConfirmar = { id_equipamento: formData.get('id_equipamento'), lacres: [] };
+        let temNumeroVazio = false;
+
+        lacresSelecionados.forEach(local => {
+            const numero = formData.get(`num_${local}`);
+            if (!numero || numero.trim() === '') temNumeroVazio = true;
+            lacresParaConfirmar.lacres.push({
+                local: local,
+                numero: numero,
+                obs: formData.get(`obs_${local}`) || ''
+            });
         });
+
+        if (temNumeroVazio) {
+            msgErro.textContent = 'Preencha o número para todos os lacres selecionados.';
+            msgErro.style.display = 'block';
+            return;
+        }
+        msgErro.style.display = 'none';
+
+        // Usa o modal de confirmação genérico
+        operacaoAtual = 'distribute';
+        const resumoContainer = document.getElementById('resumoLacres');
+        resumoContainer.innerHTML = lacresParaConfirmar.lacres.map(l =>
+            `<p><strong>${l.local}:</strong> ${l.numero}${l.obs ? `<br><small><em>Obs: ${l.obs}</em></small>` : ''}</p>`
+        ).join('');
+
+        document.getElementById('tituloConfirmacao').textContent = 'Confirmar Lacres a Distribuir';
+        fecharModal('modalDistribuirRompido');
+        abrirModal('modalConfirmacao');
     };
+
 
     carregarDadosIniciais();
 });

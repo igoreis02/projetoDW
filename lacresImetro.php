@@ -803,11 +803,6 @@ require_once 'API/conexao_bd.php';
                 <div id="detalhesLacresSelecionados" class="hidden" style="margin-top: 1.5rem;">
                 </div>
 
-                <div class="form-lacre-group" style="margin-top: 1.5rem;">
-                    <label for="dataRompimento">Data do Rompimento:</label>
-                    <input type="date" id="dataRompimento" name="data_rompimento" required>
-                </div>
-
                 <div id="mensagemErroRompimento" class="mensagem erro" style="display: none;"></div>
 
                 <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
@@ -835,6 +830,28 @@ require_once 'API/conexao_bd.php';
                 </button>
             </div>
             <div id="mensagemSalvarRompimento" class="mensagem" style="display: none;"></div>
+        </div>
+    </div>
+
+    <div id="modalDistribuirRompido" class="modal">
+        <div class="conteudo-modal" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 id="tituloModalDistribuirRompido">Distribuir para Lacres Rompidos</h2>
+                <button class="fechar-modal" onclick="fecharModal('modalDistribuirRompido')">&times;</button>
+            </div>
+            <form id="formDistribuirRompido" onsubmit="prepararConfirmacaoDistribuicao(event)">
+                <input type="hidden" name="id_equipamento">
+                <p><strong>Selecione os lacres rompidos que serão substituídos:</strong></p>
+                <div id="listaLacresRompidoDistribuir" style="max-height: 150px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 5px;">
+                </div>
+                <div id="detalhesLacresDistribuir" class="hidden" style="margin-top: 1.5rem;">
+                </div>
+                <div id="mensagemErroDistribuir" class="mensagem erro" style="display: none;"></div>
+                <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                    <button type="button" class="botao-cancelar" onclick="fecharModal('modalDistribuirRompido')">Cancelar</button>
+                    <button type="submit" class="botao-salvar">Avançar</button>
+                </div>
+            </form>
         </div>
     </div>
 

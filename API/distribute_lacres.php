@@ -1,5 +1,6 @@
 <?php
-// API/distribute_lacres.php
+// API/distribute_lacres.php - VERSÃO CORRIGIDA
+
 header('Content-Type: application/json');
 session_start();
 require_once 'conexao_bd.php';
@@ -40,33 +41,40 @@ try {
 
     // 1. Prepara a query para inserir os registros de lacres distribuídos
     $sql_lacre = "INSERT INTO controle_lacres 
-                    (id_equipamento, local_lacre, num_lacre, lacre_distribuido, dt_fixacao, acao, id_usuario_distribuiu) 
+                    (id_equipamento, local_lacre, num_lacre_distribuido, lacre_distribuido, dt_fixacao, acao, id_usuario_distribuiu) 
                   VALUES (?, ?, ?, 1, CURDATE(), 'Distribuído', ?)";
     $stmt_lacre = $conn->prepare($sql_lacre);
 
-    $ocorrencia_reparo_texto = "Afixar lacres: ";
     $lacres_para_ocorrencia = [];
+    $ids_lacres_distribuidos = []; // --- NOVO: Array para guardar os IDs
 
     foreach ($lacres as $lacre) {
-        $b_id_equipamento = $id_equipamento;
         $b_local_lacre = $lacre['local'];
         $b_num_lacre = $lacre['numero'];
 
-        $stmt_lacre->bind_param("issi", $b_id_equipamento, $b_local_lacre, $b_num_lacre, $id_usuario_distribuiu);
+        $stmt_lacre->bind_param("issi", $id_equipamento, $b_local_lacre, $b_num_lacre, $id_usuario_distribuiu);
         $stmt_lacre->execute();
 
+        $ids_lacres_distribuidos[] = $conn->insert_id;
+
         // Monta o texto para a ocorrência
-        $lacres_para_ocorrencia[] = "{$b_local_lacre} ({$b_num_lacre})";
+        $texto_item = $b_local_lacre;
+        if (!empty($lacre['obs'])) {
+            $texto_item .= " (" . $lacre['obs'] . ")";
+        }
+        $lacres_para_ocorrencia[] = $texto_item;
     }
-    $ocorrencia_reparo_texto .= implode(', ', $lacres_para_ocorrencia);
+    $ocorrencia_reparo_texto = "Afixar lacre: " . implode('; ', $lacres_para_ocorrencia);
     $stmt_lacre->close();
 
-    // 2. Prepara e insere a nova ocorrência de manutenção
+    $ids_lacres_string = implode(',', $ids_lacres_distribuidos);
+
+    // 2. Prepara e insere a nova ocorrência de manutenção, agora com os IDs dos lacres
     $sql_manutencao = "INSERT INTO manutencoes 
-                        (id_equipamento, id_usuario, id_cidade, status_reparo, tipo_manutencao, nivel_ocorrencia, ocorrencia_reparo, inicio_reparo) 
-                       VALUES (?, ?, ?, 'pendente', 'corretiva', 2, ?, NOW())";
+                        (id_equipamento, id_usuario, id_cidade, status_reparo, tipo_manutencao, nivel_ocorrencia, ocorrencia_reparo, inicio_reparo, id_controle_lacres_dist) 
+                       VALUES (?, ?, ?, 'pendente', 'afixar', 2, ?, NOW(), ?)";
     $stmt_manutencao = $conn->prepare($sql_manutencao);
-    $stmt_manutencao->bind_param("iiis", $id_equipamento, $id_usuario_distribuiu, $id_cidade, $ocorrencia_reparo_texto);
+    $stmt_manutencao->bind_param("iiiss", $id_equipamento, $id_usuario_distribuiu, $id_cidade, $ocorrencia_reparo_texto, $ids_lacres_string);
     $stmt_manutencao->execute();
     $stmt_manutencao->close();
 

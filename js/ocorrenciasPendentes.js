@@ -181,7 +181,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     (groupedItem.atribuido_por && groupedItem.atribuido_por.toLowerCase().includes(searchTerm)) ||
                     groupedItem.ocorrencias_detalhadas.some(detail => detail.ocorrencia_reparo && detail.ocorrencia_reparo.toLowerCase().includes(searchTerm));
 
-                const typeMatch = (activeType === 'manutencao' && groupedItem.tipo_manutencao === 'corretiva') ||
+                const typeMatch =
+                    (activeType === 'manutencao' && (groupedItem.tipo_manutencao === 'corretiva' || groupedItem.tipo_manutencao === 'afixar')) ||
                     (activeType === 'instalação' && groupedItem.tipo_manutencao === 'instalação') ||
                     (activeType === 'semaforica' && groupedItem.tipo_manutencao === 'semaforica');
 
