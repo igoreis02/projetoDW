@@ -196,6 +196,13 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             margin-bottom: 1rem;
         }
 
+        .modal-ocorrencia-existente {
+            margin-top: 1rem;
+            background-color: #f1f1f1;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
         .close-button {
             color: #aaa;
             position: absolute;
@@ -469,7 +476,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
 
     <?php if ($redefinir_senha_obrigatoria): ?>
         <script>
-            document.addEventListener('DOMContentLoaded', function () {
+            document.addEventListener('DOMContentLoaded', function() {
                 window.location.href = 'index.html';
             });
         </script>
@@ -635,11 +642,15 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
     <div id="pendingMaintenanceModal" class="modal">
         <div class="modal-content">
             <h3>Aviso de Manutenção Pendente</h3>
-            <p>
-                Esse equipamento já tem manutenção cadastrada.
-                <br><br>
-                <strong>Deseja adicionar esse problema à ocorrência existente?</strong>
+            <p>Esse equipamento já tem manutenção cadastrada.</p>
+
+            <p class="modal-ocorrencia-existente">
+                <strong>Ocorrência(s) existente(s):</strong>
+                <span id="existingMaintenanceText" style="font-style: italic;"></span>
             </p>
+
+            <p><strong>Deseja adicionar o novo problema a esta ocorrência?</strong></p>
+
             <div class="confirmation-buttons">
                 <button class="confirm-button page-button" id="confirmAppendProblem">Sim</button>
                 <button class="cancel-button page-button" id="cancelAppendProblem">Não</button>

@@ -57,8 +57,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const pendingMaintenanceModal = document.getElementById('pendingMaintenanceModal');
     const confirmAppendProblemBtn = document.getElementById('confirmAppendProblem');
     const cancelAppendProblemBtn = document.getElementById('cancelAppendProblem');
+    const existingMaintenanceText = document.getElementById('existingMaintenanceText');
 
-    // Adicione estas linhas
+
     const semaforicaSection = document.getElementById('semaforicaSection');
     const semaforicaForm = document.getElementById('semaforicaForm');
     const confirmSemaforicaBtn = document.getElementById('confirmSemaforicaBtn');
@@ -499,36 +500,49 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     confirmEquipmentSelectionBtn.addEventListener('click', async () => {
-        const equipId = equipmentSelect.value;
-        const problemDesc = problemDescriptionInput.value.trim();
+    const equipId = equipmentSelect.value;
+    const problemDesc = problemDescriptionInput.value.trim();
 
-        if (!equipId) {
-            equipmentSelectionErrorMessage.textContent = 'Por favor, selecione um equipamento.';
-            equipmentSelectionErrorMessage.classList.remove('hidden');
-            return;
-        }
-        equipmentSelectionErrorMessage.classList.add('hidden');
+    if (!equipId) {
+        equipmentSelectionErrorMessage.textContent = 'Por favor, selecione um equipamento.';
+        equipmentSelectionErrorMessage.classList.remove('hidden');
+        return;
+    }
+    equipmentSelectionErrorMessage.classList.add('hidden');
 
-        if (currentFlow === 'maintenance' && currentMaintenanceType === 'corretiva') {
-            try {
-                const response = await fetch(`API/check_pending_maintenance.php?equipment_id=${equipId}`);
-                const data = await response.json();
+    if (currentFlow === 'maintenance' && currentMaintenanceType === 'corretiva') {
+        try {
+            const response = await fetch(`API/check_pending_maintenance.php?equipment_id=${equipId}`);
+            const data = await response.json();
 
-                if (data.found && data.tipo_manutencao_existente === 'corretiva') {
-                    existingMaintenanceData = {
-                        id: data.id_manutencao,
-                        ocorrencia: data.ocorrencia_existente
-                    };
-                    pendingMaintenanceModal.classList.add('is-active');
-                    return;
-                }
-            } catch (error) {
-                console.error("Erro ao verificar manutenção pendente:", error);
+            if (data.found && Array.isArray(data.maintenances) && data.maintenances.length > 0) {
+                // Pega o ID da primeira ocorrência para a lógica de "juntar"
+                existingMaintenanceData = {
+                    id: data.maintenances[0].id_manutencao,
+                    ocorrencia: data.maintenances[0].ocorrencia_reparo
+                };
+                
+                // Cria uma lista ordenada (1., 2., 3.) com as ocorrências
+                const occurrencesListHTML = '<ol style="margin: 0; padding-left: 20px;">' + 
+                    data.maintenances.map(maint => 
+                        `<li style="margin-bottom: 5px;">${maint.ocorrencia_reparo}</li>`
+                    ).join('') + 
+                '</ol>';
+
+                // Preenche o div no modal com a lista que acabamos de criar
+                existingMaintenanceText.innerHTML = occurrencesListHTML;
+                
+                pendingMaintenanceModal.classList.add('is-active');
+                return; // Interrompe a execução para esperar a decisão do usuário
             }
+        } catch (error) {
+            console.error("Erro ao verificar manutenção pendente:", error);
         }
+    }
 
-        proceedToConfirmation();
-    });
+    // Se não encontrou pendências (ou não era o fluxo correto), continua para a confirmação
+    proceedToConfirmation();
+});
 
     confirmInstallEquipmentBtn.addEventListener('click', () => {
         const newEquipmentType = document.getElementById('newEquipmentType').value;

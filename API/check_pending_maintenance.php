@@ -1,4 +1,5 @@
 <?php
+
 header('Content-Type: application/json');
 require_once 'conexao_bd.php';
 
@@ -10,21 +11,21 @@ if (empty($id_equipamento)) {
 }
 
 try {
-    // ALTERAÇÃO: Adicionado 'tipo_manutencao' na consulta SQL
     $stmt = $conn->prepare(
-        "SELECT id_manutencao, ocorrencia_reparo, tipo_manutencao FROM manutencoes WHERE id_equipamento = ? AND status_reparo = 'pendente' LIMIT 1"
+        "SELECT id_manutencao, ocorrencia_reparo, tipo_manutencao 
+         FROM manutencoes 
+         WHERE id_equipamento = ? AND status_reparo = 'pendente'"
     );
     $stmt->bind_param("i", $id_equipamento);
     $stmt->execute();
     $result = $stmt->get_result();
 
     if ($result->num_rows > 0) {
-        $maintenance = $result->fetch_assoc();
+        $all_maintenances = $result->fetch_all(MYSQLI_ASSOC);
+        
         echo json_encode([
             'found' => true,
-            'id_manutencao' => $maintenance['id_manutencao'],
-            'ocorrencia_existente' => $maintenance['ocorrencia_reparo'],
-            'tipo_manutencao_existente' => $maintenance['tipo_manutencao'] // ALTERAÇÃO: Enviando o tipo de manutenção na resposta
+            'maintenances' => $all_maintenances
         ]);
     } else {
         echo json_encode(['found' => false]);
