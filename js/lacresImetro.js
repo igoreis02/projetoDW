@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
         abrirModal('modalLacreRompido');
 
         try {
-            // Nova API para buscar apenas os lacres afixados de um equipamento
+        
             const response = await fetch(`API/get_lacres_por_equipamento.php?id_equipamento=${idEquipamento}`);
             const data = await response.json();
 
@@ -439,8 +439,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     let itemLacreHTML = `<div class="lacre-item">`;
                     itemLacreHTML += `<strong>${displayName}:</strong> `;
 
-                    // --- LÓGICA DE EXIBIÇÃO CORRIGIDA E HIERÁRQUICA ---
-
                     // 1. Se o lacre está AF serenIXADO (e não rompido), mostra apenas o número.
                     if (lacre.lacre_afixado == 1 && lacre.num_lacre) {
                         itemLacreHTML += lacre.num_lacre;
@@ -718,7 +716,6 @@ document.addEventListener('DOMContentLoaded', () => {
     window.abrirModalDistribuir = (btn) => {
         const lacresAtuais = btn.dataset.lacres ? JSON.parse(btn.dataset.lacres.replace(/&quot;/g, '"')) : [];
 
-        // --- NOVA LÓGICA DE VERIFICAÇÃO INTELIGENTE ---
 
         // 1. Identifica a configuração de câmeras REAL do equipamento com base nos lacres existentes
         const requiredLocations = new Set(['metrologico', 'nao metrologico', 'fonte', 'switch']);
@@ -749,7 +746,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // 4. Verifica se existe algum lacre rompido que precise de atenção
         const lacresRompido = lacresAtuais.filter(l => l.lacre_rompido == 1);
 
-        // --- DECISÃO PRINCIPAL ---
 
         // CENÁRIO 1: Se tudo estiver preenchido E não houver nada rompido, exibe o alerta e para.
         if (allRequiredAreFilled && lacresRompido.length === 0) {
@@ -833,7 +829,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // NOVA FUNÇÃO: Prepara a confirmação para o novo modal
+    // Prepara a confirmação para o modal
     window.prepararConfirmacaoDistribuicao = (event) => {
         event.preventDefault();
         const form = event.target;
