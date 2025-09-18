@@ -107,8 +107,53 @@ try {
 
         echo json_encode(['success' => true, 'message' => 'Ocorrência concluída e registrada com sucesso!']);
     } elseif ($action === 'validar_reparo') {
-        // 1. Mudar status da manutenção para 'concluido'
-        $stmt_update = $conn->prepare("UPDATE manutencoes SET status_reparo = 'concluido' WHERE id_manutencao = ?");
+        // Busca o tipo da manutenção e os IDs dos lacres distribuídos
+        $stmt_info = $conn->prepare("SELECT tipo_manutencao, id_controle_lacres_dist FROM manutencoes WHERE id_manutencao = ?");
+        $stmt_info->bind_param('i', $id);
+        $stmt_info->execute();
+        $result_info = $stmt_info->get_result();
+        $manutencao_info = $result_info->fetch_assoc();
+        $stmt_info->close();
+
+        if (!$manutencao_info) {
+            throw new Exception('Manutenção não encontrada.');
+        }
+
+        if ($manutencao_info['tipo_manutencao'] === 'afixar' && !empty($manutencao_info['id_controle_lacres_dist'])) {
+
+            // Pega o ID do usuário logado (que está validando) para usar como ID de quem afixou.
+            $id_usuario_afixou = $_SESSION['user_id'];
+
+            // Prepara a query para atualizar a tabela de lacres
+            $sql_update_lacres = "UPDATE controle_lacres SET
+                                num_lacre = num_lacre_distribuido,
+                                lacre_rompido = 0,
+                                lacre_afixado = 1,
+                                lacre_distribuido = 0,
+                                num_lacre_distribuido = NULL,
+                                dt_fixacao = CURDATE(),
+                                acao = 'Afixado',
+                                id_usuario_afixou = ?,
+                                obs_lacre = NULL
+                            WHERE id_controle_lacres = ?";
+
+            $stmt_lacres = $conn->prepare($sql_update_lacres);
+
+            // Converte a string de IDs (ex: "70,71") em um array
+            $ids_lacres_a_afixar = explode(',', $manutencao_info['id_controle_lacres_dist']);
+
+            // Executa a atualização para cada ID de lacre encontrado
+            foreach ($ids_lacres_a_afixar as $id_lacre) {
+                $id_lacre_int = (int)$id_lacre;
+                $stmt_lacres->bind_param("ii", $id_usuario_afixou, $id_lacre_int);
+                if (!$stmt_lacres->execute()) {
+                    throw new Exception('Falha ao atualizar o status de um dos lacres afixados.');
+                }
+            }
+            $stmt_lacres->close();
+        }
+
+        $stmt_update = $conn->prepare("UPDATE manutencoes SET status_reparo = 'concluido', fim_reparo = NOW() WHERE id_manutencao = ?");
         $stmt_update->bind_param('i', $id);
 
         if (!$stmt_update->execute()) {
@@ -212,9 +257,9 @@ try {
 
         if ($origem === 'ocorrencia_provedor') {
             $stmt = $conn->prepare("UPDATE ocorrencia_provedor SET status = ? WHERE id_ocorrencia_provedor = ?");
-            $stmt->bind_param('si', $new_status, $id); 
-            if (!$stmt->execute()) { 
-                throw new Exception('Falha ao atualizar status do provedor.'); 
+            $stmt->bind_param('si', $new_status, $id);
+            if (!$stmt->execute()) {
+                throw new Exception('Falha ao atualizar status do provedor.');
             }
             $stmt->close();
         } elseif ($origem === 'ocorrencia_processamento') {
