@@ -22,7 +22,7 @@ try {
                   LEFT JOIN cidades c ON e.id_cidade = c.id_cidade
                   WHERE (e.nome_equip LIKE ? OR e.referencia_equip LIKE ?)
                   AND e.tipo_equip NOT IN ('CCO', 'DOME')";
-    
+
     $params = ["%" . $search_term . "%", "%" . $search_term . "%"];
     $types = "ss";
 
@@ -35,14 +35,14 @@ try {
             $types .= "ss";
         }
     }
-                  
+
     $sql_equip .= " ORDER BY c.nome, e.nome_equip ASC";
-                  
+
     $stmt_equip = $conn->prepare($sql_equip);
     $stmt_equip->bind_param($types, ...$params);
     $stmt_equip->execute();
     $result_equip = $stmt_equip->get_result();
-    
+
     $equipamentos = [];
     while ($row = $result_equip->fetch_assoc()) {
         $row['lacres'] = [];
@@ -55,15 +55,16 @@ try {
         $id_list = implode(',', $ids);
 
         $sql_lacres = "SELECT lc.id_equipamento, lc.local_lacre, lc.num_lacre,
-                              lc.lacre_rompido, lc.num_lacre_rompido, lc.obs_lacre
-                       FROM controle_lacres lc
+                      lc.lacre_rompido, lc.num_lacre_rompido, lc.obs_lacre,
+                      lc.lacre_afixado, lc.lacre_distribuido, lc.num_lacre_distribuido
+               FROM controle_lacres lc
                        INNER JOIN (
                            SELECT id_equipamento, local_lacre, MAX(id_controle_lacres) as max_id
                            FROM controle_lacres
                            WHERE id_equipamento IN ($id_list)
                            GROUP BY id_equipamento, local_lacre
                        ) as latest_lacres ON lc.id_controle_lacres = latest_lacres.max_id";
-                       
+
         $result_lacres = $conn->query($sql_lacres);
         while ($lacre = $result_lacres->fetch_assoc()) {
             if (isset($equipamentos[$lacre['id_equipamento']])) {
@@ -71,10 +72,9 @@ try {
             }
         }
     }
-    
+
     $response['success'] = true;
     $response['equipamentos'] = array_values($equipamentos);
-
 } catch (Exception $e) {
     $response['message'] = 'Erro no servidor: ' . $e->getMessage();
     http_response_code(500);
@@ -82,4 +82,3 @@ try {
 
 $conn->close();
 echo json_encode($response);
-?>

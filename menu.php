@@ -12,9 +12,9 @@ if (isset($_SESSION['tipo_usuario']) && $_SESSION['tipo_usuario'] === 'entregado
     exit();
 }
 
-require_once 'conexao_bd.php'; // Incluindo a conexão com o banco de dados para buscar o nome do usuário
+require_once 'conexao_bd.php'; 
 
-$user_name = 'Usuário'; // Valor padrão
+$user_name = 'Usuário'; 
 $user_type = 'Desconhecido';
 if (isset($user_id)) {
     $stmt = $conn->prepare("SELECT nome, tipo_usuario FROM usuario WHERE id_usuario = ?");
@@ -89,7 +89,7 @@ if (isset($user_id)) {
                         <a href="solicitacoesClientes.php" class="menu-button" id="solicitacaoClientesBtn"><i
                                 class="fas fa-headset"></i><span>Solicitação Clientes</span></a>
                         <a href="lacresImetro.php" class="menu-button" id="lacresImetroBtn"><i
-                                class="fas fa-stamp"></i><span>Lacres IMETRO</span></a>
+                                class="fas fa-stamp"></i><span>Lacres INMETRO</span></a>
                         <a href="#" class="menu-button" id="afericoesBtn"><i
                                 class="fas fa-gauge-high"></i><span>Aferições</span></a>
                     </div>

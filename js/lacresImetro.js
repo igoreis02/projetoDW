@@ -437,17 +437,32 @@ document.addEventListener('DOMContentLoaded', () => {
                     const displayName = formName ? LacreMap[formName].displayName : localLacreLimpo;
 
                     let itemLacreHTML = `<div class="lacre-item">`;
-                    itemLacreHTML += `<strong>${displayName}:</strong> ${lacre.num_lacre || ''}`;
+                    itemLacreHTML += `<strong>${displayName}:</strong> `;
 
-                    if (lacre.lacre_rompido == 1 && lacre.num_lacre_rompido) {
+                    // --- LÓGICA DE EXIBIÇÃO CORRIGIDA E HIERÁRQUICA ---
+
+                    // 1. Se o lacre está AF serenIXADO (e não rompido), mostra apenas o número.
+                    if (lacre.lacre_afixado == 1 && lacre.num_lacre) {
+                        itemLacreHTML += lacre.num_lacre;
+                    }
+                    // 2. Se está ROMPIDO, mostra o status de rompido.
+                    else if (lacre.lacre_rompido == 1 && lacre.num_lacre_rompido) {
                         itemLacreHTML += `<span class="lacre-detalhe rompido">Rompido: ${lacre.num_lacre_rompido}</span>`;
                     }
-                    if (lacre.lacre_distribuido == 1 && lacre.num_lacre_distribuido) {
-                        itemLacreHTML += `<span class="lacre-detalhe" style="color: #0d6efd;">Distribuído: ${lacre.num_lacre_distribuido}</span>`;
+                    // 3. Se está DISTRIBUÍDO, mostra o status de distribuído.
+                    else if (lacre.lacre_distribuido == 1 && lacre.num_lacre_distribuido) {
+                        itemLacreHTML += `<span class="lacre-detalhe distribuido">Distribuído: ${lacre.num_lacre_distribuido}</span>`;
                     }
-                    if (lacre.obs_lacre) {
+                    // 4. Se nenhuma das condições acima, significa que o local está vazio.
+                    else {
+                        itemLacreHTML += `(Vazio)`;
+                    }
+
+                    // A observação só aparece para lacres que não estão afixados
+                    if (lacre.lacre_afixado != 1 && lacre.obs_lacre) {
                         itemLacreHTML += `<span class="lacre-detalhe">Obs: ${lacre.obs_lacre}</span>`;
                     }
+
                     itemLacreHTML += `</div>`;
                     return itemLacreHTML;
                 }).join('') : '<p>Nenhum lacre cadastrado.</p>';
@@ -701,64 +716,100 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     window.abrirModalDistribuir = (btn) => {
-    const lacresAtuais = btn.dataset.lacres ? JSON.parse(btn.dataset.lacres.replace(/&quot;/g, '"')) : [];
-    const lacresRompidoOuDistrib = lacresAtuais.filter(l => l.lacre_rompido == 1 || l.lacre_distribuido == 1);
-    
-    // CONDIÇÃO 1: Se não há lacres, abre o modal de Adicionar.
-    if (lacresAtuais.length === 0) {
-        abrirModalLacres(btn);
-        operacaoAtual = 'distribute'; 
-        document.getElementById('tituloModalAdicionarLacres').textContent = `Distribuir Lacres para: ${btn.dataset.equipName}`;
-        document.querySelectorAll('.rompido-toggle-container').forEach(el => el.style.display = 'none');
-        return;
-    }
+        const lacresAtuais = btn.dataset.lacres ? JSON.parse(btn.dataset.lacres.replace(/&quot;/g, '"')) : [];
 
-    // CONDIÇÃO 2: Se há lacres, mas NENHUM está rompido ou pendente de distribuição.
-    if (lacresRompidoOuDistrib.length === 0) {
-        alert('Equipamento com todos os lacres afixados.');
-        return;
-    }
+        // --- NOVA LÓGICA DE VERIFICAÇÃO INTELIGENTE ---
 
-    // CONDIÇÃO 3: Se existem lacres rompidos/distribuídos, abre o modal de substituição.
-    const modal = document.getElementById('modalDistribuirRompido');
-    const form = document.getElementById('formDistribuirRompido');
-    const containerLacres = document.getElementById('listaLacresRompidoDistribuir');
-    const containerDetalhes = document.getElementById('detalhesLacresDistribuir');
-
-    form.reset();
-    containerDetalhes.innerHTML = '';
-    containerDetalhes.classList.add('hidden');
-    document.getElementById('mensagemErroDistribuir').style.display = 'none';
-
-    document.getElementById('tituloModalDistribuirRompido').textContent = `Distribuir para Lacres Pendentes - ${btn.dataset.equipName}`;
-    form.querySelector('[name="id_equipamento"]').value = btn.dataset.equipId;
-    containerLacres.innerHTML = '';
-
-    lacresRompidoOuDistrib.forEach(lacre => {
-        let statusTexto = '';
-        if (lacre.lacre_rompido == 1) {
-            statusTexto = `<span style="color: #c81e1e;">(Rompido: ${lacre.num_lacre_rompido})</span>`;
-        } else if (lacre.lacre_distribuido == 1) {
-            statusTexto = `<span style="color: #0d6efd;">(Já distribuído: ${lacre.num_lacre_distribuido})</span>`;
+        // 1. Identifica a configuração de câmeras REAL do equipamento com base nos lacres existentes
+        const requiredLocations = new Set(['metrologico', 'nao metrologico', 'fonte', 'switch']);
+        if (lacresAtuais.some(l => l.local_lacre === 'camera zoom (fx. A/B)')) {
+            requiredLocations.add('camera zoom (fx. A/B)');
+        } else if (lacresAtuais.some(l => l.local_lacre === 'camera zoom (fx. A)' || l.local_lacre === 'camera zoom (fx. B)')) {
+            requiredLocations.add('camera zoom (fx. A)');
+            requiredLocations.add('camera zoom (fx. B)');
         }
 
-        const div = document.createElement('div');
-        div.innerHTML = `
-            <label>
-                <input type="checkbox" name="lacres_a_substituir" value="${lacre.local_lacre}">
-                <strong>${lacre.local_lacre}:</strong> ${statusTexto}
-            </label>
-        `;
-        containerLacres.appendChild(div);
-    });
+        if (lacresAtuais.some(l => l.local_lacre === 'camera pam (fx. A/B)')) {
+            requiredLocations.add('camera pam (fx. A/B)');
+        } else if (lacresAtuais.some(l => l.local_lacre === 'camera pam (fx. A)' || l.local_lacre === 'camera pam (fx. B)')) {
+            requiredLocations.add('camera pam (fx. A)');
+            requiredLocations.add('camera pam (fx. B)');
+        }
 
-    containerLacres.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-        checkbox.addEventListener('change', () => toggleDetalhesDistribuicao(checkbox));
-    });
+        // 2. Identifica quais locais já estão preenchidos (afixados ou com distribuição pendente)
+        const filledLocations = new Set(
+            lacresAtuais
+                .filter(l => (l.lacre_afixado == 1 && l.lacre_rompido == 0) || l.lacre_distribuido == 1)
+                .map(l => l.local_lacre)
+        );
 
-    abrirModal('modalDistribuirRompido');
-};
+        // 3. Verifica se TODOS os locais obrigatórios para ESTE equipamento já estão preenchidos
+        const allRequiredAreFilled = [...requiredLocations].every(loc => filledLocations.has(loc));
 
+        // 4. Verifica se existe algum lacre rompido que precise de atenção
+        const lacresRompido = lacresAtuais.filter(l => l.lacre_rompido == 1);
+
+        // --- DECISÃO PRINCIPAL ---
+
+        // CENÁRIO 1: Se tudo estiver preenchido E não houver nada rompido, exibe o alerta e para.
+        if (allRequiredAreFilled && lacresRompido.length === 0) {
+            alert('Equipamento com todos os lacres afixados ou com distribuição pendente.');
+            return;
+        }
+
+        // CENÁRIO 2: Se existem lacres ROMPIDOS, abre o modal de substituição para eles.
+        if (lacresRompido.length > 0) {
+            const modal = document.getElementById('modalDistribuirRompido');
+            const form = document.getElementById('formDistribuirRompido');
+            const containerLacres = document.getElementById('listaLacresRompidoDistribuir');
+            const containerDetalhes = document.getElementById('detalhesLacresDistribuir');
+
+            form.reset();
+            containerDetalhes.innerHTML = '';
+            containerDetalhes.classList.add('hidden');
+            document.getElementById('mensagemErroDistribuir').style.display = 'none';
+            document.getElementById('tituloModalDistribuirRompido').textContent = `Distribuir para Lacres Rompidos - ${btn.dataset.equipName}`;
+            form.querySelector('[name="id_equipamento"]').value = btn.dataset.equipId;
+            containerLacres.innerHTML = '';
+
+            lacresRompido.forEach(lacre => {
+                let statusTexto = `<span style="color: #c81e1e;">(Rompido: ${lacre.num_lacre_rompido})</span>`;
+                const div = document.createElement('div');
+                div.innerHTML = `<label><input type="checkbox" name="lacres_a_substituir" value="${lacre.local_lacre}"> <strong>${lacre.local_lacre}:</strong> ${statusTexto}</label>`;
+                containerLacres.appendChild(div);
+            });
+
+            containerLacres.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', () => toggleDetalhesDistribuicao(checkbox));
+            });
+
+            abrirModal('modalDistribuirRompido');
+            return;
+        }
+
+        // CENÁRIO 3: Se chegou até aqui, significa que não há rompidos, mas há locais vazios. Abre o modal de "Adicionar".
+        abrirModalLacres(btn);
+        operacaoAtual = 'distribute';
+        const modalAdicionar = document.getElementById('modalAdicionarLacres');
+        modalAdicionar.querySelector('#tituloModalAdicionarLacres').textContent = `Distribuir Lacres para: ${btn.dataset.equipName}`;
+        modalAdicionar.querySelectorAll('.rompido-toggle-container').forEach(el => el.style.display = 'none');
+
+        // Esconde os campos que já têm lacres válidos (afixados ou distribuídos)
+        const formAdicionar = document.getElementById('formularioAdicionarLacres');
+        for (const formName in LacreMap) {
+            const lacreInfo = LacreMap[formName];
+            const input = formAdicionar.querySelector(`[name="${formName}"]`);
+            if (input) {
+                const groupContainer = input.closest('.form-lacre-group');
+                if (filledLocations.has(lacreInfo.dbValue)) {
+                    if (groupContainer) groupContainer.style.display = 'none';
+                } else {
+                    if (groupContainer) groupContainer.style.display = 'block';
+                }
+            }
+        }
+    };
+    
     function toggleDetalhesDistribuicao(checkbox) {
         const containerDetalhes = document.getElementById('detalhesLacresDistribuir');
         const local = checkbox.value;

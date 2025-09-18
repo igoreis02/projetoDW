@@ -331,6 +331,11 @@ require_once 'API/conexao_bd.php';
             font-weight: bold;
         }
 
+        .lacre-detalhe.distribuido {
+            color: #fd7e14;
+            font-weight: bold;
+        }
+
         .lacre-item strong {
             color: #4338ca;
         }

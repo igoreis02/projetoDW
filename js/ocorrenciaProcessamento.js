@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const MAX_INTERVAL = 120000; // 2 minutos
     let currentInterval = BASE_INTERVAL;
 
-    // --- Funções Principais ---
+    // --- Inicialização ---
 
     async function scheduleNextCheck() {
         if (updateTimeoutId) {
@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 btn.classList.toggle('active', btn.dataset.status === filters.status);
             });
 
-            // Agora, busca os dados novamente com o filtro correto definido
+            // busca os dados novamente com o filtro correto definido
             await fetchData();
 
         } catch (error) {
@@ -151,7 +151,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 });
 
-                // LÓGICA CORRIGIDA: Trata grupos com 1 item como individuais
                 Object.values(groupedItems).forEach(group => {
                     if (group.ocorrencias_detalhadas.length === 1) {
                         group.isGrouped = false;
@@ -169,7 +168,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // SUBSTITUA a função createOcorrenciaHTML
     function createOcorrenciaHTML(item) {
         const firstItem = item.ocorrencias_detalhadas[0];
         const statusClass = (firstItem.status || 'pendente').toLowerCase();
@@ -284,7 +282,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         item.style.display = '';
                         hasVisibleItemsInGroup = true;
 
-                        // --- LÓGICA DE EXPANDIR/RECOLHER ADICIONADA AQUI ---
+                        // Expande ou recolhe a lista interna com base na busca
                         const listContainer = item.querySelector('.ocorrencia-list-container');
                         const btn = item.querySelector('.toggle-ocorrencias-btn');
 
