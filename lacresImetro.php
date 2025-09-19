@@ -727,7 +727,7 @@ require_once 'API/conexao_bd.php';
                     <label>Switch:</label>
                     <input type="text" name="switch_lacre">
                     <label style="margin-top: 8px; font-weight: normal;">Data de Fixação:</label>
-                    <input type="date" name="dt_fixacao_switch" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
+                    <input type="date" name="dt_fixacao_switch_lacre" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
                     <div class="rompido-toggle-container">
                         <label class="rompido-label">Lacre rompido?</label>
                         <div class="botoes-toggle">
@@ -738,11 +738,11 @@ require_once 'API/conexao_bd.php';
                     <textarea name="obs_switch_lacre" class="obs-lacre hidden" placeholder="Observação..."></textarea>
                     <div class="data-rompimento-container hidden">
                         <label style="margin-top: 8px; font-weight: normal;">Data do Rompimento:</label>
-                        <input type="date" name="dt_rompimento_switch" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+                        <input type="date" name="dt_rompimento_switch_lacre" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
                     </div>
                     <div class="data-psie-container hidden">
                         <label style="margin-top: 8px; font-weight: normal;">Reporta PSIE:</label>
-                        <input type="date" name="dt_reporta_psie_switch" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+                        <input type="date" name="dt_reporta_psie_switch_lacre" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
                     </div>
                 </div>
 
@@ -752,6 +752,7 @@ require_once 'API/conexao_bd.php';
                         <button type="button" class="ativo" onclick="toggleCameras(1, this, 'zoom')">1</button>
                         <button type="button" onclick="toggleCameras(2, this, 'zoom')">2</button>
                     </div>
+
                     <div id="zoom_camera_unica">
                         <label>Câmera Zoom (fx. A/B):</label><input type="text" name="camera_zoom_ab">
                         <label style="margin-top: 8px; font-weight: normal;">Data de Fixação:</label>
@@ -771,42 +772,49 @@ require_once 'API/conexao_bd.php';
                             <input type="date" name="dt_reporta_psie_camera_zoom_ab" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
                         </div>
                     </div>
+
                     <div id="zoom_camera_dupla" class="hidden">
-                        <label>Câmera Zoom (fx. A):</label><input type="text" name="camera_zoom_a">
-                        <label style="margin-top: 8px; font-weight: normal;">Data de Fixação:</label>
-                        <input type="date" name="dt_fixacao_camera_zoom_a" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
-                        <div class="rompido-toggle-container"><label class="rompido-label">Lacre rompido?</label>
-                            <div class="botoes-toggle"><button type="button"
-                                    onclick="toggleRompido(this, false)">Não</button><button type="button"
-                                    onclick="toggleRompido(this, true)">Sim</button></div>
-                        </div><textarea name="obs_camera_zoom_a" class="obs-lacre hidden"
-                            placeholder="Observação..."></textarea>
-                        <div class="data-rompimento-container hidden">
-                            <label style="margin-top: 8px; font-weight: normal;">Data do Rompimento:</label>
-                            <input type="date" name="dt_rompimento_camera_zoom_a" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
-                        </div>
-                        <div class="data-psie-container hidden">
-                            <label style="margin-top: 8px; font-weight: normal;">Reporta PSIE:</label>
-                            <input type="date" name="dt_reporta_psie_camera_zoom_a" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+
+                        <div class="camera-sub-group">
+                            <label>Câmera Zoom (fx. A):</label><input type="text" name="camera_zoom_a">
+                            <label style="margin-top: 8px; font-weight: normal;">Data de Fixação:</label>
+                            <input type="date" name="dt_fixacao_camera_zoom_a" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
+                            <div class="rompido-toggle-container"><label class="rompido-label">Lacre rompido?</label>
+                                <div class="botoes-toggle"><button type="button"
+                                        onclick="toggleRompido(this, false)">Não</button><button type="button"
+                                        onclick="toggleRompido(this, true)">Sim</button></div>
+                            </div><textarea name="obs_camera_zoom_a" class="obs-lacre hidden"
+                                placeholder="Observação..."></textarea>
+                            <div class="data-rompimento-container hidden">
+                                <label style="margin-top: 8px; font-weight: normal;">Data do Rompimento:</label>
+                                <input type="date" name="dt_rompimento_camera_zoom_a" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+                            </div>
+                            <div class="data-psie-container hidden">
+                                <label style="margin-top: 8px; font-weight: normal;">Reporta PSIE:</label>
+                                <input type="date" name="dt_reporta_psie_camera_zoom_a" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+                            </div>
                         </div>
 
-                        <label>Câmera Zoom (fx. B):</label><input type="text" name="camera_zoom_b">
-                        <label style="margin-top: 8px; font-weight: normal;">Data de Fixação:</label>
-                        <input type="date" name="dt_fixacao_camera_zoom_b" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
-                        <div class="rompido-toggle-container"><label class="rompido-label">Lacre rompido?</label>
-                            <div class="botoes-toggle"><button type="button"
-                                    onclick="toggleRompido(this, false)">Não</button><button type="button"
-                                    onclick="toggleRompido(this, true)">Sim</button></div>
-                        </div><textarea name="obs_camera_zoom_b" class="obs-lacre hidden"
-                            placeholder="Observação..."></textarea>
-                        <div class="data-rompimento-container hidden">
-                            <label style="margin-top: 8px; font-weight: normal;">Data do Rompimento:</label>
-                            <input type="date" name="dt_rompimento_camera_zoom_b" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+                        <div class="camera-sub-group">
+                            <label>Câmera Zoom (fx. B):</label><input type="text" name="camera_zoom_b">
+                            <label style="margin-top: 8px; font-weight: normal;">Data de Fixação:</label>
+                            <input type="date" name="dt_fixacao_camera_zoom_b" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
+                            <div class="rompido-toggle-container"><label class="rompido-label">Lacre rompido?</label>
+                                <div class="botoes-toggle"><button type="button"
+                                        onclick="toggleRompido(this, false)">Não</button><button type="button"
+                                        onclick="toggleRompido(this, true)">Sim</button></div>
+                            </div><textarea name="obs_camera_zoom_b" class="obs-lacre hidden"
+                                placeholder="Observação..."></textarea>
+                            <div class="data-rompimento-container hidden">
+                                <label style="margin-top: 8px; font-weight: normal;">Data do Rompimento:</label>
+                                <input type="date" name="dt_rompimento_camera_zoom_b" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+                            </div>
+                            <div class="data-psie-container hidden">
+                                <label style="margin-top: 8px; font-weight: normal;">Reporta PSIE:</label>
+                                <input type="date" name="dt_reporta_psie_camera_zoom_b" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+                            </div>
                         </div>
-                        <div class="data-psie-container hidden">
-                            <label style="margin-top: 8px; font-weight: normal;">Reporta PSIE:</label>
-                            <input type="date" name="dt_reporta_psie_camera_zoom_b" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
-                        </div>
+
                     </div>
                 </div>
 
@@ -816,6 +824,7 @@ require_once 'API/conexao_bd.php';
                         <button type="button" class="ativo" onclick="toggleCameras(1, this, 'pam')">1</button>
                         <button type="button" onclick="toggleCameras(2, this, 'pam')">2</button>
                     </div>
+
                     <div id="pam_camera_unica">
                         <label>Câmera PAM (fx. A/B):</label><input type="text" name="camera_pam_ab">
                         <label style="margin-top: 8px; font-weight: normal;">Data de Fixação:</label>
@@ -832,45 +841,52 @@ require_once 'API/conexao_bd.php';
                         </div>
                         <div class="data-psie-container hidden">
                             <label style="margin-top: 8px; font-weight: normal;">Reporta PSIE:</label>
-                            <input type="date" name="dt_reporta_psie_camera_zoom_ab" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+                            <input type="date" name="dt_reporta_psie_camera_pam_ab" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
                         </div>
                     </div>
+
                     <div id="pam_camera_dupla" class="hidden">
-                        <label>Câmera PAM (fx. A):</label><input type="text" name="camera_pam_a">
-                        <label style="margin-top: 8px; font-weight: normal;">Data de Fixação:</label>
-                        <input type="date" name="dt_fixacao_camera_pam_a" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
-                        <div class="rompido-toggle-container"><label class="rompido-label">Lacre rompido?</label>
-                            <div class="botoes-toggle"><button type="button"
-                                    onclick="toggleRompido(this, false)">Não</button><button type="button"
-                                    onclick="toggleRompido(this, true)">Sim</button></div>
-                        </div><textarea name="obs_camera_pam_a" class="obs-lacre hidden"
-                            placeholder="Observação..."></textarea>
-                        <div class="data-rompimento-container hidden">
-                            <label style="margin-top: 8px; font-weight: normal;">Data do Rompimento:</label>
-                            <input type="date" name="dt_rompimento_camera_pam_a" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
-                        </div>
-                        <div class="data-psie-container hidden">
-                            <label style="margin-top: 8px; font-weight: normal;">Reporta PSIE:</label>
-                            <input type="date" name="dt_reporta_psie_camera_pam_a" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+
+                        <div class="camera-sub-group">
+                            <label>Câmera PAM (fx. A):</label><input type="text" name="camera_pam_a">
+                            <label style="margin-top: 8px; font-weight: normal;">Data de Fixação:</label>
+                            <input type="date" name="dt_fixacao_camera_pam_a" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
+                            <div class="rompido-toggle-container"><label class="rompido-label">Lacre rompido?</label>
+                                <div class="botoes-toggle"><button type="button"
+                                        onclick="toggleRompido(this, false)">Não</button><button type="button"
+                                        onclick="toggleRompido(this, true)">Sim</button></div>
+                            </div><textarea name="obs_camera_pam_a" class="obs-lacre hidden"
+                                placeholder="Observação..."></textarea>
+                            <div class="data-rompimento-container hidden">
+                                <label style="margin-top: 8px; font-weight: normal;">Data do Rompimento:</label>
+                                <input type="date" name="dt_rompimento_camera_pam_a" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+                            </div>
+                            <div class="data-psie-container hidden">
+                                <label style="margin-top: 8px; font-weight: normal;">Reporta PSIE:</label>
+                                <input type="date" name="dt_reporta_psie_camera_pam_a" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+                            </div>
                         </div>
 
-                        <label>Câmera PAM (fx. B):</label><input type="text" name="camera_pam_b">
-                        <label style="margin-top: 8px; font-weight: normal;">Data de Fixação:</label>
-                        <input type="date" name="dt_fixacao_camera_pam_b" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
-                        <div class="rompido-toggle-container"><label class="rompido-label">Lacre rompido?</label>
-                            <div class="botoes-toggle"><button type="button"
-                                    onclick="toggleRompido(this, false)">Não</button><button type="button"
-                                    onclick="toggleRompido(this, true)">Sim</button></div>
-                        </div><textarea name="obs_camera_pam_b" class="obs-lacre hidden"
-                            placeholder="Observação..."></textarea>
-                        <div class="data-rompimento-container hidden">
-                            <label style="margin-top: 8px; font-weight: normal;">Data do Rompimento:</label>
-                            <input type="date" name="dt_rompimento_camera_pam_b" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc">
+                        <div class="camera-sub-group">
+                            <label>Câmera PAM (fx. B):</label><input type="text" name="camera_pam_b">
+                            <label style="margin-top: 8px; font-weight: normal;">Data de Fixação:</label>
+                            <input type="date" name="dt_fixacao_camera_pam_b" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
+                            <div class="rompido-toggle-container"><label class="rompido-label">Lacre rompido?</label>
+                                <div class="botoes-toggle"><button type="button"
+                                        onclick="toggleRompido(this, false)">Não</button><button type="button"
+                                        onclick="toggleRompido(this, true)">Sim</button></div>
+                            </div><textarea name="obs_camera_pam_b" class="obs-lacre hidden"
+                                placeholder="Observação..."></textarea>
+                            <div class="data-rompimento-container hidden">
+                                <label style="margin-top: 8px; font-weight: normal;">Data do Rompimento:</label>
+                                <input type="date" name="dt_rompimento_camera_pam_b" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc">
+                            </div>
+                            <div class="data-psie-container hidden">
+                                <label style="margin-top: 8px; font-weight: normal;">Reporta PSIE:</label>
+                                <input type="date" name="dt_reporta_psie_camera_pam_b" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+                            </div>
                         </div>
-                        <div class="data-psie-container hidden">
-                            <label style="margin-top: 8px; font-weight: normal;">Reporta PSIE:</label>
-                            <input type="date" name="dt_reporta_psie_camera_pam_b" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
-                        </div>
+
                     </div>
                 </div>
                 <div id="mensagemAdicionarVazio" class="mensagem erro" style="display: none;"></div>

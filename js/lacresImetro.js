@@ -452,7 +452,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const vencimentoClass = isExpiring ? 'vencimento-proximo-texto' : '';
 
                 // Lógica corrigida para o texto do botão
-                const temLacresAfixados = equip.lacres && equip.lacres.some(l => l.lacre_afixado == 1 && l.num_lacre);
+                const temLacresAfixados = equip.lacres && equip.lacres.length > 0;
 
                 const lacresValidos = equip.lacres ? equip.lacres.filter(lacre => lacre.local_lacre && lacre.local_lacre.trim() !== '') : [];
 
@@ -505,23 +505,12 @@ document.addEventListener('DOMContentLoaded', () => {
     window.abrirModalLacres = (btn) => {
         const form = document.getElementById('formularioAdicionarLacres');
 
-        form.querySelectorAll('.rompido-toggle-container').forEach(el => el.style.display = 'flex');
-        form.querySelectorAll('input[name^="dt_fixacao_"]').forEach(input => {
-            const label = input.previousElementSibling;
-            if (label && label.tagName === 'LABEL' && label.textContent.includes('Data de Fixação')) {
-                label.style.display = 'block';
-            }
-            input.style.display = 'block';
-        });
+        // 1. Reset inicial completo do modal
         form.reset();
-
-        form.querySelectorAll('.data-rompimento-container').forEach(container => container.classList.add('hidden'));
-        form.querySelectorAll('.data-psie-container').forEach(container => container.classList.add('hidden'));
-
-
-        //  Garante que todos os campos fiquem visíveis por padrão ---
-        form.querySelectorAll('.form-lacre-group').forEach(group => group.style.display = 'block');
-
+        form.querySelectorAll('.form-lacre-group, .camera-sub-group').forEach(el => {
+            el.style.display = 'block';
+        });
+        form.querySelectorAll('.data-rompimento-container, .data-psie-container, .obs-lacre').forEach(el => el.classList.add('hidden'));
         form.querySelectorAll('.botoes-toggle').forEach(container => {
             container.dataset.rompido = 'false';
             const buttons = container.querySelectorAll('button');
@@ -530,68 +519,115 @@ document.addEventListener('DOMContentLoaded', () => {
                 buttons[1].classList.remove('ativo');
             }
         });
-        form.querySelectorAll('.obs-lacre').forEach(textarea => textarea.classList.add('hidden'));
+
+        // 2. Define a operação e o título do modal
+        operacaoAtual = 'add';
+        const buttonText = btn.textContent;
+        document.getElementById('tituloModalAdicionarLacres').textContent = `${buttonText} para: ${btn.dataset.equipName}`;
+        form.querySelector('[name="id_equipamento"]').value = btn.dataset.equipId;
 
         const lacresAtuais = btn.dataset.lacres ? JSON.parse(btn.dataset.lacres.replace(/&quot;/g, '"')) : [];
-        const temLacres = lacresAtuais.some(l => l.num_lacre);
-        operacaoAtual = temLacres ? 'substitute' : 'add';
 
-        form.querySelector('[name="id_equipamento"]').value = btn.dataset.equipId;
-        document.getElementById('tituloModalAdicionarLacres').textContent = `${temLacres ? 'Substituir' : 'Adicionar'} Lacres para: ${btn.dataset.equipName}`;
-
-        if (!temLacres) {
+        if (buttonText === 'Adicionar Lacres') {
             toggleCameras(1, form.querySelector('.zoom-toggle button'), 'zoom');
             toggleCameras(1, form.querySelector('.pam-toggle button'), 'pam');
             abrirModal('modalAdicionarLacres');
             return;
         }
 
-        // --- LÓGICA DE PREENCHIMENTO ATUALIZADA ---
-        const lacresMap = new Map(lacresAtuais.map(l => [l.local_lacre.toLowerCase(), l]));
+        // 4. Identifica os locais que já estão preenchidos
+        const locaisPreenchidos = new Set(
+            lacresAtuais
+                .filter(lacre => lacre.lacre_afixado == 1 || lacre.lacre_distribuido == 1 || lacre.lacre_rompido == 1)
+                .map(lacre => lacre.local_lacre.toLowerCase())
+        );
 
-        const preencherCampo = (formName, dbName) => {
-            if (lacresMap.has(dbName)) {
-                const lacreData = lacresMap.get(dbName);
-                const inputNum = form.querySelector(`[name="${formName}"]`);
-                const inputData = form.querySelector(`[name="dt_fixacao_${formName}"]`);
-                if (inputNum) inputNum.value = lacreData.num_lacre || '';
-                if (inputData && lacreData.dt_fixacao) {
-                    inputData.value = lacreData.dt_fixacao;
+        // 5. Determina os lacres necessários para o equipamento
+          const requiredLocations = new Set(['metrologico', 'nao metrologico', 'fonte', 'switch']);
+    // Depois, deduz a configuração de câmeras com base nos dados existentes.
+    if (lacresAtuais.some(l => l.local_lacre.toLowerCase() === 'camera zoom (fx. a/b)')) {
+        requiredLocations.add('camera zoom (fx. a/b)');
+    } else if (lacresAtuais.some(l => l.local_lacre.toLowerCase().startsWith('camera zoom (fx.'))) {
+        requiredLocations.add('camera zoom (fx. a)');
+        requiredLocations.add('camera zoom (fx. b)');
+    }
+    if (lacresAtuais.some(l => l.local_lacre.toLowerCase() === 'camera pam (fx. a/b)')) {
+        requiredLocations.add('camera pam (fx. a/b)');
+    } else if (lacresAtuais.some(l => l.local_lacre.toLowerCase().startsWith('camera pam (fx.'))) {
+        requiredLocations.add('camera pam (fx. a)');
+        requiredLocations.add('camera pam (fx. b)');
+    }
+
+        const allRequiredAreFilled = [...requiredLocations].every(loc => locaisPreenchidos.has(loc));
+
+        if (allRequiredAreFilled && requiredLocations.size > 0) {
+            alert('Todos os lacres para este equipamento já estão afixados ou com pendências (rompido/distribuído).');
+            return;
+        }
+
+        // 6. Esconde os grupos de lacres NORMAIS (NÃO-CÂMERAS) que já estão preenchidos
+        form.querySelectorAll('.form-lacre-group').forEach(group => {
+            // Pula os grupos de câmera, que terão lógica própria
+            if (group.querySelector('.zoom-toggle') || group.querySelector('.pam-toggle')) {
+                return;
+            }
+            const input = group.querySelector('input[type="text"]');
+            if (!input) return;
+            const formName = input.name;
+            const lacreInfo = LacreMap[formName];
+            if (lacreInfo && locaisPreenchidos.has(lacreInfo.dbValue.toLowerCase())) {
+                group.style.display = 'none';
+            }
+        });
+
+        // 7. Lógica específica e corrigida para os GRUPOS DE CÂMERAS
+        ['zoom', 'pam'].forEach(groupPrefix => {
+            const mainGroupContainer = form.querySelector(`.${groupPrefix}-toggle`).closest('.form-lacre-group');
+
+            // Determina quais slots de câmera este equipamento possui
+            let requiredCameraSlots = [];
+            if (lacresAtuais.some(l => l.local_lacre.toLowerCase() === `camera ${groupPrefix} (fx. a/b)`)) {
+                requiredCameraSlots.push(`camera ${groupPrefix} (fx. a/b)`);
+            } else if (lacresAtuais.some(l => l.local_lacre.toLowerCase().startsWith(`camera ${groupPrefix} (fx.`))) {
+                // Se tiver qualquer registro de câmera A ou B, consideramos que a configuração é de 2 câmeras
+                requiredCameraSlots.push(`camera ${groupPrefix} (fx. a)`);
+                requiredCameraSlots.push(`camera ${groupPrefix} (fx. b)`);
+            }
+
+            // Verifica se TODOS os slots de câmera deste grupo estão preenchidos
+            const allCameraSlotsFilled = requiredCameraSlots.length > 0 && requiredCameraSlots.every(slot => locaisPreenchidos.has(slot));
+
+            if (allCameraSlotsFilled) {
+                // Se todos estiverem preenchidos, esconde o grupo inteiro (label, botões 1/2, etc)
+                mainGroupContainer.style.display = 'none';
+            } else {
+                // Se não, mostra o grupo e processa os sub-itens
+                mainGroupContainer.style.display = 'block';
+
+                const lacresMap = new Map(lacresAtuais.map(l => [l.local_lacre.toLowerCase(), l]));
+                const camA = lacresMap.has(`camera ${groupPrefix} (fx. a)`);
+                const camB = lacresMap.has(`camera ${groupPrefix} (fx. b)`);
+
+                if (camA || camB) {
+                    toggleCameras(2, form.querySelector(`.${groupPrefix}-toggle button`), groupPrefix);
+                } else {
+                    toggleCameras(1, form.querySelector(`.${groupPrefix}-toggle button`), groupPrefix);
+                }
+
+                const duplaContainer = form.querySelector(`#${groupPrefix}_camera_dupla`);
+                if (duplaContainer) {
+                    duplaContainer.querySelectorAll('.camera-sub-group').forEach(subGroup => {
+                        const input = subGroup.querySelector('input[type="text"]');
+                        const formName = input.name;
+                        const lacreInfo = LacreMap[formName];
+                        if (lacreInfo && locaisPreenchidos.has(lacreInfo.dbValue.toLowerCase())) {
+                            subGroup.style.display = 'none';
+                        }
+                    });
                 }
             }
-        };
-
-        preencherCampo('metrologico', 'metrologico');
-        preencherCampo('nao_metrologico', 'nao metrologico');
-        preencherCampo('fonte', 'fonte');
-        preencherCampo('switch_lacre', 'switch');
-
-        const zoomA = lacresMap.has('camera zoom (fx. a)');
-        const zoomB = lacresMap.has('camera zoom (fx. b)');
-        if (zoomA || zoomB) {
-            toggleCameras(2, form.querySelector('.zoom-toggle button'), 'zoom');
-            preencherCampo('camera_zoom_a', 'camera zoom (fx. a)');
-            preencherCampo('camera_zoom_b', 'camera zoom (fx. b)');
-        } else {
-            toggleCameras(1, form.querySelector('.zoom-toggle button'), 'zoom');
-            preencherCampo('camera_zoom_ab', 'camera zoom (fx. a/b)');
-        }
-
-        const pamA = lacresMap.has('camera pam (fx. a)');
-        const pamB = lacresMap.has('camera pam (fx. b)');
-        if (pamA || pamB) {
-            toggleCameras(2, form.querySelector('.pam-toggle button'), 'pam');
-            preencherCampo('camera_pam_a', 'camera pam (fx. a)');
-            preencherCampo('camera_pam_b', 'camera pam (fx. b)');
-        } else {
-            toggleCameras(1, form.querySelector('.pam-toggle button'), 'pam');
-            preencherCampo('camera_pam_ab', 'camera pam (fx. a/b)');
-            preencherCampo('camera_pam_ab', 'camera pam');
-        }
-
-        form.querySelectorAll('.data-rompimento-container').forEach(container => {
-            container.classList.add('hidden');
         });
+       
 
         abrirModal('modalAdicionarLacres');
     };
