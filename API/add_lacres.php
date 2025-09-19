@@ -39,8 +39,8 @@ try {
 
 
     $sql = "INSERT INTO controle_lacres 
-            (id_equipamento, local_lacre, num_lacre, num_lacre_rompido, obs_lacre, lacre_rompido, lacre_afixado, dt_fixacao, dt_rompimento, acao, id_usuario_afixou) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                (id_equipamento, local_lacre, num_lacre, num_lacre_rompido, obs_lacre, lacre_rompido, lacre_afixado, dt_fixacao, dt_rompimento, dt_reporta_psie, acao, id_usuario_afixou) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt_insert = $conn->prepare($sql);
 
     foreach ($lacres as $lacre) {
@@ -51,6 +51,8 @@ try {
         $b_obs = $lacre['obs'] ?? null;
         $b_dt_fixacao = !empty($lacre['dt_fixacao']) ? $lacre['dt_fixacao'] : null;
         $b_dt_rompimento = !empty($lacre['dt_rompimento']) ? $lacre['dt_rompimento'] : null;
+        $b_dt_reporta_psie = !empty($lacre['dt_reporta_psie']) ? $lacre['dt_reporta_psie'] : null; // Pega a nova data
+
 
 
         $b_id_usuario_afixou = $id_usuario_logado; // Salva o ID do usuário que está fazendo a ação
@@ -70,10 +72,9 @@ try {
             $b_acao = 'Afixado';
         }
 
-        // Altere o bind_param
         $stmt_insert->bind_param(
-            "issssiissis", // Tipos atualizados
-            $b_id_equipamento,
+            "issssiisssss", 
+            $id_equipamento,
             $b_local_lacre,
             $b_num_lacre,
             $b_num_lacre_rompido,
@@ -81,7 +82,8 @@ try {
             $b_lacre_rompido_val,
             $b_lacre_afixado_val,
             $b_dt_fixacao,
-            $b_dt_rompimento, // Nova variável
+            $b_dt_rompimento,
+            $b_dt_reporta_psie, 
             $b_acao,
             $b_id_usuario_afixou
         );
