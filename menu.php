@@ -73,17 +73,17 @@ if (isset($user_id)) {
                 <div class="menu-buttons-container">
                     <div class="menu-row">
                         <a href="manutencoes_instalacoes.php" class="menu-button" id="manutencao"><i
-                                class="fas fa-tools"></i><span>Adiciona</span><span>Ocorrências e Instalações</span></a>
+                                class="fas fa-tools"></i><span>Adicionar</span><span>Ocorrências e Instalações</span></a>
                         <a href="ocorrenciasPendentes.php" class="menu-button" id="manutencaoPendentes"><i
                                 class="fas fa-clock"></i><span>Atribuir Técnico </span><span>Ocorrências Pendentes</span></a>
                         <a href="ocorrenciaProvedores.php" class="menu-button" id="ocorrenciaProvedores"><i
-                                class="fas fa-network-wired"></i><span>Ocorrência Provedores</span></a>
+                                class="fas fa-network-wired"></i><span>Ocorrências Provedores</span></a>
                     </div>
                     <div class="menu-row">
                         <a href="ocorrenciasEmAndamento.php" class="menu-button" id="manutencaoAndamento"><i
                                 class="fas fa-cogs"></i><span>Ocorrências Em Andamento</span></a>
                         <a href="ocorrenciaProcessamento.php" class="menu-button" id="ocorrenciaProcessamento"><i
-                                class="fas fa-clipboard-check"></i><span>Ocorrência Processamento</span></a>
+                                class="fas fa-clipboard-check"></i><span>Ocorrências Processamento</span></a>
                     </div>
                     <div class="menu-row">
                         <a href="solicitacoesClientes.php" class="menu-button" id="solicitacaoClientesBtn"><i

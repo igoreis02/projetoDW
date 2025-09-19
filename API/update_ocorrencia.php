@@ -139,7 +139,7 @@ try {
 
             $stmt_lacres = $conn->prepare($sql_update_lacres);
 
-            // Converte a string de IDs (ex: "70,71") em um array
+            // Converte a string de IDs em um array
             $ids_lacres_a_afixar = explode(',', $manutencao_info['id_controle_lacres_dist']);
 
             // Executa a atualização para cada ID de lacre encontrado
@@ -357,6 +357,50 @@ try {
             throw new Exception('Todos os campos são obrigatórios para concluir o reparo.');
         }
 
+
+        // 1. Busca o tipo da manutenção e os IDs dos lacres distribuídos ANTES de atualizar
+        $stmt_info = $conn->prepare("SELECT tipo_manutencao, id_controle_lacres_dist FROM manutencoes WHERE id_manutencao = ?");
+        $stmt_info->bind_param('i', $id);
+        $stmt_info->execute();
+        $result_info = $stmt_info->get_result();
+        $manutencao_info = $result_info->fetch_assoc();
+        $stmt_info->close();
+
+        if (!$manutencao_info) {
+            throw new Exception('Manutenção não encontrada.');
+        }
+
+        // 2. Se for do tipo "afixar" e tiver lacres vinculados, atualiza a tabela de lacres
+        if ($manutencao_info['tipo_manutencao'] === 'afixar' && !empty($manutencao_info['id_controle_lacres_dist'])) {
+
+            $id_usuario_afixou = $tecnicos[0]; 
+
+            $sql_update_lacres = "UPDATE controle_lacres SET
+                                num_lacre = num_lacre_distribuido,
+                                lacre_rompido = 0,
+                                lacre_afixado = 1,
+                                lacre_distribuido = 0,
+                                num_lacre_distribuido = NULL,
+                                dt_fixacao = ?,
+                                acao = 'Afixado',
+                                id_usuario_afixou = ?,
+                                obs_lacre = NULL
+                            WHERE id_controle_lacres = ?";
+            $stmt_lacres = $conn->prepare($sql_update_lacres);
+
+            $ids_lacres_a_afixar = explode(',', $manutencao_info['id_controle_lacres_dist']);
+
+            foreach ($ids_lacres_a_afixar as $id_lacre) {
+                $id_lacre_int = (int)$id_lacre;
+                // Usa a data de conclusão do reparo informada no formulário
+                $stmt_lacres->bind_param("sii", $fim_reparo, $id_usuario_afixou, $id_lacre_int);
+                if (!$stmt_lacres->execute()) {
+                    throw new Exception('Falha ao atualizar o status de um dos lacres afixados.');
+                }
+            }
+            $stmt_lacres->close();
+        }
+
         // 1. Atualiza a tabela 'manutencoes' 
         $stmt = $conn->prepare("UPDATE manutencoes SET status_reparo = 'concluido', fim_reparo = NOW(), reparo_finalizado = ?, materiais_utilizados = ?, rompimento_lacre = ?, numero_lacre = ?, info_rompimento = ? WHERE id_manutencao = ?");
         $stmt->bind_param('ssissi', $reparo_finalizado, $materiais_utilizados, $rompimento_lacre, $numero_lacre, $info_rompimento, $id);
@@ -416,7 +460,6 @@ try {
         }
 
         if ($origem === 'ocorrencia_provedor') {
-            // Lógica original para provedor (inalterada)
             $sql = "UPDATE ocorrencia_provedor SET des_ocorrencia = ?, des_reparo = ? WHERE id_ocorrencia_provedor = ?";
             $stmt = $conn->prepare($sql);
             $stmt->bind_param('ssi', $ocorrencia, $reparo_finalizado, $id);
@@ -434,8 +477,6 @@ try {
             }
             $stmt->close();
         } else {
-            // --- LÓGICA ATUALIZADA PARA MANUTENÇÕES GERAIS E SEMAFÓRICAS ---
-
             // 1. Atualiza a tabela 'manutencoes' como sempre fez (lógica original)
             $params = [$ocorrencia];
             $types = 's';

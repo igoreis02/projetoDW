@@ -386,7 +386,9 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        const allCorretivas = Object.values(allData.ocorrencias).flat().filter(item => item.tipo_manutencao === 'corretiva');
+        const allCorretivas = Object.values(allData.ocorrencias).flat().filter(item =>
+            ['corretiva', 'afixar'].includes(item.tipo_manutencao)
+        );
 
         if (allCorretivas.length === 0) {
             simplifiedView.innerHTML = '<h2>RESUMO DE PRIORIDADES</h2><p>Nenhuma manutenção corretiva em andamento encontrada.</p>';

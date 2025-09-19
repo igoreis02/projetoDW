@@ -273,7 +273,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         let allCorretivas = [];
         for (const cidade in allData.ocorrencias) {
-            const corretivas = allData.ocorrencias[cidade].filter(item => item.tipo_manutencao === 'corretiva');
+            const corretivas = allData.ocorrencias[cidade].filter(item =>
+                ['corretiva', 'afixar'].includes(item.tipo_manutencao)
+            );
             allCorretivas.push(...corretivas);
         }
 

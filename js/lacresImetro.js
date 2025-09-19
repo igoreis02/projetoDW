@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
         abrirModal('modalLacreRompido');
 
         try {
-        
+
             const response = await fetch(`API/get_lacres_por_equipamento.php?id_equipamento=${idEquipamento}`);
             const data = await response.json();
 
@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function toggleDetalhesLacreRompido(checkbox) {
         const containerDetalhes = document.getElementById('detalhesLacresSelecionados');
         const [local, numero] = checkbox.value.split('|');
-        const detalheId = `detalhe-${local.replace(/[^a-zA-Z0-9]/g, '')}`; // Cria um ID seguro
+        const detalheId = `detalhe-${local.replace(/[^a-zA-Z0-9]/g, '')}`;
 
         if (checkbox.checked) {
             containerDetalhes.classList.remove('hidden');
@@ -87,16 +87,15 @@ document.addEventListener('DOMContentLoaded', () => {
             <textarea name="obs_${local}" class="obs-lacre" placeholder="Observações (opcional)..."></textarea>
             <label for="data_${local}" style="margin-top: 8px;">Data do Rompimento:</label>
             <input type="date" name="data_${local}" required style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
+
+            <label for="psie_${local}" style="margin-top: 8px;">Reporta PSIE:</label>
+            <input type="date" name="psie_${local}" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
         `;
             containerDetalhes.appendChild(div);
         } else {
             const detalheExistente = document.getElementById(detalheId);
-            if (detalheExistente) {
-                detalheExistente.remove();
-            }
-            if (containerDetalhes.children.length === 0) {
-                containerDetalhes.classList.add('hidden');
-            }
+            if (detalheExistente) detalheExistente.remove();
+            if (containerDetalhes.children.length === 0) containerDetalhes.classList.add('hidden');
         }
     }
 
@@ -129,15 +128,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const [local, numero] = valor.split('|');
             const obs = formData.get(`obs_${local}`) || '';
             const dataRompimento = formData.get(`data_${local}`);
+            const dataPsie = formData.get(`psie_${local}`);
 
-            if (!dataRompimento) {
-                isDataValid = false;
-            }
+            if (!dataRompimento) isDataValid = false;
 
-            lacresRompimentoParaConfirmar.lacres.push({ local, numero, obs, data_rompimento: dataRompimento });
+            lacresRompimentoParaConfirmar.lacres.push({ local, numero, obs, data_rompimento: dataRompimento, data_psie: dataPsie });
 
-            const dataFormatada = dataRompimento ? new Date(dataRompimento + 'T00:00:00').toLocaleDateString('pt-BR') : '<span style="color: red;">Data não informada</span>';
+            const dataFormatada = new Date(dataRompimento + 'T00:00:00').toLocaleDateString('pt-BR');
             resumoHTML += `<li><strong>${local} (${numero}):</strong> Rompido em ${dataFormatada}`;
+
+            if (dataPsie) {
+                const psieFormatada = new Date(dataPsie + 'T00:00:00').toLocaleDateString('pt-BR');
+                resumoHTML += `<br><small><em>Reporta no PSIE em: ${psieFormatada}</em></small>`;
+            }
             if (obs) {
                 resumoHTML += `<br><small><em>Obs: ${obs}</em></small>`;
             }
@@ -279,19 +282,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.toggleRompido = (btn, isRompido) => {
         const container = btn.closest('.botoes-toggle');
-        const obsTextarea = container.closest('.rompido-toggle-container').nextElementSibling;
+        const rompidoToggleContainer = container.closest('.rompido-toggle-container');
+        const obsTextarea = rompidoToggleContainer.nextElementSibling;
+        // Encontra o container da data, que é o próximo irmão do textarea
+        const dataRompimentoContainer = obsTextarea.nextElementSibling;
 
         container.querySelectorAll('button').forEach(b => b.classList.remove('ativo'));
         btn.classList.add('ativo');
-
-        // Armazena o estado no próprio container para ler depois
         container.dataset.rompido = isRompido;
 
         if (isRompido) {
             obsTextarea.classList.remove('hidden');
+            if (dataRompimentoContainer) dataRompimentoContainer.classList.remove('hidden');
         } else {
             obsTextarea.classList.add('hidden');
-            obsTextarea.value = ''; // Limpa o campo se o usuário voltar para "Não"
+            obsTextarea.value = '';
+            if (dataRompimentoContainer) {
+                dataRompimentoContainer.classList.add('hidden');
+                const dataInput = dataRompimentoContainer.querySelector('input[type="date"]');
+                if (dataInput) dataInput.value = ''; // Limpa a data se o usuário voltar para "Não"
+            }
         }
     };
 
@@ -439,24 +449,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     let itemLacreHTML = `<div class="lacre-item">`;
                     itemLacreHTML += `<strong>${displayName}:</strong> `;
 
-                    // 1. Se o lacre está AF serenIXADO (e não rompido), mostra apenas o número.
                     if (lacre.lacre_afixado == 1 && lacre.num_lacre) {
                         itemLacreHTML += lacre.num_lacre;
                     }
-                    // 2. Se está ROMPIDO, mostra o status de rompido.
                     else if (lacre.lacre_rompido == 1 && lacre.num_lacre_rompido) {
-                        itemLacreHTML += `<span class="lacre-detalhe rompido">Rompido: ${lacre.num_lacre_rompido}</span>`;
+                        itemLacreHTML += `<span class="lacre-detalhe rompido">Lacre Rompido: ${lacre.num_lacre_rompido}</span>`;
+
+                        // Mostra a data do PSIE apenas se o lacre estiver rompido
+                        if (lacre.dt_reporta_psie) {
+                            const dataPsieFormatada = new Date(lacre.dt_reporta_psie + 'T00:00:00').toLocaleDateString('pt-BR');
+                            itemLacreHTML += `<span class="lacre-detalhe rompido">Reporta no PSIE: ${dataPsieFormatada}</span>`;
+                        }
                     }
-                    // 3. Se está DISTRIBUÍDO, mostra o status de distribuído.
                     else if (lacre.lacre_distribuido == 1 && lacre.num_lacre_distribuido) {
                         itemLacreHTML += `<span class="lacre-detalhe distribuido">Distribuído: ${lacre.num_lacre_distribuido}</span>`;
                     }
-                    // 4. Se nenhuma das condições acima, significa que o local está vazio.
                     else {
                         itemLacreHTML += `(Vazio)`;
                     }
 
-                    // A observação só aparece para lacres que não estão afixados
+                    // A observação continua sendo exibida para lacres não afixados
                     if (lacre.lacre_afixado != 1 && lacre.obs_lacre) {
                         itemLacreHTML += `<span class="lacre-detalhe">Obs: ${lacre.obs_lacre}</span>`;
                     }
@@ -477,6 +489,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.abrirModalLacres = (btn) => {
         const form = document.getElementById('formularioAdicionarLacres');
+
+        form.querySelectorAll('.rompido-toggle-container').forEach(el => el.style.display = 'flex');
+        form.querySelectorAll('input[name^="dt_fixacao_"]').forEach(input => {
+            const label = input.previousElementSibling;
+            if (label && label.tagName === 'LABEL' && label.textContent.includes('Data de Fixação')) {
+                label.style.display = 'block';
+            }
+            input.style.display = 'block';
+        });
         form.reset();
 
         //  Garante que todos os campos fiquem visíveis por padrão ---
@@ -493,7 +514,7 @@ document.addEventListener('DOMContentLoaded', () => {
         form.querySelectorAll('.obs-lacre').forEach(textarea => textarea.classList.add('hidden'));
 
         const lacresAtuais = btn.dataset.lacres ? JSON.parse(btn.dataset.lacres.replace(/&quot;/g, '"')) : [];
-        const temLacres = lacresAtuais.length > 0;
+        const temLacres = lacresAtuais.some(l => l.num_lacre);
         operacaoAtual = temLacres ? 'substitute' : 'add';
 
         form.querySelector('[name="id_equipamento"]').value = btn.dataset.equipId;
@@ -506,43 +527,47 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const lacresMap = new Map(lacresAtuais.map(l => [l.local_lacre.toLowerCase(), l.num_lacre]));
+        // --- LÓGICA DE PREENCHIMENTO ATUALIZADA ---
+        const lacresMap = new Map(lacresAtuais.map(l => [l.local_lacre.toLowerCase(), l]));
 
-        const zoomA = lacresMap.get('camera zoom (fx. a)');
-        const zoomB = lacresMap.get('camera zoom (fx. b)');
-        const zoomAB = lacresMap.get('camera zoom (fx. a/b)');
+        const preencherCampo = (formName, dbName) => {
+            if (lacresMap.has(dbName)) {
+                const lacreData = lacresMap.get(dbName);
+                const inputNum = form.querySelector(`[name="${formName}"]`);
+                const inputData = form.querySelector(`[name="dt_fixacao_${formName}"]`);
+                if (inputNum) inputNum.value = lacreData.num_lacre || '';
+                if (inputData && lacreData.dt_fixacao) {
+                    inputData.value = lacreData.dt_fixacao;
+                }
+            }
+        };
+
+        preencherCampo('metrologico', 'metrologico');
+        preencherCampo('nao_metrologico', 'nao metrologico');
+        preencherCampo('fonte', 'fonte');
+        preencherCampo('switch_lacre', 'switch');
+
+        const zoomA = lacresMap.has('camera zoom (fx. a)');
+        const zoomB = lacresMap.has('camera zoom (fx. b)');
         if (zoomA || zoomB) {
             toggleCameras(2, form.querySelector('.zoom-toggle button'), 'zoom');
-            if (zoomA) form.querySelector('[name="camera_zoom_a"]').value = zoomA;
-            if (zoomB) form.querySelector('[name="camera_zoom_b"]').value = zoomB;
+            preencherCampo('camera_zoom_a', 'camera zoom (fx. a)');
+            preencherCampo('camera_zoom_b', 'camera zoom (fx. b)');
         } else {
             toggleCameras(1, form.querySelector('.zoom-toggle button'), 'zoom');
-            if (zoomAB) form.querySelector('[name="camera_zoom_ab"]').value = zoomAB;
+            preencherCampo('camera_zoom_ab', 'camera zoom (fx. a/b)');
         }
 
-        const pamA = lacresMap.get('camera pam (fx. a)');
-        const pamB = lacresMap.get('camera pam (fx. b)');
-        const pamAB = lacresMap.get('camera pam (fx. a/b)') || lacresMap.get('camera pam');
+        const pamA = lacresMap.has('camera pam (fx. a)');
+        const pamB = lacresMap.has('camera pam (fx. b)');
         if (pamA || pamB) {
             toggleCameras(2, form.querySelector('.pam-toggle button'), 'pam');
-            if (pamA) form.querySelector('[name="camera_pam_a"]').value = pamA;
-            if (pamB) form.querySelector('[name="camera_pam_b"]').value = pamB;
+            preencherCampo('camera_pam_a', 'camera pam (fx. a)');
+            preencherCampo('camera_pam_b', 'camera pam (fx. b)');
         } else {
             toggleCameras(1, form.querySelector('.pam-toggle button'), 'pam');
-            if (pamAB) form.querySelector('[name="camera_pam_ab"]').value = pamAB;
-        }
-
-        const outrosLacres = {
-            'metrologico': 'metrologico',
-            'nao metrologico': 'nao_metrologico',
-            'fonte': 'fonte',
-            'switch': 'switch_lacre'
-        };
-        for (const [dbName, formName] of Object.entries(outrosLacres)) {
-            if (lacresMap.has(dbName)) {
-                const input = form.querySelector(`[name="${formName}"]`);
-                if (input) input.value = lacresMap.get(dbName);
-            }
+            preencherCampo('camera_pam_ab', 'camera pam (fx. a/b)');
+            preencherCampo('camera_pam_ab', 'camera pam');
         }
 
         abrirModal('modalAdicionarLacres');
@@ -557,26 +582,74 @@ document.addEventListener('DOMContentLoaded', () => {
         resumo.innerHTML = '';
         let temLacre = false;
 
-        formData.forEach((value, formName) => {
-            if (formName.startsWith('obs_') || formName === 'id_equipamento') return;
+        for (const formName in LacreMap) {
             const lacreInfo = LacreMap[formName];
-            if (lacreInfo && value.trim() !== '') {
+            const numeroLacre = formData.get(formName);
+
+            if (numeroLacre && numeroLacre.trim() !== '') {
                 temLacre = true;
+
+                // Coleta dos dados dos campos
+                const dateFieldName = `dt_fixacao_${formName.replace('camera_', '')}`;
+                const dataFixacao = formData.get(dateFieldName) || null;
+                const obs = formData.get(`obs_${formName}`) || '';
+
+                // Lógica para pegar o status "Rompido"
+                let isRompido = false;
+                const inputDoLacre = form.querySelector(`[name="${formName}"]`);
+                if (inputDoLacre) {
+                    const groupContainer = inputDoLacre.closest('.form-lacre-group') || inputDoLacre.closest('div[id*="_camera_"]');
+                    const obsTextarea = groupContainer?.querySelector(`textarea[name="obs_${formName}"]`);
+                    const rompidoContainer = obsTextarea?.previousElementSibling;
+                    const rompidoDiv = rompidoContainer?.querySelector('.botoes-toggle');
+                    if (rompidoDiv) {
+                        isRompido = rompidoDiv.dataset.rompido === 'true';
+                    }
+                }
+
+                // --- NOVA LÓGICA ADICIONADA ---
+                // Coleta a data do rompimento APENAS se o lacre estiver marcado como rompido
+                const dataRompimentoFieldName = `dt_rompimento_${formName.replace('camera_', '')}`;
+                const dataRompimento = isRompido ? formData.get(dataRompimentoFieldName) : null;
+                // --- FIM DA NOVA LÓGICA ---
+
+                // Adiciona todas as informações ao objeto que será enviado para a API
                 lacresParaConfirmar.lacres.push({
                     local: lacreInfo.dbValue,
-                    numero: value,
-                    obs: formData.get(`obs_${formName}`) || ''
+                    numero: numeroLacre,
+                    rompido: isRompido,
+                    obs: obs,
+                    dt_fixacao: dataFixacao,
+                    dt_rompimento: dataRompimento // Adiciona a nova data ao payload
                 });
-                resumo.innerHTML += `<p><strong>${lacreInfo.displayName}:</strong> ${value}</p>`;
-            }
-        });
 
+                // Constrói o resumo para o modal de confirmação
+                let resumoHTML = `<p><strong>${lacreInfo.displayName}:</strong> ${numeroLacre}`;
+                if (dataFixacao) {
+                    resumoHTML += ` (Fixado em: ${new Date(dataFixacao + 'T00:00:00').toLocaleDateString('pt-BR')})`;
+                }
+                if (isRompido) {
+                    resumoHTML += ` <span style="color: #c81e1e; font-weight: bold;">(Rompido)</span>`;
+                    // Mostra a data do rompimento no resumo
+                    if (dataRompimento) {
+                        resumoHTML += ` <span style="font-size: 0.9em;">- Rompido em: ${new Date(dataRompimento + 'T00:00:00').toLocaleDateString('pt-BR')}</span>`;
+                    }
+                }
+                resumoHTML += `</p>`;
+                resumo.innerHTML += resumoHTML;
+            }
+        }
+
+        // O restante da sua função continua o mesmo
         if (temLacre) {
             let tituloConfirmacao = '';
-            if (operacaoAtual === 'substitute') tituloConfirmacao = 'Confirmar Substituição';
-            else if (operacaoAtual === 'add') tituloConfirmacao = 'Confirmar Novos Lacres';
-            else if (operacaoAtual === 'distribute') tituloConfirmacao = 'Confirmar Lacres a Distribuir';
-
+            if (operacaoAtual === 'substitute') {
+                tituloConfirmacao = 'Confirmar Substituição';
+            } else if (operacaoAtual === 'add') {
+                tituloConfirmacao = 'Confirmar Novos Lacres';
+            } else if (operacaoAtual === 'distribute') {
+                tituloConfirmacao = 'Confirmar Lacres a Distribuir';
+            }
             document.getElementById('tituloConfirmacao').textContent = tituloConfirmacao;
             fecharModal('modalAdicionarLacres');
             abrirModal('modalConfirmacao');
@@ -714,6 +787,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     window.abrirModalDistribuir = (btn) => {
+
+
         const lacresAtuais = btn.dataset.lacres ? JSON.parse(btn.dataset.lacres.replace(/&quot;/g, '"')) : [];
 
 
@@ -804,8 +879,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
+        modalAdicionar.querySelectorAll('input[name^="dt_fixacao_"]').forEach(input => {
+            input.style.display = 'none';
+            const label = input.previousElementSibling;
+            if (label && label.tagName === 'LABEL' && label.textContent.includes('Data de Fixação')) {
+                label.style.display = 'none';
+            }
+        });
     };
-    
+
     function toggleDetalhesDistribuicao(checkbox) {
         const containerDetalhes = document.getElementById('detalhesLacresDistribuir');
         const local = checkbox.value;

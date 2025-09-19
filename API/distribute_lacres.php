@@ -81,12 +81,7 @@ try {
             $stmt_insert->close();
         }
 
-        // Monta o texto para a ocorrência de manutenção
-        $texto_item = $b_local_lacre;
-        if (!empty($lacre['obs'])) {
-            $texto_item .= " (" . $lacre['obs'] . ")";
-        }
-        $lacres_para_ocorrencia[] = $texto_item;
+        $lacres_para_ocorrencia[] = "{$b_local_lacre} ({$b_num_lacre_novo})";
     }
 
     $ocorrencia_reparo_texto = "Afixar lacre: " . implode('; ', $lacres_para_ocorrencia);

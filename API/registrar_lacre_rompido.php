@@ -34,6 +34,7 @@ try {
                 lacre_rompido = 1,
                 lacre_afixado = 0,
                 dt_rompimento = ?,
+                dt_reporta_psie = ?,
                 obs_lacre = ?,
                 acao = 'Rompido',
                 id_usuario_rompeu = ?
@@ -46,12 +47,14 @@ try {
         $numero = $lacre['numero'];
         $obs = !empty($lacre['obs']) ? $lacre['obs'] : null;
         $data_rompimento = $lacre['data_rompimento'] ?? null; 
+        $data_psie = !empty($lacre['data_psie']) ? $lacre['data_psie'] : null; 
+
 
         if (empty($data_rompimento)) {
             throw new Exception("Data de rompimento não fornecida para o lacre '{$local}'.");
         }
 
-        $stmt->bind_param("ssiiss", $data_rompimento, $obs, $id_usuario_rompeu, $id_equipamento, $local, $numero);
+        $stmt->bind_param("sssiiss", $data_rompimento, $data_psie, $obs, $id_usuario_rompeu, $id_equipamento, $local, $numero);
 
         if (!$stmt->execute()) {
             throw new Exception("Falha ao atualizar o lacre '{$local}' com número '{$numero}'. Erro: " . $stmt->error);
