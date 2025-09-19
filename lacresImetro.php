@@ -361,6 +361,7 @@ require_once 'API/conexao_bd.php';
         }
 
         .form-lacre-group {
+            position: relative;
             padding: 1rem;
             margin-bottom: 1rem;
             border: 1px solid #e2e8f0;
@@ -597,6 +598,57 @@ require_once 'API/conexao_bd.php';
             color: #6c757d;
             /* Deixa o texto do label mais claro */
         }
+
+        .form-lacre-group,
+        .camera-sub-group {
+            position: relative;
+            /* Necessário para o posicionamento do status */
+            padding-top: 2.5rem;
+            /* Espaço para o texto do status */
+        }
+
+        .lacre-status {
+            position: absolute;
+            top: 8px;
+            right: 15px;
+            padding: 4px 8px;
+            border-radius: 5px;
+            font-size: 0.8em;
+            font-weight: bold;
+            color: white;
+        }
+
+        .is-rompido {
+            background-color: #fef2f2;
+            border: 1px solid #ef4444;
+        }
+
+        .is-rompido .lacre-status {
+            background-color: #ef4444;
+            content: 'Rompido';
+        }
+
+        .is-distribuido {
+            background-color: #fff7ed;
+            border: 1px solid #f97316;
+        }
+
+        .is-distribuido .lacre-status {
+            background-color: #f97316;
+            content: 'Distribuído';
+        }
+
+        .is-rompido input,
+        .is-rompido textarea,
+        .is-rompido .botoes-toggle,
+        .is-distribuido input,
+        .is-distribuido textarea,
+        .is-distribuido .botoes-toggle {
+            opacity: 0.7;
+            pointer-events: none;
+            /* Bloqueia cliques e edição */
+            background-color: #f3f4f6;
+        }
     </style>
 </head>
 
@@ -730,7 +782,7 @@ require_once 'API/conexao_bd.php';
                     <label style="margin-top: 8px; font-weight: normal;">Data de Fixação:</label>
                     <input type="date" name="dt_fixacao_fonte"
                         style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
-                    
+
                     <div class="data-rompimento-container hidden">
                         <label style="margin-top: 8px; font-weight: normal;">Data do Rompimento:</label>
                         <input type="date" name="dt_rompimento_fonte"
@@ -759,7 +811,7 @@ require_once 'API/conexao_bd.php';
                     <label style="margin-top: 8px; font-weight: normal;">Data de Fixação:</label>
                     <input type="date" name="dt_fixacao_switch_lacre"
                         style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
-                    
+
                     <div class="data-rompimento-container hidden">
                         <label style="margin-top: 8px; font-weight: normal;">Data do Rompimento:</label>
                         <input type="date" name="dt_rompimento_switch_lacre"
@@ -781,7 +833,7 @@ require_once 'API/conexao_bd.php';
 
                     <div id="zoom_camera_unica">
                         <label>Câmera Zoom (fx. A/B):</label><input type="text" name="camera_zoom_ab">
-                         
+
                         <div class="rompido-toggle-container"><label class="rompido-label">Lacre rompido?</label>
                             <div class="botoes-toggle"><button type="button"
                                     onclick="toggleRompido(this, false)">Não</button><button type="button"
@@ -792,7 +844,7 @@ require_once 'API/conexao_bd.php';
                         <label style="margin-top: 8px; font-weight: normal;">Data de Fixação:</label>
                         <input type="date" name="dt_fixacao_camera_zoom_ab"
                             style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
-                        
+
                         <div class="data-rompimento-container hidden">
                             <label style="margin-top: 8px; font-weight: normal;">Data do Rompimento:</label>
                             <input type="date" name="dt_rompimento_camera_zoom_ab"
@@ -820,7 +872,7 @@ require_once 'API/conexao_bd.php';
                             <label style="margin-top: 8px; font-weight: normal;">Data de Fixação:</label>
                             <input type="date" name="dt_fixacao_camera_zoom_a"
                                 style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
-                            
+
                             <div class="data-rompimento-container hidden">
                                 <label style="margin-top: 8px; font-weight: normal;">Data do Rompimento:</label>
                                 <input type="date" name="dt_rompimento_camera_zoom_a"
@@ -846,7 +898,7 @@ require_once 'API/conexao_bd.php';
                             <label style="margin-top: 8px; font-weight: normal;">Data de Fixação:</label>
                             <input type="date" name="dt_fixacao_camera_zoom_b"
                                 style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
-                            
+
                             <div class="data-rompimento-container hidden">
                                 <label style="margin-top: 8px; font-weight: normal;">Data do Rompimento:</label>
                                 <input type="date" name="dt_rompimento_camera_zoom_b"
@@ -882,7 +934,7 @@ require_once 'API/conexao_bd.php';
                         <label style="margin-top: 8px; font-weight: normal;">Data de Fixação:</label>
                         <input type="date" name="dt_fixacao_camera_pam_ab"
                             style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
-                        
+
                         <div class="data-rompimento-container hidden">
                             <label style="margin-top: 8px; font-weight: normal;">Data do Rompimento:</label>
                             <input type="date" name="dt_rompimento_camera_pam_ab"
@@ -910,7 +962,7 @@ require_once 'API/conexao_bd.php';
                             <label style="margin-top: 8px; font-weight: normal;">Data de Fixação:</label>
                             <input type="date" name="dt_fixacao_camera_pam_a"
                                 style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
-                            
+
                             <div class="data-rompimento-container hidden">
                                 <label style="margin-top: 8px; font-weight: normal;">Data do Rompimento:</label>
                                 <input type="date" name="dt_rompimento_camera_pam_a"
@@ -936,7 +988,7 @@ require_once 'API/conexao_bd.php';
                             <label style="margin-top: 8px; font-weight: normal;">Data de Fixação:</label>
                             <input type="date" name="dt_fixacao_camera_pam_b"
                                 style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
-                            
+
                             <div class="data-rompimento-container hidden">
                                 <label style="margin-top: 8px; font-weight: normal;">Data do Rompimento:</label>
                                 <input type="date" name="dt_rompimento_camera_pam_b"
