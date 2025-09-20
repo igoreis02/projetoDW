@@ -54,7 +54,7 @@ try {
         $ids = array_keys($equipamentos);
         $id_list = implode(',', $ids);
 
-       $sql_lacres = "SELECT lc.id_equipamento, lc.local_lacre, lc.num_lacre,
+       $sql_lacres = "SELECT lc.id_controle_lacres, lc.id_equipamento, lc.local_lacre, lc.num_lacre,
                       lc.lacre_rompido, lc.num_lacre_rompido, lc.obs_lacre,
                       lc.lacre_afixado, lc.lacre_distribuido, lc.num_lacre_distribuido,
                       lc.dt_reporta_psie, lc.dt_fixacao, lc.dt_rompimento

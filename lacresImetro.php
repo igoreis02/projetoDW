@@ -76,6 +76,13 @@ require_once 'API/conexao_bd.php';
             cursor: pointer;
             flex-grow: 1;
             /* Para ocupar espaço igual ao outro botão */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .botao-cancelar-editar {
+            margin-top: 24px;
         }
 
         .botao-salvar .spinner {
@@ -312,32 +319,59 @@ require_once 'API/conexao_bd.php';
             gap: 0.5rem 1rem;
         }
 
+        .lacre-principal {
+            display: inline;
+            /* Comporta-se como texto */
+            white-space: nowrap;
+            /* A regra mágica: proíbe a quebra de linha interna */
+        }
+
+        .lacre-titulo-principal {
+            white-space: nowrap;
+            /* A regra mais importante: proíbe a quebra de linha */
+            display: inline;
+            /* Se comporta como texto, permitindo que outros detalhes fiquem ao lado */
+        }
+
         .lacre-item {
             background-color: #eef2ff;
-            padding: 0.5rem;
+            padding: 0.75rem;
             border-radius: 5px;
+            flex-grow: 1;
+            line-height: 1.5;
+            overflow-wrap: break-word;
         }
 
         .lacre-detalhe {
-            display: block;
-            /* Garante que cada detalhe fique em uma nova linha */
+            display: inline-block;
             font-size: 0.9em;
             color: #555;
-            margin-left: 5px;
+            margin: 2px 4px 2px 0;
+            vertical-align: middle;
+        }
+
+        .lacre-detalhe.rompido,
+        .lacre-detalhe.distribuido {
+            font-weight: bold;
+            padding: 2px 6px;
+            /* Adiciona um destaque visual */
+            border-radius: 4px;
+            color: white;
         }
 
         .lacre-detalhe.rompido {
-            color: #c81e1e;
-            font-weight: bold;
+            background-color: #ef4444;
+            /* Vermelho */
         }
 
         .lacre-detalhe.distribuido {
-            color: #fd7e14;
-            font-weight: bold;
+            background-color: #f97316;
+            /* Laranja */
         }
 
         .lacre-item strong {
             color: #4338ca;
+            /* O strong agora é um item flex, não precisa de mais nada */
         }
 
         .equipamento-actions {
@@ -649,6 +683,73 @@ require_once 'API/conexao_bd.php';
             /* Bloqueia cliques e edição */
             background-color: #f3f4f6;
         }
+
+
+        .lacre-item-container {
+            position: relative;
+            display: flex;
+            /* Garante que o filho (.lacre-item) possa crescer */
+            flex-direction: column;
+        }
+
+        .botao-editar-lacre {
+            position: absolute;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+            background-color: #ffc107;
+            color: #333;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+            z-index: 10;
+        }
+
+        .lacre-item-container:hover .botao-editar-lacre {
+            opacity: 1;
+        }
+
+        #localLacreIndividualTitulo {
+            background-color: #ffc107;
+            /* Amarelo/Ouro */
+            color: #333;
+            /* Texto escuro para contraste */
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75em;
+            /* Ligeiramente menor que o título */
+            text-transform: uppercase;
+            vertical-align: middle;
+            /* Alinha melhor com o texto */
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        /* Regra para forçar os botões dentro de .modal-actions a terem o mesmo tamanho */
+        .modal-actions>button {
+            flex: 1;
+            /* Faz com que cada botão ocupe uma fração igual do espaço */
+        }
+
+        .modal-body-text {
+            margin: 1.5rem 0;
+            line-height: 1.6;
+            color: #333;
+        }
     </style>
 </head>
 
@@ -726,12 +827,12 @@ require_once 'API/conexao_bd.php';
                     <div class="data-rompimento-container hidden">
                         <label style="margin-top: 8px; font-weight: normal;">Data do Rompimento:</label>
                         <input type="date" name="dt_rompimento_metrologico"
-                            style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+                            style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; ">
                     </div>
                     <div class="data-psie-container hidden">
                         <label style="margin-top: 8px; font-weight: normal;">Reporta PSIE:</label>
                         <input type="date" name="dt_reporta_psie_metrologico"
-                            style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+                            style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
                     </div>
                 </div>
 
@@ -756,12 +857,12 @@ require_once 'API/conexao_bd.php';
                     <div class="data-rompimento-container hidden">
                         <label style="margin-top: 8px; font-weight: normal;">Data do Rompimento:</label>
                         <input type="date" name="dt_rompimento_nao_metrologico"
-                            style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+                            style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
                     </div>
                     <div class="data-psie-container hidden">
                         <label style="margin-top: 8px; font-weight: normal;">Reporta PSIE:</label>
                         <input type="date" name="dt_reporta_psie_nao_metrologico"
-                            style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+                            style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
                     </div>
                 </div>
 
@@ -786,12 +887,12 @@ require_once 'API/conexao_bd.php';
                     <div class="data-rompimento-container hidden">
                         <label style="margin-top: 8px; font-weight: normal;">Data do Rompimento:</label>
                         <input type="date" name="dt_rompimento_fonte"
-                            style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+                            style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; ">
                     </div>
                     <div class="data-psie-container hidden">
                         <label style="margin-top: 8px; font-weight: normal;">Reporta PSIE:</label>
                         <input type="date" name="dt_reporta_psie_fonte"
-                            style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+                            style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
                     </div>
                 </div>
 
@@ -815,12 +916,12 @@ require_once 'API/conexao_bd.php';
                     <div class="data-rompimento-container hidden">
                         <label style="margin-top: 8px; font-weight: normal;">Data do Rompimento:</label>
                         <input type="date" name="dt_rompimento_switch_lacre"
-                            style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+                            style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
                     </div>
                     <div class="data-psie-container hidden">
                         <label style="margin-top: 8px; font-weight: normal;">Reporta PSIE:</label>
                         <input type="date" name="dt_reporta_psie_switch_lacre"
-                            style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+                            style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
                     </div>
                 </div>
 
@@ -848,12 +949,12 @@ require_once 'API/conexao_bd.php';
                         <div class="data-rompimento-container hidden">
                             <label style="margin-top: 8px; font-weight: normal;">Data do Rompimento:</label>
                             <input type="date" name="dt_rompimento_camera_zoom_ab"
-                                style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+                                style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
                         </div>
                         <div class="data-psie-container hidden">
                             <label style="margin-top: 8px; font-weight: normal;">Reporta PSIE:</label>
                             <input type="date" name="dt_reporta_psie_camera_zoom_ab"
-                                style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+                                style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
                         </div>
                     </div>
 
@@ -876,12 +977,12 @@ require_once 'API/conexao_bd.php';
                             <div class="data-rompimento-container hidden">
                                 <label style="margin-top: 8px; font-weight: normal;">Data do Rompimento:</label>
                                 <input type="date" name="dt_rompimento_camera_zoom_a"
-                                    style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+                                    style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
                             </div>
                             <div class="data-psie-container hidden">
                                 <label style="margin-top: 8px; font-weight: normal;">Reporta PSIE:</label>
                                 <input type="date" name="dt_reporta_psie_camera_zoom_a"
-                                    style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+                                    style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
                             </div>
                         </div>
 
@@ -902,12 +1003,12 @@ require_once 'API/conexao_bd.php';
                             <div class="data-rompimento-container hidden">
                                 <label style="margin-top: 8px; font-weight: normal;">Data do Rompimento:</label>
                                 <input type="date" name="dt_rompimento_camera_zoom_b"
-                                    style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+                                    style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; ">
                             </div>
                             <div class="data-psie-container hidden">
                                 <label style="margin-top: 8px; font-weight: normal;">Reporta PSIE:</label>
                                 <input type="date" name="dt_reporta_psie_camera_zoom_b"
-                                    style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+                                    style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; ">
                             </div>
                         </div>
 
@@ -938,12 +1039,12 @@ require_once 'API/conexao_bd.php';
                         <div class="data-rompimento-container hidden">
                             <label style="margin-top: 8px; font-weight: normal;">Data do Rompimento:</label>
                             <input type="date" name="dt_rompimento_camera_pam_ab"
-                                style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+                                style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
                         </div>
                         <div class="data-psie-container hidden">
                             <label style="margin-top: 8px; font-weight: normal;">Reporta PSIE:</label>
                             <input type="date" name="dt_reporta_psie_camera_pam_ab"
-                                style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+                                style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
                         </div>
                     </div>
 
@@ -966,12 +1067,12 @@ require_once 'API/conexao_bd.php';
                             <div class="data-rompimento-container hidden">
                                 <label style="margin-top: 8px; font-weight: normal;">Data do Rompimento:</label>
                                 <input type="date" name="dt_rompimento_camera_pam_a"
-                                    style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+                                    style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
                             </div>
                             <div class="data-psie-container hidden">
                                 <label style="margin-top: 8px; font-weight: normal;">Reporta PSIE:</label>
                                 <input type="date" name="dt_reporta_psie_camera_pam_a"
-                                    style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+                                    style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
                             </div>
                         </div>
 
@@ -997,7 +1098,7 @@ require_once 'API/conexao_bd.php';
                             <div class="data-psie-container hidden">
                                 <label style="margin-top: 8px; font-weight: normal;">Reporta PSIE:</label>
                                 <input type="date" name="dt_reporta_psie_camera_pam_b"
-                                    style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc; width: auto;">
+                                    style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
                             </div>
                         </div>
 
@@ -1095,6 +1196,78 @@ require_once 'API/conexao_bd.php';
                     <button type="submit" class="botao-salvar">Avançar</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <div id="modalEditarLacreIndividual" class="modal">
+        <div class="conteudo-modal" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2 id="tituloModalEdicaoIndividual">
+                    Editar Lacre <span id="localLacreIndividualTitulo"></span>
+                </h2>
+                <button class="fechar-modal" onclick="fecharModal('modalEditarLacreIndividual')">&times;</button>
+            </div>
+            <form id="formEditarLacreIndividual" class="formulario-modal" onsubmit="salvarEdicaoIndividual(event)">
+                <input type="hidden" name="id_controle_lacres">
+                <div class="form-lacre-group" style="padding: 1rem 1rem 1.5rem 1rem;">
+                    <div id="campoNumLacreIndividual">
+                        <label for="numLacreIndividualInput">Número do Lacre:</label>
+                        <input type="text" id="numLacreIndividualInput" name="numero_lacre" required>
+                    </div>
+
+                    <div id="campoObsIndividual" style="margin-top: 1rem;">
+                        <label for="obsLacreIndividualInput">Observação:</label>
+                        <textarea id="obsLacreIndividualInput" name="obs_lacre" class="obs-lacre"
+                            style="display: block;"></textarea>
+                    </div>
+
+                    <div id="campoDataFixacaoIndividual" class="hidden" style="margin-top: 1rem;">
+                        <label for="dataFixacaoIndividualInput">Data de Fixação:</label>
+                        <input type="date" id="dataFixacaoIndividualInput" name="dt_fixacao">
+                    </div>
+
+                    <div id="campoDataRompimentoIndividual" class="hidden" style="margin-top: 1rem;">
+                        <label for="dataRompimentoIndividualInput">Data do Rompimento:</label>
+                        <input type="date" id="dataRompimentoIndividualInput" name="dt_rompimento">
+                    </div>
+
+                    <div id="campoDataPsieIndividual" class="hidden" style="margin-top: 1rem;">
+                        <label for="dataPsieIndividualInput">Reporta PSIE:</label>
+                        <input type="date" id="dataPsieIndividualInput" name="dt_reporta_psie">
+                    </div>
+                </div>
+
+                <div id="mensagemSalvarIndividual" class="mensagem" style="display: none;"></div>
+                <div id="botoesEdicaoIndividual" class="modal-actions">
+                    <button type="button" class="botao-cancelar botao-cancelar-editar"
+                        onclick="fecharModal('modalEditarLacreIndividual')">Cancelar</button>
+                    <button type="submit" class="botao-salvar">
+                        <span>Salvar Alterações</span>
+                        <div class="spinner hidden"></div>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modalConfirmarEdicao" class="modal">
+        <div class="conteudo-modal" style="max-width: 450px;">
+            <div class="modal-header">
+                <h2>Confirmar Edição</h2>
+                <button class="fechar-modal" onclick="fecharModal('modalConfirmarEdicao')">&times;</button>
+            </div>
+            <div class="modal-body-text">
+                <p>Todos os lacres para este equipamento já estão preenchidos ou com pendências.</p>
+                <p><strong>Deseja continuar e editar os lacres fixados?</strong></p>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="botao-cancelar" onclick="fecharModal('modalConfirmarEdicao')">
+                    Cancelar
+                </button>
+                <button id="btnExecutarEdicao" type="button" class="botao-salvar">
+                    <span>Confirmar e Editar</span>
+                </button>
+            </div>
         </div>
     </div>
 

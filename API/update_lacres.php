@@ -1,5 +1,5 @@
 <?php
-// /API/add_lacres.php E /API/update_lacres.php - VERSÃO CORRIGIDA
+// /API/update_lacres.php - VERSÃO CORRIGIDA PARA EDITAR
 
 header('Content-Type: application/json');
 session_start();
@@ -16,9 +16,9 @@ $id_usuario_logado = $_SESSION['user_id'];
 
 $data = json_decode(file_get_contents('php://input'), true);
 $id_equipamento = $data['id_equipamento'] ?? null;
-$lacres = $data['lacres'] ?? [];
+$lacres_enviados = $data['lacres'] ?? [];
 
-if (!$id_equipamento || empty($lacres)) {
+if (!$id_equipamento || empty($lacres_enviados)) {
     $response['message'] = 'Dados insuficientes para realizar a operação.';
     echo json_encode($response);
     exit;
@@ -27,33 +27,30 @@ if (!$id_equipamento || empty($lacres)) {
 $conn->begin_transaction();
 
 try {
-    // Se for uma SUBSTITUIÇÃO, marca os lacres antigos como "Substituído"
-    if (basename($_SERVER['PHP_SELF']) === 'update_lacres.php') {
-        $stmt_substituir = $conn->prepare(
-            "UPDATE controle_lacres SET acao = 'Substituído', lacre_afixado = 0 WHERE id_equipamento = ? AND lacre_afixado = 1"
-        );
-        $stmt_substituir->bind_param("i", $id_equipamento);
-        $stmt_substituir->execute();
-        $stmt_substituir->close();
-    }
+    // Prepara os statements que vamos usar
+    $stmt_update = $conn->prepare(
+        "UPDATE controle_lacres SET 
+            num_lacre = ?, num_lacre_rompido = ?, obs_lacre = ?, lacre_rompido = ?, 
+            lacre_afixado = ?, dt_fixacao = ?, dt_rompimento = ?, dt_reporta_psie = ?, 
+            acao = ?, id_usuario_afixou = ? 
+         WHERE id_controle_lacres = ? AND id_equipamento = ?"
+    );
 
-    $sql = "INSERT INTO controle_lacres 
-                (id_equipamento, local_lacre, num_lacre, num_lacre_rompido, obs_lacre, lacre_rompido, lacre_afixado, dt_fixacao, dt_rompimento, dt_reporta_psie, acao, id_usuario_afixou) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    $stmt_insert = $conn->prepare($sql);
+    $stmt_insert = $conn->prepare(
+        "INSERT INTO controle_lacres 
+            (id_equipamento, local_lacre, num_lacre, num_lacre_rompido, obs_lacre, lacre_rompido, lacre_afixado, dt_fixacao, dt_rompimento, dt_reporta_psie, acao, id_usuario_afixou) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    );
 
-    foreach ($lacres as $lacre) {
+    foreach ($lacres_enviados as $lacre) {
+        $id_controle_lacre = $lacre['id'] ?? null;
         $is_rompido = $lacre['rompido'] ?? false;
 
-        $b_id_equipamento = $id_equipamento;
-        $b_local_lacre = $lacre['local'];
+        // Dados comuns
         $b_obs = $lacre['obs'] ?? null;
-        $b_dt_fixacao = !empty($lacre['dt_fixacao']) ? $lacre['dt_fixacao'] : null; 
-        $b_dt_rompimento = !empty($lacre['dt_rompimento']) ? $lacre['dt_rompimento'] : null; 
-        $b_dt_reporta_psie = !empty($lacre['dt_reporta_psie']) ? $lacre['dt_reporta_psie'] : null; 
-
-
-        $b_id_usuario_afixou = $id_usuario_logado; // Salva o ID do usuário que está fazendo a ação
+        $b_dt_fixacao = !empty($lacre['dt_fixacao']) ? $lacre['dt_fixacao'] : null;
+        $b_dt_rompimento = !empty($lacre['dt_rompimento']) ? $lacre['dt_rompimento'] : null;
+        $b_dt_reporta_psie = !empty($lacre['dt_reporta_psie']) ? $lacre['dt_reporta_psie'] : null;
 
         if ($is_rompido) {
             $b_num_lacre = null;
@@ -61,7 +58,7 @@ try {
             $b_lacre_rompido_val = 1;
             $b_lacre_afixado_val = 0;
             $b_acao = 'Rompido';
-            $b_dt_fixacao = null; // Se está rompido, não tem data de fixação
+            $b_dt_fixacao = null;
         } else {
             $b_num_lacre = $lacre['numero'];
             $b_num_lacre_rompido = null;
@@ -70,29 +67,34 @@ try {
             $b_acao = 'Afixado';
         }
 
-
-        $stmt_insert->bind_param(
-            "issssiisssss", 
-            $id_equipamento,
-            $b_local_lacre,
-            $b_num_lacre,
-            $b_num_lacre_rompido,
-            $b_obs,
-            $b_lacre_rompido_val,
-            $b_lacre_afixado_val,
-            $b_dt_fixacao,
-            $b_dt_rompimento,
-            $b_dt_reporta_psie, 
-            $b_acao,
-            $b_id_usuario_afixou
-        );
-        $stmt_insert->execute();
+        if ($id_controle_lacre) {
+            // Se tem ID, é um UPDATE
+            $stmt_update->bind_param(
+                "sssiisssssii",
+                $b_num_lacre, $b_num_lacre_rompido, $b_obs, $b_lacre_rompido_val,
+                $b_lacre_afixado_val, $b_dt_fixacao, $b_dt_rompimento, $b_dt_reporta_psie,
+                $b_acao, $id_usuario_logado,
+                $id_controle_lacre, $id_equipamento
+            );
+            $stmt_update->execute();
+        } else {
+            // Se não tem ID, é um INSERT
+             $stmt_insert->bind_param(
+                "issssiisssss",
+                $id_equipamento, $lacre['local'], $b_num_lacre, $b_num_lacre_rompido,
+                $b_obs, $b_lacre_rompido_val, $b_lacre_afixado_val, $b_dt_fixacao,
+                $b_dt_rompimento, $b_dt_reporta_psie, $b_acao, $id_usuario_logado
+            );
+            $stmt_insert->execute();
+        }
     }
 
+    $stmt_update->close();
     $stmt_insert->close();
     $conn->commit();
     $response['success'] = true;
-    $response['message'] = 'Lacres salvos com sucesso!';
+    $response['message'] = 'Lacres atualizados com sucesso!';
+
 } catch (Exception $e) {
     $conn->rollback();
     $response['message'] = 'Erro no banco de dados: ' . $e->getMessage();
@@ -100,3 +102,4 @@ try {
 
 echo json_encode($response);
 $conn->close();
+?>
