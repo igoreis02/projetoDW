@@ -61,8 +61,7 @@ try {
                                 dt_fixacao = NULL,
                                 acao = 'Distribuído',
                                 id_usuario_distribuiu = ?,
-                                lacre_rompido = 0,      -- Zera o status de rompido, pois está sendo substituído
-                                num_lacre_rompido = NULL  -- Limpa o número do lacre rompido
+                                lacre_rompido = 0       
                            WHERE id_controle_lacres = ?";
             $stmt_update = $conn->prepare($sql_update);
             $stmt_update->bind_param("sii", $b_num_lacre_novo, $id_usuario_distribuiu, $id_lacre_existente);
