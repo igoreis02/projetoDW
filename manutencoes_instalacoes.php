@@ -314,7 +314,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             <p id="confirmMessage" class="message hidden"></p>
         </div>
     </div>
-    <<div id="assignSemaforicaModal" class="modal">
+    <div id="assignSemaforicaModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Atribuir Técnico à Ocorrência</h3>
