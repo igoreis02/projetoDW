@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
         resumoHTML += `</ul>`;
         resumoContainer.innerHTML = resumoHTML;
 
-        // Resetar o estado do modal de confirmação (lógica inalterada)
+        // Resetar o estado do modal de confirmação 
         document.getElementById('mensagemSalvarRompimento').style.display = 'none';
         document.getElementById('botoesConfirmarRompimento').style.display = 'flex';
         document.getElementById('btnSalvarRompimento').disabled = false;
@@ -197,7 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             setTimeout(() => {
                 fecharModal('modalConfirmarRompimento');
-                buscarEquipamentosELacres(); // Atualiza a lista principal
+                buscarEquipamentosELacres();
             }, 2000);
 
         } catch (error) {
@@ -243,7 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const btnSpinner = btnConfirmar.querySelector('.spinner');
 
             // Garante que da próxima vez o modal estará no estado inicial
-            setTimeout(() => { // Pequeno delay para a transição de fechar terminar
+            setTimeout(() => { 
                 msgDiv.style.display = 'none';
                 btnContainer.style.display = 'flex';
                 btnContainer.querySelectorAll('button').forEach(b => b.disabled = false);
@@ -330,25 +330,60 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
 
-    function showNotifications(expiringItems) {
-        const container = document.getElementById('notification-container');
-        let delay = 0;
-        expiringItems.forEach(item => {
-            setTimeout(() => {
-                const notification = document.createElement('div');
-                notification.className = 'notification';
+    function showSidebarAlerts(alerts) {
+        const container = document.getElementById('lista-alertas');
+        container.innerHTML = ''; 
+
+        if (alerts.length === 0) {
+            container.innerHTML = '<p style="padding: 1.5rem; text-align: center; color: #6c757d;">Nenhum alerta no momento.</p>';
+            return;
+        }
+
+        alerts.forEach(item => {
+            const alertElement = document.createElement('a');
+            alertElement.className = 'alerta-item';
+            alertElement.href = `#equipamento-${item.id_equipamento}`;
+
+            if (item.type === 'rompido') {
+                alertElement.classList.add('alerta-psie'); 
+
+                let lacresInfoHTML = '';
+                // Itera sobre cada lacre rompido e cria uma linha de detalhe
+                item.lacres_rompidos.forEach(lacre => {
+                    const formName = dbValueToFormName[lacre.local_lacre.trim()];
+                    const displayName = formName ? LacreMap[formName].displayName : lacre.local_lacre;
+
+                    lacresInfoHTML += `<p class="detalhe-alerta">Lacre ${displayName} Rompido: ${lacre.num_lacre_rompido}`;
+                    // Se tiver data de PSIE, adiciona a informação
+                    if (lacre.dt_reporta_psie) {
+                        const psieDate = new Date(lacre.dt_reporta_psie + 'T00:00:00').toLocaleDateString('pt-BR');
+                        lacresInfoHTML += ` (Reporta PSIE: ${psieDate})`;
+                    }
+                    lacresInfoHTML += `</p>`;
+                });
+
+                alertElement.innerHTML = `
+                <strong>${item.nome_equip}</strong>
+                <p>${item.referencia_equip} - ${item.cidade_nome || 'N/A'}</p>
+                ${lacresInfoHTML}
+            `;
+            } else { // Vencimento
+                alertElement.classList.add('alerta-vencimento');
                 const vencimento = new Date(item.dt_vencimento + 'T00:00:00').toLocaleDateString('pt-BR');
-                notification.innerHTML = `<p><strong>Vencimento Próximo!</strong></p><p>${item.nome_equip} - ${item.referencia_equip}</p><p>${item.cidade_nome} | Vence em: ${vencimento}</p>`;
-                container.appendChild(notification);
-                setTimeout(() => notification.classList.add('show'), 10);
-                setTimeout(() => {
-                    notification.classList.remove('show');
-                    setTimeout(() => notification.remove(), 500);
-                }, 5000);
-            }, delay);
-            delay += 5500;
+                alertElement.innerHTML = `
+                <strong>${item.nome_equip}</strong>
+                <p>${item.referencia_equip} - ${item.cidade_nome || 'N/A'}</p>
+                <p class="detalhe-alerta">Vencimento Próximo: ${vencimento}</p>
+            `;
+            }
+            container.appendChild(alertElement);
         });
     }
+
+    // bloco para controlar o botão de ocultar/mostrar
+    document.getElementById('toggle-sidebar-btn').addEventListener('click', () => {
+        document.getElementById('sidebar-alertas').classList.toggle('collapsed');
+    });
 
     async function carregarDadosIniciais() {
         // 1. Primeiro, busca todos os equipamentos para sabermos quais cidades têm equipamentos
@@ -401,8 +436,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 todosOsEquipamentos = data.equipamentos;
                 renderizarLista();
                 if (showNotif) {
-                    const expiring = getExpiringItems(todosOsEquipamentos);
-                    showNotifications(expiring);
+                    // 1. Busca os alertas de prioridade alta (Rompido)
+                    const rompidoItems = getRompidoItems(todosOsEquipamentos);
+
+                    // 2. Busca os alertas de prioridade baixa (Vencimento)
+                    const expiringItems = getExpiringItems(todosOsEquipamentos).map(it => ({ ...it, type: 'vencimento' }));
+
+                    // 3. Lógica de Prioridade: Remove da lista de vencimento qualquer equipamento que já esteja na lista de rompido
+                    const rompidoIds = new Set(rompidoItems.map(item => item.id_equipamento));
+                    const uniqueExpiringItems = expiringItems.filter(item => !rompidoIds.has(item.id_equipamento));
+
+                    // 4. Junta os arrays, com os de rompido sempre primeiro
+                    const allAlerts = [...rompidoItems, ...uniqueExpiringItems];
+
+                    // 5. Chama a função da barra lateral com a lista final e priorizada
+                    showSidebarAlerts(allAlerts);
                 }
             } else {
                 containerListaLacres.innerHTML = `<p class="mensagem erro">${data.message}</p>`;
@@ -424,6 +472,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const expirationDate = new Date(equip.dt_vencimento + 'T00:00:00');
             return expirationDate >= today && expirationDate <= twoMonthsFromNow;
         });
+    }
+
+    function getRompidoItems(equipments) {
+        const rompidoAlerts = [];
+
+        equipments.forEach(equip => {
+            if (equip.lacres && equip.lacres.length > 0) {
+                // Filtra para encontrar todos os lacres rompidos neste equipamento
+                const brokenSeals = equip.lacres.filter(lacre => lacre.lacre_rompido == 1);
+
+                if (brokenSeals.length > 0) {
+                    // Se encontrou algum, cria um alerta para o equipamento
+                    rompidoAlerts.push({
+                        ...equip, // Copia todas as propriedades do equipamento
+                        type: 'rompido',
+                        // Adiciona uma nova propriedade com a lista de lacres rompidos
+                        lacres_rompidos: brokenSeals
+                    });
+                }
+            }
+        });
+        return rompidoAlerts;
     }
 
     function renderizarLista() {
@@ -502,7 +572,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const itemClass = isExpiring ? 'item-equipamento-lacre vencimento-proximo' : 'item-equipamento-lacre';
                 const vencimentoClass = isExpiring ? 'vencimento-proximo-texto' : '';
 
-                // --- LÓGICA DO BOTÃO ATUALIZADA ---
                 const todosPreenchidos = verificarTodosPreenchidos(equip.lacres);
                 const temAlgumLacre = equip.lacres && equip.lacres.length > 0;
                 let buttonText = 'Adicionar Lacres';
@@ -511,7 +580,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (temAlgumLacre) {
                     buttonText = 'Afixar Lacre';
                 }
-                // --- FIM DA LÓGICA DO BOTÃO ---
+                
 
                 const lacresValidos = equip.lacres ? equip.lacres.filter(lacre => lacre.local_lacre && lacre.local_lacre.trim() !== '') : [];
 
@@ -520,9 +589,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     const formName = dbValueToFormName[localLacreLimpo];
                     const displayName = formName ? LacreMap[formName].displayName : localLacreLimpo;
 
-                    let itemLacreHTML = `<div class="lacre-item-container">`; // 1. Inicia o container
+                    let itemLacreHTML = `<div class="lacre-item-container">`; // 1. Abre o lacre-item-container
 
-                    // 2. Adiciona o botão de edição (a lógica será expandida no próximo passo)
+                    // 2. Adiciona o botão de edição 
                     // Passa todos os dados do lacre para a função JS
                     const lacreDataString = JSON.stringify(lacre).replace(/"/g, '&quot;');
                     itemLacreHTML += `<button class="botao-editar-lacre" onclick='abrirModalEdicaoIndividual(${lacreDataString})'><i class="fas fa-pencil-alt"></i></button>`;
@@ -557,7 +626,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const lacresData = JSON.stringify(equip.lacres).replace(/"/g, '&quot;');
                 const vencimentoTexto = equip.dt_vencimento ? new Date(equip.dt_vencimento + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A';
 
-                const itemHTML = `<div class="${itemClass}"><div class="equipamento-info"><div class="info-bloco"><h4>Equipamento</h4><p class="equipamento-identificacao">${equip.nome_equip} - ${equip.referencia_equip}</p></div><div class="info-bloco"><h4>Detalhes</h4><p><strong>Qtd. Faixas:</strong> ${equip.qtd_faixa || 'N/A'}</p><p><strong>KM via:</strong> ${equip.km || 'N/A'}</p></div><div class="info-bloco"><h4>Aferição</h4><p><strong>N° Instrumento:</strong> ${equip.num_instrumento || 'N/A'}</p><p><strong>Data Aferição:</strong> ${equip.dt_afericao ? new Date(equip.dt_afericao + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}</p><p class="${vencimentoClass}"><strong>Vencimento:</strong> ${vencimentoTexto}</p></div></div><h4>Lacres</h4><div class="lacres-grid">${lacresHTML}</div><div class="equipamento-actions"><button class="botao-distribuir-lacres botao-lacre-rompido" style="background-color: #cff4fc; color: #055160; border: 1px solid #b6effb;" data-equip-id="${equip.id_equipamento}" data-equip-name="${equip.nome_equip}" data-lacres="${lacresData}" onclick="abrirModalDistribuir(this)">Distribuir Lacre</button><button class="botao-lacre-rompido" style="background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;" data-equip-id="${equip.id_equipamento}" data-equip-name="${equip.nome_equip}" onclick="abrirModalLacreRompido(this)">Romper Lacre</button><button class="botao-adicionar-lacres" data-equip-id="${equip.id_equipamento}" data-equip-name="${equip.nome_equip}" data-qtd-faixa="${equip.qtd_faixa || ''}"data-lacres="${lacresData}" onclick="abrirModalLacres(this)">${buttonText}</button></div></div>`;
+                const itemHTML = `<div id="equipamento-${equip.id_equipamento}" class="${itemClass}"><div class="equipamento-info"><div class="info-bloco"><h4>Equipamento</h4><p class="equipamento-identificacao">${equip.nome_equip} - ${equip.referencia_equip}</p></div><div class="info-bloco"><h4>Detalhes</h4><p><strong>Qtd. Faixas:</strong> ${equip.qtd_faixa || 'N/A'}</p><p><strong>KM via:</strong> ${equip.km || 'N/A'}</p></div><div class="info-bloco"><h4>Aferição</h4><p><strong>N° Instrumento:</strong> ${equip.num_instrumento || 'N/A'}</p><p><strong>Data Aferição:</strong> ${equip.dt_afericao ? new Date(equip.dt_afericao + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}</p><p class="${vencimentoClass}"><strong>Vencimento:</strong> ${vencimentoTexto}</p></div></div><h4>Lacres</h4><div class="lacres-grid">${lacresHTML}</div><div class="equipamento-actions"><button class="botao-distribuir-lacres botao-lacre-rompido" style="background-color: #cff4fc; color: #055160; border: 1px solid #b6effb;" data-equip-id="${equip.id_equipamento}" data-equip-name="${equip.nome_equip}" data-lacres="${lacresData}" onclick="abrirModalDistribuir(this)">Distribuir Lacre</button><button class="botao-lacre-rompido" style="background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;" data-equip-id="${equip.id_equipamento}" data-equip-name="${equip.nome_equip}" onclick="abrirModalLacreRompido(this)">Romper Lacre</button><button class="botao-adicionar-lacres" data-equip-id="${equip.id_equipamento}" data-equip-name="${equip.nome_equip}" data-qtd-faixa="${equip.qtd_faixa || ''}"data-lacres="${lacresData}" onclick="abrirModalLacres(this)">${buttonText}</button></div></div>`;
                 grupoDiv.innerHTML += itemHTML;
             });
             containerListaLacres.appendChild(grupoDiv);
@@ -575,10 +644,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // 2. Abre o nosso novo modal de confirmação
             abrirModal('modalConfirmarEdicao');
             // A lógica de edição foi movida para a função 'prosseguirComEdicao'
-            return; // Para a execução aqui
+            return; 
         }
 
-        // O restante da lógica para "Adicionar Lacres" e "Afixar Lacre" continua igual...
+        
         const lacresAtuais = btn.dataset.lacres ? JSON.parse(btn.dataset.lacres.replace(/&quot;/g, '"')) : [];
         form.reset();
         form.querySelectorAll('.form-lacre-group, .camera-sub-group').forEach(el => {
@@ -673,11 +742,10 @@ document.addEventListener('DOMContentLoaded', () => {
         abrirModal('modalAdicionarLacres');
     };
 
-    // ADICIONE ESTA NOVA FUNÇÃO (pode ser depois da função 'abrirModalLacres')
-    // Esta função contém a lógica que ANTES estava dentro do 'if (buttonText === 'Editar Lacres')'
+
     function prosseguirComEdicao() {
         const btn = botaoEditarPressionado;
-        if (!btn) return; // Segurança, caso a variável esteja vazia
+        if (!btn) return; 
 
         const lacresAtuais = btn.dataset.lacres ? JSON.parse(btn.dataset.lacres.replace(/&quot;/g, '"')) : [];
         const form = document.getElementById('formularioAdicionarLacres');
@@ -775,7 +843,7 @@ document.addEventListener('DOMContentLoaded', () => {
         abrirModal('modalAdicionarLacres');
     }
 
-    // ADICIONE ESTE NOVO BLOCO (pode ser antes da última linha 'carregarDadosIniciais();')
+    
     document.getElementById('btnExecutarEdicao').addEventListener('click', () => {
         // 1. Fecha o modal de confirmação
         fecharModal('modalConfirmarEdicao');
@@ -839,7 +907,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     numero: numeroLacre,
                     rompido: isRompido,
                     obs: obs,
-                    dt_fixacao: isRompido ? null : dataFixacao, // Data de fixação é nula se estiver rompido
+                    dt_fixacao: isRompido ? null : dataFixacao,
                     dt_rompimento: dataRompimento,
                     dt_reporta_psie: dataPsie
                 });
@@ -942,7 +1010,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (operacaoAtual === 'substitute') {
             endpoint = 'API/update_lacres.php';
         } else if (operacaoAtual === 'distribute') {
-            endpoint = 'API/distribute_lacres.php'; // Nosso novo script
+            endpoint = 'API/distribute_lacres.php'; 
         } else {
             alert('Operação desconhecida!');
             return;

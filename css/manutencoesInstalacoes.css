@@ -1,0 +1,519 @@
+ :root {
+        /* ==== FONTES ==== */
+        --fonte-principal: 'Inter', sans-serif;
+
+        /* ==== CORES ==== */
+        /* Cores de Marca e Destaque */
+        --cor-principal: #112058;
+        --cor-principal-hover: #09143f;
+
+        /* Cores de Fundo */
+        --cor-fundo-pagina: #f0f2f5;
+        --cor-fundo-card: #ffffff;
+        --cor-fundo-modal: #fefefe;
+        --cor-fundo-inativo: #f1f1f1;
+        --cor-fundo-input: #f9fafb;
+
+        /* Cores de Texto */
+        --cor-texto-preto: #000000;
+        --cor-texto-branco: #ffffff;
+        --cor-texto-escuro-hover: #333333;
+        --cor-texto-claro: #aaa;
+        --cor-texto-footer: #888;
+
+        /* Cores de Feedback (Alertas, Erros, Sucesso) */
+        --cor-sucesso-fundo: #d4edda;
+        --cor-sucesso-texto: #155724;
+        --cor-sucesso-borda: #c3e6cb;
+        --cor-erro-fundo: #f8d7da;
+        --cor-erro-texto: #721c24;
+        --cor-erro-borda: #f5c6cb;
+
+        /* Cores de Bordas e Divisórias */
+        --cor-borda-principal: #ddd;
+        --cor-borda-secundaria: #d1d5db;
+
+        /* Cores de Sombras e Overlays */
+        --cor-sombra: rgba(0, 0, 0, 0.1);
+        --cor-sombra-forte: rgba(0, 0, 0, 0.3);
+        --cor-overlay-modal: rgba(0, 0, 0, 0.4);
+        --cor-spinner-fundo: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Estilos do card e layout geral */
+    body {
+        font-family: var(--fonte-principal);
+        background-color: var(--cor-fundo-pagina);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0;
+        padding: 20px;
+        box-sizing: border-box;
+    }
+
+    .card {
+        background-color: var(--cor-fundo-card);
+        padding: 2.5rem;
+        border-radius: 1rem;
+        box-shadow: 0 10px 25px var(--cor-sombra);
+        width: 90%;
+        max-width: 600px;
+        text-align: center;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .background {
+        position: fixed;
+        top: -50vmin;
+        left: -50vmin;
+        width: 100vmin;
+        height: 100vmin;
+        border-radius:
+            47% 53% 61% 39% / 45% 51% 49% 55%;
+        background: var(--cor-principal);
+    }
+
+
+    .background::after {
+        content: "";
+        position: inherit;
+        right: -50vmin;
+        bottom: -55vmin;
+        width: inherit;
+        height: inherit;
+        border-radius: inherit;
+        background: var(--cor-principal);
+    }
+
+
+    .header-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        margin-bottom: 2rem;
+    }
+
+    .header-container h2 {
+        font-size: 2.2em;
+        text-align: center;
+        flex-grow: 1;
+        color: var(--cor-texto-preto);
+        margin: 0;
+    }
+
+    .close-btn,
+    .back-btn-icon {
+        font-size: 2em;
+        font-weight: bold;
+        color: var(--cor-texto-claro);
+        text-decoration: none;
+        transition: color 0.3s;
+    }
+
+    .close-btn {
+        right: 0;
+    }
+
+    .back-btn-icon {
+        left: 0;
+    }
+
+    .close-btn:hover,
+    .back-btn-icon:hover {
+        color: var(--cor-texto-escuro-hover);
+    }
+
+    .page-buttons-container {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        width: 100%;
+        padding: 20px 0;
+    }
+
+    .page-button {
+        padding: 25px;
+        font-size: 1.3em;
+        color: var(--cor-texto-branco);
+        background-color: var(--cor-principal);
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+        text-align: center;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 8px var(--cor-sombra);
+    }
+
+    .page-button:hover {
+        background-color: var(--cor-principal-hover);
+        transform: translateY(-5px);
+    }
+
+    .page-button i {
+        margin-right: 15px;
+        font-size: 1.5em;
+    }
+
+    .voltar-btn {
+        display: block;
+        width: 50%;
+        padding: 15px;
+        margin-top: 30px;
+        text-align: center;
+        background-color: var(--cor-principal);
+        color: var(--cor-texto-branco);
+        text-decoration: none;
+        border-radius: 8px;
+        font-size: 1.1em;
+        transition: background-color 0.3s ease;
+    }
+
+    .voltar-btn:hover {
+        background-color: var(--cor-principal-hover);
+    }
+
+    .footer {
+        margin-top: auto;
+        color: var(--cor-texto-footer);
+        font-size: 0.9em;
+        width: 100%;
+        text-align: center;
+        padding-top: 20px;
+    }
+
+    /* Estilos do Modal */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: var(--cor-overlay-modal);
+        justify-content: center;
+        align-items: center;
+    }
+
+    .modal.is-active {
+        display: flex;
+    }
+
+    .modal-content {
+        background-color: var(--cor-fundo-modal);
+        margin: auto;
+        padding: 2rem;
+        border-radius: 1rem;
+        box-shadow: 0 5px 15px var(--cor-sombra-forte);
+        width: 90%;
+        max-width: 500px;
+        position: relative;
+    }
+
+    .modal-content h3 {
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+
+    .modal-ocorrencia-existente {
+        margin-top: 1rem;
+        background-color: var(--cor-fundo-inativo);
+        padding: 10px;
+        border-radius: 5px;
+    }
+
+    .close-button {
+        color: var(--cor-texto-claro);
+        position: absolute;
+        top: 10px;
+        right: 15px;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .back-button {
+        color: var(--cor-texto-claro);
+        position: absolute;
+        top: 10px;
+        left: 15px;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        background: none;
+        border: none;
+        padding: 0;
+    }
+
+    /* Estilos das seções do modal */
+    .city-buttons-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 20px;
+        max-height: 400px;
+        overflow-y: auto;
+        padding-right: 10px;
+    }
+
+    .city-button {
+        padding: 12px 20px;
+        font-size: 1.1em;
+        color: var(--cor-texto-branco);
+        background-color: var(--cor-principal);
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        width: 100%;
+    }
+
+    .equipment-selection-container,
+    .install-equipment-section {
+        display: none;
+        flex-direction: column;
+        gap: 15px;
+        margin-top: 20px;
+    }
+
+    .equipment-selection-container input,
+    .equipment-selection-container select,
+    .equipment-selection-container textarea,
+    .install-equipment-section input,
+    .install-equipment-section select,
+    .install-equipment-section textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid var(--cor-borda-principal);
+        border-radius: 4px;
+        box-sizing: border-box;
+        font-size: 1em;
+    }
+
+    .equipment-selection-container select {
+        min-height: 100px;
+    }
+
+    .problem-description-container,
+    .choice-container {
+        display: none;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    .problem-description-container label,
+    .choice-container label {
+        font-weight: bold;
+        text-align: left;
+    }
+
+    .choice-buttons {
+        display: flex;
+        gap: 10px;
+    }
+
+    .choice-buttons button {
+        flex: 1;
+        font-size: 1em;
+        padding: 15px;
+    }
+
+    .hidden {
+        display: none !important;
+    }
+
+    .choice-buttons .selected {
+        background-color: var(--cor-principal-hover) !important;
+        transform: translateY(2px);
+        box-shadow: 0 2px 4px var(--cor-sombra) inset;
+    }
+
+    .confirmation-details p {
+        text-align: left;
+    }
+
+    .confirmation-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        margin-top: 30px;
+    }
+
+    .confirmation-buttons button {
+        flex: 1;
+        max-width: 150px;
+    }
+
+    .confirm-button {
+        color: var(--cor-texto-branco);
+        border: none;
+        border-radius: 8px;
+        padding: 12px 20px;
+        cursor: pointer;
+        font-size: 1em;
+    }
+
+    .loading-spinner {
+        border: 4px solid var(--cor-spinner-fundo);
+        border-top-color: var(--cor-texto-branco);
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        animation: spin 1s linear infinite;
+        display: inline-block;
+        vertical-align: middle;
+        margin-left: 10px;
+    }
+
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    .message,
+    .selection-error-message {
+        padding: 1rem;
+        border-radius: 8px;
+        margin-top: 1rem;
+        text-align: center;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .message.error,
+    .selection-error-message {
+        background-color: var(--cor-erro-fundo);
+        color: var(--cor-erro-texto);
+        border: 1px solid var(--cor-erro-borda);
+        font-weight: bold;
+    }
+
+    .message.success {
+        background-color: var(--cor-sucesso-fundo);
+        color: var(--cor-sucesso-texto);
+        border: 1px solid var(--cor-sucesso-borda);
+        font-weight: bold;
+    }
+
+    /* Estilo para botões de escolha */
+    .choice-btn {
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--cor-borda-secundaria);
+        border-radius: 8px;
+        cursor: pointer;
+        background-color: var(--cor-fundo-input);
+        font-size: 0.9em;
+        text-align: center;
+        white-space: normal;
+        word-wrap: break-word;
+        line-height: 1.2;
+        min-height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .choice-btn.selected {
+        background-color: var(--cor-principal);
+        color: var(--cor-texto-branco);
+        border-color: var(--cor-principal);
+    }
+
+    .choice-buttons-column {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+    }
+
+    .choice-buttons-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-top: 0.5rem;
+    }
+
+    .choice-buttons-grid .choice-btn {
+        flex: 1 1 calc(33.333% - 1rem);
+        min-width: 120px;
+    }
+
+    /* ######### LÓGICA PARA TELAS MENORES (RESPONSIVIDADE) ######### */
+    @media (max-width: 768px) {
+        .card {
+            padding: 2rem;
+        }
+
+        .header-container h2 {
+            font-size: 2em;
+        }
+
+        .page-button {
+            padding: 20px;
+            font-size: 1.2em;
+        }
+    }
+
+    @media (max-width: 480px) {
+        body {
+            padding: 10px;
+        }
+
+        .card {
+            padding: 1.5rem;
+        }
+
+        .header-container h2 {
+            font-size: 1.6em;
+        }
+
+        .page-button {
+            padding: 18px;
+            font-size: 1.1em;
+        }
+
+        .page-button i {
+            margin-right: 10px;
+            font-size: 1.3em;
+        }
+
+        .voltar-btn {
+            width: 80%;
+            padding: 12px;
+        }
+
+        .confirmation-buttons {
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .confirmation-buttons button {
+            max-width: 100%;
+        }
+
+        .choice-buttons-grid .choice-btn {
+            /* De 3 colunas para 2 colunas */
+            flex-basis: calc(50% - 0.5rem);
+        }
+
+        .modal-content {
+            padding: 1.5rem;
+        }
+    }

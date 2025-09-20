@@ -276,7 +276,7 @@ document.addEventListener('DOMContentLoaded', function () {
             cardHeader = `Ocorrência Semafórica ${semaforicaIndex}`;
             detailsHTML = `
             <div class="detail-item"><strong>Referência:</strong> <span class="ocorrencia-tag status-em-andamento">${item.nome_equip}</span></div>
-            <div class="detail-item"><strong>Ocorrência:</strong> <span>${item.ocorrencia_reparo || ''}</span></div>
+            <div class="detail-item"><strong>Ocorrência:</strong> <span>${item.ocorrencia_reparo.toUpperCase() || ''}</span></div>
             <div class="detail-item"><strong>Técnico(s):</strong> <span>${item.tecnicos_nomes || 'Não atribuído'}</span></div>
             <div class="detail-item"><strong>Veículo(s):</strong> <span>${item.veiculos_nomes || 'Nenhum'}</span></div>
             <div class="detail-item"><strong>Início Ocorrência:</strong> ${inicioOcorrenciaHTML}</div>
@@ -312,7 +312,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // Lógica para outros tipos de manutenção
             cardHeader = `${item.nome_equip} - ${item.referencia_equip}`;
             detailsHTML = `
-            <div class="detail-item"><strong>Ocorrência:</strong> <span class="ocorrencia-tag status-em-andamento">${item.ocorrencia_reparo || ''}</span></div>
+            <div class="detail-item"><strong>Ocorrência:</strong> <span class="ocorrencia-tag status-em-andamento">${item.ocorrencia_reparo.toUpperCase() || ''}</span></div>
             <div class="detail-item"><strong>Técnico(s):</strong> <span>${item.tecnicos_nomes || 'Não atribuído'}</span></div>
             <div class="detail-item"><strong>Veículo(s):</strong> <span>${item.veiculos_nomes || 'Nenhum'}</span></div>
             <div class="detail-item"><strong>Início Ocorrência:</strong> ${inicioOcorrenciaHTML}</div>
