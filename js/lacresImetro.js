@@ -243,7 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const btnSpinner = btnConfirmar.querySelector('.spinner');
 
             // Garante que da próxima vez o modal estará no estado inicial
-            setTimeout(() => { 
+            setTimeout(() => {
                 msgDiv.style.display = 'none';
                 btnContainer.style.display = 'flex';
                 btnContainer.querySelectorAll('button').forEach(b => b.disabled = false);
@@ -332,7 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function showSidebarAlerts(alerts) {
         const container = document.getElementById('lista-alertas');
-        container.innerHTML = ''; 
+        container.innerHTML = '';
 
         if (alerts.length === 0) {
             container.innerHTML = '<p style="padding: 1.5rem; text-align: center; color: #6c757d;">Nenhum alerta no momento.</p>';
@@ -345,7 +345,7 @@ document.addEventListener('DOMContentLoaded', () => {
             alertElement.href = `#equipamento-${item.id_equipamento}`;
 
             if (item.type === 'rompido') {
-                alertElement.classList.add('alerta-psie'); 
+                alertElement.classList.add('alerta-psie');
 
                 let lacresInfoHTML = '';
                 // Itera sobre cada lacre rompido e cria uma linha de detalhe
@@ -580,7 +580,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (temAlgumLacre) {
                     buttonText = 'Afixar Lacre';
                 }
-                
+
 
                 const lacresValidos = equip.lacres ? equip.lacres.filter(lacre => lacre.local_lacre && lacre.local_lacre.trim() !== '') : [];
 
@@ -644,10 +644,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // 2. Abre o nosso novo modal de confirmação
             abrirModal('modalConfirmarEdicao');
             // A lógica de edição foi movida para a função 'prosseguirComEdicao'
-            return; 
+            return;
         }
 
-        
+
         const lacresAtuais = btn.dataset.lacres ? JSON.parse(btn.dataset.lacres.replace(/&quot;/g, '"')) : [];
         form.reset();
         form.querySelectorAll('.form-lacre-group, .camera-sub-group').forEach(el => {
@@ -745,7 +745,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function prosseguirComEdicao() {
         const btn = botaoEditarPressionado;
-        if (!btn) return; 
+        if (!btn) return;
 
         const lacresAtuais = btn.dataset.lacres ? JSON.parse(btn.dataset.lacres.replace(/&quot;/g, '"')) : [];
         const form = document.getElementById('formularioAdicionarLacres');
@@ -843,7 +843,7 @@ document.addEventListener('DOMContentLoaded', () => {
         abrirModal('modalAdicionarLacres');
     }
 
-    
+
     document.getElementById('btnExecutarEdicao').addEventListener('click', () => {
         // 1. Fecha o modal de confirmação
         fecharModal('modalConfirmarEdicao');
@@ -1010,7 +1010,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (operacaoAtual === 'substitute') {
             endpoint = 'API/update_lacres.php';
         } else if (operacaoAtual === 'distribute') {
-            endpoint = 'API/distribute_lacres.php'; 
+            endpoint = 'API/distribute_lacres.php';
         } else {
             alert('Operação desconhecida!');
             return;
@@ -1114,7 +1114,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // CENÁRIO 1: Se tudo estiver preenchido E não houver nada rompido, exibe o alerta e para.
         if (allRequiredAreFilled && lacresRompido.length === 0) {
-            alert('Equipamento com todos os lacres afixados ou com distribuição pendente.');
+            // Define a mensagem e abre o novo modal de aviso
+            document.getElementById('alertaInfoTexto').textContent = 'Não é possível distribuir lacres. Este equipamento já está com todos os lacres afixados ou com uma distribuição pendente.';
+            abrirModal('modalAlertaInfo');
             return;
         }
 

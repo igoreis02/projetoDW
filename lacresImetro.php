@@ -543,6 +543,23 @@ require_once 'API/conexao_bd.php';
         </div>
     </div>
 
+    <div id="modalAlertaInfo" class="modal">
+        <div class="conteudo-modal" style="max-width: 450px;">
+            <div class="modal-header">
+                <h2>Aviso</h2>
+                <button class="fechar-modal" onclick="fecharModal('modalAlertaInfo')">&times;</button>
+            </div>
+            <div class="modal-body-text">
+                <p id="alertaInfoTexto"></p>
+            </div>
+            <div class="modal-actions" style="justify-content: center;">
+                <button type="button" class="botao-salvar" onclick="fecharModal('modalAlertaInfo')">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="js/lacresImetro.js" defer></script>
 </body>
 
