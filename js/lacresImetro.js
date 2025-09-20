@@ -339,43 +339,100 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+       
+
+        // Função auxiliar que encontra a DATA EFETIVA para ordenação de um item de alerta.
+        // A data efetiva é a data mais próxima do presente (seja PSIE ou Vencimento).
+        const getEffectiveSortDate = (item) => {
+            let earliestDate = null;
+
+            if (item.type === 'rompido') {
+                // Pega a data de PSIE mais próxima, se houver
+                const psieDates = item.lacres_rompidos
+                    .map(l => l.dt_reporta_psie)
+                    .filter(Boolean)
+                    .map(d => new Date(d + 'T00:00:00'));
+                if (psieDates.length > 0) {
+                    earliestDate = new Date(Math.min.apply(null, psieDates));
+                }
+            }
+
+            // Considera a data de vencimento (seja de um item 'vencimento' ou um 'rompido' que também vence)
+            const vencimentoDateStr = item.dt_vencimento || item.dt_vencimento_alerta;
+            if (vencimentoDateStr) {
+                const vencimentoDate = new Date(vencimentoDateStr + 'T00:00:00');
+                // Se não havia data de PSIE, ou se a data de vencimento for mais próxima, usa ela.
+                if (!earliestDate || vencimentoDate < earliestDate) {
+                    earliestDate = vencimentoDate;
+                }
+            }
+
+            return earliestDate;
+        };
+
+        alerts.sort((a, b) => {
+            const dateA = getEffectiveSortDate(a);
+            const dateB = getEffectiveSortDate(b);
+
+            // Itens sem data vão para o final
+            if (!dateA && !dateB) return 0;
+            if (!dateA) return 1;
+            if (!dateB) return -1;
+
+            // 1. Critério principal: Ordena pela data efetiva mais próxima
+            if (dateA.getTime() !== dateB.getTime()) {
+                return dateA - dateB;
+            }
+
+            // 2. Critério de desempate: Se as datas forem iguais, 'rompido' tem prioridade
+            if (a.type !== b.type) {
+                return a.type === 'rompido' ? -1 : 1;
+            }
+
+            return 0; // Se tudo for igual, mantém a ordem
+        });
+        
+
+
         alerts.forEach(item => {
             const alertElement = document.createElement('a');
             alertElement.className = 'alerta-item';
             alertElement.href = `#equipamento-${item.id_equipamento}`;
 
+            let itemHTML = `
+            <strong>${item.nome_equip}</strong>
+            <p>${item.referencia_equip} - ${item.cidade_nome || 'N/A'}</p>
+        `;
+
             if (item.type === 'rompido') {
-                alertElement.classList.add('alerta-psie');
+                alertElement.classList.add('alerta-psie'); // Borda vermelha
 
                 let lacresInfoHTML = '';
-                // Itera sobre cada lacre rompido e cria uma linha de detalhe
                 item.lacres_rompidos.forEach(lacre => {
                     const formName = dbValueToFormName[lacre.local_lacre.trim()];
                     const displayName = formName ? LacreMap[formName].displayName : lacre.local_lacre;
 
                     lacresInfoHTML += `<p class="detalhe-alerta">Lacre ${displayName} Rompido: ${lacre.num_lacre_rompido}`;
-                    // Se tiver data de PSIE, adiciona a informação
                     if (lacre.dt_reporta_psie) {
                         const psieDate = new Date(lacre.dt_reporta_psie + 'T00:00:00').toLocaleDateString('pt-BR');
                         lacresInfoHTML += ` (Reporta PSIE: ${psieDate})`;
                     }
                     lacresInfoHTML += `</p>`;
                 });
+                itemHTML += lacresInfoHTML;
 
-                alertElement.innerHTML = `
-                <strong>${item.nome_equip}</strong>
-                <p>${item.referencia_equip} - ${item.cidade_nome || 'N/A'}</p>
-                ${lacresInfoHTML}
-            `;
-            } else { // Vencimento
+                if (item.isAlsoExpiring) {
+                    const vencimento = new Date(item.dt_vencimento_alerta + 'T00:00:00').toLocaleDateString('pt-BR');
+                    itemHTML += `<p class="detalhe-alerta" style="color: #f97316;">Vencimento Próximo: ${vencimento}</p>`;
+                }
+
+            } else { 
                 alertElement.classList.add('alerta-vencimento');
                 const vencimento = new Date(item.dt_vencimento + 'T00:00:00').toLocaleDateString('pt-BR');
-                alertElement.innerHTML = `
-                <strong>${item.nome_equip}</strong>
-                <p>${item.referencia_equip} - ${item.cidade_nome || 'N/A'}</p>
-                <p class="detalhe-alerta">Vencimento Próximo: ${vencimento}</p>
-            `;
+                itemHTML += `<p class="detalhe-alerta">Vencimento Próximo: ${vencimento}</p>`;
             }
+
+            alertElement.innerHTML = itemHTML;
             container.appendChild(alertElement);
         });
     }
@@ -436,20 +493,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 todosOsEquipamentos = data.equipamentos;
                 renderizarLista();
                 if (showNotif) {
-                    // 1. Busca os alertas de prioridade alta (Rompido)
+                    // 1. Busca os dois tipos de alertas como antes
                     const rompidoItems = getRompidoItems(todosOsEquipamentos);
-
-                    // 2. Busca os alertas de prioridade baixa (Vencimento)
                     const expiringItems = getExpiringItems(todosOsEquipamentos).map(it => ({ ...it, type: 'vencimento' }));
 
-                    // 3. Lógica de Prioridade: Remove da lista de vencimento qualquer equipamento que já esteja na lista de rompido
-                    const rompidoIds = new Set(rompidoItems.map(item => item.id_equipamento));
-                    const uniqueExpiringItems = expiringItems.filter(item => !rompidoIds.has(item.id_equipamento));
+                    // 2. Lógica de Mesclagem usando um Map para garantir itens únicos
+                    const alertsMap = new Map();
 
-                    // 4. Junta os arrays, com os de rompido sempre primeiro
-                    const allAlerts = [...rompidoItems, ...uniqueExpiringItems];
+                    // Primeiro, adiciona todos os alertas de alta prioridade (rompido) ao mapa
+                    rompidoItems.forEach(item => {
+                        alertsMap.set(item.id_equipamento, item);
+                    });
 
-                    // 5. Chama a função da barra lateral com a lista final e priorizada
+                    // Agora, processa os alertas de baixa prioridade (vencimento)
+                    expiringItems.forEach(item => {
+                        const id = item.id_equipamento;
+                        // Verifica se já existe um alerta de rompido para este equipamento
+                        if (alertsMap.has(id)) {
+                            // Se sim, adiciona a informação de vencimento ao alerta existente
+                            const existingAlert = alertsMap.get(id);
+                            existingAlert.isAlsoExpiring = true; // Adiciona uma flag
+                            existingAlert.dt_vencimento_alerta = item.dt_vencimento; // Guarda a data
+                        } else {
+                            // Se não, adiciona o alerta de vencimento como um novo item
+                            alertsMap.set(id, item);
+                        }
+                    });
+
+                    // 3. Converte o mapa de volta para um array e chama a função de exibição
+                    const allAlerts = Array.from(alertsMap.values());
                     showSidebarAlerts(allAlerts);
                 }
             } else {
