@@ -734,7 +734,7 @@ try {
     <main class="card">
         <header class="header-container">
             <a href="menu.php" class="back-btn-icon" title="Voltar ao Menu">&larr;</a>
-            <h1 class="titulo-cabecalho">Gerenciar Equipamentos</h1>
+            <h1 class="titulo-cabecalho">Equipamentos</h1>
             <a href="menu.php" class="close-btn" title="Voltar ao Menu">&times;</a>
         </header>
         <div class="top-controls-wrapper">

@@ -31,7 +31,7 @@ require_once 'API/conexao_bd.php';
     <main class="card">
         <header class="cabecalho">
             <a href="menu.php" class="botao-voltar" title="Voltar ao Menu">&larr;</a>
-            <h1 class="titulo-cabecalho">Gerenciar Lacres INMETRO</h1>
+            <h1 class="titulo-cabecalho">Lacres INMETRO</h1>
         </header>
 
         <div class="filtros-container">
