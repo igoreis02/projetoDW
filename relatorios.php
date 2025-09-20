@@ -431,7 +431,7 @@ if (!isset($_SESSION['user_id'])) {
         </div>
     </div>
 
-    <script src="js/relatorios.js"></script>
+    <script src="js/relatorios.js" defer></script>
 </body>
 
 </html>

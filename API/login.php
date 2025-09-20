@@ -2,9 +2,7 @@
 session_start(); // Inicia a sessão para armazenar dados do usuário
 
 header('Content-Type: application/json'); // Define o cabeçalho para JSON
-header('Access-Control-Allow-Origin: *'); // Permite requisições de qualquer origem (para desenvolvimento)
-header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
+
 
 // Configurações do banco de dados
 require_once 'conexao_bd.php';

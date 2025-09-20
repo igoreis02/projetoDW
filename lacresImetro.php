@@ -543,7 +543,7 @@ require_once 'API/conexao_bd.php';
         </div>
     </div>
 
-    <script src="js/lacresImetro.js"></script>
+    <script src="js/lacresImetro.js" defer></script>
 </body>
 
 </html>

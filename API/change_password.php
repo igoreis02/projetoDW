@@ -1,8 +1,5 @@
 <?php
 header('Content-Type: application/json'); // Define o cabeçalho para JSON
-header('Access-Control-Allow-Origin: *'); // Permite requisições de qualquer origem (para desenvolvimento)
-header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
 // Configurações do banco de dados
 // ATENÇÃO: Substitua 'localhost', 'root', '' e 'gerenciamento_manutencoes' pelos seus dados reais

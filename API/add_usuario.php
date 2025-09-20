@@ -1,7 +1,6 @@
 <?php
 // Define os cabeçalhos para permitir requisições de outras origens e retornar JSON
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
 
 // Inclui o arquivo de conexão com o banco de dados
 require_once 'conexao_bd.php';

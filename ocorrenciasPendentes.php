@@ -226,7 +226,7 @@ if (!isset($_SESSION['user_id'])) {
         </div>
     </div>
 
-    <script src="js/ocorrenciasPendentes.js"></script>
+    <script src="js/ocorrenciasPendentes.js" defer></script>
 
     <button id="btnVoltarAoTopo" title="Voltar ao topo">
         <i class="fas fa-arrow-up"></i> </button>

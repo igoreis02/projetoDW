@@ -153,6 +153,6 @@ $user_email = $_SESSION['user_email'];
     <script>
         const userId = <?php echo json_encode($user_id); ?>;
     </script>
-    <script src="js/manutencao_tecnico.js"></script>
+    <script src="js/manutencao_tecnico.js" defer></script>
 </body>
 </html>

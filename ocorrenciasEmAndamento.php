@@ -163,7 +163,7 @@ if (!isset($_SESSION['user_id'])) {
     </div>
 
 
-    <script src="js/ocorrenciasEmAndamento.js"></script>
+    <script src="js/ocorrenciasEmAndamento.js" defer></script>
 </body>
 
 </html>

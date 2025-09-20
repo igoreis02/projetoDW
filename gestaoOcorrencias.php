@@ -140,7 +140,7 @@ if (!isset($_SESSION['user_id'])) {
         </button>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="js/gestaoOcorrencias.js"></script>
+    <script src="js/gestaoOcorrencias.js" defer></script>
 </body>
 
 </html>

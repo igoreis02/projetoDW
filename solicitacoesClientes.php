@@ -149,7 +149,7 @@ require_once 'conexao_bd.php';
         </div>
     </div>
 
-    <script src="js/solicitacoesClientes.js"></script>
+    <script src="js/solicitacoesClientes.js" defer></script>
 </body>
 
 </html>

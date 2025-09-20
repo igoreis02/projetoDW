@@ -1,7 +1,7 @@
 <?php
 // Define o cabeçalho da resposta como JSON.
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *'); 
+
 
 // --- Configurações do Banco de Dados ---
 require_once 'conexao_bd.php';

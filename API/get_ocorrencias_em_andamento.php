@@ -1,8 +1,8 @@
 <?php
-// /API/get_ocorrencias_em_andamento.php
+
 
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
+
 
 require_once 'conexao_bd.php';
 

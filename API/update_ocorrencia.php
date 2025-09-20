@@ -1,9 +1,7 @@
 <?php
 session_start(); // Adicionado para obter o ID do usuário logado
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
+
 
 require_once 'conexao_bd.php';
 
