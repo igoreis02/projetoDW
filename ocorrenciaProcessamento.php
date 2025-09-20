@@ -23,10 +23,11 @@ if (!isset($_SESSION['user_id'])) {
     <div class="card">
         <div class="header-container">
             <a href="menu.php" class="back-btn-icon" title="Voltar ao Menu">&larr;</a>
-            <h2>Ocorrências de Processamento</h2>
+            <h2>Ocorrências Processamento</h2>
             <a href="menu.php" class="close-btn" title="Voltar ao Menu">&times;</a>
         </div>
 
+        <div class="controls-wrapper">
         <div class="main-controls-container">
             <div class="action-buttons" id="typeFilterContainer">
                 <button class="action-btn active" data-type="manutencao">Ocorrências</button>
@@ -38,6 +39,7 @@ if (!isset($_SESSION['user_id'])) {
                 <label for="endDate">Até:</label>
                 <input type="date" id="endDate">
             </div>
+        </div>
         </div>
 
         <div class="search-container">

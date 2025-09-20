@@ -1187,7 +1187,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // CENÁRIO 1: Se tudo estiver preenchido E não houver nada rompido, exibe o alerta e para.
         if (allRequiredAreFilled && lacresRompido.length === 0) {
             // Define a mensagem e abre o novo modal de aviso
-            document.getElementById('alertaInfoTexto').textContent = 'Não é possível distribuir lacres. Este equipamento já está com todos os lacres afixados ou com uma distribuição pendente.';
+            document.getElementById('alertaInfoTexto').textContent = 'Não é possível distribuir lacres. Este equipamento já está com todos os lacres afixados ou distribuidos.';
             abrirModal('modalAlertaInfo');
             return;
         }

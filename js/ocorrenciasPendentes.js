@@ -337,7 +337,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <li class="${cssClass}">
                 ${dateInfoHtml}
                 <div style="margin-right: 150px;"> 
-                    <strong>${displayName}</strong> - ${firstItem.referencia_equip}: ${problemas}
+                    <strong>${displayName} - ${firstItem.referencia_equip}</strong>: ${problemas}
                 </div>
             </li>`;
                 }

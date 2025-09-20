@@ -23,7 +23,7 @@ if (!isset($_SESSION['user_id'])) {
     <div class="card">
         <div class="header-container">
             <a href="menu.php" class="back-btn-icon" title="Voltar ao Menu">&larr;</a>
-            <h2>Ocorrências de Provedores</h2>
+            <h2>Ocorrências Provedores</h2>
             <a href="menu.php" class="close-btn" title="Voltar ao Menu">&times;</a>
         </div>
 

@@ -417,7 +417,6 @@ document.addEventListener('DOMContentLoaded', function () {
             let sectionHtml = '';
             const sortedCities = Object.keys(itemsByCity).sort();
             for (const city of sortedCities) {
-                // <<< MODIFICAÇÃO PRINCIPAL AQUI >>>
                 // Criamos o cabeçalho completo com um container, o título com a seta, e o novo botão.
                 sectionHtml += `
             <div class="cidade-header-simplificado">
@@ -445,7 +444,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <li class="${cssClass}">
                 ${dateInfoHtml}
                 <div style="margin-right: 150px;"> 
-                    <strong>${displayName}</strong> - ${firstItem.referencia_equip}: ${problemas}
+                    <strong>${displayName} - ${firstItem.referencia_equip}</strong>: ${problemas}
                 </div>
             </li>`;
                 }
@@ -536,7 +535,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const leftControlsTarget = mainControls.querySelector('.action-buttons'); // Onde os filtros vão entrar
 
         if (showSimplified) {
-            // --- AÇÕES PARA ENTRAR NA VISÃO SIMPLIFICADA ---
 
             // Move o filterContainer para a mesma linha dos botões
             leftControlsTarget.insertAdjacentElement('beforebegin', filterContainer);
@@ -553,8 +551,6 @@ document.addEventListener('DOMContentLoaded', function () {
             simplifiedView.classList.remove('hidden');
 
         } else {
-            // --- AÇÕES PARA VOLTAR PARA A VISÃO NORMAL (CARDS) ---
-
             // Devolve o filterContainer para sua posição original (abaixo do search)
             controlsWrapper.insertAdjacentElement('afterend', filterContainer);
             // Remove a classe de formatação inline
@@ -583,7 +579,7 @@ document.addEventListener('DOMContentLoaded', function () {
             applyFiltersAndRender();
         }
     }
-    // ---  EVENT LISTENERS ---
+    // --- EVENTOS DE INTERAÇÃO ---
     clearFiltersBtn.addEventListener('click', () => {
         if (isSimplifiedViewActive) toggleView(false);
         searchInput.value = '';
@@ -615,7 +611,6 @@ document.addEventListener('DOMContentLoaded', function () {
     searchInput.addEventListener('input', applyFiltersAndRender);
 
 
-    // --- EVENT LISTENERS --
     actionButtons.forEach(button => {
         button.addEventListener('click', () => {
             if (isSimplifiedViewActive && button.id !== 'btnSimplificado') toggleView(false);
