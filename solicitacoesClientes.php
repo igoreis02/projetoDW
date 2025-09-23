@@ -19,7 +19,7 @@ require_once 'conexao_bd.php';
     <link rel="icon" type="image/png" href="imagens/favicon.png">
     <link rel="stylesheet" href="css/solicitacoesClientes.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-   
+
 </head>
 
 <body>
@@ -56,11 +56,14 @@ require_once 'conexao_bd.php';
         <div id="filterContainer" class="filter-container"></div>
 
         <div id="solicitacoesContainer" class="solicitacoes-container">
-            <div id="pageLoader" class="main-loading-state">
-                <div class="main-loading-spinner"></div>
-                <span>Carregando solicitações...</span>
-            </div>
+
         </div>
+
+        <div id="pageLoader" class="main-loading-state">
+            <div class="main-loading-spinner"></div>
+            <span>Carregando solicitações...</span>
+        </div>
+
         <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
 
         <button id="btnVoltarAoTopo" title="Voltar ao topo">

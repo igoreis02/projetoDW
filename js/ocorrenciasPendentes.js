@@ -14,10 +14,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const mainControls = document.querySelector('.main-controls-container');
     const voltarBtnFooter = document.querySelector('.voltar-btn');
 
-    const controlsWrapper = document.querySelector('.controls-wrapper'); // <<< ADICIONE ESTA LINHA
+    const controlsWrapper = document.querySelector('.controls-wrapper'); 
 
 
-    // --- VARIÁVEIS DE ESTADO ---
     let activeType = 'manutencao';
     let activeCity = 'todos';
     let allData = null;
@@ -65,7 +64,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // --- LÓGICA DE BUSCA E RENDERIZAÇÃO ---
     async function fetchData() {
         pageLoader.style.display = 'flex';
         ocorrenciasContainer.innerHTML = '';
@@ -88,10 +86,9 @@ document.addEventListener('DOMContentLoaded', function () {
             const response = await fetch(apiUrl);
             const result = await response.json();
 
-            // A lógica de comparação de JSON foi removida.
+            
             if (result.success) {
                 allData = result.data;
-                // AQUI ATUALIZAMOS O CHECKSUM LOCAL
                 currentChecksum = result.checksum;
                 applyFiltersAndRender();
             } else {
@@ -309,8 +306,6 @@ document.addEventListener('DOMContentLoaded', function () {
             let sectionHtml = '';
             const sortedCities = Object.keys(itemsByCity).sort();
             for (const city of sortedCities) {
-                // <<< MODIFICAÇÃO PRINCIPAL AQUI >>>
-                // Criamos o cabeçalho completo com um container, o título com a seta, e o novo botão.
                 sectionHtml += `
             <div class="cidade-header-simplificado">
                 <h3 class="cidade-toggle" onclick="toggleCityList(this)">
@@ -318,7 +313,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 </h3>
                 <button class="toggle-dias-btn" onclick="toggleDiasVisibilidade(this, event)">Ocultar Dias</button>
             </div>
-            <ul>`; // A lista <ul> vem logo depois
+            <ul>`; 
 
                 const itemsByEquip = {};
                 for (const item of itemsByCity[city]) {
@@ -346,7 +341,6 @@ document.addEventListener('DOMContentLoaded', function () {
             return sectionHtml;
         };
 
-        // <<< ADICIONAR O TÍTULO "SEM URGÊNCIA" >>>
         let urgenteHtml = buildPrioritySection(urgentes, 'prioridade-urgente');
         let padraoHtml = buildPrioritySection(padrao, 'prioridade-padrao');
         let semUrgenciaHtml = buildPrioritySection(semUrgencia, 'prioridade-sem-urgencia');
@@ -359,7 +353,7 @@ document.addEventListener('DOMContentLoaded', function () {
             padraoHtml = `<h2 class="simplified-section-title">OCORRÊNCIAS - NÍVEL 1</h2>` + padraoHtml;
         }
 
-        // Se a seção "Sem Urgência" tiver conteúdo, adicionamos o título a ela
+        
         if (semUrgenciaHtml) {
             semUrgenciaHtml = `<h2 class="simplified-section-title">OCORRÊNCIAS SEM URGÊNCIA - NÍVEL 2</h2>` + semUrgenciaHtml;
         }
@@ -433,7 +427,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const leftControlsTarget = mainControls.querySelector('.action-buttons'); // Onde os filtros vão entrar
 
         if (showSimplified) {
-            // --- AÇÕES PARA ENTRAR NA VISÃO SIMPLIFICADA ---
 
             // Move o filterContainer para a mesma linha dos botões
             leftControlsTarget.insertAdjacentElement('beforebegin', filterContainer);
@@ -450,7 +443,6 @@ document.addEventListener('DOMContentLoaded', function () {
             simplifiedView.classList.remove('hidden');
 
         } else {
-            // --- AÇÕES PARA VOLTAR PARA A VISÃO NORMAL (CARDS) ---
 
             // Devolve o filterContainer para sua posição original (abaixo do search)
             controlsWrapper.insertAdjacentElement('afterend', filterContainer);
@@ -481,7 +473,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // --- EVENT LISTENERS ---
+
     clearFiltersBtn.addEventListener('click', () => {
         if (isSimplifiedViewActive) toggleView(false);
         searchInput.value = '';
@@ -586,7 +578,6 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="detail-item"><strong>Status:</strong> ${statusHTML}</div>
         `;
 
-            // O return foi movido para o final da função para incluir as actions
             return `
             <div class="ocorrencia-item" data-type="${item.tipo_manutencao}" data-id="${firstOcorrencia.id_manutencao}" data-is-grouped="false">
                 <div class="ocorrencia-header">
@@ -788,7 +779,6 @@ document.addEventListener('DOMContentLoaded', function () {
             btn.textContent = `${ocor.ocorrencia_reparo} (Início: ${new Date(ocor.inicio_reparo).toLocaleDateString('pt-BR')})`;
             btn.onclick = () => {
                 btn.classList.toggle('selected');
-                // Eu adiciono esta linha para esconder a mensagem de erro ao clicar
                 document.getElementById('selectOcorrenciasError').classList.add('hidden');
             };
             container.appendChild(btn);
@@ -847,7 +837,7 @@ document.addEventListener('DOMContentLoaded', function () {
         openModal('priorityModal');
     }
 
-    // <<<  Função para salvar a prioridade selecionada >>>
+    // Função para salvar a prioridade selecionada
     window.savePriority = async function (nivel) {
         // 1. Referências aos elementos do modal
         const footer = document.querySelector('#priorityModal .modal-footer');
@@ -877,7 +867,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             // 5. Lógica de SUCESSO
-            buttonsContainer.classList.add('hidden'); // <<< ALTERAÇÃO PRINCIPAL: ESCONDE OS BOTÕES
+            buttonsContainer.classList.add('hidden'); 
             errorEl.textContent = 'Nível de prioridade alterado com sucesso!';
             errorEl.classList.add('success');
             errorEl.classList.remove('hidden');

@@ -57,12 +57,12 @@ if (!isset($_SESSION['user_id'])) {
         <div id="cityFilterContainer" class="filter-container" style="padding-top: 0; margin-bottom: 2rem;"></div>
 
         <div id="ocorrenciasContainer" class="ocorrencias-container">
-            <div id="pageLoader" class="main-loading-state">
+        </div>
+
+        <div id="pageLoader" class="main-loading-state">
                 <div class="main-loading-spinner"></div>
                 <span>Carregando ocorrências...</span>
             </div>
-        </div>
-
         <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
 
         <button id="btnVoltarAoTopo" title="Voltar ao topo">

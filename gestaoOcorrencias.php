@@ -15,7 +15,7 @@ if (!isset($_SESSION['user_id'])) {
     <link rel="stylesheet" href="css/gestaoOcorrencias.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="icon" type="image/png" href="imagens/favicon.png">
-    
+
 </head>
 
 <body>
@@ -125,13 +125,15 @@ if (!isset($_SESSION['user_id'])) {
         <div id="ocorrenciasView" class="hidden">
 
             <div id="ocorrenciasContainer" class="ocorrencias-container">
-                <div id="pageLoader" class="main-loading-state">
-                    <div class="main-loading-spinner"></div>
-                    <span>Carregando ocorrências...</span>
-                </div>
+
+            </div>
+            <div id="pageLoader" class="main-loading-state">
+                <div class="main-loading-spinner"></div>
+                <span>Carregando ocorrências...</span>
             </div>
         </div>
         <div id="simplifiedView" class="hidden"></div>
+
 
         <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
 

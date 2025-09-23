@@ -28,7 +28,7 @@ $result = $stmt->get_result();
 if ($result->num_rows > 0) {
     $user = $result->fetch_assoc();
     
-    // --- MUDANÇA 2: Verificação de Status ---
+    //  Verificação de Status ---
     // Agora, a primeira coisa que fazemos após encontrar o usuário é verificar seu status.
     if ($user['status_usuario'] !== 'ativo') {
         // Se o usuário não estiver ativo, retorna a mensagem específica e encerra.

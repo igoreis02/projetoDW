@@ -55,11 +55,12 @@ if (!isset($_SESSION['user_id'])) {
         <div id="simplifiedView" class="hidden">
         </div>
         <div id="ocorrenciasContainer" class="ocorrencias-container">
-            <div id="pageLoader" class="main-loading-state" style="display: flex;">
+            
+        </div>
+        <div id="pageLoader" class="main-loading-state">
                 <div class="main-loading-spinner"></div>
                 <span>Carregando ocorrências...</span>
             </div>
-        </div>
         <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
     </div>
     <div id="cancelSelectionModal" class="modal">
