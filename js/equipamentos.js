@@ -42,10 +42,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const BASE_INTERVAL = 15000; // 15 segundos
     const MAX_INTERVAL = 120000; // 2 minutos
     let currentInterval = BASE_INTERVAL;
-    
+
 
     // --- MAPA DE VALIDAÇÃO (SEU CÓDIGO ORIGINAL) ---
-   const validationMap = {
+    const validationMap = {
         'tipo_equip[]': 'Tipo de Equipamento',
         'nome_equip': 'Nome',
         'referencia_equip': 'Referência',
@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
         element.classList.add('hidden');
         element.textContent = '';
     };
-     function handleCityChange(event) {
+    function handleCityChange(event) {
         const cityId = event.target.value;
         const form = event.target.closest('form');
         const providerSelect = form.querySelector('select[name="id_provedor"]');
@@ -114,8 +114,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (cancelButton) cancelButton.disabled = show;
     }
-        // --- FUNÇÃO DE VALIDAÇÃO DE FORMULÁRIO ---
-     function validateForm(form, validationMap) {
+    // --- FUNÇÃO DE VALIDAÇÃO DE FORMULÁRIO ---
+    function validateForm(form, validationMap) {
         for (const name in validationMap) {
             const field = form.querySelector(`[name="${name}"]`);
             if (!field) continue;
@@ -139,7 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return true; // Retorna true se tudo estiver válido
     }
-    
+
     // --- FUNÇÃO PARA LIMPAR MENSAGENS DE ERRO ---
     function setupValidationListeners(form, messageElement) {
         form.querySelectorAll('input, select, textarea').forEach(input => {
@@ -157,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- FUNÇÕES DE LÓGICA DE NEGÓCIO ---
 
-   function toggleConditionalFields(formId) {
+    function toggleConditionalFields(formId) {
         const form = document.getElementById(formId);
         if (!form) return;
 
@@ -177,15 +177,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const estudoTecLabel = form.querySelector(`label[for="${prefix}_dt_estudoTec"]`);
 
         if (selectedTypes.length === 0) {
-        specificContainer.classList.add('hidden');
-        afericaoContainer.classList.add('hidden');
-        dateContainer.classList.add('hidden');
+            specificContainer.classList.add('hidden');
+            afericaoContainer.classList.add('hidden');
+            dateContainer.classList.add('hidden');
 
-        if (ativosContainer) {
-            ativosContainer.classList.add('hidden'); 
+            if (ativosContainer) {
+                ativosContainer.classList.add('hidden');
+            }
+            return; // Termina a execução da função
         }
-        return; // Termina a execução da função
-    }
 
         const primaryType = selectedTypes[0];
 
@@ -197,7 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const needsAfericao = ['RADAR FIXO', 'LOMBADA ELETRONICA'].includes(primaryType);
         const needsSpecifics = ['RADAR FIXO', 'LOMBADA ELETRONICA', 'MONITOR DE SEMAFORO', 'LAP'].includes(primaryType);
         const needsEstudoTec = ['RADAR FIXO', 'LOMBADA ELETRONICA', 'MONITOR DE SEMAFORO'].includes(primaryType);
-        const hidesKm = ['LAP'].includes(primaryType);
+        const hidesKm = ['LAP', 'MONITOR DE SEMAFORO'].includes(primaryType);
 
         afericaoContainer.classList.toggle('hidden', !needsAfericao);
         specificContainer.classList.toggle('hidden', !needsSpecifics);
@@ -207,7 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
             kmInput.classList.toggle('hidden', hidesKm);
             kmLabel.classList.toggle('hidden', hidesKm);
         }
-        
+
         if (estudoTecInput && estudoTecLabel) {
             estudoTecInput.classList.toggle('hidden', !needsEstudoTec);
             estudoTecLabel.classList.toggle('hidden', !needsEstudoTec);
@@ -237,7 +237,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateTimeoutId = setTimeout(scheduleNextCheck, currentInterval);
         }
     }
-   
+
 
     async function fetchProvidersForSelect() {
         const selectProvider = document.getElementById('equipmentProvider');
@@ -284,7 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 equipmentListContainer.innerHTML = `<p class="message error">${data.message}</p>`;
                 // Mesmo sem equipamentos, o checksum do estado "vazio" é válido
-                currentChecksum = data.checksum; 
+                currentChecksum = data.checksum;
             }
         } catch (error) {
             console.error('Erro ao buscar equipamentos:', error);
@@ -339,7 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-   function renderEquipmentList(equipments) {
+    function renderEquipmentList(equipments) {
         equipmentListContainer.innerHTML = '';
         if (equipments.length === 0) {
             equipmentListContainer.innerHTML = '<p class="message">Nenhum equipamento encontrado.</p>';
@@ -361,36 +361,48 @@ document.addEventListener('DOMContentLoaded', () => {
                 const formatDate = (date) => (!date || date === '0000-00-00') ? 'N/A' : new Date(date + 'T00:00:00').toLocaleDateString('pt-BR');
 
                 const types = equip.tipo_equip ? equip.tipo_equip.split(',').map(t => t.trim()) : [];
-                
-                // --- LÓGICA DE VISIBILIDADE CORRIGIDA ---
+
                 const primaryType = types.length > 0 ? types[0] : null;
                 const typesThatHideDetails = ['CCO', 'DOME', 'VIDEO MONITORAMENTO', 'EDUCATIVO'];
                 const shouldShowDetails = primaryType && !typesThatHideDetails.includes(primaryType);
-                // --- FIM DA CORREÇÃO ---
 
                 const enderecoCompleto = `${equip.logradouro || 'N/A'} - ${equip.bairro || 'N/A'}`;
 
+                // --- CORREÇÃO DA LÓGICA DO BOTÃO DE LOCALIZAÇÃO ---
+                let locationButton = '';
+                if (equip.latitude && equip.longitude) {
+                    // 1. URL correta do Google Maps e sintaxe correta do template literal
+                    const mapsUrl = `https://maps.google.com/?q=${equip.latitude},${equip.longitude}`;
+                    locationButton = `<a href="${mapsUrl}" target="_blank" class="botao-localizacao" title="Ver no mapa">Localização</a>`;
+                }
+
                 const item = document.createElement('div');
                 item.className = 'item-equipamento';
+
+                // --- CORREÇÃO DA MONTAGEM DO HTML ---
+                // 2. Adicionado o container de botões (.item-botoes-container) e a variável locationButton
                 item.innerHTML = `
-                    <div class="item-equipamento-conteudo">
-                        <h3>${equip.nome_equip || 'N/A'} - ${equip.referencia_equip || 'N/A'}</h3>
-                        <p><strong>Tipo:</strong> ${equip.tipo_equip || 'N/A'}</p>
-                        ${shouldShowDetails ? `
-                            <p><strong>Qtd. Faixa:</strong> ${equip.qtd_faixa || 'N/A'}</p>
-                            <p><strong>Sentido:</strong> ${equip.sentido || 'N/A'}</p>
-                            <p><strong>Velocidade:</strong> ${equip.km ? equip.km + ' Km/h' : 'N/A'}</p>
-                            <p><strong>Data Instalação:</strong> ${formatDate(equip.data_instalacao)}</p>
-                            <p><strong>Nº Instrumento:</strong> ${equip.num_instrumento || 'N/A'}</p>
-                            <p><strong>Data Aferição:</strong> ${formatDate(equip.dt_afericao)}</p>
-                            <p><strong>Data Vencimento:</strong> ${formatDate(equip.dt_vencimento)}</p>
-                        ` : ''}
-                        <p><strong>Endereço:</strong> ${enderecoCompleto}</p>
-                        <p><strong>Provedor:</strong> ${equip.nome_prov || 'N/A'}</p>
-                        <p><strong>Status:</strong> <span class="status-cell ${statusClass}">${statusDisplay}</span></p>
-                    </div>
+                <div class="item-equipamento-conteudo">
+                    <h3>${equip.nome_equip || 'N/A'} - ${equip.referencia_equip || 'N/A'}</h3>
+                    <p><strong>Tipo:</strong> ${equip.tipo_equip || 'N/A'}</p>
+                    ${shouldShowDetails ? `
+                        <p><strong>Qtd. Faixa:</strong> ${equip.qtd_faixa || 'N/A'}</p>
+                        <p><strong>Sentido:</strong> ${equip.sentido || 'N/A'}</p>
+                        <p><strong>Velocidade:</strong> ${equip.km ? equip.km + ' Km/h' : 'N/A'}</p>
+                        <p><strong>Data Instalação:</strong> ${formatDate(equip.data_instalacao)}</p>
+                        <p><strong>Nº Instrumento:</strong> ${equip.num_instrumento || 'N/A'}</p>
+                        <p><strong>Data Aferição:</strong> ${formatDate(equip.dt_afericao)}</p>
+                        <p><strong>Data Vencimento:</strong> ${formatDate(equip.dt_vencimento)}</p>
+                    ` : ''}
+                    <p><strong>Endereço:</strong> ${enderecoCompleto}</p>
+                    <p><strong>Provedor:</strong> ${equip.nome_prov || 'N/A'}</p>
+                    <p><strong>Status:</strong> <span class="status-cell ${statusClass}">${statusDisplay}</span></p>
+                </div>
+                <div class="item-botoes-container">
+                    ${locationButton}
                     <button class="botao-editar" data-equipment-id="${equip.id_equipamento}">Editar</button>
-                `;
+                </div>
+            `;
                 equipmentGrid.appendChild(item);
             });
             equipmentListContainer.appendChild(citySection);
@@ -411,7 +423,7 @@ document.addEventListener('DOMContentLoaded', () => {
         addFormButtonsContainer.style.display = 'flex';
     }
 
-     function openEditEquipmentModal(equipmentData) {
+    function openEditEquipmentModal(equipmentData) {
         if (!equipmentData) return;
         editEquipmentForm.reset();
         editEquipmentForm.querySelectorAll('input[name="tipo_equip[]"]').forEach(cb => { cb.checked = false; });
@@ -596,7 +608,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const formData = new FormData(editEquipmentForm);
             const data = Object.fromEntries(formData.entries());
-            
+
             // ===== CORREÇÃO CRÍTICA AQUI =====
             // O nome correto do campo é 'tipo_equip[]'
             data.tipo_equip = formData.getAll('tipo_equip[]');

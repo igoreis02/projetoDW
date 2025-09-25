@@ -346,24 +346,42 @@ try {
             margin: 0.25rem 0;
             color: #555;
         }
+        .item-botoes-container {
+            display: flex;
+            justify-content: flex-end; /* Alinha os botões à direita */
+            gap: 10px; /* Espaço entre os botões */
+            margin-top: 1rem; /* Espaço acima dos botões */
+        }
 
-        /* MODIFICADO: Estilo para o botão de editar */
-        .item-equipamento .botao-editar {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            cursor: pointer;
+
+        .item-equipamento .botao-editar,
+        .item-equipamento .botao-localizacao {
+           display: inline-flex;       /* Garante que se comportem como blocos flexíveis */
+            align-items: center;       /* Centraliza o texto verticalmente, garantindo a mesma altura */
+            justify-content: center;   /* Centraliza o texto horizontalmente */
+            padding: 0.5rem 1rem;      /* Espaçamento interno */
+            border-radius: 0.5rem;     /* Bordas arredondadas */
+            border: none;              /* Remove borda padrão */
+            color: white;              /* Cor do texto */
+            font-family: inherit;      /* Garante que ambos usem a mesma fonte da página */
+            font-size: 0.9em;          /* Define um tamanho de fonte explícito e igual para os dois */
+            text-decoration: none;     /* Remove o sublinhado do link "Localização" */
+            cursor: pointer;           /* Mostra o cursor de "mãozinha" */
             transition: background-color 0.3s ease;
-            margin-top: 1rem;
-            /* Espaço acima do botão */
-            align-self: flex-end;
-            /* Alinha o botão à direita */
+            box-sizing: border-box;    /* Assegura que o padding não altere a altura final */
+        }
+        .item-equipamento .botao-editar {
+            background-color: #007bff; /* Azul */
         }
 
         .item-equipamento .botao-editar:hover {
             background-color: #0056b3;
+        }
+         .item-equipamento .botao-localizacao {
+            background-color: #28a745; /* Verde */
+        }
+        .item-equipamento .botao-localizacao:hover {
+            background-color: #218838;
         }
 
         .status-cell {
