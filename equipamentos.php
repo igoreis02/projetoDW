@@ -584,7 +584,7 @@ try {
 
         .custom-date-input input[type="date"] {
             -webkit-appearance: none;
-            moz-appearance: none;
+            -moz-appearance: none;
             appearance: none;
             padding-right: 35px;
             /* Espaço para o ícone */
