@@ -522,15 +522,35 @@ document.addEventListener('DOMContentLoaded', () => {
                     ocorrencia: data.maintenances[0].ocorrencia_reparo
                 };
                 
-                // Cria uma lista ordenada (1., 2., 3.) com as ocorrências
-                const occurrencesListHTML = '<ol style="margin: 0; padding-left: 20px;">' + 
-                    data.maintenances.map(maint => 
-                        `<li style="margin-bottom: 5px;">${maint.ocorrencia_reparo}</li>`
-                    ).join('') + 
-                '</ol>';
+                // 1. Filtra as ocorrências por status
+                const pendingMaintenances = data.maintenances.filter(m => m.status_reparo === 'pendente');
+                const inProgressMaintenances = data.maintenances.filter(m => m.status_reparo === 'em andamento');
 
-                // Preenche o div no modal com a lista que acabamos de criar
-                existingMaintenanceText.innerHTML = occurrencesListHTML;
+                let dynamicHTML = ''; // String para construir o HTML
+
+                // 2. Cria o bloco de HTML para ocorrências pendentes, se existirem
+                if (pendingMaintenances.length > 0) {
+                    dynamicHTML += '<p><strong>Ocorrência(s) pendente(s):</strong></p>';
+                    dynamicHTML += '<ol style="margin: 0; padding-left: 20px;">';
+                    pendingMaintenances.forEach(maint => {
+                        dynamicHTML += `<li style="margin-bottom: 5px;">${maint.ocorrencia_reparo}</li>`;
+                    });
+                    dynamicHTML += '</ol>';
+                }
+
+                // 3. Cria o bloco de HTML para ocorrências em andamento, se existirem
+                if (inProgressMaintenances.length > 0) {
+                    dynamicHTML += `<p style="margin-top: 1rem;"><strong>Ocorrência(s) em andamento:</strong></p>`;
+                    dynamicHTML += '<ol style="margin: 0; padding-left: 20px;">';
+                    inProgressMaintenances.forEach(maint => {
+                        dynamicHTML += `<li style="margin-bottom: 5px;">${maint.ocorrencia_reparo}</li>`;
+                    });
+                    dynamicHTML += '</ol>';
+                }
+
+                // 4. Injeta o HTML gerado no contêiner
+                const container = document.getElementById('existingMaintenanceContainer');
+                container.innerHTML = dynamicHTML;
                 
                 pendingMaintenanceModal.classList.add('is-active');
                 return; // Interrompe a execução para esperar a decisão do usuário

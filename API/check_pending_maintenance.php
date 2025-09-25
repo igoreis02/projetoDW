@@ -12,9 +12,9 @@ if (empty($id_equipamento)) {
 
 try {
     $stmt = $conn->prepare(
-        "SELECT id_manutencao, ocorrencia_reparo, tipo_manutencao 
+        "SELECT id_manutencao, ocorrencia_reparo, tipo_manutencao ,status_reparo
          FROM manutencoes 
-         WHERE id_equipamento = ? AND status_reparo = 'pendente'"
+         WHERE id_equipamento = ? AND status_reparo IN ('pendente', 'em andamento')"
     );
     $stmt->bind_param("i", $id_equipamento);
     $stmt->execute();

@@ -224,10 +224,8 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             <h3>Aviso de Manutenção Pendente</h3>
             <p>Esse equipamento já tem manutenção cadastrada.</p>
 
-            <p class="modal-ocorrencia-existente">
-                <strong>Ocorrência(s) existente(s):</strong>
-                <span id="existingMaintenanceText" style="font-style: italic;"></span>
-            </p>
+            <div id="existingMaintenanceContainer" class="modal-ocorrencia-existente">
+                </div>
 
             <p><strong>Deseja adicionar o novo problema a esta ocorrência?</strong></p>
 

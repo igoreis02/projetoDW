@@ -1229,7 +1229,7 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('assignTecnicosContainer').addEventListener('click', () => assignErrorMessage.classList.add('hidden'));
     document.getElementById('assignVeiculosContainer').addEventListener('click', () => assignErrorMessage.classList.add('hidden'));
 
-    // --- INICIALIZAÇÃO ---
+
     checkAndShowSemaforicaButton();
     fetchData().then(() => {
         console.log('Carga inicial de ocorrências pendentes completa. Iniciando ciclo de verificação.');

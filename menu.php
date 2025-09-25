@@ -155,7 +155,7 @@ if (isset($user_id)) {
             document.getElementById('ocorrenciaProcessamento').addEventListener('click', () => window.location.href = 'ocorrenciaProcessamento.php');
             document.getElementById('solicitacaoClientesBtn').addEventListener('click', () => window.location.href = 'solicitacoesClientes.php');
             document.getElementById('lacresImetroBtn').addEventListener('click', () => window.location.href = 'lacresImetro.php');
-            document.getElementById('afericoesBtn').addEventListener('click', () => alert('Funcionalidade "Aferições" ainda não implementada.'));
+            document.getElementById('afericoesBtn').addEventListener('click', () => window.location.href = 'afericoes.php');
             document.getElementById('gestaoOcorrencias').addEventListener('click', () => window.location.href = 'gestaoOcorrencias.php');
 
             const logoutButton = document.querySelector('.sidebar-icons-left a[href="logout.php"]');
