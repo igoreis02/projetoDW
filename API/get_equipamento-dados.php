@@ -15,7 +15,8 @@ $search_term = $_GET['search_term'] ?? '';
 $equipamentos = [];
 
 try {
-     $tables = ['equipamentos', 'endereco'];
+    // Adicionada a tabela 'usuario' ao checksum para detectar alterações nos nomes dos técnicos
+    $tables = ['equipamentos', 'endereco', 'usuario'];
     $totalChecksum = 0;
     foreach ($tables as $table) {
         $result = $conn->query("CHECKSUM TABLE `$table`");
@@ -27,7 +28,7 @@ try {
         }
     }
 
-    // Consulta base selecionando todas as colunas necessárias das tabelas corretas
+    // Consulta base atualizada para incluir todos os novos campos e os nomes dos técnicos
     $sql = "
     SELECT 
         e.id_equipamento, 
@@ -51,8 +52,18 @@ try {
         e.num_instrumento, 
         e.dt_afericao, 
         e.dt_vencimento, 
-        e.Km as km, 
-        e.sentido
+        e.Km as Km, 
+        e.sentido,
+        e.dt_fabricacao,
+        e.dt_sinalizacao_adicional,
+        e.dt_inicio_processamento,
+        e.id_tecnico_instalacao,
+        e.num_certificado,
+        e.dt_remanejado,
+        e.dt_desativado,
+        (SELECT GROUP_CONCAT(u.nome SEPARATOR ', ') 
+         FROM usuario u 
+         WHERE FIND_IN_SET(u.id_usuario, e.id_tecnico_instalacao)) AS nome_tecnico_instalacao
     FROM 
         equipamentos e
     LEFT JOIN 
@@ -115,3 +126,4 @@ try {
 }
 
 $conn->close();
+?>

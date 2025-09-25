@@ -637,7 +637,7 @@ try {
 
         /* NOVO: Estilo para o botão Voltar ao Topo */
         #backToTopBtn {
-             display: none;
+            display: none;
             position: fixed;
             bottom: 20px;
             right: 30px;
@@ -660,19 +660,22 @@ try {
             background-color: #12287eff;
         }
 
-         @keyframes spin {
+        @keyframes spin {
             to {
                 transform: rotate(360deg);
             }
         }
+
         .ativos-container {
             width: 100%;
             margin-bottom: 1rem;
-            margin-top: -0.5rem; /* Puxa um pouco para cima */
+            margin-top: -0.5rem;
+            /* Puxa um pouco para cima */
         }
 
         .botao-adicionar-ativos {
-            background-color: #007bff; /* Azul para diferenciar */
+            background-color: #007bff;
+            /* Azul para diferenciar */
             color: white;
             padding: 10px 20px;
             font-size: 1em;
@@ -681,43 +684,91 @@ try {
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
+
         .botao-adicionar-ativos:hover {
             background-color: #0056b3;
         }
+
+        /* NOVOS ESTILOS PARA SELEÇÃO DE TÉCNICOS */
+        .tecnicos-selecionados-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-top: -1rem; /* Puxa para perto do select */
+            margin-bottom: 1rem;
+            min-height: 40px; /* Altura mínima para não "pular" */
+        }
+        .tecnico-pill {
+            display: flex;
+            align-items: center;
+            background-color: #e2e8f0;
+            color: #112058;
+            border-radius: 16px;
+            padding: 4px 8px;
+            font-size: 0.9em;
+        }
+        .remove-tecnico-btn {
+            margin-left: 8px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-weight: bold;
+            color: #94a3b8;
+            font-size: 1.1em;
+        }
+        .remove-tecnico-btn:hover {
+            color: #ef4444;
+        }
+        /* FIM DOS NOVOS ESTILOS */
+
         @media (max-width: 1200px) {
             .top-controls-wrapper {
-                grid-template-columns: 1fr; /* Muda para coluna única */
-                justify-items: center; /* Centraliza os itens na coluna */
-                gap: 1.5rem; /* Aumenta o espaço entre as linhas */
+                grid-template-columns: 1fr;
+                /* Muda para coluna única */
+                justify-items: center;
+                /* Centraliza os itens na coluna */
+                gap: 1.5rem;
+                /* Aumenta o espaço entre as linhas */
             }
 
             .container-botao-adicionar-equipamento {
-                grid-column: 1; 
-                justify-self: left; /* Centraliza o botão */
+                grid-column: 1;
+                justify-self: left;
+                /* Centraliza o botão */
             }
 
             .container-pesquisa {
-                grid-column: 1; /* Coloca a pesquisa na mesma (e única) coluna */
+                grid-column: 1;
+                /* Coloca a pesquisa na mesma (e única) coluna */
                 width: 100%;
-                max-width: 700px; /* Define uma largura máxima para a pesquisa */
+                max-width: 700px;
+                /* Define uma largura máxima para a pesquisa */
             }
         }
 
         @media (max-width: 768px) {
 
             .container-pesquisa {
-                flex-direction: column; /* Empilha o input e o botão */
+                flex-direction: column;
+                /* Empilha o input e o botão */
             }
 
             .container-pesquisa input,
             .container-pesquisa .botao-limpar-filtros {
-                width: 100%; /* Faz ambos ocuparem a largura total */
-                box-sizing: border-box; /* Garante que padding não afete a largura */
+                width: 100%;
+                /* Faz ambos ocuparem a largura total */
+                box-sizing: border-box;
+                /* Garante que padding não afete a largura */
             }
 
             .equipment-grid {
-                grid-template-columns: 1fr; /* Uma coluna para os cards */
+                grid-template-columns: 1fr;
+                /* Uma coluna para os cards */
             }
+
             .card {
                 padding: 1.5rem;
                 width: 95%;
@@ -767,7 +818,7 @@ try {
         </div>
         <div id="cityButtonsContainer" class="city-buttons-container">
             <button class="city-button active" data-city="all">Mostrar Todos</button>
-            <?php foreach ($cities as $city): ?>
+            <?php foreach ($cities as $city) : ?>
                 <button class="city-button" data-city="<?php echo htmlspecialchars($city['nome']); ?>">
                     <?php echo htmlspecialchars($city['nome']); ?>
                 </button>
@@ -798,103 +849,82 @@ try {
                 <div id="addEquipmentType" class="equipment-type-group">
                     <label><input type="checkbox" name="tipo_equip[]" value="CCO"> CCO</label>
                     <label><input type="checkbox" name="tipo_equip[]" value="RADAR FIXO"> RADAR FIXO</label>
-                    <label><input type="checkbox" name="tipo_equip[]" value="MONITOR DE SEMAFORO"> MONITOR DE
-                        SEMÁFORO</label>
-                    <label><input type="checkbox" name="tipo_equip[]" value="VIDEO MONITORAMENTO"> VÍDEO
-                        MONITORAMENTO</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="MONITOR DE SEMAFORO"> MONITOR DE SEMÁFORO</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="VIDEO MONITORAMENTO"> VÍDEO MONITORAMENTO</label>
                     <label><input type="checkbox" name="tipo_equip[]" value="DOME"> DOME</label>
-                    <label><input type="checkbox" name="tipo_equip[]" value="LOMBADA ELETRONICA"> LOMBADA
-                        ELETRÔNICA</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="LOMBADA ELETRONICA"> LOMBADA ELETRÔNICA</label>
                     <label><input type="checkbox" name="tipo_equip[]" value="LAP"> LAP</label>
                     <label><input type="checkbox" name="tipo_equip[]" value="EDUCATIVO"> EDUCATIVO</label>
                 </div>
-
-                <div id="add-ativos-container" class="ativos-container hidden">
-                    <button type="button" id="addAtivosBtn" class="botao-adicionar-ativos">Adicionar Ativos</button>
-                </div>
-
                 <label for="equipmentName">Nome:</label>
                 <input type="text" id="equipmentName" name="nome_equip">
-
                 <label for="equipmentReference">Referência:</label>
                 <input type="text" id="equipmentReference" name="referencia_equip">
 
-                <label for="equipmentStatus">Status:</label>
-                <select id="equipmentStatus" name="status" required>
-                    <option value="ativo" selected>Ativo</option>
-                    <option value="inativo">Inativo</option>
-                    <option value="remanejado">Remanejado</option>
+                <div id="add-radar-lombada-fields" class="hidden">
+                    <label for="add_dt_fabricacao">Data de Fabricação:</label>
+                    <div class="custom-date-input"><input type="date" id="add_dt_fabricacao" name="dt_fabricacao"></div>
+                    <label for="add_dt_sinalizacao_adicional">Data de Sinalização Adicional:</label>
+                    <div class="custom-date-input"><input type="date" id="add_dt_sinalizacao_adicional" name="dt_sinalizacao_adicional"></div>
+                    <label for="add_dt_inicio_processamento">Data de Início do Processamento:</label>
+                    <div class="custom-date-input"><input type="date" id="add_dt_inicio_processamento" name="dt_inicio_processamento"></div>
+                    <label for="add_num_certificado">Número do Certificado:</label>
+                    <input type="text" id="add_num_certificado" name="num_certificado">
+                </div>
+
+                <label for="add_id_tecnico_instalacao">Técnico(s) da Instalação:</label>
+                <select id="add_id_tecnico_instalacao"> <option value="">Carregando técnicos...</option>
                 </select>
+                <div id="add_tecnicos_selecionados_container" class="tecnicos-selecionados-container"></div>
+                <input type="hidden" name="id_tecnico_instalacao[]" id="add_id_tecnico_instalacao_hidden">
+                
+                <label for="dt_instalacao">Data de Instalação:</label>
+                <div class="custom-date-input"><input type="date" id="dt_instalacao" name="dt_instalacao"></div>
 
                 <div id="add-specific-fields-container" class="hidden">
                     <label for="equipmentQtdFaixa">Quantidade de Faixas:</label>
                     <input type="number" id="equipmentQtdFaixa" name="qtd_faixa">
-
                     <label for="equipmentKm">Velocidade (KM/h):</label>
                     <input type="text" id="equipmentKm" name="km">
-
                     <label for="equipmentSentido">Sentido:</label>
                     <input type="text" id="equipmentSentido" name="sentido">
                 </div>
-
                 <div id="add-afericao-fields-container" class="hidden">
                     <label for="numInstrumento">Nº Instrumento:</label>
                     <input type="text" id="numInstrumento" name="num_instrumento">
-
                     <label for="dtAfericao">Data Aferição:</label>
-                    <div class="custom-date-input">
-                        <input type="date" id="dtAfericao" name="dt_afericao">
-                    </div>
+                    <div class="custom-date-input"><input type="date" id="dtAfericao" name="dt_afericao"></div>
                 </div>
-
                 <div id="add-date-fields-container" class="hidden">
-                    <label for="dt_instalacao">Data de Instalação:</label>
-                    <div class="custom-date-input">
-                        <input type="date" id="dt_instalacao" name="dt_instalacao">
-                    </div>
-
                     <label for="add_dt_estudoTec">Data de Estudo Técnico:</label>
-                    <div class="custom-date-input">
-                        <input type="date" id="add_dt_estudoTec" name="dt_estudoTec">
-                    </div>
+                    <div class="custom-date-input"><input type="date" id="add_dt_estudoTec" name="dt_estudoTec"></div>
                 </div>
 
                 <label for="equipmentCity">Cidade:</label>
                 <select id="equipmentCity" name="id_cidade">
                     <option value="">Selecione a Cidade</option>
-                    <?php foreach ($cities as $city): ?>
-                        <option value="<?php echo htmlspecialchars($city['id_cidade']); ?>">
-                            <?php echo htmlspecialchars($city['nome']); ?>
-                        </option>
+                    <?php foreach ($cities as $city) : ?>
+                        <option value="<?php echo htmlspecialchars($city['id_cidade']); ?>"><?php echo htmlspecialchars($city['nome']); ?></option>
                     <?php endforeach; ?>
                 </select>
-
                 <label for="equipmentLogradouro">Logradouro:</label>
                 <input type="text" id="equipmentLogradouro" name="logradouro">
-
                 <label for="equipmentBairro">Bairro:</label>
                 <input type="text" id="equipmentBairro" name="bairro">
-
                 <label for="equipmentProvider">Provedor:</label>
                 <select id="equipmentProvider" name="id_provedor">
-                    <option value="">Carregando provedores...</option>
+                    <option value="">Carregando...</option>
                 </select>
-
                 <label for="equipmentCep">CEP:</label>
                 <input type="text" id="equipmentCep" name="cep">
-
                 <label for="coordenadas">Coordenadas (Latitude, Longitude):</label>
                 <input type="text" id="coordenadas" name="coordenadas" placeholder="-17.726909, -48.567032">
 
                 <p id="addEquipmentMessage" class="message hidden"></p>
                 <div class="form-buttons" id="add-form-buttons">
-                    <button type="submit" class="save-button" id="saveAddEquipmentButton">
-                        Salvar Equipamento
-                        <span id="addEquipmentSpinner" class="loading-spinner"></span>
-                    </button>
+                    <button type="submit" class="save-button" id="saveAddEquipmentButton">Salvar Equipamento<span id="addEquipmentSpinner" class="loading-spinner"></span></button>
                     <button type="button" class="cancel-button" id="cancelAddEquipmentButton">Cancelar</button>
                 </div>
-
             </form>
         </div>
     </div>
@@ -913,20 +943,15 @@ try {
                 <div id="editEquipmentType" class="equipment-type-group">
                     <label><input type="checkbox" name="tipo_equip[]" value="CCO"> CCO</label>
                     <label><input type="checkbox" name="tipo_equip[]" value="RADAR FIXO"> RADAR FIXO</label>
-                    <label><input type="checkbox" name="tipo_equip[]" value="MONITOR DE SEMAFORO"> MONITOR DE
-                        SEMÁFORO</label>
-                    <label><input type="checkbox" name="tipo_equip[]" value="VIDEO MONITORAMENTO"> VÍDEO
-                        MONITORAMENTO</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="MONITOR DE SEMAFORO"> MONITOR DE SEMÁFORO</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="VIDEO MONITORAMENTO"> VÍDEO MONITORAMENTO</label>
                     <label><input type="checkbox" name="tipo_equip[]" value="DOME"> DOME</label>
-                    <label><input type="checkbox" name="tipo_equip[]" value="LOMBADA ELETRONICA"> LOMBADA
-                        ELETRÔNICA</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="LOMBADA ELETRONICA"> LOMBADA ELETRÔNICA</label>
                     <label><input type="checkbox" name="tipo_equip[]" value="LAP"> LAP</label>
                     <label><input type="checkbox" name="tipo_equip[]" value="EDUCATIVO"> EDUCATIVO</label>
                 </div>
-
                 <label for="editEquipmentName">Nome:</label>
                 <input type="text" id="editEquipmentName" name="nome_equip">
-
                 <label for="editEquipmentReference">Referência:</label>
                 <input type="text" id="editEquipmentReference" name="referencia_equip">
 
@@ -936,75 +961,78 @@ try {
                     <option value="inativo">Inativo</option>
                     <option value="remanejado">Remanejado</option>
                 </select>
+                <div id="edit-remanejado-date-container" class="hidden">
+                    <label for="edit_dt_remanejado">Data de Remanejamento:</label>
+                    <div class="custom-date-input"><input type="date" id="edit_dt_remanejado" name="dt_remanejado"></div>
+                </div>
+                <div id="edit-inativo-date-container" class="hidden">
+                    <label for="edit_dt_desativado">Data de Inativação:</label>
+                    <div class="custom-date-input"><input type="date" id="edit_dt_desativado" name="dt_desativado"></div>
+                </div>
+                
+                <div id="edit-radar-lombada-fields" class="hidden">
+                    <label for="edit_dt_fabricacao">Data de Fabricação:</label>
+                    <div class="custom-date-input"><input type="date" id="edit_dt_fabricacao" name="dt_fabricacao"></div>
+                    <label for="edit_dt_sinalizacao_adicional">Data de Sinalização Adicional:</label>
+                    <div class="custom-date-input"><input type="date" id="edit_dt_sinalizacao_adicional" name="dt_sinalizacao_adicional"></div>
+                    <label for="edit_dt_inicio_processamento">Data de Início do Processamento:</label>
+                    <div class="custom-date-input"><input type="date" id="edit_dt_inicio_processamento" name="dt_inicio_processamento"></div>
+                    <label for="edit_num_certificado">Número do Certificado:</label>
+                    <input type="text" id="edit_num_certificado" name="num_certificado">
+                </div>
+
+                <label for="edit_id_tecnico_instalacao">Técnico(s) da Instalação:</label>
+                <select id="edit_id_tecnico_instalacao"> <option value="">Carregando técnicos...</option>
+                </select>
+                <div id="edit_tecnicos_selecionados_container" class="tecnicos-selecionados-container"></div>
+                <input type="hidden" name="id_tecnico_instalacao[]" id="edit_id_tecnico_instalacao_hidden">
+                
+                <label for="edit_dt_instalacao">Data de Instalação:</label>
+                <div class="custom-date-input"><input type="date" id="edit_dt_instalacao" name="dt_instalacao"></div>
 
                 <div id="edit-specific-fields-container" class="hidden">
                     <label for="editEquipmentQtdFaixa">Quantidade de Faixas:</label>
                     <input type="number" id="editEquipmentQtdFaixa" name="qtd_faixa">
-
                     <label for="editEquipmentKm">Velocidade (KM/h):</label>
                     <input type="text" id="editEquipmentKm" name="km">
-
                     <label for="editEquipmentSentido">Sentido:</label>
                     <input type="text" id="editEquipmentSentido" name="sentido">
                 </div>
-
                 <div id="edit-afericao-fields-container" class="hidden">
                     <label for="editNumInstrumento">Nº Instrumento:</label>
                     <input type="text" id="editNumInstrumento" name="num_instrumento">
-
                     <label for="editDtAfericao">Data Aferição:</label>
-                    <div class="custom-date-input">
-                        <input type="date" id="editDtAfericao" name="dt_afericao">
-                    </div>
+                    <div class="custom-date-input"><input type="date" id="editDtAfericao" name="dt_afericao"></div>
                 </div>
-
                 <div id="edit-date-fields-container" class="hidden">
-                    <label for="edit_dt_instalacao">Data de Instalação:</label>
-                    <div class="custom-date-input">
-                        <input type="date" id="edit_dt_instalacao" name="dt_instalacao">
-                    </div>
-
                     <label for="edit_dt_estudoTec">Data de Estudo Técnico:</label>
-                    <div class="custom-date-input">
-                        <input type="date" id="edit_dt_estudoTec" name="dt_estudoTec">
-                    </div>
+                    <div class="custom-date-input"><input type="date" id="edit_dt_estudoTec" name="dt_estudoTec"></div>
                 </div>
 
                 <label for="editEquipmentCity">Cidade:</label>
                 <select id="editEquipmentCity" name="id_cidade">
-                    <?php foreach ($cities as $city): ?>
-                        <option value="<?php echo htmlspecialchars($city['id_cidade']); ?>">
-                            <?php echo htmlspecialchars($city['nome']); ?>
-                        </option>
+                    <?php foreach ($cities as $city) : ?>
+                        <option value="<?php echo htmlspecialchars($city['id_cidade']); ?>"><?php echo htmlspecialchars($city['nome']); ?></option>
                     <?php endforeach; ?>
                 </select>
-
                 <label for="editEquipmentLogradouro">Logradouro:</label>
                 <input type="text" id="editEquipmentLogradouro" name="logradouro">
-
                 <label for="editEquipmentBairro">Bairro:</label>
                 <input type="text" id="editEquipmentBairro" name="bairro">
-
                 <label for="editEquipmentProvider">Provedor:</label>
                 <select id="editEquipmentProvider" name="id_provedor">
-                    <option value="">Carregando provedores...</option>
+                    <option value="">Carregando...</option>
                 </select>
-
                 <label for="editEquipmentCep">CEP:</label>
                 <input type="text" id="editEquipmentCep" name="cep">
-
                 <label for="editCoordenadas">Coordenadas (Latitude, Longitude):</label>
                 <input type="text" id="editCoordenadas" name="coordenadas" placeholder="-17.726909, -48.567032">
 
                 <p id="editEquipmentMessage" class="message hidden"></p>
                 <div class="form-buttons" id="edit-form-buttons">
-                    <button type="submit" class="save-button" id="saveEditEquipmentButton">
-                        Salvar Alterações
-                        <span id="editEquipmentSpinner" class="loading-spinner"></span>
-                    </button>
+                    <button type="submit" class="save-button" id="saveEditEquipmentButton">Salvar Alterações<span id="editEquipmentSpinner" class="loading-spinner"></span></button>
                     <button type="button" class="cancel-button" id="cancelEditEquipmentButton">Cancelar</button>
                 </div>
-
             </form>
         </div>
     </div>

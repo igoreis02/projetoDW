@@ -13,7 +13,7 @@ $input = file_get_contents('php://input');
 $data = json_decode($input, true);
 
 // --- Validação Essencial ---
-$required_fields = ['tipo_equip', 'nome_equip', 'status', 'id_cidade', 'logradouro', 'bairro', 'id_provedor'];
+$required_fields = ['tipo_equip', 'nome_equip', 'status', 'id_cidade', 'logradouro', 'bairro'];
 foreach ($required_fields as $field) {
     if (empty($data[$field])) {
         echo json_encode(['success' => false, 'message' => 'Por favor, preencha todos os campos obrigatórios.']);
@@ -56,33 +56,48 @@ try {
         $dt_vencimento = $date->format('Y-m-d');
     }
     
-    // --- Preparação para Inserção do Equipamento ---
+    // --- Preparação para Inserção do Equipamento 
     $stmt_equipamento = $conn->prepare(
         "INSERT INTO equipamentos (
             tipo_equip, nome_equip, referencia_equip, status, qtd_faixa, km, sentido, 
             num_instrumento, dt_afericao, dt_vencimento, id_cidade, id_endereco, id_provedor, 
-            data_instalacao, dt_estudoTec
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-        // ^^^ CORREÇÃO APLICADA AQUI: de 'dt_instalacao' para 'data_instalacao'
+            data_instalacao, dt_estudoTec, 
+            dt_fabricacao, dt_sinalizacao_adicional, dt_inicio_processamento, id_tecnico_instalacao, num_certificado
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     );
     
-    // Garante que valores opcionais sejam NULL se estiverem vazios
+    // Garante que valores opcionais sejam NULL se estiverem vazios (Seu código original mantido e expandido)
     $referencia_equip = !empty($data['referencia_equip']) ? $data['referencia_equip'] : null;
     $qtd_faixa = !empty($data['qtd_faixa']) ? (int)$data['qtd_faixa'] : null;
     $km = !empty($data['km']) ? $data['km'] : null;
     $sentido = !empty($data['sentido']) ? $data['sentido'] : null;
     $num_instrumento = !empty($data['num_instrumento']) ? $data['num_instrumento'] : null;
-    $id_provedor = (int)$data['id_provedor'];
+    $id_provedor = !empty($data['id_provedor']) ? (int)$data['id_provedor'] : null;
     $id_cidade = (int)$data['id_cidade'];
     $dt_instalacao = !empty($data['dt_instalacao']) ? $data['dt_instalacao'] : null;
     $dt_estudoTec = !empty($data['dt_estudoTec']) ? $data['dt_estudoTec'] : null;
 
-    $stmt_equipamento->bind_param("ssssisssssiiiss", 
+  
+    $dt_fabricacao = !empty($data['dt_fabricacao']) ? $data['dt_fabricacao'] : null;
+    $dt_sinalizacao_adicional = !empty($data['dt_sinalizacao_adicional']) ? $data['dt_sinalizacao_adicional'] : null;
+    $dt_inicio_processamento = !empty($data['dt_inicio_processamento']) ? $data['dt_inicio_processamento'] : null;
+    $num_certificado = !empty($data['num_certificado']) ? $data['num_certificado'] : null;
+    
+    // Converte o array de técnicos em uma string separada por vírgulas
+    $id_tecnico_instalacao_array = $data['id_tecnico_instalacao'] ?? [];
+    $id_tecnico_instalacao_str = !empty($id_tecnico_instalacao_array) ? implode(',', $id_tecnico_instalacao_array) : null;
+
+
+
+    $stmt_equipamento->bind_param("ssssisssssiiisssssss", 
         $tipo_equip_str, $data['nome_equip'], $referencia_equip, $data['status'], 
         $qtd_faixa, $km, $sentido, $num_instrumento, $dt_afericao, $dt_vencimento, 
         $id_cidade, $id_endereco, $id_provedor,
-        $dt_instalacao, $dt_estudoTec
+        $dt_instalacao, $dt_estudoTec,
+        $dt_fabricacao, $dt_sinalizacao_adicional, $dt_inicio_processamento,
+        $id_tecnico_instalacao_str, $num_certificado
     );
+    
     $stmt_equipamento->execute();
     $stmt_equipamento->close();
 
