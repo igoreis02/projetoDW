@@ -7,9 +7,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const cancelAddEquipmentButton = document.getElementById('cancelAddEquipmentButton');
     const addEquipmentForm = document.getElementById('addEquipmentForm');
     const addEquipmentMessage = document.getElementById('addEquipmentMessage');
-    const addSpecificFieldsContainer = document.getElementById('add-specific-fields-container');
-    const addAfericaoFieldsContainer = document.getElementById('add-afericao-fields-container');
-    const addDateFieldsContainer = document.getElementById('add-date-fields-container');
     const addFormButtonsContainer = document.getElementById('add-form-buttons');
 
     const editEquipmentModal = document.getElementById('editEquipmentModal');
@@ -17,10 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const cancelEditEquipmentButton = document.getElementById('cancelEditEquipmentButton');
     const editEquipmentForm = document.getElementById('editEquipmentForm');
     const editEquipmentMessage = document.getElementById('editEquipmentMessage');
-    const editSpecificFieldsContainer = document.getElementById('edit-specific-fields-container');
-    const editAfericaoFieldsContainer = document.getElementById('edit-afericao-fields-container');
-    const editDateFieldsContainer = document.getElementById('edit-date-fields-container');
-    const editFormButtonsContainer = document.getElementById('edit-form-buttons');
     const equipmentListContainer = document.getElementById('containerListaEquipamentos');
     const mainLoadingState = document.getElementById('mainLoadingState');
     const campoPesquisa = document.getElementById('campoPesquisa');
@@ -114,49 +107,39 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (cancelButton) cancelButton.disabled = show;
     }
-    // --- FUNÇÃO DE VALIDAÇÃO DE FORMULÁRIO ---
-    function validateForm(form, validationMap) {
-        for (const name in validationMap) {
-            const field = form.querySelector(`[name="${name}"]`);
-            if (!field) continue;
-
-            // Pula a validação de campos que estão intencionalmente ocultos
-            if (field.closest('.hidden')) {
-                continue;
-            }
-
-            const label = validationMap[name];
-
-            if (name === 'tipo_equip[]') {
-                if (form.querySelectorAll('input[name="tipo_equip[]"]:checked').length === 0) {
-                    return `O campo '${label}' é obrigatório.`;
-                }
-            } else {
-                if (!field.value || field.value.trim() === '') {
-                    return `O campo '${label}' é obrigatório.`;
-                }
-            }
-        }
-        return true; // Retorna true se tudo estiver válido
-    }
-
-    // --- FUNÇÃO PARA LIMPAR MENSAGENS DE ERRO ---
-    function setupValidationListeners(form, messageElement) {
-        form.querySelectorAll('input, select, textarea').forEach(input => {
-            const eventType = (input.type === 'checkbox' || input.tagName.toLowerCase() === 'select') ? 'change' : 'input';
-            input.addEventListener(eventType, () => {
-                // Esconde a mensagem de erro assim que o usuário começa a corrigir
-                if (messageElement.classList.contains('error')) {
-                    hideMessage(messageElement);
-                }
-            });
-        });
-    }
-
-
 
     // --- FUNÇÕES DE LÓGICA DE NEGÓCIO ---
 
+    function populateCitySelect(selectElement, cities) {
+        const currentVal = selectElement.value; // Salva o valor atual para tentar manter a seleção
+        selectElement.innerHTML = '<option value="">Selecione a Cidade</option>';
+        if (cities) {
+            cities.forEach(city => {
+                const option = document.createElement('option');
+                option.value = city.id_cidade;
+                option.textContent = city.nome;
+                if (city.id_cidade == currentVal) {
+                    option.selected = true;
+                }
+                selectElement.appendChild(option);
+            });
+        }
+    }
+
+    function updateCityDropdownForForm(formId) {
+        const form = document.getElementById(formId);
+        const citySelect = form.querySelector('select[name="id_cidade"]');
+        const selectedTypes = Array.from(form.querySelectorAll('input[name="tipo_equip[]"]:checked')).map(cb => cb.value);
+
+        // Se "SEMÁFORO" estiver selecionado, usa a lista de cidades para semáforos
+        if (selectedTypes.includes('SEMÁFORO')) {
+            populateCitySelect(citySelect, CIDADES_SEMAFORO);
+        } else {
+            // Caso contrário, usa a lista padrão (com radares)
+            populateCitySelect(citySelect, CIDADES_PADRAO);
+        }
+    }
+    
     // FUNÇÃO ATUALIZADA COM AS NOVAS REGRAS
     function toggleConditionalFields(formId) {
         const form = document.getElementById(formId);
@@ -165,28 +148,42 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectedTypes = Array.from(form.querySelectorAll('input[name="tipo_equip[]"]:checked')).map(cb => cb.value);
         const prefix = formId.includes('add') ? 'add' : 'edit';
 
-        // Containers
+        // Containers e Elementos
         const specificContainer = form.querySelector(`#${prefix}-specific-fields-container`);
         const afericaoContainer = form.querySelector(`#${prefix}-afericao-fields-container`);
         const radarLombadaContainer = form.querySelector(`#${prefix}-radar-lombada-fields`);
-
-        // Inputs específicos
+        const dateFieldsContainer = form.querySelector(`#${prefix}-date-fields-container`);
+        const providerSelect = form.querySelector(`[name="id_provedor"]`);
+        const providerLabel = providerSelect ? form.querySelector(`label[for="${providerSelect.id}"]`) : null;
+        const cepInput = form.querySelector(`[name="cep"]`);
+        const cepLabel = cepInput ? form.querySelector(`label[for="${cepInput.id}"]`) : null;
         const kmInput = form.querySelector(`[name="km"]`);
         const kmLabel = kmInput ? form.querySelector(`label[for="${kmInput.id}"]`) : null;
 
-        const needsAfericao = selectedTypes.includes('RADAR FIXO') || selectedTypes.includes('LOMBADA ELETRONICA');
-        const showsRadarLombadaFields = needsAfericao;
-        
-        // Exibe ou oculta os containers
-        specificContainer.classList.toggle('hidden', !selectedTypes.some(t => ['RADAR FIXO', 'LOMBADA ELETRONICA', 'MONITOR DE SEMAFORO', 'LAP'].includes(t)));
-        afericaoContainer.classList.toggle('hidden', !needsAfericao);
-        radarLombadaContainer.classList.toggle('hidden', !showsRadarLombadaFields);
+        // Flags de condição
+        const isSemaforo = selectedTypes.includes('SEMÁFORO');
+        const needsAfericao = selectedTypes.includes('RADAR FIXO') || selectedTypes.includes('LOMBADA ELETRÔNICA');
+        const needsSpecifics = selectedTypes.some(t => ['RADAR FIXO', 'LOMBADA ELETRÔNICA', 'MONITOR DE SEMÁFORO', 'LAP', 'EDUCATIVO'].includes(t));
+        const hidesKm = selectedTypes.includes('LAP') || selectedTypes.includes('MONITOR DE SEMÁFORO');
 
-        // Oculta o campo de velocidade para tipos específicos
-        const hidesKm = selectedTypes.includes('LAP') || selectedTypes.includes('MONITOR DE SEMAFORO');
+        // Lógica de visibilidade
+        specificContainer.classList.toggle('hidden', !needsSpecifics);
+        afericaoContainer.classList.toggle('hidden', !needsAfericao);
+        radarLombadaContainer.classList.toggle('hidden', !needsAfericao);
+        dateFieldsContainer.classList.toggle('hidden', !needsSpecifics && !needsAfericao);
+
+        if (providerSelect && providerLabel) {
+            providerSelect.classList.toggle('hidden', isSemaforo);
+            providerLabel.classList.toggle('hidden', isSemaforo);
+        }
+        if (cepInput && cepLabel) {
+            cepInput.classList.toggle('hidden', isSemaforo);
+            cepLabel.classList.toggle('hidden', isSemaforo);
+        }
+
         if (kmInput && kmLabel) {
-            kmLabel.classList.toggle('hidden', hidesKm);
-            kmInput.classList.toggle('hidden', hidesKm);
+            kmLabel.classList.toggle('hidden', hidesKm || !needsSpecifics);
+            kmInput.classList.toggle('hidden', hidesKm || !needsSpecifics);
         }
     }
 
@@ -202,6 +199,73 @@ document.addEventListener('DOMContentLoaded', () => {
         inativoContainer.classList.toggle('hidden', selectedStatus !== 'inativo');
     }
 
+    function createDynamicValidationMap(form) {
+        const dynaValidationMap = { ...validationMap };
+        const selectedTypes = Array.from(form.querySelectorAll('input[name="tipo_equip[]"]:checked')).map(cb => cb.value);
+    
+        const needsAfericao = selectedTypes.includes('RADAR FIXO') || selectedTypes.includes('LOMBADA ELETRÔNICA');
+        const requiresSpecifics = selectedTypes.some(t => ['RADAR FIXO', 'LOMBADA ELETRÔNICA', 'MONITOR DE SEMÁFORO', 'LAP'].includes(t));
+        const hidesKm = selectedTypes.includes('LAP') || selectedTypes.includes('MONITOR DE SEMÁFORO');
+        const isSemaforo = selectedTypes.includes('SEMÁFORO');
+    
+        if (!requiresSpecifics) {
+            delete dynaValidationMap['qtd_faixa'];
+            delete dynaValidationMap['sentido'];
+            delete dynaValidationMap['km'];
+        } else if (hidesKm) {
+            delete dynaValidationMap['km'];
+        }
+    
+        if (!needsAfericao) {
+            delete dynaValidationMap['num_instrumento'];
+            delete dynaValidationMap['dt_afericao'];
+        }
+        
+        if (isSemaforo) {
+            delete dynaValidationMap['id_provedor'];
+            delete dynaValidationMap['cep'];
+        }
+    
+        return dynaValidationMap;
+    }
+    
+    // --- FUNÇÃO DE VALIDAÇÃO DE FORMULÁRIO ---
+    function validateForm(form, currentValidationMap) {
+        for (const name in currentValidationMap) {
+            const field = form.querySelector(`[name="${name}"]`);
+            if (!field) continue;
+
+            if (field.closest('.hidden')) {
+                continue;
+            }
+
+            const label = currentValidationMap[name];
+
+            if (name === 'tipo_equip[]') {
+                if (form.querySelectorAll('input[name="tipo_equip[]"]:checked').length === 0) {
+                    return `O campo '${label}' é obrigatório.`;
+                }
+            } else {
+                if (!field.value || field.value.trim() === '') {
+                    return `O campo '${label}' é obrigatório.`;
+                }
+            }
+        }
+        return true; 
+    }
+
+    // --- FUNÇÃO PARA LIMPAR MENSAGENS DE ERRO ---
+    function setupValidationListeners(form, messageElement) {
+        form.querySelectorAll('input, select, textarea').forEach(input => {
+            const eventType = (input.type === 'checkbox' || input.tagName.toLowerCase() === 'select') ? 'change' : 'input';
+            input.addEventListener(eventType, () => {
+                if (messageElement.classList.contains('error')) {
+                    hideMessage(messageElement);
+                }
+            });
+        });
+    }
+
     async function scheduleNextCheck() {
         if (updateTimeoutId) {
             clearTimeout(updateTimeoutId);
@@ -212,7 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (checkResult.success && checkResult.checksum !== currentChecksum) {
                 console.log('Novas atualizações de equipamentos detectadas. Recarregando...');
-                await fetchAndRenderEquipments(); // Recarrega os dados
+                await fetchAndRenderEquipments();
                 currentInterval = BASE_INTERVAL;
                 console.log('Intervalo de verificação de equipamentos resetado.');
             } else {
@@ -236,7 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('API/get_tecnicos.php');
             const data = await response.json();
             if (data.success) {
-                const defaultOption = '<option value="">Selecione...</option>';
+                const defaultOption = '<option value="" disabled>Selecione...</option>';
                 const options = data.tecnicos.map(tec => `<option value="${tec.id_usuario}">${tec.nome}</option>`).join('');
                 addSelect.innerHTML = defaultOption + options;
                 editSelect.innerHTML = defaultOption + options;
@@ -256,12 +320,11 @@ document.addEventListener('DOMContentLoaded', () => {
         editSelectProvider.innerHTML = loadingOption;
 
         try {
-            // Usamos a API que agora retorna o id_cidade
             const response = await fetch('API/get_provedores_select.php');
             const data = await response.json();
             const defaultOption = '<option value="">Selecione o Provedor</option>';
             if (data.success) {
-                allProvidersData = data.provedores; // Armazena os dados completos
+                allProvidersData = data.provedores;
                 const providerOptions = data.provedores.map(p => `<option value="${p.id_provedor}">${p.nome_prov}</option>`).join('');
                 selectProvider.innerHTML = defaultOption + providerOptions;
                 editSelectProvider.innerHTML = defaultOption + providerOptions;
@@ -277,7 +340,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function fetchAndRenderEquipments() {
-        // Mostra o spinner de carregamento principal apenas na primeira carga
         if (!currentChecksum) {
             mainLoadingState.style.display = 'flex';
             equipmentListContainer.innerHTML = '';
@@ -286,13 +348,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('API/get_equipamento-dados.php');
             const data = await response.json();
             if (data.success) {
-                // ATUALIZA O CHECKSUM LOCAL
                 currentChecksum = data.checksum;
                 allEquipmentData = data.equipamentos;
-                applyFilters(); // Aplica filtros e renderiza a lista
+                applyFilters();
             } else {
                 equipmentListContainer.innerHTML = `<p class="message error">${data.message}</p>`;
-                // Mesmo sem equipamentos, o checksum do estado "vazio" é válido
                 currentChecksum = data.checksum;
             }
         } catch (error) {
@@ -306,7 +366,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function getEquipmentTypeOrder(typeString) {
         if (!typeString) return 99;
         const types = typeString.split(',').map(t => t.trim());
-        const order = { 'CCO': 1, 'RADAR FIXO': 2, 'LOMBADA ELETRONICA': 2, 'MONITOR DE SEMAFORO': 3, 'VIDEO MONITORAMENTO': 4, 'DOME': 5, 'LAP': 6, 'EDUCATIVO': 99 };
+        const order = { 'CCO': 1, 'RADAR FIXO': 2, 'LOMBADA ELETRÔNICA': 2, 'MONITOR DE SEMÁFORO': 3, 'VÍDEO MONITORAMENTO': 4, 'DOME': 5, 'LAP': 6, 'EDUCATIVO': 7, 'SEMÁFORO': 98 };
         return Math.min(...types.map(t => order[t] || 99));
     }
 
@@ -323,7 +383,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function applyFilters() {
         const searchTerm = campoPesquisa.value.toLowerCase();
         let filteredData = allEquipmentData.filter(equip => {
-            const matchesCity = activeCityFilter === 'all' || equip.cidade.toLowerCase() === activeCityFilter.toLowerCase();
+            const matchesCity = activeCityFilter === 'all' || (equip.cidade && equip.cidade.toLowerCase() === activeCityFilter.toLowerCase());
             const matchesSearch = !searchTerm || (equip.nome_equip && equip.nome_equip.toLowerCase().includes(searchTerm)) ||
                 (equip.referencia_equip && equip.referencia_equip.toLowerCase().includes(searchTerm)) ||
                 (equip.logradouro && equip.logradouro.toLowerCase().includes(searchTerm));
@@ -341,7 +401,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     input.showPicker();
                 } catch (error) {
-                    // Fallback para navegadores que não suportam showPicker()
                     console.log("Seu navegador não suporta showPicker(), clique diretamente no campo.");
                 }
             });
@@ -355,7 +414,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         const equipmentsByCity = equipments.reduce((acc, equip) => {
-            (acc[equip.cidade] = acc[equip.cidade] || []).push(equip);
+            const city = equip.cidade || 'Sem Cidade';
+            (acc[city] = acc[city] || []).push(equip);
             return acc;
         }, {});
 
@@ -370,20 +430,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 const formatDate = (date) => (!date || date === '0000-00-00') ? 'N/A' : new Date(date + 'T00:00:00').toLocaleDateString('pt-BR');
 
                 const types = equip.tipo_equip ? equip.tipo_equip.split(',').map(t => t.trim()) : [];
-
-                const primaryType = types.length > 0 ? types[0] : null;
-                const typesThatHideDetails = ['CCO', 'DOME', 'VIDEO MONITORAMENTO', 'EDUCATIVO'];
-                const shouldShowDetails = primaryType && !typesThatHideDetails.includes(primaryType);
+                const typesThatHideDetails = ['CCO', 'DOME', 'VÍDEO MONITORAMENTO', 'SEMÁFORO'];
+                const shouldShowDetails = types.length > 0 && !types.some(t => typesThatHideDetails.includes(t));
 
                 const enderecoCompleto = `${equip.logradouro || 'N/A'} - ${equip.bairro || 'N/A'}`;
 
                 let locationButton = '';
                 if (equip.latitude && equip.longitude) {
-                    const mapsUrl = `https://www.google.com/maps?q=${equip.latitude},${equip.longitude}`;
+                     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${equip.latitude},${equip.longitude}`;
                     locationButton = `<a href="${mapsUrl}" target="_blank" class="botao-localizacao" title="Ver no mapa">Localização</a>`;
                 }
 
-                // Adicionado para mostrar o nome do técnico
                 let tecnicoInfo = '';
                 if (equip.nome_tecnico_instalacao) {
                     tecnicoInfo = `<p><strong>Téc. Instalação:</strong> ${equip.nome_tecnico_instalacao}</p>`;
@@ -396,18 +453,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="item-equipamento-conteudo">
                     <h3>${equip.nome_equip || 'N/A'} - ${equip.referencia_equip || 'N/A'}</h3>
                     <p><strong>Tipo:</strong> ${equip.tipo_equip || 'N/A'}</p>
+                    <p><strong>Data Instalação:</strong> ${formatDate(equip.data_instalacao)}</p>
                     ${shouldShowDetails ? `
                         <p><strong>Qtd. Faixa:</strong> ${equip.qtd_faixa || 'N/A'}</p>
                         <p><strong>Sentido:</strong> ${equip.sentido || 'N/A'}</p>
                         <p><strong>Velocidade:</strong> ${equip.Km ? equip.Km + ' km/h' : 'N/A'}</p>
-                        <p><strong>Data Instalação:</strong> ${formatDate(equip.data_instalacao)}</p>
                         ${tecnicoInfo}
                         <p><strong>Nº Instrumento:</strong> ${equip.num_instrumento || 'N/A'}</p>
                         <p><strong>Data Aferição:</strong> ${formatDate(equip.dt_afericao)}</p>
                         <p><strong>Data Vencimento:</strong> ${formatDate(equip.dt_vencimento)}</p>
-                    ` : ''}
+                    ` : (types.includes('SEMÁFORO') ? tecnicoInfo : '')}
                     <p><strong>Endereço:</strong> ${enderecoCompleto}</p>
-                    <p><strong>Provedor:</strong> ${equip.nome_prov || 'N/A'}</p>
+                    ${!types.includes('SEMÁFORO') ? `<p><strong>Provedor:</strong> ${equip.nome_prov || 'N/A'}</p>` : ''}
                     <p><strong>Status:</strong> <span class="status-cell ${statusClass}">${statusDisplay}</span></p>
                 </div>
                 <div class="item-botoes-container">
@@ -428,7 +485,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function openAddEquipmentModal() {
         addEquipmentForm.reset();
         hideMessage(addEquipmentMessage);
+        // CORREÇÃO: Botão é resetado para o estado inicial toda vez que o modal abre
         toggleLoadingState('addEquipmentSpinner', 'saveAddEquipmentButton', 'cancelAddEquipmentButton', false);
+        updateCityDropdownForForm('addEquipmentForm'); // Popula com a lista padrão
         toggleConditionalFields('addEquipmentForm');
         addEquipmentModal.classList.add('is-active');
         addFormButtonsContainer.style.display = 'flex';
@@ -449,7 +508,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('editEquipmentKm').value = equipmentData.Km;
         document.getElementById('editEquipmentSentido').value = equipmentData.sentido;
         document.getElementById('editEquipmentProvider').value = equipmentData.id_provedor;
-        document.getElementById('editEquipmentCity').value = equipmentData.id_cidade;
         document.getElementById('editEquipmentLogradouro').value = equipmentData.logradouro;
         document.getElementById('editEquipmentBairro').value = equipmentData.bairro;
         document.getElementById('editEquipmentCep').value = equipmentData.cep;
@@ -457,8 +515,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('editDtAfericao').value = equipmentData.dt_afericao;
         document.getElementById('edit_dt_estudoTec').value = equipmentData.dt_estudoTec;
         document.getElementById('edit_dt_instalacao').value = equipmentData.data_instalacao;
-        
-        // Novos campos
         document.getElementById('edit_dt_fabricacao').value = equipmentData.dt_fabricacao;
         document.getElementById('edit_dt_sinalizacao_adicional').value = equipmentData.dt_sinalizacao_adicional;
         document.getElementById('edit_dt_inicio_processamento').value = equipmentData.dt_inicio_processamento;
@@ -466,7 +522,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('edit_dt_remanejado').value = equipmentData.dt_remanejado;
         document.getElementById('edit_dt_desativado').value = equipmentData.dt_desativado;
         
-        // Seta os técnicos
         const tecnicosIds = equipmentData.id_tecnico_instalacao ? equipmentData.id_tecnico_instalacao.split(',') : [];
         const tecnicosSelect = document.getElementById('edit_id_tecnico_instalacao');
         Array.from(tecnicosSelect.options).forEach(option => {
@@ -480,6 +535,9 @@ document.addEventListener('DOMContentLoaded', () => {
         editEquipmentForm.querySelectorAll('input[name="tipo_equip[]"]').forEach(cb => {
             cb.checked = selectedTypes.includes(cb.value);
         });
+        
+        updateCityDropdownForForm('editEquipmentForm'); // Popula a lista de cidades correta
+        document.getElementById('editEquipmentCity').value = equipmentData.id_cidade; // Seleciona a cidade atual
 
         toggleConditionalFields('editEquipmentForm');
         toggleStatusDateFields();
@@ -487,37 +545,6 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleLoadingState('editEquipmentSpinner', 'saveEditEquipmentButton', 'cancelEditEquipmentButton', false);
         editEquipmentModal.classList.add('is-active');
         document.getElementById('edit-form-buttons').style.display = 'flex';
-    }
-
-    // FUNÇÃO REINTEGRADA do seu código original
-    function setupFormValidationListeners(formElement, messageElement, validationRules) {
-        const inputs = formElement.querySelectorAll('input, select, textarea');
-
-        const validateAndClear = () => {
-            let allValid = true;
-
-            for (const fieldId in validationRules) {
-                const input = formElement.querySelector(`#${fieldId}`);
-                if (input) {
-                    if (input.classList.contains('equipment-type-group')) {
-                        if (input.querySelectorAll('input[type="checkbox"]:checked').length === 0) {
-                            allValid = false;
-                            break;
-                        }
-                    }
-                    else if (!input.value.trim()) {
-                        allValid = false;
-                        break;
-                    }
-                }
-            }
-            if (allValid) hideMessage(messageElement);
-        };
-
-        inputs.forEach(input => {
-            input.addEventListener('input', () => hideMessage(messageElement));
-            input.addEventListener('change', () => hideMessage(messageElement));
-        });
     }
 
     window.onscroll = function () {
@@ -557,8 +584,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    document.getElementById('addEquipmentType').addEventListener('change', () => toggleConditionalFields('addEquipmentForm'));
-    document.getElementById('editEquipmentType').addEventListener('change', () => toggleConditionalFields('editEquipmentForm'));
+    document.getElementById('addEquipmentType').addEventListener('change', () => {
+        toggleConditionalFields('addEquipmentForm');
+        updateCityDropdownForForm('addEquipmentForm');
+    });
+    document.getElementById('editEquipmentType').addEventListener('change', () => {
+        toggleConditionalFields('editEquipmentForm');
+        updateCityDropdownForForm('editEquipmentForm');
+    });
+
     document.getElementById('editEquipmentStatus').addEventListener('change', toggleStatusDateFields);
 
     equipmentListContainer.addEventListener('click', (event) => {
@@ -567,15 +601,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    window.addEventListener('click', (event) => {
+    /*window.addEventListener('click', (event) => {
         if (event.target === addEquipmentModal) addEquipmentModal.classList.remove('is-active');
         if (event.target === editEquipmentModal) editEquipmentModal.classList.remove('is-active');
-    });
+    });*/
 
     addEquipmentForm.addEventListener('submit', async function (event) {
         event.preventDefault();
 
-        const validationResult = validateForm(addEquipmentForm, validationMap);
+        const dynaMap = createDynamicValidationMap(addEquipmentForm);
+        const validationResult = validateForm(addEquipmentForm, dynaMap);
         if (validationResult !== true) {
             showMessage(addEquipmentMessage, validationResult, 'error');
             return;
@@ -588,9 +623,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             data.tipo_equip = formData.getAll('tipo_equip[]');
             delete data['tipo_equip[]'];
-            data.id_tecnico_instalacao = formData.getAll('id_tecnico_instalacao[]');
-            delete data['id_tecnico_instalacao[]'];
-
+            
+            const selectedTecnicos = Array.from(addEquipmentForm.querySelector('#add_id_tecnico_instalacao').selectedOptions).map(option => option.value);
+            data.id_tecnico_instalacao = selectedTecnicos;
 
             const response = await fetch('API/add_equipment.php', {
                 method: 'POST',
@@ -619,11 +654,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     editEquipmentForm.addEventListener('submit', async function (event) {
         event.preventDefault();
-        const validationResult = validateForm(editEquipmentForm, validationMap);
+        
+        const dynaMap = createDynamicValidationMap(editEquipmentForm);
+        const validationResult = validateForm(editEquipmentForm, dynaMap);
         if (validationResult !== true) {
             showMessage(editEquipmentMessage, validationResult, 'error');
             return;
         }
+
         toggleLoadingState('editEquipmentSpinner', 'saveEditEquipmentButton', 'cancelEditEquipmentButton', true);
         try {
             const formData = new FormData(editEquipmentForm);
@@ -631,8 +669,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             data.tipo_equip = formData.getAll('tipo_equip[]');
             delete data['tipo_equip[]'];
-            data.id_tecnico_instalacao = formData.getAll('id_tecnico_instalacao[]');
-            delete data['id_tecnico_instalacao[]'];
+            
+            const selectedTecnicos = Array.from(editEquipmentForm.querySelector('#edit_id_tecnico_instalacao').selectedOptions).map(option => option.value);
+            data.id_tecnico_instalacao = selectedTecnicos;
 
             const response = await fetch('API/update_equipment.php', {
                 method: 'POST',
@@ -663,6 +702,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // --- INICIALIZAÇÃO ---
+    populateCitySelect(document.getElementById('equipmentCity'), CIDADES_PADRAO);
+    populateCitySelect(document.getElementById('editEquipmentCity'), CIDADES_PADRAO);
     fetchProvidersForSelect();
     fetchTecnicosForSelect(); // Busca os técnicos
     fetchAndRenderEquipments().then(() => {
@@ -672,10 +713,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setupValidationListeners(addEquipmentForm, addEquipmentMessage);
     setupValidationListeners(editEquipmentForm, editEquipmentMessage);
-
-    const editInputsToWatch = editEquipmentForm.querySelectorAll('input, select');
-    editInputsToWatch.forEach(input => {
-        input.addEventListener('input', () => hideMessage(editEquipmentMessage));
-    });
     activateDatePickers();
 });

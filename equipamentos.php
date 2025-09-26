@@ -8,25 +8,50 @@ if (!isset($_SESSION['user_id'])) {
 
 require_once 'API/conexao_bd.php';
 
-$cities = []; // Array para armazenar as cidades
+$cities_com_radares = []; // Cidades para o padrão (radares=1)
+$cities_com_semaforos = []; // Cidades para semáforos (semaforica=1)
+$all_cities_with_equipment = []; // Todas as cidades com equipamentos para os botões
 
 try {
-    // Consulta SQL para obter as cidades para os dropdowns
-    $sql_cidades = "SELECT DISTINCT c.id_cidade, c.nome FROM cidades c JOIN equipamentos e ON c.id_cidade = e.id_cidade ORDER BY c.nome ASC";
-    $result_cidades = $conn->query($sql_cidades);
-
-    if ($result_cidades === false) {
-        throw new Exception("Erro ao executar a consulta de cidades: " . $conn->error);
-    }
-
-    if ($result_cidades->num_rows > 0) {
-        while ($row = $result_cidades->fetch_assoc()) {
-            $cities[] = $row;
+    // Busca cidades COM RADARES e que POSSUEM equipamentos cadastrados
+    $sql_radares = "SELECT DISTINCT c.id_cidade, c.nome 
+                    FROM cidades c 
+                    WHERE c.radares = 1 AND EXISTS (SELECT 1 FROM equipamentos e WHERE e.id_cidade = c.id_cidade)
+                    ORDER BY c.nome ASC";
+    $result_radares = $conn->query($sql_radares);
+    if ($result_radares) {
+        while ($row = $result_radares->fetch_assoc()) {
+            $cities_com_radares[] = $row;
         }
     }
 
+    // Busca cidades COM SEMÁFOROS e que POSSUEM equipamentos cadastrados
+    $sql_semaforos = "SELECT DISTINCT c.id_cidade, c.nome 
+                      FROM cidades c 
+                      WHERE c.semaforica = 1 AND EXISTS (SELECT 1 FROM equipamentos e WHERE e.id_cidade = c.id_cidade)
+                      ORDER BY c.nome ASC";
+    $result_semaforos = $conn->query($sql_semaforos);
+    if ($result_semaforos) {
+        while ($row = $result_semaforos->fetch_assoc()) {
+            $cities_com_semaforos[] = $row;
+        }
+    }
+
+    // Busca TODAS as cidades que possuem qualquer tipo de equipamento para os botões de filtro
+    $sql_all_cities = "SELECT DISTINCT c.nome 
+                       FROM cidades c 
+                       JOIN equipamentos e ON c.id_cidade = e.id_cidade 
+                       ORDER BY c.nome ASC";
+    $result_all_cities = $conn->query($sql_all_cities);
+    if ($result_all_cities) {
+        while ($row = $result_all_cities->fetch_assoc()) {
+            $all_cities_with_equipment[] = $row['nome'];
+        }
+    }
+
+
 } catch (Exception $e) {
-    error_log("Erro em info_equipamentos.php: " . $e->getMessage());
+    error_log("Erro em equipamentos.php: " . $e->getMessage());
 } finally {
     if ($conn) {
         $conn->close();
@@ -799,12 +824,17 @@ try {
 </head>
 
 <body>
+    <script>
+        // Passa as cidades do PHP para o JavaScript para uso dinâmico
+        const CIDADES_SEMAFORO = <?php echo json_encode($cities_com_semaforos); ?>;
+        const CIDADES_PADRAO = <?php echo json_encode($cities_com_radares); ?>;
+    </script>
     <div class="background"></div>
     <main class="card">
         <header class="header-container">
-            <a href="menu.php" class="back-btn-icon" title="Voltar ao Menu">&larr;</a>
+            <a href="menu.php" class="back-btn-icon" title="Voltar ao Menu">←</a>
             <h1 class="titulo-cabecalho">Equipamentos</h1>
-            <a href="menu.php" class="close-btn" title="Voltar ao Menu">&times;</a>
+            <a href="menu.php" class="close-btn" title="Voltar ao Menu">×</a>
         </header>
         <div class="top-controls-wrapper">
             <div class="container-botao-adicionar-equipamento">
@@ -812,15 +842,22 @@ try {
             </div>
 
             <div class="container-pesquisa">
-                <input type="text" id="campoPesquisa" placeholder="Pesquisar por nome ou cidade...">
+                <input type="text" id="campoPesquisa" placeholder="Pesquisar por nome ou referência...">
                 <button id="clearFiltersBtn" class="botao-limpar-filtros">Limpar filtros</button>
             </div>
         </div>
         <div id="cityButtonsContainer" class="city-buttons-container">
             <button class="city-button active" data-city="all">Mostrar Todos</button>
-            <?php foreach ($cities as $city) : ?>
-                <button class="city-button" data-city="<?php echo htmlspecialchars($city['nome']); ?>">
-                    <?php echo htmlspecialchars($city['nome']); ?>
+             <?php 
+                $all_cities = array_unique(array_merge(
+                    array_map(function($c) { return $c['nome']; }, $cities_com_radares),
+                    array_map(function($c) { return $c['nome']; }, $cities_com_semaforos)
+                ));
+                sort($all_cities);
+                foreach ($all_cities as $city_name) : 
+            ?>
+                <button class="city-button" data-city="<?php echo htmlspecialchars($city_name); ?>">
+                    <?php echo htmlspecialchars($city_name); ?>
                 </button>
             <?php endforeach; ?>
         </div>
@@ -833,7 +870,7 @@ try {
         <a href="menu.php" class="voltar-btn">Voltar ao Menu</a>
     </main>
     <div class="footer">
-        <p>&copy; 2025 APsystem. Todos os direitos reservados.</p>
+        <p>© 2025 APsystem. Todos os direitos reservados.</p>
     </div>
 
     <button id="backToTopBtn" title="Voltar ao topo"><i class="fas fa-arrow-up"></i></button>
@@ -842,22 +879,23 @@ try {
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Adicionar Novo Equipamento</h3>
-                <button class="close-button" id="closeAddEquipmentModal">&times;</button>
+                <button class="close-button" id="closeAddEquipmentModal">×</button>
             </div>
             <form id="addEquipmentForm">
                 <label for="equipmentType">Tipo de Equipamento:</label>
                 <div id="addEquipmentType" class="equipment-type-group">
                     <label><input type="checkbox" name="tipo_equip[]" value="CCO"> CCO</label>
                     <label><input type="checkbox" name="tipo_equip[]" value="RADAR FIXO"> RADAR FIXO</label>
-                    <label><input type="checkbox" name="tipo_equip[]" value="MONITOR DE SEMAFORO"> MONITOR DE SEMÁFORO</label>
-                    <label><input type="checkbox" name="tipo_equip[]" value="VIDEO MONITORAMENTO"> VÍDEO MONITORAMENTO</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="MONITOR DE SEMÁFORO"> MONITOR DE SEMÁFORO</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="VÍDEO MONITORAMENTO"> VÍDEO MONITORAMENTO</label>
                     <label><input type="checkbox" name="tipo_equip[]" value="DOME"> DOME</label>
-                    <label><input type="checkbox" name="tipo_equip[]" value="LOMBADA ELETRONICA"> LOMBADA ELETRÔNICA</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="LOMBADA ELETRÔNICA"> LOMBADA ELETRÔNICA</label>
                     <label><input type="checkbox" name="tipo_equip[]" value="LAP"> LAP</label>
                     <label><input type="checkbox" name="tipo_equip[]" value="EDUCATIVO"> EDUCATIVO</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="SEMÁFORO"> SEMÁFORO</label>
                 </div>
                 <label for="equipmentName">Nome:</label>
-                <input type="text" id="equipmentName" name="nome_equip">
+                <input type="text" id="equipmentName" name="nome_equip" required>
                 <label for="equipmentReference">Referência:</label>
                 <input type="text" id="equipmentReference" name="referencia_equip">
 
@@ -873,15 +911,13 @@ try {
                 </div>
 
                 <label for="add_id_tecnico_instalacao">Técnico(s) da Instalação:</label>
-                <select id="add_id_tecnico_instalacao"> <option value="">Carregando técnicos...</option>
+                <select id="add_id_tecnico_instalacao" multiple> <option value="">Carregando técnicos...</option>
                 </select>
-                <div id="add_tecnicos_selecionados_container" class="tecnicos-selecionados-container"></div>
-                <input type="hidden" name="id_tecnico_instalacao[]" id="add_id_tecnico_instalacao_hidden">
                 
                 <label for="dt_instalacao">Data de Instalação:</label>
-                <div class="custom-date-input"><input type="date" id="dt_instalacao" name="dt_instalacao"></div>
+                <div class="custom-date-input"><input type="date" id="dt_instalacao" name="data_instalacao"></div>
 
-                <div id="add-specific-fields-container" class="hidden">
+                 <div id="add-specific-fields-container" class="hidden">
                     <label for="equipmentQtdFaixa">Quantidade de Faixas:</label>
                     <input type="number" id="equipmentQtdFaixa" name="qtd_faixa">
                     <label for="equipmentKm">Velocidade (KM/h):</label>
@@ -895,30 +931,30 @@ try {
                     <label for="dtAfericao">Data Aferição:</label>
                     <div class="custom-date-input"><input type="date" id="dtAfericao" name="dt_afericao"></div>
                 </div>
-                <div id="add-date-fields-container" class="hidden">
+                <div id="add-date-fields-container">
                     <label for="add_dt_estudoTec">Data de Estudo Técnico:</label>
                     <div class="custom-date-input"><input type="date" id="add_dt_estudoTec" name="dt_estudoTec"></div>
                 </div>
 
                 <label for="equipmentCity">Cidade:</label>
-                <select id="equipmentCity" name="id_cidade">
+                <select id="equipmentCity" name="id_cidade" required>
                     <option value="">Selecione a Cidade</option>
-                    <?php foreach ($cities as $city) : ?>
-                        <option value="<?php echo htmlspecialchars($city['id_cidade']); ?>"><?php echo htmlspecialchars($city['nome']); ?></option>
-                    <?php endforeach; ?>
                 </select>
                 <label for="equipmentLogradouro">Logradouro:</label>
-                <input type="text" id="equipmentLogradouro" name="logradouro">
+                <input type="text" id="equipmentLogradouro" name="logradouro" required>
                 <label for="equipmentBairro">Bairro:</label>
-                <input type="text" id="equipmentBairro" name="bairro">
+                <input type="text" id="equipmentBairro" name="bairro" required>
                 <label for="equipmentProvider">Provedor:</label>
-                <select id="equipmentProvider" name="id_provedor">
+                 <select id="equipmentProvider" name="id_provedor">
                     <option value="">Carregando...</option>
                 </select>
                 <label for="equipmentCep">CEP:</label>
                 <input type="text" id="equipmentCep" name="cep">
                 <label for="coordenadas">Coordenadas (Latitude, Longitude):</label>
                 <input type="text" id="coordenadas" name="coordenadas" placeholder="-17.726909, -48.567032">
+                
+                <input type="hidden" name="status" value="ativo">
+
 
                 <p id="addEquipmentMessage" class="message hidden"></p>
                 <div class="form-buttons" id="add-form-buttons">
@@ -933,7 +969,7 @@ try {
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Editar Equipamento</h3>
-                <button class="close-button" id="closeEditEquipmentModal">&times;</button>
+                <button class="close-button" id="closeEditEquipmentModal">×</button>
             </div>
             <form id="editEquipmentForm">
                 <input type="hidden" id="editEquipmentId" name="id_equipamento">
@@ -943,12 +979,13 @@ try {
                 <div id="editEquipmentType" class="equipment-type-group">
                     <label><input type="checkbox" name="tipo_equip[]" value="CCO"> CCO</label>
                     <label><input type="checkbox" name="tipo_equip[]" value="RADAR FIXO"> RADAR FIXO</label>
-                    <label><input type="checkbox" name="tipo_equip[]" value="MONITOR DE SEMAFORO"> MONITOR DE SEMÁFORO</label>
-                    <label><input type="checkbox" name="tipo_equip[]" value="VIDEO MONITORAMENTO"> VÍDEO MONITORAMENTO</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="MONITOR DE SEMÁFORO"> MONITOR DE SEMÁFORO</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="VÍDEO MONITORAMENTO"> VÍDEO MONITORAMENTO</label>
                     <label><input type="checkbox" name="tipo_equip[]" value="DOME"> DOME</label>
-                    <label><input type="checkbox" name="tipo_equip[]" value="LOMBADA ELETRONICA"> LOMBADA ELETRÔNICA</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="LOMBADA ELETRÔNICA"> LOMBADA ELETRÔNICA</label>
                     <label><input type="checkbox" name="tipo_equip[]" value="LAP"> LAP</label>
                     <label><input type="checkbox" name="tipo_equip[]" value="EDUCATIVO"> EDUCATIVO</label>
+                    <label><input type="checkbox" name="tipo_equip[]" value="SEMÁFORO"> SEMÁFORO</label>
                 </div>
                 <label for="editEquipmentName">Nome:</label>
                 <input type="text" id="editEquipmentName" name="nome_equip">
@@ -982,13 +1019,11 @@ try {
                 </div>
 
                 <label for="edit_id_tecnico_instalacao">Técnico(s) da Instalação:</label>
-                <select id="edit_id_tecnico_instalacao"> <option value="">Carregando técnicos...</option>
+                <select id="edit_id_tecnico_instalacao" multiple> <option value="">Carregando técnicos...</option>
                 </select>
-                <div id="edit_tecnicos_selecionados_container" class="tecnicos-selecionados-container"></div>
-                <input type="hidden" name="id_tecnico_instalacao[]" id="edit_id_tecnico_instalacao_hidden">
                 
                 <label for="edit_dt_instalacao">Data de Instalação:</label>
-                <div class="custom-date-input"><input type="date" id="edit_dt_instalacao" name="dt_instalacao"></div>
+                <div class="custom-date-input"><input type="date" id="edit_dt_instalacao" name="data_instalacao"></div>
 
                 <div id="edit-specific-fields-container" class="hidden">
                     <label for="editEquipmentQtdFaixa">Quantidade de Faixas:</label>
@@ -1004,17 +1039,14 @@ try {
                     <label for="editDtAfericao">Data Aferição:</label>
                     <div class="custom-date-input"><input type="date" id="editDtAfericao" name="dt_afericao"></div>
                 </div>
-                <div id="edit-date-fields-container" class="hidden">
+                <div id="edit-date-fields-container">
                     <label for="edit_dt_estudoTec">Data de Estudo Técnico:</label>
                     <div class="custom-date-input"><input type="date" id="edit_dt_estudoTec" name="dt_estudoTec"></div>
                 </div>
 
                 <label for="editEquipmentCity">Cidade:</label>
-                <select id="editEquipmentCity" name="id_cidade">
-                    <?php foreach ($cities as $city) : ?>
-                        <option value="<?php echo htmlspecialchars($city['id_cidade']); ?>"><?php echo htmlspecialchars($city['nome']); ?></option>
-                    <?php endforeach; ?>
-                </select>
+                 <select id="editEquipmentCity" name="id_cidade">
+                    </select>
                 <label for="editEquipmentLogradouro">Logradouro:</label>
                 <input type="text" id="editEquipmentLogradouro" name="logradouro">
                 <label for="editEquipmentBairro">Bairro:</label>
@@ -1036,7 +1068,6 @@ try {
             </form>
         </div>
     </div>
-
 
     <script src="js/equipamentos.js"></script>
 </body>
