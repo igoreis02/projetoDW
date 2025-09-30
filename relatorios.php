@@ -153,12 +153,13 @@ if (!isset($_SESSION['user_id'])) {
         }
 
         .maintenance-table th:nth-child(1), .maintenance-table td:nth-child(1) { width: 5%; }  /* Item */
-.maintenance-table th:nth-child(2), .maintenance-table td:nth-child(2) { width: 12%; } /* Data Início */
-.maintenance-table th:nth-child(3), .maintenance-table td:nth-child(3) { width: 30%; } /* Descrição Problema */
-.maintenance-table th:nth-child(4), .maintenance-table td:nth-child(4) { width: 12%; } /* Data Fim */
-.maintenance-table th:nth-child(5), .maintenance-table td:nth-child(5) { width: 30%; } /* Descrição Reparo */
-.maintenance-table th:nth-child(6), .maintenance-table td:nth-child(6) { width: 5%; }  /* Dias */
-.maintenance-table th:nth-child(7), .maintenance-table td:nth-child(7) { width: 6%; }  /* Técnico */
+        .maintenance-table th:nth-child(2), .maintenance-table td:nth-child(2) { width: 12%; } /* Data Início */
+        .maintenance-table th:nth-child(3), .maintenance-table td:nth-child(3) { width: 28%; } /* Descrição Problema */
+        .maintenance-table th:nth-child(4), .maintenance-table td:nth-child(4) { width: 12%; } /* Data Fim */
+        .maintenance-table th:nth-child(5), .maintenance-table td:nth-child(5) { width: 28%; } /* Descrição Reparo */
+        .maintenance-table th:nth-child(6), .maintenance-table td:nth-child(6) { width: 5%; }  /* Dias */
+        .maintenance-table th:nth-child(7), .maintenance-table td:nth-child(7) { width: 10%; } /* Status */
+        .maintenance-table th:nth-child(8), .maintenance-table td:nth-child(8) { width: 10%; } /* Técnico */
 
         .report-item {
             border: 1px solid #e5e7eb;
@@ -247,6 +248,11 @@ if (!isset($_SESSION['user_id'])) {
         .form-group label {
             font-weight: 600;
             color: #374151;
+        }
+
+        /* [MUDANÇA] Estilo para o select múltiplo parecer mais claro */
+        .form-group select[multiple] {
+            height: 100px; /* Eu defino uma altura para que as opções fiquem visíveis */
         }
 
         .form-group select,
@@ -412,13 +418,12 @@ if (!isset($_SESSION['user_id'])) {
                 </div>
 
                 <div class="form-group">
-                    <label for="statusSelect">Status</label>
-                    <select id="statusSelect">
-                        <option value="todos">Todos</option>
+                    <label for="statusSelect">Status (segure Ctrl para selecionar mais de um)</label>
+                    <select id="statusSelect" multiple>
+                        <option value="todos" selected>Todos</option>
                         <option value="concluido">Concluído</option>
                         <option value="pendente">Pendente</option>
                         <option value="em andamento">Em Andamento</option>
-                        <option value="cancelado">Cancelado</option>
                     </select>
                 </div>
 

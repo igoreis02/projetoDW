@@ -52,12 +52,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function generateReport() {
+        // [MUDANÇA AQUI] Eu pego todos os status selecionados
+        const selectedStatus = Array.from(statusSelect.selectedOptions).map(option => option.value);
+
         const filters = {
             city: citySelect.value,
             startDate: startDateInput.value,
             endDate: endDateInput.value,
-            reportType: reportTypeSelect.value,
-            status: statusSelect.value
+            reportType: reportTypeSelect.value
         };
         currentReportType = filters.reportType;
 
@@ -67,6 +69,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const params = new URLSearchParams(filters);
+            // [MUDANÇA AQUI] Eu adiciono cada status selecionado aos parâmetros da URL
+            selectedStatus.forEach(status => params.append('status[]', status));
+
             const response = await fetch(`API/generate_report.php?${params.toString()}`);
             const result = await response.json();
 
@@ -77,8 +82,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (currentReportType === 'matriz_tecnica' || currentReportType === 'controle_ocorrencia') {
                     renderReportList(result.data);
                 } else {
-                    const flatData = Object.values(result.data).flat();
-                    renderReportTable(result.headers, flatData);
+                    // Para relatórios simples, eu uso a chave "geral" que criei no PHP
+                    renderReportTable(result.headers, result.data.geral);
                 }
 
                 reportResultContainer.classList.remove('hidden');
@@ -89,6 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 reportResultContainer.classList.add('hidden');
             }
         } catch (error) {
+            console.error("Erro ao gerar relatório:", error);
             modalErrorMessage.textContent = 'Erro de comunicação com o servidor.';
             modalErrorMessage.classList.remove('hidden');
         } finally {
@@ -97,6 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // [FUNÇÃO ATUALIZADA] Adicionada a coluna de Status
     function renderReportList(groupedData) {
         reportContentContainer.innerHTML = '';
         for (const city in groupedData) {
@@ -125,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <tr>
                                 <th rowspan="2">Item</th>
                                 <th colspan="2">OS - ORDEM DE SERVIÇO</th>
-                                <th colspan="4">MANUTENÇÃO/REPARO</th>
+                                <th colspan="5">MANUTENÇÃO/REPARO</th> 
                             </tr>
                             <tr>
                                 <th>Data</th>
@@ -133,6 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <th>Data</th>
                                 <th>DESCRIÇÃO REPARO</th>
                                 <th>ATENDIDO EM (DIAS)</th>
+                                <th>Status</th>
                                 <th>Técnico</th>
                             </tr>
                         </thead>
@@ -145,6 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <td>${record['Data Fim'] || '-'}</td>
                                     <td>${record['Descrição Reparo'] || '-'}</td>
                                     <td>${record['Atendido em dia(s)'] !== null ? record['Atendido em dia(s)'] : '-'}</td>
+                                    <td>${record['Status'] || '-'}</td>
                                     <td>${record['Técnico'] || '-'}</td>
                                 </tr>
                             `).join('')}
@@ -174,7 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
         reportContentContainer.innerHTML = tableHTML;
     }
 
-    // --- [FUNÇÃO ATUALIZADA] Lógica completa para gerar o Excel com bordas, quebra de linha e alinhamento ---
+    // [FUNÇÃO ATUALIZADA] Lógica completa para gerar o Excel com a nova coluna de Status
     function downloadExcel() {
         if (Object.keys(currentReportData).length === 0) {
             alert("Não há dados para exportar.");
@@ -182,8 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (currentReportType !== 'matriz_tecnica' && currentReportType !== 'controle_ocorrencia') {
-            const flatData = Object.values(currentReportData).flat();
-            const worksheet = XLSX.utils.json_to_sheet(flatData);
+            const worksheet = XLSX.utils.json_to_sheet(currentReportData.geral);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Relatorio");
             XLSX.writeFile(workbook, "Relatorio_Simples.xlsx");
@@ -192,16 +200,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const wb = XLSX.utils.book_new();
         
-        // --- Meus Estilos ---
-        // 1. Eu defino o estilo da borda que vou usar em todas as células.
         const borderAll = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } };
-        
-        // 2. Eu crio os estilos completos para cada tipo de célula, já incluindo a borda.
         const cityHeaderStyle = { font: { bold: true, sz: 14 }, alignment: { horizontal: "center", vertical: "center" }, border: borderAll };
         const equipmentHeaderStyle = { font: { bold: true, sz: 12 }, alignment: { horizontal: "left", vertical: "center" }, border: borderAll };
         const tableHeaderStyle = { font: { bold: true }, alignment: { horizontal: "center", vertical: "center", wrapText: true }, border: borderAll };
-        
-        // 3. Eu crio os dois estilos para as células de dados, como você pediu.
         const defaultDataCellStyle = { border: borderAll, alignment: { horizontal: "center", vertical: "center", wrapText: true } };
         const descriptionDataCellStyle = { border: borderAll, alignment: { horizontal: "left", vertical: "top", wrapText: true } };
 
@@ -218,24 +220,27 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             aoa.push([city]);
-            merges.push({ s: { r: 0, c: 0 }, e: { r: 0, c: 6 } });
-            aoa.push([]); // Linha em branco para espaçamento
+            merges.push({ s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }); // Merge para 8 colunas
+            aoa.push([]); 
             rowIndex = 2;
 
             for (const equipmentName in equipmentGroups) {
                 aoa.push([`Equipamento: ${equipmentName}`]);
-                merges.push({ s: { r: rowIndex, c: 0 }, e: { r: rowIndex, c: 6 } });
+                merges.push({ s: { r: rowIndex, c: 0 }, e: { r: rowIndex, c: 7 } }); // Merge para 8 colunas
                 rowIndex++;
                 
-                aoa.push(["Item", "OS - ORDEM DE SERVIÇO", null, "MANUTENÇÃO/REPARO", null, null, null]);
-                merges.push({ s: { r: rowIndex, c: 0 }, e: { r: rowIndex + 1, c: 0 } });
-                merges.push({ s: { r: rowIndex, c: 1 }, e: { r: rowIndex, c: 2 } });
-                merges.push({ s: { r: rowIndex, c: 3 }, e: { r: rowIndex, c: 6 } });
+                // Cabeçalho Nível 1
+                aoa.push(["Item", "OS - ORDEM DE SERVIÇO", null, "MANUTENÇÃO/REPARO", null, null, null, null]);
+                merges.push({ s: { r: rowIndex, c: 0 }, e: { r: rowIndex + 1, c: 0 } }); // Item
+                merges.push({ s: { r: rowIndex, c: 1 }, e: { r: rowIndex, c: 2 } });     // OS
+                merges.push({ s: { r: rowIndex, c: 3 }, e: { r: rowIndex, c: 7 } });     // Manutenção (agora com 5 colunas)
                 rowIndex++;
 
-                aoa.push([null, "Data", "DESCRIÇÃO PROBLEMA", "Data", "DESCRIÇÃO REPARO", "ATENDIDO EM (DIAS)", "Técnico"]);
+                // Cabeçalho Nível 2
+                aoa.push([null, "Data", "DESCRIÇÃO PROBLEMA", "Data", "DESCRIÇÃO REPARO", "ATENDIDO EM (DIAS)", "Status", "Técnico"]);
                 rowIndex++;
 
+                // Dados
                 equipmentGroups[equipmentName].forEach((record, index) => {
                     aoa.push([
                         index + 1,
@@ -244,40 +249,36 @@ document.addEventListener('DOMContentLoaded', () => {
                         record['Data Fim'] || '-',
                         record['Descrição Reparo'] || '-',
                         record['Atendido em dia(s)'] !== null ? record['Atendido em dia(s)'] : '-',
+                        record['Status'] || '-',
                         record['Técnico'] || '-'
                     ]);
                     rowIndex++;
                 });
-                aoa.push([]); // Linha em branco entre equipamentos
+                aoa.push([]); 
                 rowIndex++;
             }
 
             const ws = XLSX.utils.aoa_to_sheet(aoa);
             ws['!merges'] = merges;
 
-            // --- Minha Lógica de Estilização Célula por Célula ---
-            // Eu passo por todas as linhas (R) e colunas (C) que eu adicionei no `aoa`.
             for (let R = 0; R < aoa.length; ++R) {
-                // Eu forço a passagem pelas 7 colunas para garantir a borda em células mescladas
-                for (let C = 0; C < 7; ++C) { 
+                for (let C = 0; C < 8; ++C) { // Loop até 8 colunas
                     const cell_address = { c: C, r: R };
                     const cell_ref = XLSX.utils.encode_cell(cell_address);
                     
-                    // Se a célula não existir (como em células mescladas), eu a crio
                     if (!ws[cell_ref]) ws[cell_ref] = { t: 's', v: '' };
                     
                     let styleToApply = {};
-                    const cellValue = (aoa[R] && aoa[R][C] !== undefined && aoa[R][C] !== null) ? aoa[R][C] : "";
+                    const cellValue = (aoa[R] && aoa[R][C] !== undefined && aoa[R][C] !== null) ? String(aoa[R][C]) : "";
                     const isDataRow = aoa[R] && aoa[R].length > 1 && typeof aoa[R][0] === 'number';
 
-                    // Eu aplico o estilo com base na linha e no conteúdo
                     if (R === 0) {
                         styleToApply = cityHeaderStyle;
-                    } else if (cellValue.toString().startsWith('Equipamento:')) {
+                    } else if (cellValue.startsWith('Equipamento:')) {
                         styleToApply = equipmentHeaderStyle;
                     } else if ( (aoa[R] && aoa[R].includes("Item")) || (aoa[R-1] && aoa[R-1].includes("Item")) ) {
                         styleToApply = tableHeaderStyle;
-                    } else if (isDataRow) { // Se for uma linha de dados
+                    } else if (isDataRow) {
                         if (C === 2 || C === 4) { // Colunas de Descrição
                             styleToApply = descriptionDataCellStyle; 
                         } else { // Outras colunas de dados
@@ -285,22 +286,19 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                     
-                    // Eu aplico o estilo à célula
                     ws[cell_ref].s = styleToApply;
                 }
             }
             
-            // Definição da largura das colunas
-            ws['!cols'] = [{ wch: 5 }, { wch: 15 }, { wch: 45 }, { wch: 15 }, { wch: 45 }, { wch: 15 }, { wch: 25 }];
+            // Definição da largura das colunas (adicionada uma para Status)
+            ws['!cols'] = [{ wch: 5 }, { wch: 15 }, { wch: 40 }, { wch: 15 }, { wch: 40 }, { wch: 15 }, { wch: 15 }, { wch: 25 }];
             
-            // Adicionando a planilha ao Workbook
             XLSX.utils.book_append_sheet(wb, ws, city.substring(0, 31));
         }
 
         XLSX.writeFile(wb, "Relatorio_Detalhado_DeltaWay.xlsx");
     }
     
-
     window.openModal = (modalId) => document.getElementById(modalId).classList.add('is-active');
     window.closeModal = (modalId) => document.getElementById(modalId).classList.remove('is-active');
 });

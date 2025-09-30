@@ -7,7 +7,12 @@ $cityId = $_GET['city'] ?? 'todos';
 $startDate = $_GET['startDate'] ?? null;
 $endDate = $_GET['endDate'] ?? null;
 $reportType = $_GET['reportType'] ?? 'matriz_tecnica';
-$status = $_GET['status'] ?? 'todos';
+// [MUDANÇA AQUI] Eu pego o status, que agora pode ser um array
+$status = $_GET['status'] ?? ['todos'];
+// Garanto que seja um array para tratar da mesma forma
+if (!is_array($status)) {
+    $status = [$status];
+}
 
 $params = [];
 $types = '';
@@ -17,24 +22,22 @@ $headers = [];
 $sqlWhere = " WHERE 1=1";
 
 // Eu escolho qual consulta fazer com base no tipo de relatório
-// Apenas os relatórios de Matriz Técnica e Controle de Ocorrência usarão o novo formato.
 switch ($reportType) {
     case 'matriz_tecnica':
     case 'controle_ocorrencia':
-        // Eu defino os cabeçalhos que vou usar no Excel
-        $headers = ["Cidade", "Equipamento", "Data Início", "Descrição Problema", "Data Fim", "Descrição Reparo", "Atendido em dia(s)", "Técnico"];
+        // [MUDANÇA AQUI] Eu adiciono "Status" aos cabeçalhos
+        $headers = ["Cidade", "Equipamento", "Data Início", "Descrição Problema", "Data Fim", "Descrição Reparo", "Atendido em dia(s)", "Status", "Técnico"];
         
-        // Eu monto a minha consulta SQL principal, já formatando os campos como preciso
+        // [MUDANÇA AQUI] Eu adiciono m.status_reparo à consulta
         $sqlBase = "SELECT
                         c.nome as Cidade,
-                        -- Eu pego só a primeira parte do nome (ex: 'MT427') e junto com a referência
                         CONCAT(SUBSTRING_INDEX(e.nome_equip, ' - ', 1), ' - ', e.referencia_equip) as Equipamento,
                         DATE_FORMAT(m.inicio_reparo, '%d/%m/%Y %H:%i') as 'Data Início',
                         m.ocorrencia_reparo as 'Descrição Problema',
                         DATE_FORMAT(m.fim_reparo, '%d/%m/%Y %H:%i') as 'Data Fim',
                         m.reparo_finalizado as 'Descrição Reparo',
-                        -- Eu calculo a diferença em dias entre o fim e o início do reparo
                         DATEDIFF(m.fim_reparo, m.inicio_reparo) as 'Atendido em dia(s)',
+                        m.status_reparo as Status,
                         (SELECT GROUP_CONCAT(u.nome SEPARATOR ', ') FROM manutencoes_tecnicos mt JOIN usuario u ON mt.id_tecnico = u.id_usuario WHERE mt.id_manutencao = m.id_manutencao) as Técnico
                     FROM manutencoes m
                     JOIN equipamentos e ON m.id_equipamento = e.id_equipamento
@@ -43,16 +46,15 @@ switch ($reportType) {
         // Eu aplico o filtro de tipo de manutenção que você pediu
         if ($reportType === 'controle_ocorrencia') {
             $sqlWhere .= " AND m.tipo_manutencao = 'preditiva'";
-        } else { // Matriz Técnica
+        } else { // Matriz Técnica (Sempre corretiva, como solicitado)
             $sqlWhere .= " AND m.tipo_manutencao = 'corretiva'";
         }
         
         $dateColumn = 'm.inicio_reparo';
         $statusColumn = 'm.status_reparo';
-        $cityColumn = 'm.id_cidade';
+        $cityColumn = 'e.id_cidade'; // Corrigido para e.id_cidade para consistência
         break;
 
-    // Os outros relatórios continuam com o formato de tabela simples de antes
     case 'rel_processamento':
     case 'rel_provedor':
         // ... (código para os outros relatórios permanece o mesmo)
@@ -85,11 +87,19 @@ if (!empty($endDate)) {
     $types .= 's';
     $params[] = $endDate;
 }
-if ($status !== 'todos' && !empty($status)) {
-    $sqlWhere .= " AND {$statusColumn} = ?";
-    $types .= 's';
-    $params[] = $status;
+
+// [MUDANÇA AQUI] Lógica para múltiplos status
+// Eu só aplico o filtro se a opção "todos" não estiver selecionada
+if (!in_array('todos', $status) && !empty($status)) {
+    // Eu crio os placeholders (?, ?, ?) dinamicamente
+    $placeholders = implode(',', array_fill(0, count($status), '?'));
+    $sqlWhere .= " AND {$statusColumn} IN ({$placeholders})";
+    // Eu adiciono os tipos ('s' para cada status)
+    $types .= str_repeat('s', count($status));
+    // Eu junto os valores de status ao array de parâmetros
+    $params = array_merge($params, $status);
 }
+
 
 $sqlFinal = $sqlBase . $sqlWhere;
 
@@ -107,19 +117,24 @@ $stmt->execute();
 $result = $stmt->get_result();
 $data = $result->fetch_all(MYSQLI_ASSOC);
 
-// --- [MUDANÇA AQUI] Eu vou agrupar os resultados por cidade antes de enviar ---
+// --- Agrupamento dos resultados por cidade ---
 $groupedData = [];
-foreach ($data as $row) {
-    $cidade = $row['Cidade']; // Pego o nome da cidade de cada linha
-    if (!isset($groupedData[$cidade])) {
-        $groupedData[$cidade] = []; // Se for a primeira vez que vejo essa cidade, eu crio um grupo para ela
+// Só agrupo se for um dos relatórios que usam esse formato
+if ($reportType === 'matriz_tecnica' || $reportType === 'controle_ocorrencia') {
+    foreach ($data as $row) {
+        $cidade = $row['Cidade'];
+        if (!isset($groupedData[$cidade])) {
+            $groupedData[$cidade] = [];
+        }
+        unset($row['Cidade']);
+        $groupedData[$cidade][] = $row;
     }
-    unset($row['Cidade']); // Eu removo a cidade de dentro do registro para não repetir a informação
-    $groupedData[$cidade][] = $row; // Adiciono o registro ao grupo da cidade correta
+} else { // Para os outros, eu mantenho o formato antigo mas dentro de uma chave "geral" para manter a estrutura
+    $groupedData['geral'] = $data;
 }
+
 
 $stmt->close();
 $conn->close();
 
-// Eu retorno os dados já agrupados e os cabeçalhos para o Excel.
 echo json_encode(['success' => true, 'headers' => $headers, 'data' => $groupedData]);
