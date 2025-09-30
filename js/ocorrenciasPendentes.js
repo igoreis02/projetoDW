@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const mainControls = document.querySelector('.main-controls-container');
     const voltarBtnFooter = document.querySelector('.voltar-btn');
 
-    const controlsWrapper = document.querySelector('.controls-wrapper'); 
+    const controlsWrapper = document.querySelector('.controls-wrapper');
 
 
     let activeType = 'manutencao';
@@ -86,7 +86,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const response = await fetch(apiUrl);
             const result = await response.json();
 
-            
+
             if (result.success) {
                 allData = result.data;
                 currentChecksum = result.checksum;
@@ -151,8 +151,8 @@ document.addEventListener('DOMContentLoaded', function () {
             const itemsGroupedByEquip = {};
 
             cityItems.forEach(item => {
+
                 if (item.tipo_manutencao === 'instalação' || item.tipo_manutencao === 'semaforica') {
-                    // Trata instalações e semafóricas como itens únicos
                     const uniqueKey = `${item.tipo_manutencao}-${item.id_manutencao}`;
                     itemsGroupedByEquip[uniqueKey] = { ...item, isGrouped: false, ocorrencias_detalhadas: [item] };
                     return;
@@ -176,6 +176,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     (groupedItem.nome_equip && groupedItem.nome_equip.toLowerCase().includes(searchTerm)) ||
                     (groupedItem.referencia_equip && groupedItem.referencia_equip.toLowerCase().includes(searchTerm)) ||
                     (groupedItem.atribuido_por && groupedItem.atribuido_por.toLowerCase().includes(searchTerm)) ||
+                    (groupedItem.tipo_equip && groupedItem.tipo_equip.toLowerCase().includes(searchTerm)) ||
                     groupedItem.ocorrencias_detalhadas.some(detail => detail.ocorrencia_reparo && detail.ocorrencia_reparo.toLowerCase().includes(searchTerm));
 
                 const typeMatch =
@@ -313,7 +314,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 </h3>
                 <button class="toggle-dias-btn" onclick="toggleDiasVisibilidade(this, event)">Ocultar Dias</button>
             </div>
-            <ul>`; 
+            <ul>`;
 
                 const itemsByEquip = {};
                 for (const item of itemsByCity[city]) {
@@ -353,7 +354,7 @@ document.addEventListener('DOMContentLoaded', function () {
             padraoHtml = `<h2 class="simplified-section-title">OCORRÊNCIAS - NÍVEL 1</h2>` + padraoHtml;
         }
 
-        
+
         if (semUrgenciaHtml) {
             semUrgenciaHtml = `<h2 class="simplified-section-title">OCORRÊNCIAS SEM URGÊNCIA - NÍVEL 2</h2>` + semUrgenciaHtml;
         }
@@ -554,9 +555,38 @@ document.addEventListener('DOMContentLoaded', function () {
     `;
 
         if (item.tipo_manutencao === 'instalação') {
-            const statusMap = { inst_laco: 'Laço', inst_base: 'Base', inst_infra: 'Infra', inst_energia: 'Energia', inst_prov: 'Provedor' };
-            const dateMap = { inst_laco: 'dt_laco', inst_base: 'dt_base', inst_infra: 'data_infra', inst_energia: 'dt_energia', inst_prov: 'data_provedor' };
-            detailsHTML = Object.entries(statusMap).map(([key, label]) => {
+            // Pegamos o tipo do equipamento para usar nas regras
+            const tipoEquip = firstOcorrencia.tipo_equip || 'Não especificado';
+
+            // 1. Adicionamos a exibição do tipo de equipamento no card
+            detailsHTML += `<div class="detail-item"><strong>Tipo:</strong> <span>${tipoEquip}</span></div>`;
+
+            // 2. Lógica para definir quais passos de instalação mostrar
+            let statusMap = {
+                inst_laco: 'Laço',
+                inst_base: 'Base',
+                inst_infra: 'Infra',
+                inst_energia: 'Energia'
+                // O Provedor foi removido, como solicitado.
+            };
+
+            // 3. Aplicamos as regras para remover passos conforme o tipo
+            if (tipoEquip.includes('CCO')) {
+                delete statusMap.inst_laco;
+                delete statusMap.inst_base;
+            } else if (tipoEquip.includes('DOME') || tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP')) {
+                delete statusMap.inst_laco;
+            }
+
+            // O código abaixo para gerar o HTML continua o mesmo, mas agora usa o statusMap modificado
+            const dateMap = {
+                inst_laco: 'dt_laco',
+                inst_base: 'dt_base',
+                inst_infra: 'data_infra',
+                inst_energia: 'dt_energia'
+            };
+
+            detailsHTML += Object.entries(statusMap).map(([key, label]) => {
                 const status = firstOcorrencia[key] == 1 ?
                     `<span class="status-value instalado">Instalado ${formatDate(firstOcorrencia[dateMap[key]])}</span>` :
                     `<span class="status-value aguardando">Aguardando instalação</span>`;
@@ -867,7 +897,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             // 5. Lógica de SUCESSO
-            buttonsContainer.classList.add('hidden'); 
+            buttonsContainer.classList.add('hidden');
             errorEl.textContent = 'Nível de prioridade alterado com sucesso!';
             errorEl.classList.add('success');
             errorEl.classList.remove('hidden');
