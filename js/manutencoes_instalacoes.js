@@ -15,6 +15,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const realizadoPorSection = document.getElementById('realizadoPorSection');
     const btnProcessamento = document.getElementById('btnProcessamento');
     const btnProvedor = document.getElementById('btnProvedor');
+    const installEquipmentTypeContainer = document.getElementById('installEquipmentType');
+    const installErrorMessage = document.getElementById('installErrorMessage');
+    const installProviderSelect = document.getElementById('installProvider');
 
     // --- NOVAS REFERÊNCIAS ---
     const reparoConcluidoSection = document.getElementById('reparoConcluidoSection');
@@ -79,18 +82,134 @@ document.addEventListener('DOMContentLoaded', () => {
     let reparoConcluido = null; // true para Sim, false para Não
     let existingMaintenanceData = null;
     let semaforicaData = {};
+    let allProvidersData = [];
+    let firstSelectedType = null;
 
     // --- SEÇÃO DE FUNÇÕES ---
-    newEquipmentTypeSelect.addEventListener('change', function () {
-        const selectedType = this.value;
-        const typesWithOptions = ['RADAR FIXO', 'EDUCATIVO', 'LOMBADA'];
-        if (typesWithOptions.includes(selectedType)) {
-            quantitySection.classList.remove('hidden');
-        } else {
-            quantitySection.classList.add('hidden');
-            document.getElementById('newEquipmentQuantity').value = '';
+
+    async function fetchProvidersForSelect() {
+        installProviderSelect.innerHTML = '<option value="">Carregando...</option>';
+        try {
+            const response = await fetch('API/get_provedores_select.php');
+            const data = await response.json();
+            if (data.success) {
+                allProvidersData = data.provedores;
+                const defaultOption = '<option value="">Selecione o Provedor</option>';
+                const providerOptions = data.provedores.map(p => `<option value="${p.id_provedor}">${p.nome_prov}</option>`).join('');
+                installProviderSelect.innerHTML = defaultOption + providerOptions;
+            } else {
+                installProviderSelect.innerHTML = '<option value="">Falha ao carregar</option>';
+            }
+        } catch (error) {
+            installProviderSelect.innerHTML = '<option value="">Erro de conexão</option>';
         }
-    });
+    }
+
+    function handleCityChangeForInstallation(cityId) {
+        if (!cityId || allProvidersData.length === 0) {
+            installProviderSelect.value = '';
+            return;
+        }
+        const matchingProvider = allProvidersData.find(p => p.id_cidade == cityId);
+        installProviderSelect.value = matchingProvider ? matchingProvider.id_provedor : '';
+    }
+
+    function toggleInstallConditionalFields() {
+        const form = installEquipmentAndAddressSection;
+        const checkedBoxes = form.querySelectorAll('input[name="new_tipo_equip[]"]:checked');
+        const selectedTypes = Array.from(checkedBoxes).map(cb => cb.value);
+
+        // O tipo principal é o primeiro que o usuário marcou
+        if (checkedBoxes.length > 0 && !firstSelectedType) {
+            firstSelectedType = checkedBoxes[0].value;
+        } else if (checkedBoxes.length === 0) {
+            firstSelectedType = null; // Reseta se desmarcar todos
+        }
+
+        const specificContainer = document.getElementById('install-specific-fields-container');
+        const quantityInput = document.getElementById('newEquipmentQuantity');
+        const sentidoInput = document.getElementById('newEquipmentSentido');
+        const velocidadeInput = document.getElementById('newEquipmentVelocidade');
+
+        // Oculta todos os campos condicionais para começar
+        specificContainer.classList.add('hidden');
+        quantityInput.parentElement.classList.add('hidden');
+        sentidoInput.parentElement.classList.add('hidden');
+        velocidadeInput.parentElement.classList.add('hidden');
+
+        if (!firstSelectedType) return; // Se nada estiver selecionado, não mostra nada
+
+        // Grupo 1: CC0, DOME, VIDEO MONITORAMENTO
+        const group1 = ['CCO', 'DOME', 'VÍDEO MONITORAMENTO'];
+        // Grupo 2: LAP, MONITOR DE SEMÁFORO
+        const group2 = ['LAP', 'MONITOR DE SEMÁFORO'];
+        // Grupo 3: LOMBADA ELETRÔNICA, RADAR FIXO, EDUCATIVO
+        const group3 = ['LOMBADA ELETRÔNICA', 'RADAR FIXO', 'EDUCATIVO'];
+
+        if (group1.includes(firstSelectedType)) {
+            // Nenhum campo específico aparece
+        } else if (group2.includes(firstSelectedType)) {
+            specificContainer.classList.remove('hidden');
+            quantityInput.parentElement.classList.remove('hidden');
+            sentidoInput.parentElement.classList.remove('hidden');
+        } else if (group3.includes(firstSelectedType)) {
+            specificContainer.classList.remove('hidden');
+            quantityInput.parentElement.classList.remove('hidden');
+            sentidoInput.parentElement.classList.remove('hidden');
+            velocidadeInput.parentElement.classList.remove('hidden');
+        }
+    }
+
+    function createInstallValidationMap() {
+        const isEducativo = Array.from(installEquipmentTypeContainer.querySelectorAll('input:checked'))
+            .map(cb => cb.value).includes('EDUCATIVO');
+
+        const validationMap = {
+            'new_tipo_equip[]': 'Tipo de Equipamento',
+            'newEquipmentName': 'Nome / Identificador',
+            'newEquipmentReference': 'Referência / Local',
+            'addressLogradouro': 'Logradouro',
+            'addressBairro': 'Bairro',
+            'installProvider': 'Provedor',
+            'addressCep': 'CEP',
+        };
+
+        if (!document.getElementById('install-specific-fields-container').classList.contains('hidden')) {
+            const isQuantityVisible = !document.getElementById('newEquipmentQuantity').parentElement.classList.contains('hidden');
+            const isSentidoVisible = !document.getElementById('newEquipmentSentido').parentElement.classList.contains('hidden');
+            const isVelocidadeVisible = !document.getElementById('newEquipmentVelocidade').parentElement.classList.contains('hidden');
+
+            if (isQuantityVisible && !isEducativo) validationMap['newEquipmentQuantity'] = 'Quantidade de Faixas';
+            if (isSentidoVisible && !isEducativo) validationMap['newEquipmentSentido'] = 'Sentido';
+            if (isVelocidadeVisible && !isEducativo) validationMap['newEquipmentVelocidade'] = 'Velocidade (KM/h)';
+        }
+
+        return validationMap;
+    }
+
+    function validateInstallForm() {
+        const validationMap = createInstallValidationMap();
+        for (const id in validationMap) {
+            if (id === 'new_tipo_equip[]') {
+                if (installEquipmentTypeContainer.querySelectorAll('input:checked').length === 0) {
+                    return `O campo '${validationMap[id]}' é obrigatório.`;
+                }
+            } else {
+                const field = document.getElementById(id);
+                if (field && !field.closest('.hidden') && (!field.value || field.value.trim() === '')) {
+                    return `O campo '${validationMap[id]}' é obrigatório.`;
+                }
+            }
+        }
+        return true;
+    }
+
+    function setupInstallValidationListeners() {
+        installEquipmentAndAddressSection.querySelectorAll('input, select, textarea').forEach(input => {
+            const eventType = (input.type === 'checkbox' || input.tagName.toLowerCase() === 'select') ? 'change' : 'input';
+            input.addEventListener(eventType, () => installErrorMessage.classList.add('hidden'));
+        });
+    }
 
     function resetarBotoesDeEscolha() {
         document.querySelectorAll('.choice-buttons .page-button').forEach(btn => btn.classList.remove('selected'));
@@ -186,6 +305,16 @@ document.addEventListener('DOMContentLoaded', () => {
         citySelectionSection.style.display = 'none';
         if (currentFlow === 'installation') {
             installEquipmentAndAddressSection.style.display = 'flex';
+            // Limpa e reseta o formulário de instalação para um novo uso
+            installEquipmentAndAddressSection.querySelectorAll('input, select, textarea').forEach(el => {
+                if (el.type === 'checkbox') el.checked = false;
+                else el.value = '';
+            });
+            firstSelectedType = null; // Reseta o tipo principal
+            toggleInstallConditionalFields(); // Esconde todos os campos condicionais
+            fetchProvidersForSelect().then(() => { // Busca provedores e depois seleciona o da cidade
+                handleCityChangeForInstallation(selectedCityId);
+            });
         } else if (currentFlow === 'semaforica') {
             semaforicaSection.style.display = 'flex';
             semaforicaForm.reset();
@@ -293,7 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
             loadEquipamentos(selectedCityId, '');
         }
     }
-    // SUBSTITUA SUA FUNÇÃO goBackToCitySelection POR ESTA
+    
     window.goBackToCitySelection = function () {
         // Mostra a seção de cidades
         citySelectionSection.style.display = 'block';
@@ -500,105 +629,136 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     confirmEquipmentSelectionBtn.addEventListener('click', async () => {
-    const equipId = equipmentSelect.value;
-    const problemDesc = problemDescriptionInput.value.trim();
+        const equipId = equipmentSelect.value;
+        const problemDesc = problemDescriptionInput.value.trim();
 
-    if (!equipId) {
-        equipmentSelectionErrorMessage.textContent = 'Por favor, selecione um equipamento.';
-        equipmentSelectionErrorMessage.classList.remove('hidden');
-        return;
-    }
-    equipmentSelectionErrorMessage.classList.add('hidden');
-
-    if (currentFlow === 'maintenance' && currentMaintenanceType === 'corretiva') {
-        try {
-            const response = await fetch(`API/check_pending_maintenance.php?equipment_id=${equipId}`);
-            const data = await response.json();
-
-            if (data.found && Array.isArray(data.maintenances) && data.maintenances.length > 0) {
-                // Pega o ID da primeira ocorrência para a lógica de "juntar"
-                existingMaintenanceData = {
-                    id: data.maintenances[0].id_manutencao,
-                    ocorrencia: data.maintenances[0].ocorrencia_reparo
-                };
-                
-                // 1. Filtra as ocorrências por status
-                const pendingMaintenances = data.maintenances.filter(m => m.status_reparo === 'pendente');
-                const inProgressMaintenances = data.maintenances.filter(m => m.status_reparo === 'em andamento');
-
-                let dynamicHTML = ''; // String para construir o HTML
-
-                // 2. Cria o bloco de HTML para ocorrências pendentes, se existirem
-                if (pendingMaintenances.length > 0) {
-                    dynamicHTML += '<p><strong>Ocorrência(s) pendente(s):</strong></p>';
-                    dynamicHTML += '<ol style="margin: 0; padding-left: 20px;">';
-                    pendingMaintenances.forEach(maint => {
-                        dynamicHTML += `<li style="margin-bottom: 5px;">${maint.ocorrencia_reparo}</li>`;
-                    });
-                    dynamicHTML += '</ol>';
-                }
-
-                // 3. Cria o bloco de HTML para ocorrências em andamento, se existirem
-                if (inProgressMaintenances.length > 0) {
-                    dynamicHTML += `<p style="margin-top: 1rem;"><strong>Ocorrência(s) em andamento:</strong></p>`;
-                    dynamicHTML += '<ol style="margin: 0; padding-left: 20px;">';
-                    inProgressMaintenances.forEach(maint => {
-                        dynamicHTML += `<li style="margin-bottom: 5px;">${maint.ocorrencia_reparo}</li>`;
-                    });
-                    dynamicHTML += '</ol>';
-                }
-
-                // 4. Injeta o HTML gerado no contêiner
-                const container = document.getElementById('existingMaintenanceContainer');
-                container.innerHTML = dynamicHTML;
-                
-                pendingMaintenanceModal.classList.add('is-active');
-                return; // Interrompe a execução para esperar a decisão do usuário
-            }
-        } catch (error) {
-            console.error("Erro ao verificar manutenção pendente:", error);
+        if (!equipId) {
+            equipmentSelectionErrorMessage.textContent = 'Por favor, selecione um equipamento.';
+            equipmentSelectionErrorMessage.classList.remove('hidden');
+            return;
         }
-    }
+        equipmentSelectionErrorMessage.classList.add('hidden');
 
-    // Se não encontrou pendências (ou não era o fluxo correto), continua para a confirmação
-    proceedToConfirmation();
-});
+        if (currentFlow === 'maintenance' && currentMaintenanceType === 'corretiva') {
+            try {
+                const response = await fetch(`API/check_pending_maintenance.php?equipment_id=${equipId}`);
+                const data = await response.json();
+
+                if (data.found && Array.isArray(data.maintenances) && data.maintenances.length > 0) {
+                    // Pega o ID da primeira ocorrência para a lógica de "juntar"
+                    existingMaintenanceData = {
+                        id: data.maintenances[0].id_manutencao,
+                        ocorrencia: data.maintenances[0].ocorrencia_reparo
+                    };
+
+                    // 1. Filtra as ocorrências por status
+                    const pendingMaintenances = data.maintenances.filter(m => m.status_reparo === 'pendente');
+                    const inProgressMaintenances = data.maintenances.filter(m => m.status_reparo === 'em andamento');
+
+                    let dynamicHTML = ''; // String para construir o HTML
+
+                    // 2. Cria o bloco de HTML para ocorrências pendentes, se existirem
+                    if (pendingMaintenances.length > 0) {
+                        dynamicHTML += '<p><strong>Ocorrência(s) pendente(s):</strong></p>';
+                        dynamicHTML += '<ol style="margin: 0; padding-left: 20px;">';
+                        pendingMaintenances.forEach(maint => {
+                            dynamicHTML += `<li style="margin-bottom: 5px;">${maint.ocorrencia_reparo}</li>`;
+                        });
+                        dynamicHTML += '</ol>';
+                    }
+
+                    // 3. Cria o bloco de HTML para ocorrências em andamento, se existirem
+                    if (inProgressMaintenances.length > 0) {
+                        dynamicHTML += `<p style="margin-top: 1rem;"><strong>Ocorrência(s) em andamento:</strong></p>`;
+                        dynamicHTML += '<ol style="margin: 0; padding-left: 20px;">';
+                        inProgressMaintenances.forEach(maint => {
+                            dynamicHTML += `<li style="margin-bottom: 5px;">${maint.ocorrencia_reparo}</li>`;
+                        });
+                        dynamicHTML += '</ol>';
+                    }
+
+                    // 4. Injeta o HTML gerado no contêiner
+                    const container = document.getElementById('existingMaintenanceContainer');
+                    container.innerHTML = dynamicHTML;
+
+                    pendingMaintenanceModal.classList.add('is-active');
+                    return; // Interrompe a execução para esperar a decisão do usuário
+                }
+            } catch (error) {
+                console.error("Erro ao verificar manutenção pendente:", error);
+            }
+        }
+
+        // Se não encontrou pendências (ou não era o fluxo correto), continua para a confirmação
+        proceedToConfirmation();
+    });
 
     confirmInstallEquipmentBtn.addEventListener('click', () => {
-        const newEquipmentType = document.getElementById('newEquipmentType').value;
+        const validationResult = validateInstallForm();
+        if (validationResult !== true) {
+            installErrorMessage.textContent = validationResult;
+            installErrorMessage.classList.remove('hidden');
+            return;
+        }
+        installErrorMessage.classList.add('hidden');
+
+        // Coleta de dados
+        const selectedTypes = Array.from(document.querySelectorAll('input[name="new_tipo_equip[]"]:checked')).map(cb => cb.value).join(', ');
         const newEquipmentName = document.getElementById('newEquipmentName').value.trim();
         const newEquipmentRef = document.getElementById('newEquipmentReference').value.trim();
         const addressLogradouro = document.getElementById('addressLogradouro').value.trim();
         const addressBairro = document.getElementById('addressBairro').value.trim();
         const addressCep = document.getElementById('addressCep').value.trim();
         const installationNotes = document.getElementById('installationNotes').value.trim();
-        const newEquipmentQuantity = document.getElementById('newEquipmentQuantity').value;
+        const providerSelect = document.getElementById('installProvider');
+        const providerName = providerSelect.selectedIndex > 0 ? providerSelect.options[providerSelect.selectedIndex].text : 'N/A';
 
-        if (!newEquipmentType || !newEquipmentName || !newEquipmentRef || !addressLogradouro || !addressBairro || !addressCep) {
-            alert('Por favor, preencha todos os campos obrigatórios.');
-            return;
-        }
-
+        // Preenche o modal de confirmação
         maintenanceConfirmationDetails.classList.add('hidden');
         installConfirmationDetails.classList.remove('hidden');
 
         document.getElementById('confirmCityName').textContent = selectedCityName;
-        document.getElementById('confirmEquipmentType').textContent = newEquipmentType;
+        document.getElementById('confirmEquipmentType').textContent = selectedTypes;
         document.getElementById('confirmNewEquipmentName').textContent = newEquipmentName;
         document.getElementById('confirmNewEquipmentRef').textContent = newEquipmentRef;
         document.getElementById('confirmAddressLogradouro').textContent = addressLogradouro;
         document.getElementById('confirmAddressBairro').textContent = addressBairro;
-        document.getElementById('confirmAddressCep').textContent = addressCep;
+        document.getElementById('confirmAddressCep').textContent = addressCep || 'N/A';
+        document.getElementById('confirmProvider').textContent = providerName;
         document.getElementById('confirmInstallationNotes').textContent = installationNotes || 'Nenhuma.';
         document.getElementById('confirmMaintenanceType').textContent = 'Instalação';
         document.getElementById('confirmRepairStatus').textContent = 'Pendente';
 
-        const confirmQuantityContainer = document.getElementById('confirmQuantityContainer');
-        if (newEquipmentQuantity && newEquipmentQuantity > 0) {
-            document.getElementById('confirmEquipmentQuantity').textContent = newEquipmentQuantity;
-            confirmQuantityContainer.classList.remove('hidden');
+        // Lógica para campos específicos na confirmação
+        const confirmSpecificsContainer = document.getElementById('confirm-specific-fields-container');
+        const confirmQuantity = document.getElementById('confirmEquipmentQuantity');
+        const confirmSentido = document.getElementById('confirmEquipmentSentido');
+        const confirmVelocidade = document.getElementById('confirmEquipmentVelocidade');
+
+        const quantityValue = document.getElementById('newEquipmentQuantity').value;
+        const sentidoValue = document.getElementById('newEquipmentSentido').value.trim();
+        const velocidadeValue = document.getElementById('newEquipmentVelocidade').value;
+
+        const isSpecificsVisible = !document.getElementById('install-specific-fields-container').classList.contains('hidden');
+
+        if (isSpecificsVisible) {
+            confirmSpecificsContainer.classList.remove('hidden');
+
+            const isQuantityVisible = !document.getElementById('newEquipmentQuantity').parentElement.classList.contains('hidden');
+            const isSentidoVisible = !document.getElementById('newEquipmentSentido').parentElement.classList.contains('hidden');
+            const isVelocidadeVisible = !document.getElementById('newEquipmentVelocidade').parentElement.classList.contains('hidden');
+
+            confirmQuantity.parentElement.style.display = isQuantityVisible ? 'block' : 'none';
+            confirmQuantity.textContent = quantityValue || 'N/A';
+
+            confirmSentido.parentElement.style.display = isSentidoVisible ? 'block' : 'none';
+            confirmSentido.textContent = sentidoValue || 'N/A';
+
+            confirmVelocidade.parentElement.style.display = isVelocidadeVisible ? 'block' : 'none';
+            confirmVelocidade.textContent = velocidadeValue ? `${velocidadeValue} km/h` : 'N/A';
+
         } else {
-            confirmQuantityContainer.classList.add('hidden');
+            confirmSpecificsContainer.classList.add('hidden');
         }
 
         confirmationModal.classList.add('is-active');
@@ -634,22 +794,44 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!data.success) throw new Error(data.message || 'Falha ao salvar ocorrência semafórica.');
 
             } else if (currentFlow === 'installation') {
+                // 1. Salvar Endereço
+                const coordenadasValue = document.getElementById('addressCoordenadas').value.trim();
+                let latitude = null;
+                let longitude = null;
+
+                // Processa o campo de coordenadas para extrair lat/lon
+                if (coordenadasValue && coordenadasValue.includes(',')) {
+                    const parts = coordenadasValue.split(',');
+                    if (parts.length === 2) {
+                        // Converte para número e remove espaços em branco; se a conversão falhar, se torna null
+                        latitude = parseFloat(parts[0].trim()) || null;
+                        longitude = parseFloat(parts[1].trim()) || null;
+                    }
+                }
+
                 const addressPayload = {
                     logradouro: document.getElementById('addressLogradouro').value.trim(),
                     bairro: document.getElementById('addressBairro').value.trim(),
                     cep: document.getElementById('addressCep').value.trim(),
-                    latitude: document.getElementById('addressLatitude').value || null,
-                    longitude: document.getElementById('addressLongitude').value || null,
+                    latitude: latitude,
+                    longitude: longitude,
                 };
                 const addressResponse = await fetch('API/save_endereco.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(addressPayload) });
                 const addressData = await addressResponse.json();
                 if (!addressData.success) throw new Error(addressData.message || 'Falha ao salvar endereço.');
 
+                // 2. Salvar Equipamento
+                const selectedTypesArray = Array.from(document.querySelectorAll('input[name="new_tipo_equip[]"]:checked')).map(cb => cb.value);
+
                 const equipmentPayload = {
                     nome_equip: document.getElementById('newEquipmentName').value.trim(),
                     referencia_equip: document.getElementById('newEquipmentReference').value.trim(),
-                    tipo_equip: document.getElementById('newEquipmentType').value,
+                    // O backend espera uma string, então unimos o array
+                    tipo_equip: selectedTypesArray.join(','),
                     qtd_faixa: document.getElementById('newEquipmentQuantity').value || null,
+                    sentido: document.getElementById('newEquipmentSentido').value.trim() || null,
+                    km: document.getElementById('newEquipmentVelocidade').value || null,
+                    id_provedor: document.getElementById('installProvider').value || null,
                     id_cidade: selectedCityId,
                     id_endereco: addressData.id_endereco
                 };
@@ -657,6 +839,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const equipmentData = await equipmentResponse.json();
                 if (!equipmentData.success) throw new Error(equipmentData.message || 'Falha ao salvar equipamento.');
 
+                // 3. Salvar Manutenção (Instalação)
                 const maintenancePayload = {
                     city_id: selectedCityId,
                     equipment_id: equipmentData.id_equipamento,
@@ -673,7 +856,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
 
                 if (currentMaintenanceType === 'preditiva' && realizadoPor === 'processamento') {
-                    
+
                     const payload = {
                         city_id: selectedCityId,
                         equipment_id: selectedEquipment.id_equipamento,
@@ -690,7 +873,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!data.success) throw new Error(data.message || 'Ocorreu um erro ao salvar o controle de ocorrência.');
 
                 } else if (currentMaintenanceType === 'preditiva' && realizadoPor === 'provedor') {
-                   
+
                     const payload = { city_id: selectedCityId, equipment_id: selectedEquipment.id_equipamento, id_provedor: selectedEquipment.id_provedor, problem_description: selectedProblemDescription, reparo_finalizado: selectedRepairDescription, tecnico_in_loco: tecnicoInLoco, tipo_ocorrencia: 'manutencao' };
                     const response = await fetch('API/save_ocorrencia_provedor.php', {
                         method: 'POST',
@@ -701,7 +884,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!data.success) throw new Error(data.message || 'Ocorreu um erro ao salvar a ocorrência do provedor.');
 
                 } else {
-                    
+
                     const payload = {
                         city_id: selectedCityId,
                         equipment_id: selectedEquipment.id_equipamento,
@@ -932,4 +1115,16 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     });
+
+    if (installEquipmentTypeContainer) {
+        installEquipmentTypeContainer.addEventListener('change', (e) => {
+            // Lógica para redefinir o tipo principal se o usuário desmarcar o primeiro
+            const checkedBoxes = installEquipmentTypeContainer.querySelectorAll('input:checked');
+            if (e.target.value === firstSelectedType && !e.target.checked) {
+                firstSelectedType = checkedBoxes.length > 0 ? checkedBoxes[0].value : null;
+            }
+            toggleInstallConditionalFields();
+        });
+    }
+    setupInstallValidationListeners();
 });

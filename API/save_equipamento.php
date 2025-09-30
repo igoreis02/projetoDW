@@ -15,7 +15,9 @@ $id_cidade = $data['id_cidade'] ?? null;
 $id_endereco = $data['id_endereco'] ?? null;
 $tipo_equip = $data['tipo_equip'] ?? null;
 $qtd_faixa = $data['qtd_faixa'] ?? null;
-
+$sentido = $data['sentido'] ?? null; 
+$km = $data['km'] ?? null; 
+$id_provedor = $data['id_provedor'] ?? null; 
 // Validação básica
 if (empty($nome_equip) || empty($referencia_equip) || empty($id_cidade) || empty($id_endereco) || empty($tipo_equip)) {
     echo json_encode(['success' => false, 'message' => 'Dados de equipamento incompletos.']);
@@ -26,10 +28,9 @@ if (empty($qtd_faixa)) {
     $qtd_faixa = null;
 }
 
-// *** ALTERAÇÃO PRINCIPAL AQUI ***
 $status = 'inativo'; // Define o status padrão como 'inativo' para novas instalações
 
-$sql = "INSERT INTO equipamentos (nome_equip, referencia_equip, id_cidade, id_endereco, tipo_equip, qtd_faixa, status) VALUES (?, ?, ?, ?, ?, ?, ?)";
+$sql = "INSERT INTO equipamentos (nome_equip, referencia_equip, id_cidade, id_endereco, id_provedor, tipo_equip, qtd_faixa, sentido, Km, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 $stmt = $conn->prepare($sql);
 
 if ($stmt === false) {
@@ -37,7 +38,7 @@ if ($stmt === false) {
     exit();
 }
 
-$stmt->bind_param("ssiisis", $nome_equip, $referencia_equip, $id_cidade, $id_endereco, $tipo_equip, $qtd_faixa, $status);
+$stmt->bind_param("ssiiisisss", $nome_equip, $referencia_equip, $id_cidade, $id_endereco, $id_provedor, $tipo_equip, $qtd_faixa, $sentido, $km, $status);
 
 if ($stmt->execute()) {
     $last_id = $conn->insert_id;

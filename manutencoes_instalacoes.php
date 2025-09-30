@@ -26,7 +26,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="icon" type="image/png" href="imagens/favicon.png">
     <title>Ocorrências e Instalações</title>
-   
+
 </head>
 
 <body>
@@ -56,7 +56,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
 
     <?php if ($redefinir_senha_obrigatoria): ?>
         <script>
-            document.addEventListener('DOMContentLoaded', function () {
+            document.addEventListener('DOMContentLoaded', function() {
                 window.location.href = 'index.html';
             });
         </script>
@@ -127,15 +127,17 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
                 <button class="back-button" onclick="goBackToCitySelection()">&larr;</button>
                 <h4>Dados do Novo Equipamento</h4>
 
-                <label for="newEquipmentType">Tipo de Equipamento:</label>
-                <select id="newEquipmentType">
-                    <option value="">-- Selecione o Tipo --</option>
-                    <option value="CCO">CCO</option>
-                    <option value="RADAR FIXO">RADAR FIXO</option>
-                    <option value="DOME">DOME</option>
-                    <option value="EDUCATIVO">EDUCATIVO</option>
-                    <option value="LOMBADA">LOMBADA</option>
-                </select>
+                <label>Tipo de Equipamento (o primeiro selecionado define os campos):</label>
+                <div id="installEquipmentType" class="equipment-type-group">
+                    <label><input type="checkbox" name="new_tipo_equip[]" value="CCO"> CCO</label>
+                    <label><input type="checkbox" name="new_tipo_equip[]" value="DOME"> DOME</label>
+                    <label><input type="checkbox" name="new_tipo_equip[]" value="VÍDEO MONITORAMENTO"> VÍDEO MONITORAMENTO</label>
+                    <label><input type="checkbox" name="new_tipo_equip[]" value="LAP"> LAP</label>
+                    <label><input type="checkbox" name="new_tipo_equip[]" value="MONITOR DE SEMÁFORO"> MONITOR DE SEMÁFORO</label>
+                    <label><input type="checkbox" name="new_tipo_equip[]" value="LOMBADA ELETRÔNICA"> LOMBADA ELETRÔNICA</label>
+                    <label><input type="checkbox" name="new_tipo_equip[]" value="RADAR FIXO"> RADAR FIXO</label>
+                    <label><input type="checkbox" name="new_tipo_equip[]" value="EDUCATIVO"> EDUCATIVO</label>
+                </div>
 
                 <label for="newEquipmentName">Nome / Identificador:</label>
                 <input type="text" id="newEquipmentName" placeholder="Ex: MT300, D22">
@@ -143,9 +145,15 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
                 <label for="newEquipmentReference">Referência / Local:</label>
                 <input type="text" id="newEquipmentReference" placeholder="Ex: Próximo à Escola">
 
-                <div id="quantitySection" class="hidden" style="display: flex; flex-direction: column; gap: 15px;">
+                <div id="install-specific-fields-container" class="hidden" style="display: flex; flex-direction: column; gap: 15px; width: 100%;">
                     <label for="newEquipmentQuantity">Quantidade de Faixas:</label>
                     <input type="number" id="newEquipmentQuantity" placeholder="Ex: 2" min="1">
+
+                    <label for="newEquipmentSentido">Sentido:</label>
+                    <input type="text" id="newEquipmentSentido" placeholder="Ex: Centro / Bairro">
+
+                    <label for="newEquipmentVelocidade">Velocidade (KM/h):</label>
+                    <input type="number" id="newEquipmentVelocidade" placeholder="Ex: 60" min="1">
                 </div>
 
                 <h5>Dados do Endereço:</h5>
@@ -155,21 +163,28 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
                 <label for="addressBairro">Bairro:</label>
                 <input type="text" id="addressBairro" placeholder="Ex: Centro">
 
-                <label for="addressCep">CEP:</label>
-                <input type="text" id="addressCep" placeholder="Ex: 12345-678">
+                <div id="install-provider-cep-container" style="display: flex; flex-direction: column; gap: 15px; width: 100%;">
+                    <label for="installProvider">Provedor:</label>
+                    <select id="installProvider">
+                        <option value="">Carregando...</option>
+                    </select>
 
-                <label for="addressLatitude">Latitude (Opcional):</label>
-                <input type="number" step="any" id="addressLatitude" placeholder="-16.75854">
+                    <label for="addressCep">CEP:</label>
+                    <input type="text" id="addressCep" placeholder="Ex: 12345-678">
+                </div>
 
-                <label for="addressLongitude">Longitude (Opcional):</label>
-                <input type="number" step="any" id="addressLongitude" placeholder="-49.25569">
+                <label for="addressCoordenadas">Coordenadas (Latitude, Longitude - Opcional):</label>
+                <input type="text" id="addressCoordenadas" placeholder="-16.75854, -49.25569">
 
                 <label for="installationNotes">Observação da Instalação (Opcional):</label>
                 <textarea id="installationNotes" rows="3" placeholder="Informação adicional..."></textarea>
 
-                <button id="confirmInstallEquipment" class="page-button" style="margin-top: 1rem;">Avançar para
-                    Confirmação</button>
+                <p id="installErrorMessage" class="message error hidden"></p>
+
+                <button id="confirmInstallEquipment" class="page-button" style="margin-top: 1rem;">Avançar para Confirmação</button>
             </div>
+
+
             <div id="semaforicaSection" class="install-equipment-section"
                 style="flex-direction: column; gap: 15px; margin-top: 20px; text-align: left;">
                 <button class="back-button" onclick="goBackToCitySelection()">&larr;</button>
@@ -225,7 +240,7 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
             <p>Esse equipamento já tem manutenção cadastrada.</p>
 
             <div id="existingMaintenanceContainer" class="modal-ocorrencia-existente">
-                </div>
+            </div>
 
             <p><strong>Deseja adicionar o novo problema a esta ocorrência?</strong></p>
 
@@ -252,15 +267,24 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
 
                 <div id="installConfirmationDetails" class="hidden">
                     <h4>Detalhes do Novo Equipamento:</h4>
-                    <p><strong>Tipo:</strong> <span id="confirmEquipmentType"></span></p>
+                    <p><strong>Tipo(s):</strong> <span id="confirmEquipmentType"></span></p>
                     <p><strong>Nome:</strong> <span id="confirmNewEquipmentName"></span></p>
                     <p><strong>Referência:</strong> <span id="confirmNewEquipmentRef"></span></p>
 
-                    <p id="confirmQuantityContainer" class="hidden"><strong>Qtd. Faixas:</strong> <span
-                            id="confirmEquipmentQuantity"></span></p>
+                    <div id="confirm-specific-fields-container" class="hidden">
+                        <p><strong>Qtd. Faixas:</strong> <span id="confirmEquipmentQuantity"></span></p>
+                        <p><strong>Sentido:</strong> <span id="confirmEquipmentSentido"></span></p>
+                        <p><strong>Velocidade:</strong> <span id="confirmEquipmentVelocidade"></span></p>
+                    </div>
+
                     <p><strong>Logradouro:</strong> <span id="confirmAddressLogradouro"></span></p>
                     <p><strong>Bairro:</strong> <span id="confirmAddressBairro"></span></p>
-                    <p><strong>CEP:</strong> <span id="confirmAddressCep"></span></p>
+
+                    <div id="confirm-provider-cep-container">
+                        <p><strong>Provedor:</strong> <span id="confirmProvider"></span></p>
+                        <p><strong>CEP:</strong> <span id="confirmAddressCep"></span></p>
+                    </div>
+
                     <p><strong>Observação:</strong> <span id="confirmInstallationNotes"></span></p>
                 </div>
 
@@ -346,9 +370,9 @@ $redefinir_senha_obrigatoria = isset($_SESSION['redefinir_senha_obrigatoria']) &
                     onclick="closeModal('assignSemaforicaModal')">Cancelar</button>
             </div>
         </div>
-        </div>
+    </div>
 
-        <script src="js/manutencoes_instalacoes.js"></script>
+    <script src="js/manutencoes_instalacoes.js"></script>
 </body>
 
 </html>
