@@ -88,7 +88,6 @@ if (!empty($endDate)) {
     $params[] = $endDate;
 }
 
-// [MUDANÇA AQUI] Lógica para múltiplos status
 // Eu só aplico o filtro se a opção "todos" não estiver selecionada
 if (!in_array('todos', $status) && !empty($status)) {
     // Eu crio os placeholders (?, ?, ?) dinamicamente

@@ -1,4 +1,4 @@
-// Assim que a página carregar, eu começo a preparar minhas funções.
+
 document.addEventListener('DOMContentLoaded', () => {
     // --- MINHAS REFERÊNCIAS AOS ELEMENTOS DA PÁGINA ---
     const openReportModalBtn = document.getElementById('openReportModalBtn');
@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function generateReport() {
-        // [MUDANÇA AQUI] Eu pego todos os status selecionados
+        //pego todos os status selecionados
         const selectedStatus = Array.from(statusSelect.selectedOptions).map(option => option.value);
 
         const filters = {
@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const params = new URLSearchParams(filters);
-            // [MUDANÇA AQUI] Eu adiciono cada status selecionado aos parâmetros da URL
+            // adiciono cada status selecionado aos parâmetros da URL
             selectedStatus.forEach(status => params.append('status[]', status));
 
             const response = await fetch(`API/generate_report.php?${params.toString()}`);
@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (currentReportType === 'matriz_tecnica' || currentReportType === 'controle_ocorrencia') {
                     renderReportList(result.data);
                 } else {
-                    // Para relatórios simples, eu uso a chave "geral" que criei no PHP
+                    // Para relatórios simples, eu uso a chave "geral" 
                     renderReportTable(result.headers, result.data.geral);
                 }
 
@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // [FUNÇÃO ATUALIZADA] Adicionada a coluna de Status
+    // Adicionada a coluna de Status
     function renderReportList(groupedData) {
         reportContentContainer.innerHTML = '';
         for (const city in groupedData) {
@@ -183,7 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
         reportContentContainer.innerHTML = tableHTML;
     }
 
-    // [FUNÇÃO ATUALIZADA] Lógica completa para gerar o Excel com a nova coluna de Status
+    //  gerar o Excel com a nova coluna de Status
     function downloadExcel() {
         if (Object.keys(currentReportData).length === 0) {
             alert("Não há dados para exportar.");

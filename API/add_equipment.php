@@ -74,7 +74,7 @@ try {
     $num_instrumento = !empty($data['num_instrumento']) ? $data['num_instrumento'] : null;
     $id_provedor = !empty($data['id_provedor']) ? (int)$data['id_provedor'] : null;
     $id_cidade = (int)$data['id_cidade'];
-    $dt_instalacao = !empty($data['dt_instalacao']) ? $data['dt_instalacao'] : null;
+    $data_instalacao = !empty($data['data_instalacao']) ? $data['data_instalacao'] : null;
     $dt_estudoTec = !empty($data['dt_estudoTec']) ? $data['dt_estudoTec'] : null;
 
   
@@ -93,7 +93,7 @@ try {
         $tipo_equip_str, $data['nome_equip'], $referencia_equip, $data['status'], 
         $qtd_faixa, $km, $sentido, $num_instrumento, $dt_afericao, $dt_vencimento, 
         $id_cidade, $id_endereco, $id_provedor,
-        $dt_instalacao, $dt_estudoTec,
+        $data_instalacao, $dt_estudoTec,
         $dt_fabricacao, $dt_sinalizacao_adicional, $dt_inicio_processamento,
         $id_tecnico_instalacao_str, $num_certificado
     );

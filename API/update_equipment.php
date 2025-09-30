@@ -60,7 +60,7 @@ try {
     $km = !empty($data['km']) ? $data['km'] : null;
     $sentido = !empty($data['sentido']) ? $data['sentido'] : null;
     $num_instrumento = !empty($data['num_instrumento']) ? $data['num_instrumento'] : null;
-    $dt_instalacao = !empty($data['dt_instalacao']) ? $data['dt_instalacao'] : null;
+    $dt_instalacao = !empty($data['data_instalacao']) ? $data['data_instalacao'] : null;
     $dt_estudoTec = !empty($data['dt_estudoTec']) ? $data['dt_estudoTec'] : null;
     $id_provedor = !empty($data['id_provedor']) ? (int)$data['id_provedor'] : null;
 
