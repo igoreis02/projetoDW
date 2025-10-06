@@ -56,8 +56,31 @@ try {
             }
         }
 
-        // --- NOVA LÓGICA PARA CRIAR OCORRÊNCIA DE PROCESSAMENTO ---
+        
+
+        // --- CRIA OCORRÊNCIA DE PROCESSAMENTO e atualiza data instalação equipamento ---
         if ($is_final) {
+
+            if (!empty($data_infra)) {
+                // Primeiro, pega o id_equipamento a partir da manutenção
+                $stmt_get_equip_id = $conn->prepare("SELECT id_equipamento FROM manutencoes WHERE id_manutencao = ?");
+                $stmt_get_equip_id->bind_param("i", $id_manutencao);
+                $stmt_get_equip_id->execute();
+                $result_equip = $stmt_get_equip_id->get_result();
+                if ($equip_row = $result_equip->fetch_assoc()) {
+                    $id_equipamento_instalado = $equip_row['id_equipamento'];
+
+                    // Agora, atualiza a tabela de equipamentos
+                    $sql_update_equip = "UPDATE equipamentos SET data_instalacao = ? WHERE id_equipamento = ?";
+                    $stmt_update_equip = $conn->prepare($sql_update_equip);
+                    $stmt_update_equip->bind_param("si", $data_infra, $id_equipamento_instalado);
+                    if (!$stmt_update_equip->execute()) {
+                        throw new Exception('Erro ao atualizar a data de instalação do equipamento: ' . $stmt_update_equip->error);
+                    }
+                    $stmt_update_equip->close();
+                }
+                $stmt_get_equip_id->close();
+            }
             $tipo_equip = $data['tipo_equip'] ?? '';
             $passos_necessarios = ['laco', 'base', 'infra', 'energia'];
             if (strpos($tipo_equip, 'CCO') !== false) {

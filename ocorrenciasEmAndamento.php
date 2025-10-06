@@ -14,8 +14,8 @@ if (!isset($_SESSION['user_id'])) {
     <link rel="stylesheet" href="css/ocorrenciasEmAndamento.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="icon" type="image/png" href="imagens/favicon.png">
-    <title>Ocorrências em Andamento</title>
-   
+    <title>Serviços em Andamento</title>
+
 </head>
 
 <body>
@@ -23,7 +23,7 @@ if (!isset($_SESSION['user_id'])) {
     <div class="card">
         <div class="header-container">
             <a href="menu.php" class="back-btn-icon" title="Voltar ao Menu">&larr;</a>
-            <h2>Ocorrências em Andamento</h2>
+            <h2>Serviços em Andamento</h2>
             <a href="menu.php" class="close-btn" title="Voltar ao Menu">&times;</a>
         </div>
 
