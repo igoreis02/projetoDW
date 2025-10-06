@@ -25,6 +25,29 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const btnVoltarAoTopo = document.getElementById("btnVoltarAoTopo");
 
+     const camposInstalacao = document.getElementById('camposInstalacao');
+    const camposCorretiva = document.getElementById('camposCorretiva');
+    const footerInstalacao = document.getElementById('footerInstalacao');
+    const footerCorretiva = document.getElementById('footerCorretiva');
+    const concluirModalTitle = document.getElementById('concluirModalTitle');
+
+    const dataBaseInput = document.getElementById('dataBase');
+    const dataLacoInput = document.getElementById('dataLaco');
+    const dataInfraInput = document.getElementById('dataInfra');
+    const dataEnergiaInput = document.getElementById('dataEnergia');
+    const dataProvedorInput = document.getElementById('dataProvedor');
+
+    const btnSalvarProgresso = document.getElementById('btnSalvarProgresso');
+    const btnConcluirInstalacao = document.getElementById('btnConcluirInstalacao');
+    
+    const partialConfirmModal = document.getElementById('partialConfirmModal');
+    const fullConfirmModal = document.getElementById('fullConfirmModal');
+    const listaItensConcluidos = document.getElementById('listaItensConcluidos');
+    const btnConfirmarParcial = document.getElementById('btnConfirmarParcial');
+    const btnCancelarParcial = document.getElementById('btnCancelarParcial');
+    const btnConfirmarTotal = document.getElementById('btnConfirmarTotal');
+    const btnCancelarTotal = document.getElementById('btnCancelarTotal');
+
 
 
     // --- VARIÁVEIS DE ESTADO ---
@@ -285,56 +308,35 @@ document.addEventListener('DOMContentLoaded', function () {
         `;
         } else if (item.tipo_manutencao === 'instalação') {
             cardHeader = `${item.nome_equip} - ${item.referencia_equip}`;
-            
             const tipoEquip = item.tipo_equip || 'Não especificado';
+            detailsHTML += `<div class="detail-item"><strong>Tipo de Equip.:</strong> <span>${tipoEquip}</span></div>`;
 
-            // 1. Adiciona a exibição do tipo de equipamento
-            detailsHTML += `<div class="detail-item"><strong>Tipo de Equip.</strong> <span>${tipoEquip}</span></div>`;
-
-            // 2. Lógica para exibir a Quantidade de Faixas
+            // Lógica para Qtd. Faixas
             const typesThatAlwaysShowFaixas = ['LAP', 'MONITOR DE SEMÁFORO', 'LOMBADA ELETRÔNICA', 'RADAR FIXO'];
-            const alwaysShow = typesThatAlwaysShowFaixas.some(type => tipoEquip.includes(type));
-            const showForEducativo = tipoEquip.includes('EDUCATIVO') && item.qtd_faixa;
-
-            if (alwaysShow || showForEducativo) {
-                detailsHTML += `<div class="detail-item"><strong>Qtd. Faixa(s)</strong> <span>${item.qtd_faixa}</span></div>`;
+            if (typesThatAlwaysShowFaixas.some(t => tipoEquip.includes(t)) || (tipoEquip.includes('EDUCATIVO') && item.qtd_faixa)) {
+                detailsHTML += `<div class="detail-item"><strong>Qtd. Faixa(s):</strong> <span>${item.qtd_faixa}</span></div>`;
             }
 
-            // 3. Lógica para definir os passos de instalação a mostrar
-            let statusMap = {
-                inst_laco: 'Laço', inst_base: 'Base', inst_infra: 'Infra', inst_energia: 'Energia'
-            };
+            // Lógica para Passos de Instalação
+            let statusMap = { inst_laco: 'Laço', inst_base: 'Base', inst_infra: 'Infra', inst_energia: 'Energia', inst_prov: 'Provedor' }; // Provedor adicionado
+            if (tipoEquip.includes('CCO')) { delete statusMap.inst_laco; delete statusMap.inst_base; } 
+            else if (tipoEquip.includes('DOME') || tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP')) { delete statusMap.inst_laco; }
             
-            if (tipoEquip.includes('CCO')) {
-                delete statusMap.inst_laco;
-                delete statusMap.inst_base;
-            } else if (tipoEquip.includes('DOME') || tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP')) {
-                delete statusMap.inst_laco;
-            }
+            const dateMap = { inst_laco: 'dt_laco', inst_base: 'dt_base', inst_infra: 'data_infra', inst_energia: 'dt_energia', inst_prov: 'data_provedor' }; // Provedor adicionado
             
-            const dateMap = {
-                inst_laco: 'dt_laco', inst_base: 'dt_base', inst_infra: 'data_infra', inst_energia: 'dt_energia'
-            };
-
-            // Gera o HTML para os passos de instalação
-            const stepsHTML = Object.entries(statusMap).map(([key, label]) => {
-                const status = item[key] == 1 ?
-                    `<span class="status-value instalado">Instalado ${formatDate(item[dateMap[key]])}</span>` :
-                    `<span class="status-value aguardando">Aguardando instalação</span>`;
-                return `<div class="detail-item"><strong>${label}</strong> <span>${status}</span></div>`;
+            detailsHTML += Object.entries(statusMap).map(([key, label]) => {
+                const status = item[key] == 1 ? `<span class="status-value instalado">Instalado ${formatDate(item[dateMap[key]])}</span>` : `<span class="status-value aguardando">Aguardando</span>`;
+                return `<div class="detail-item"><strong>${label}:</strong> <span>${status}</span></div>`;
             }).join('');
             
-            detailsHTML += stepsHTML;
-
-            // Adiciona os detalhes que são específicos da tela "Em Andamento"
+            // Detalhes restantes
             detailsHTML += `
-                <div class="detail-item"><strong>Local</strong> <span>${item.local_completo || ''}</span></div>
-                <div class="detail-item"><strong>Início Ocorrência</strong> ${inicioOcorrenciaHTML}</div>
-                <div class="detail-item"><strong>Técnico(s)</strong> <span>${item.tecnicos_nomes || 'Não atribuído'}</span></div>
-                <div class="detail-item"><strong>Veículo(s)</strong> <span>${item.veiculos_nomes || 'Nenhum'}</span></div>
-                <div class="detail-item"><strong>Tempo Instalação</strong> <span>${tempoReparo}</span></div>
-                <div class="detail-item"><strong>Status</strong> ${statusHTML}</div>
-            `;
+                <div class="detail-item"><strong>Local:</strong> <span>${item.local_completo || ''}</span></div>
+                <div class="detail-item"><strong>Início Ocorrência:</strong> ${inicioOcorrenciaHTML}</div>
+                <div class="detail-item"><strong>Técnico(s):</strong> <span>${item.tecnicos_nomes || 'Não atribuído'}</span></div>
+                <div class="detail-item"><strong>Veículo(s):</strong> <span>${item.veiculos_nomes || 'Nenhum'}</span></div>
+                <div class="detail-item"><strong>Tempo Instalação:</strong> <span>${tempoReparo}</span></div>
+                <div class="detail-item"><strong>Status:</strong> ${statusHTML}</div>`;
         } else {
             // Lógica para outros tipos de manutenção
             cardHeader = `${item.nome_equip} - ${item.referencia_equip}`;
@@ -695,6 +697,51 @@ document.addEventListener('DOMContentLoaded', function () {
         const item = findOcorrenciaById(id);
         if (!item) return;
 
+        const isInstalacao = item.tipo_manutencao === 'instalação';
+
+        // Configura o modal com base no tipo
+        concluirModalTitle.textContent = isInstalacao ? 'Registrar Progresso da Instalação' : 'Concluir Reparo';
+        camposInstalacao.classList.toggle('hidden', !isInstalacao);
+        camposCorretiva.classList.toggle('hidden', isInstalacao);
+        footerInstalacao.classList.toggle('hidden', !isInstalacao);
+        footerCorretiva.classList.toggle('hidden', isInstalacao);
+        
+        document.getElementById('concluirModalEquipName').textContent = `${item.nome_equip} - ${item.referencia_equip}`;
+        
+        if (isInstalacao) {
+            // Lógica para preencher e mostrar/esconder campos de instalação
+            const tipoEquip = item.tipo_equip || '';
+            const checklist = {
+                laco: dataLacoInput.closest('.item-checklist'),
+                base: dataBaseInput.closest('.item-checklist'),
+                infra: dataInfraInput.closest('.item-checklist'),
+                energia: dataEnergiaInput.closest('.item-checklist'),
+                provedor: dataProvedorInput.closest('.item-checklist'),
+            };
+
+            Object.values(checklist).forEach(el => el.classList.remove('hidden')); // Reseta a visibilidade
+
+            if (tipoEquip.includes('CCO')) { checklist.laco.classList.add('hidden'); checklist.base.classList.add('hidden'); }
+            else if (tipoEquip.includes('DOME') || tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP')) { checklist.laco.classList.add('hidden'); }
+
+            dataLacoInput.value = item.dt_laco || '';
+            dataBaseInput.value = item.dt_base || '';
+            dataInfraInput.value = item.data_infra || '';
+            dataEnergiaInput.value = item.dt_energia || '';
+            dataProvedorInput.value = item.data_provedor || '';
+        } else {
+            // Lógica para preencher campos de corretiva
+            document.getElementById('concluirInicioReparo').value = formatDateForInput(item.inicio_periodo_reparo);
+            document.getElementById('concluirFimReparo').value = formatDateForInput(item.fim_periodo_reparo);
+            materiaisUtilizadosInput.value = '';
+            nenhumMaterialCheckbox.checked = false;
+            materiaisUtilizadosInput.disabled = false;
+            lacreNaoBtn.click();
+            document.getElementById('numeroLacre').value = '';
+            document.getElementById('infoRompimento').value = '';
+
+        }
+
         document.getElementById('concluirModalEquipName').textContent = `${item.nome_equip} - ${item.referencia_equip}`;
         document.getElementById('concluirOcorrenciaText').textContent = item.ocorrencia_reparo;
         document.getElementById('reparoFinalizado').value = '';
@@ -921,6 +968,83 @@ document.addEventListener('DOMContentLoaded', function () {
         // Manda a página de volta para o topo de forma suave
         window.scrollTo({ top: 0, behavior: 'smooth' });
     });
+
+      btnSalvarProgresso.addEventListener('click', () => {
+        executarSalvamentoInstalacao(false); // false = não é uma conclusão
+    });
+
+    // Ação para o botão "Concluir Instalação"
+    btnConcluirInstalacao.addEventListener('click', () => {
+        const item = findOcorrenciaById(currentEditingId);
+        const tipoEquip = item.tipo_equip || '';
+        
+        let passosNecessarios = ['laco', 'base', 'infra', 'energia', 'provedor'];
+        if (tipoEquip.includes('CCO')) { passosNecessarios = ['infra', 'energia', 'provedor']; }
+        else if (tipoEquip.includes('DOME') || tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP')) { passosNecessarios = ['base', 'infra', 'energia', 'provedor']; }
+
+        const allFilled = passosNecessarios.every(passo => document.getElementById(`data${passo.charAt(0).toUpperCase() + passo.slice(1)}`).value);
+
+        if (allFilled) {
+            fullConfirmModal.classList.add('is-active');
+        } else {
+            const preenchidos = passosNecessarios
+                .filter(passo => document.getElementById(`data${passo.charAt(0).toUpperCase() + passo.slice(1)}`).value)
+                .map(passo => passo.charAt(0).toUpperCase() + passo.slice(1));
+            
+            if (preenchidos.length === 0) {
+                alert('Preencha pelo menos uma data para concluir parcialmente.');
+                return;
+            }
+            listaItensConcluidos.innerHTML = preenchidos.map(item => `<li>${item}</li>`).join('');
+            partialConfirmModal.classList.add('is-active');
+        }
+    });
+
+    // Ações para os modais de confirmação
+    btnConfirmarTotal.addEventListener('click', () => {
+        fullConfirmModal.classList.remove('is-active');
+        executarSalvamentoInstalacao(true); // true = é uma conclusão
+    });
+    btnCancelarTotal.addEventListener('click', () => fullConfirmModal.classList.remove('is-active'));
+    btnConfirmarParcial.addEventListener('click', () => {
+        partialConfirmModal.classList.remove('is-active');
+        executarSalvamentoInstalacao(true); // true = é uma conclusão
+    });
+    btnCancelarParcial.addEventListener('click', () => partialConfirmModal.classList.remove('is-active'));
+
+    // Nova função para salvar instalação (baseada na de manutencao_tecnico.js)
+    async function executarSalvamentoInstalacao(isFinal) {
+        // Lógica de status
+        let novoStatus = isFinal ? 'concluido' : 'em andamento';
+        
+        const payload = {
+            action: 'concluir_instalacao', // Nova ação para o backend
+            id_manutencao: currentEditingId,
+            is_final: isFinal,
+            status_reparo: novoStatus,
+            dt_base: dataBaseInput.value || null,
+            dt_laco: dataLacoInput.value || null,
+            data_infra: dataInfraInput.value || null,
+            dt_energia: dataEnergiaInput.value || null,
+            data_provedor: dataProvedorInput.value || null
+        };
+        
+        try {
+            const response = await fetch('API/update_ocorrencia.php', { // Usando o endpoint correto
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            if (!data.success) throw new Error(data.message);
+
+            alert('Operação realizada com sucesso!');
+            closeModal('concluirModal');
+            fetchData();
+        } catch (error) {
+            alert(`Erro: ${error.message}`);
+        }
+    }
 
     // --- INICIALIZAÇÃO ---
     checkAndShowSemaforicaButton();

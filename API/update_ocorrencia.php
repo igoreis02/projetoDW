@@ -582,7 +582,63 @@ try {
         }
 
         echo json_encode(['success' => true, 'message' => 'Ocorrência atribuída com sucesso.']);
-    } else {
+        
+    }elseif ($action === 'concluir_instalacao') {
+        $id_manutencao = $id; // $id já contém o id_manutencao
+        $is_final = $input['is_final'] ?? false;
+        $status_reparo = $input['status_reparo'] ?? 'em andamento';
+
+        // Dados da instalação
+        $dt_base = $input['dt_base'] ?? null;
+        $dt_laco = $input['dt_laco'] ?? null;
+        $data_infra = $input['data_infra'] ?? null;
+        $dt_energia = $input['dt_energia'] ?? null;
+        $data_provedor = $input['data_provedor'] ?? null;
+
+        // Monta a query de UPDATE
+        $updates = ["status_reparo = ?"];
+        $params = [$status_reparo];
+        $types = "s";
+
+        if ($dt_base !== null) { $updates[] = "inst_base = ?"; $updates[] = "dt_base = ?"; $params[] = empty($dt_base) ? 0 : 1; $params[] = $dt_base; $types .= "is"; }
+        if ($dt_laco !== null) { $updates[] = "inst_laco = ?"; $updates[] = "dt_laco = ?"; $params[] = empty($dt_laco) ? 0 : 1; $params[] = $dt_laco; $types .= "is"; }
+        if ($data_infra !== null) { $updates[] = "inst_infra = ?"; $updates[] = "data_infra = ?"; $params[] = empty($data_infra) ? 0 : 1; $params[] = $data_infra; $types .= "is"; }
+        if ($dt_energia !== null) { $updates[] = "inst_energia = ?"; $updates[] = "dt_energia = ?"; $params[] = empty($dt_energia) ? 0 : 1; $params[] = $dt_energia; $types .= "is"; }
+        if ($data_provedor !== null) { $updates[] = "inst_prov = ?"; $updates[] = "data_provedor = ?"; $params[] = empty($data_provedor) ? 0 : 1; $params[] = $data_provedor; $types .= "is"; }
+
+        // Se a conclusão for final e a data de infraestrutura estiver presente, atualiza o equipamento
+        if ($is_final && !empty($data_infra)) {
+            $stmt_get_equip = $conn->prepare("SELECT id_equipamento FROM manutencoes WHERE id_manutencao = ?");
+            $stmt_get_equip->bind_param("i", $id_manutencao);
+            $stmt_get_equip->execute();
+            $equip_info = $stmt_get_equip->get_result()->fetch_assoc();
+            $stmt_get_equip->close();
+
+            if ($equip_info) {
+                $id_equipamento = $equip_info['id_equipamento'];
+                $stmt_update_equip = $conn->prepare("UPDATE equipamentos SET data_instalacao = ? WHERE id_equipamento = ?");
+                $stmt_update_equip->bind_param("si", $data_infra, $id_equipamento);
+                $stmt_update_equip->execute();
+                $stmt_update_equip->close();
+            }
+        }
+
+        $sql = "UPDATE manutencoes SET " . implode(", ", $updates) . " WHERE id_manutencao = ?";
+        $params[] = $id_manutencao;
+        $types .= "i";
+
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param($types, ...$params);
+
+        if (!$stmt->execute()) {
+            throw new Exception('Falha ao atualizar a instalação.');
+        }
+        $stmt->close();
+        
+        echo json_encode(['success' => true, 'message' => 'Instalação atualizada com sucesso.']);
+
+    }
+     else {
         throw new Exception('Ação desconhecida.');
     }
 
