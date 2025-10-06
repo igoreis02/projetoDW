@@ -36,7 +36,7 @@ $user_email = $_SESSION['user_email'];
 
         <a href="logout.php" class="voltar-btn">Sair</a>
     </div>
-    
+
     <div class="footer">
         <p>© 2025 APsystem. Todos os direitos reservados.</p>
     </div>
@@ -71,15 +71,15 @@ $user_email = $_SESSION['user_email'];
                         <button type="button" id="botaoNaoRompimento" class="botao-toggle ativo">Não</button>
                     </div>
                 </div>
-                 <div id="camposRompimentoLacre" class="oculto">
+                <div id="camposRompimentoLacre" class="oculto">
                     <label for="selectLacreRompido">Qual lacre foi rompido?</label>
                     <select id="selectLacreRompido">
                         <option value="">Selecione um lacre...</option>
                     </select>
-                    
+
                     <label for="inputNumeroLacre">Número do lacre:</label>
                     <input type="text" id="inputNumeroLacre" placeholder="Selecione um lacre acima" readonly>
-                    
+
                     <label for="inputDataRompimento">Data do rompimento:</label>
                     <input type="date" id="inputDataRompimento">
                 </div>
@@ -110,49 +110,66 @@ $user_email = $_SESSION['user_email'];
             </div>
 
             <div class="container-botao-concluir">
+
+                <button id="btnSalvarProgresso" class="botao-salvar-progresso oculto">
+                    Salvar Progresso
+                    <span id="salvarProgressoSpinner" class="spinner-carregamento oculto"></span>
+                </button>
+
                 <button id="confirmConcluirReparoBtn" class="botao-concluir">
-                    Confirmar
+                    Confirmar Instalação
                     <span id="concluirReparoSpinner" class="spinner-carregamento oculto"></span>
                 </button>
-            </div>
-            <p id="concluirReparoMessage" class="mensagem oculto"></p>
-        </div>
-    </div>
-    
-    <div id="partialConfirmModal" class="modal">
-        <div class="conteudo-modal-pequeno">
-            <h3>Confirmar Instalação Parcial</h3>
-            <p>Você está concluindo a instalação de:</p>
-            <ul id="listaItensConcluidos"></ul>
-            <p>As outras etapas permanecerão pendentes e esta OS voltará para a base. Deseja continuar?</p>
-            <div class="botoes-confirmacao-parcial">
-                <button id="btnConfirmarParcial" class="botao-confirmar">Sim, Confirmar</button>
-                <button id="btnCancelarParcial" class="botao-cancelar">Cancelar</button>
+                <p id="concluirReparoMessage" class="mensagem oculto"></p>
             </div>
         </div>
-    </div>
 
-    <div id="devolucaoModal" class="modal">
-        <div class="conteudo-modal">
-            <span class="botao-fechar" onclick="fecharModalDevolucao()">×</span>
-            <h3>Devolução de Manutenção</h3>
-            <p class="modal-titulo-equipamento">
-                <span id="nomeEquipamentoDevolucaoModal"></span> - <span id="referenciaEquipamentoDevolucaoModal"></span>
-            </p>
-            <p class="modal-ocorrencia">Ocorrência: <span id="ocorrenciaReparoDevolucaoModal"></span></p>
-            <div class="form-group">
-                <label for="textareaDevolucao">Motivo da Devolução:</label>
-                <textarea id="textareaDevolucao" rows="4" placeholder="Descreva o motivo da devolução"></textarea>
+        <div id="partialConfirmModal" class="modal">
+            <div class="conteudo-modal-pequeno">
+                <h3>Confirmar Instalação Parcial</h3>
+                <p>Você está concluindo a instalação de:</p>
+                <ul id="listaItensConcluidos"></ul>
+                <p>As outras etapas permanecerão pendentes e esta OS voltará para a base. Deseja continuar?</p>
+                <div class="botoes-confirmacao-parcial">
+                    <button id="btnConfirmarParcial" class="botao-confirmar">Sim, Confirmar</button>
+                    <button id="btnCancelarParcial" class="botao-cancelar">Cancelar</button>
+                </div>
             </div>
-            <div id="mensagemDevolucao" class="mensagem oculto"></div>
-            <button id="botaoConfirmarDevolucao" class="botao-confirmar">Confirmar Devolução</button>
-            <div id="spinnerDevolucao" class="spinner oculto"></div>
         </div>
-    </div>
 
-    <script>
-        const userId = <?php echo json_encode($user_id); ?>;
-    </script>
-    <script src="js/manutencao_tecnico.js" defer></script>
+        <div id="devolucaoModal" class="modal">
+            <div class="conteudo-modal">
+                <span class="botao-fechar" onclick="fecharModalDevolucao()">×</span>
+                <h3>Devolução de Manutenção</h3>
+                <p class="modal-titulo-equipamento">
+                    <span id="nomeEquipamentoDevolucaoModal"></span> - <span id="referenciaEquipamentoDevolucaoModal"></span>
+                </p>
+                <p class="modal-ocorrencia">Ocorrência: <span id="ocorrenciaReparoDevolucaoModal"></span></p>
+                <div class="form-group">
+                    <label for="textareaDevolucao">Motivo da Devolução:</label>
+                    <textarea id="textareaDevolucao" rows="4" placeholder="Descreva o motivo da devolução"></textarea>
+                </div>
+                <div id="mensagemDevolucao" class="mensagem oculto"></div>
+                <button id="botaoConfirmarDevolucao" class="botao-confirmar">Confirmar Devolução</button>
+                <div id="spinnerDevolucao" class="spinner oculto"></div>
+            </div>
+        </div>
+
+        <div id="fullConfirmModal" class="modal">
+            <div class="conteudo-modal-pequeno">
+                <h3>Confirmar Conclusão Total</h3>
+                <p>Todas as etapas necessárias foram preenchidas. Deseja concluir totalmente esta instalação?</p>
+                <div class="botoes-confirmacao-parcial">
+                    <button id="btnConfirmarTotal" class="botao-confirmar">Sim, Concluir</button>
+                    <button id="btnCancelarTotal" class="botao-cancelar">Cancelar</button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const userId = <?php echo json_encode($user_id); ?>;
+        </script>
+        <script src="js/manutencao_tecnico.js" defer></script>
 </body>
+
 </html>

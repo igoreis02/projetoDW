@@ -561,16 +561,28 @@ document.addEventListener('DOMContentLoaded', function () {
             // 1. Adicionamos a exibição do tipo de equipamento no card
             detailsHTML += `<div class="detail-item"><strong>Tipo:</strong> <span>${tipoEquip}</span></div>`;
 
-            // 2. Lógica para definir quais passos de instalação mostrar
+            const typesThatAlwaysShowFaixas = ['LAP', 'MONITOR DE SEMÁFORO', 'LOMBADA ELETRÔNICA', 'RADAR FIXO'];
+
+            // Verifica se o tipo do equipamento está na lista de exibição obrigatória
+            const alwaysShow = typesThatAlwaysShowFaixas.some(type => tipoEquip.includes(type));
+
+            // Verifica a condição especial para o tipo "EDUCATIVO"
+            const showForEducativo = tipoEquip.includes('EDUCATIVO') && firstOcorrencia.qtd_faixa;
+
+            // Se uma das condições for verdadeira, mostra a quantidade de faixas
+            if (alwaysShow || showForEducativo) {
+                detailsHTML += `<div class="detail-item"><strong>Qtd. Faixa(s):</strong> <span>${firstOcorrencia.qtd_faixa}</span></div>`;
+            }
+
+            // Lógica para definir quais passos de instalação mostrar (continua a mesma)
             let statusMap = {
                 inst_laco: 'Laço',
                 inst_base: 'Base',
                 inst_infra: 'Infra',
                 inst_energia: 'Energia'
-                // O Provedor foi removido, como solicitado.
             };
 
-            // 3. Aplicamos as regras para remover passos conforme o tipo
+            // Aplicamos as regras para remover passos conforme o tipo (continua a mesma)
             if (tipoEquip.includes('CCO')) {
                 delete statusMap.inst_laco;
                 delete statusMap.inst_base;
@@ -578,7 +590,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 delete statusMap.inst_laco;
             }
 
-            // O código abaixo para gerar o HTML continua o mesmo, mas agora usa o statusMap modificado
             const dateMap = {
                 inst_laco: 'dt_laco',
                 inst_base: 'dt_base',
@@ -592,6 +603,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     `<span class="status-value aguardando">Aguardando instalação</span>`;
                 return `<div class="detail-item"><strong>${label}</strong> <span>${status}</span></div>`;
             }).join('');
+
         } else if (item.tipo_manutencao === 'semaforica') {
             const dataInicioFormatada = new Date(firstOcorrencia.inicio_reparo).toLocaleDateString('pt-BR');
             const diasEmAberto = calculateDaysOpen(firstOcorrencia.inicio_reparo);
@@ -647,8 +659,13 @@ document.addEventListener('DOMContentLoaded', function () {
             ${atribuidoPorHTML}`;
         }
 
+        const dataInicioFormatada = new Date(firstOcorrencia.inicio_reparo).toLocaleDateString('pt-BR');
+        const diasEmAberto = calculateDaysOpen(firstOcorrencia.inicio_reparo);
+
+        // Adiciona as novas informações antes do Status
         const commonDetails = `
-        
+        <div class="detail-item"><strong>Data Ocorrência:</strong> <span>${dataInicioFormatada} ${diasEmAberto}</span></div>
+        ${atribuidoPorHTML}
         <div class="detail-item"><strong>Status</strong> ${statusHTML}</div>
         <div class="detail-item"><strong>Local</strong> <span>${firstOcorrencia.local_completo || 'N/A'}</span></div>
         ${firstOcorrencia.motivo_devolucao ? `<div class="detail-item"><strong>Devolvida</strong> <span class="status-tag status-pendente">${firstOcorrencia.motivo_devolucao}</span></div>` : ''}

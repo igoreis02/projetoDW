@@ -285,40 +285,67 @@ document.addEventListener('DOMContentLoaded', function () {
         `;
         } else if (item.tipo_manutencao === 'instalação') {
             cardHeader = `${item.nome_equip} - ${item.referencia_equip}`;
-            // ... Lógica original para Instalação ...
-            const tipoOcorrencia = item.tipo_manutencao.charAt(0).toUpperCase() + item.tipo_manutencao.slice(1);
-            const baseStatus = item.inst_base == 1 ? `<span class="status-value instalado">Instalado ${formatDate(item.dt_base)}</span>` : `<span class="status-value aguardando">Aguardando instalação</span>`;
-            const infraStatus = item.inst_infra == 1 ? `<span class="status-value instalado">Instalado ${formatDate(item.data_infra)}</span>` : `<span class="status-value aguardando">Aguardando instalação</span>`;
-            const energiaStatus = item.inst_energia == 1 ? `<span class="status-value instalado">Instalado ${formatDate(item.dt_energia)}</span>` : `<span class="status-value aguardando">Aguardando instalação</span>`;
-            let lacoHTML = '';
-            if (item.tipo_equip !== 'DOME' && item.tipo_equip !== 'CCO') {
-                const lacoStatus = item.inst_laco == 1 ? `<span class="status-value instalado">Instalado ${formatDate(item.dt_laco)}</span>` : `<span class="status-value aguardando">Aguardando instalação</span>`;
-                lacoHTML = `<div class="detail-item"><strong>Laço</strong> <span>${lacoStatus}</span></div>`;
+            
+            const tipoEquip = item.tipo_equip || 'Não especificado';
+
+            // 1. Adiciona a exibição do tipo de equipamento
+            detailsHTML += `<div class="detail-item"><strong>Tipo de Equip.</strong> <span>${tipoEquip}</span></div>`;
+
+            // 2. Lógica para exibir a Quantidade de Faixas
+            const typesThatAlwaysShowFaixas = ['LAP', 'MONITOR DE SEMÁFORO', 'LOMBADA ELETRÔNICA', 'RADAR FIXO'];
+            const alwaysShow = typesThatAlwaysShowFaixas.some(type => tipoEquip.includes(type));
+            const showForEducativo = tipoEquip.includes('EDUCATIVO') && item.qtd_faixa;
+
+            if (alwaysShow || showForEducativo) {
+                detailsHTML += `<div class="detail-item"><strong>Qtd. Faixa(s)</strong> <span>${item.qtd_faixa}</span></div>`;
             }
-            detailsHTML = `
-            <div class="detail-item stacked"><strong>Tipo</strong> <span>${tipoOcorrencia}</span></div>
-            ${lacoHTML}
-            <div class="detail-item"><strong>Base</strong> <span>${baseStatus}</span></div>
-            <div class="detail-item"><strong>Infra</strong> <span>${infraStatus}</span></div>
-            <div class="detail-item"><strong>Energia</strong> <span>${energiaStatus}</span></div>
-            <div class="detail-item"><strong>Local</strong> <span>${item.local_completo || ''}</span></div>
-            <div class="detail-item"><strong>Início Ocorrência</strong> <span>${new Date(item.inicio_reparo).toLocaleString('pt-BR')}</span></div>
-            <div class="detail-item"><strong>Técnico(s)</strong> <span>${item.tecnicos_nomes || 'Não atribuído'}</span></div>
-            <div class="detail-item"><strong>Veículo(s)</strong> <span>${item.veiculos_nomes || 'Nenhum'}</span></div>
-            <div class="detail-item"><strong>Tempo Instalação</strong> <span>${tempoReparo}</span></div>
-            <div class="detail-item"><strong>Status</strong> ${statusHTML}</div>
-        `;
+
+            // 3. Lógica para definir os passos de instalação a mostrar
+            let statusMap = {
+                inst_laco: 'Laço', inst_base: 'Base', inst_infra: 'Infra', inst_energia: 'Energia'
+            };
+            
+            if (tipoEquip.includes('CCO')) {
+                delete statusMap.inst_laco;
+                delete statusMap.inst_base;
+            } else if (tipoEquip.includes('DOME') || tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP')) {
+                delete statusMap.inst_laco;
+            }
+            
+            const dateMap = {
+                inst_laco: 'dt_laco', inst_base: 'dt_base', inst_infra: 'data_infra', inst_energia: 'dt_energia'
+            };
+
+            // Gera o HTML para os passos de instalação
+            const stepsHTML = Object.entries(statusMap).map(([key, label]) => {
+                const status = item[key] == 1 ?
+                    `<span class="status-value instalado">Instalado ${formatDate(item[dateMap[key]])}</span>` :
+                    `<span class="status-value aguardando">Aguardando instalação</span>`;
+                return `<div class="detail-item"><strong>${label}</strong> <span>${status}</span></div>`;
+            }).join('');
+            
+            detailsHTML += stepsHTML;
+
+            // Adiciona os detalhes que são específicos da tela "Em Andamento"
+            detailsHTML += `
+                <div class="detail-item"><strong>Local</strong> <span>${item.local_completo || ''}</span></div>
+                <div class="detail-item"><strong>Início Ocorrência</strong> ${inicioOcorrenciaHTML}</div>
+                <div class="detail-item"><strong>Técnico(s)</strong> <span>${item.tecnicos_nomes || 'Não atribuído'}</span></div>
+                <div class="detail-item"><strong>Veículo(s)</strong> <span>${item.veiculos_nomes || 'Nenhum'}</span></div>
+                <div class="detail-item"><strong>Tempo Instalação</strong> <span>${tempoReparo}</span></div>
+                <div class="detail-item"><strong>Status</strong> ${statusHTML}</div>
+            `;
         } else {
             // Lógica para outros tipos de manutenção
             cardHeader = `${item.nome_equip} - ${item.referencia_equip}`;
             detailsHTML = `
             <div class="detail-item"><strong>Ocorrência:</strong> <span class="ocorrencia-tag status-em-andamento">${item.ocorrencia_reparo.toUpperCase() || ''}</span></div>
-            <div class="detail-item"><strong>Técnico(s):</strong> <span>${item.tecnicos_nomes || 'Não atribuído'}</span></div>
-            <div class="detail-item"><strong>Veículo(s):</strong> <span>${item.veiculos_nomes || 'Nenhum'}</span></div>
-            <div class="detail-item"><strong>Início Ocorrência:</strong> ${inicioOcorrenciaHTML}</div>
-            <div class="detail-item"><strong>Status:</strong> ${statusHTML}</div>
-            <div class="detail-item"><strong>Local:</strong> <span>${item.local_completo || ''}</span></div>
-            <div class="detail-item"><strong>Tempo de Reparo:</strong> <span>${tempoReparo}</span></div>
+            <div class="detail-item"><strong>Técnico(s)</strong> <span>${item.tecnicos_nomes || 'Não atribuído'}</span></div>
+            <div class="detail-item"><strong>Veículo(s)</strong> <span>${item.veiculos_nomes || 'Nenhum'}</span></div>
+            <div class="detail-item"><strong>Início Ocorrência</strong> ${inicioOcorrenciaHTML}</div>
+            <div class="detail-item"><strong>Status</strong> ${statusHTML}</div>
+            <div class="detail-item"><strong>Local</strong> <span>${item.local_completo || ''}</span></div>
+            <div class="detail-item"><strong>Tempo de Reparo</strong> <span>${tempoReparo}</span></div>
         `;
         }
 

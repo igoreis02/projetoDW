@@ -66,13 +66,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const concluirReparoMessage = document.getElementById('concluirReparoMessage');
 
     // Campos de Reparo (Corretiva)
-     const camposReparo = document.getElementById('camposReparo');
+    const camposReparo = document.getElementById('camposReparo');
     const materiaisUtilizadosInput = document.getElementById('materiaisUtilizadosInput');
     const checkboxNenhumMaterial = document.getElementById('checkboxNenhumMaterial');
     const botaoSimRompimento = document.getElementById('botaoSimRompimento');
     const botaoNaoRompimento = document.getElementById('botaoNaoRompimento');
     const camposRompimentoLacre = document.getElementById('camposRompimentoLacre');
-    const selectLacreRompido = document.getElementById('selectLacreRompido'); 
+    const selectLacreRompido = document.getElementById('selectLacreRompido');
     const inputNumeroLacre = document.getElementById('inputNumeroLacre');
     const inputDataRompimento = document.getElementById('inputDataRompimento');
     const reparoRealizadoTextarea = document.getElementById('reparoRealizadoTextarea');
@@ -100,6 +100,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const listaItensConcluidos = document.getElementById('listaItensConcluidos');
     const btnConfirmarParcial = document.getElementById('btnConfirmarParcial');
     const btnCancelarParcial = document.getElementById('btnCancelarParcial');
+
+    const btnSalvarProgresso = document.getElementById('btnSalvarProgresso');
+    const salvarProgressoSpinner = document.getElementById('salvarProgressoSpinner');
+
+    const fullConfirmModal = document.getElementById('fullConfirmModal');
+    const btnConfirmarTotal = document.getElementById('btnConfirmarTotal');
+    const btnCancelarTotal = document.getElementById('btnCancelarTotal')
 
     // --- Variáveis de Estado ---
     let currentManutencao = null;
@@ -146,8 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const isInstalacao = manutencao.tipo_manutencao.toLowerCase() === 'instalação';
 
         modalConcluirTitulo.textContent = isInstalacao ? 'Registrar Progresso da Instalação' : 'Concluir Reparo';
-        confirmConcluirReparoBtn.querySelector('span').textContent = isInstalacao ? 'Confirmar Etapas' : 'Confirmar Reparo';
-
+        confirmConcluirReparoBtn.querySelector('span').textContent = isInstalacao ? 'Concluir Instalação' : 'Confirmar Reparo';
         confirmConcluirReparoBtn.classList.remove('oculto');
 
         camposReparo.classList.toggle('oculto', isInstalacao);
@@ -157,39 +163,59 @@ document.addEventListener('DOMContentLoaded', () => {
         referenciaEquipamentoModal.textContent = manutencao.referencia_equip;
 
         if (isInstalacao) {
-            // --- INÍCIO DA ALTERAÇÃO ---
-            if (lacoChecklistItem) {
-                const tipoEquip = manutencao.tipo_equip?.toUpperCase();
-                if (tipoEquip === 'DOME' || tipoEquip === 'CCO') {
-                    lacoChecklistItem.style.display = 'none';
-                } else {
-                    lacoChecklistItem.style.display = 'block';
-                }
-            }
-            // --- FIM DA ALTERAÇÃO ---
+            const tipoEquip = manutencao.tipo_equip || '';
 
-            dataBaseInput.value = manutencao.dt_base || '';
-            dataBaseInput.disabled = !!manutencao.dt_base;
+            const checklistItems = {
+                laco: document.querySelector('#dataLaco').closest('.item-checklist'),
+                base: document.querySelector('#dataBase').closest('.item-checklist'),
+                infra: document.querySelector('#dataInfra').closest('.item-checklist'),
+                energia: document.querySelector('#dataEnergia').closest('.item-checklist')
+            };
+
+            // Reseta a visibilidade e preenche os dados
+            Object.values(checklistItems).forEach(item => item.classList.remove('oculto'));
             dataLacoInput.value = manutencao.dt_laco || '';
-            dataLacoInput.disabled = !!manutencao.dt_laco;
+            dataBaseInput.value = manutencao.dt_base || '';
             dataInfraInput.value = manutencao.data_infra || '';
-            dataInfraInput.disabled = !!manutencao.data_infra;
             dataEnergiaInput.value = manutencao.dt_energia || '';
-            dataEnergiaInput.disabled = !!manutencao.dt_energia;
-        } else {
+
+            // Define os passos necessários
+            let passosNecessarios = ['base', 'infra', 'energia', 'laco'];
+            if (tipoEquip.includes('CCO')) {
+                passosNecessarios = ['infra', 'energia'];
+                checklistItems.laco.classList.add('oculto');
+                checklistItems.base.classList.add('oculto');
+            } else if (tipoEquip.includes('DOME') || tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP')) {
+                passosNecessarios = ['base', 'infra', 'energia'];
+                checklistItems.laco.classList.add('oculto');
+            }
+
+            // Verifica quantos passos faltam
+            let passosFaltantes = 0;
+            passosNecessarios.forEach(passo => {
+                const input = document.getElementById(`data${passo.charAt(0).toUpperCase() + passo.slice(1)}`);
+                if (!input.value) {
+                    passosFaltantes++;
+                }
+            });
+
+            // Mostra ou esconde o botão "Salvar Progresso"
+            btnSalvarProgresso.classList.toggle('oculto', passosFaltantes <= 1);
+
+        } else { // Lógica para Corretiva
+            btnSalvarProgresso.classList.add('oculto');
             ocorrenciaReparoModal.textContent = manutencao.ocorrencia_reparo || 'N/A';
             reparoRealizadoTextarea.value = '';
             materiaisUtilizadosInput.value = '';
             materiaisUtilizadosInput.disabled = false;
             checkboxNenhumMaterial.checked = false;
-            botaoNaoRompimento.classList.add('ativo');
-            botaoSimRompimento.classList.remove('ativo');
-            camposRompimentoLacre.classList.add('oculto');
+            botaoNaoRompimento.click();
         }
 
         hideMessage(concluirReparoMessage);
         concluirReparoModal.classList.add('ativo');
         toggleSpinner(confirmConcluirReparoBtn, concluirReparoSpinner, false);
+        toggleSpinner(btnSalvarProgresso, salvarProgressoSpinner, false);
     }
 
     function abrirModalDevolucao(manutencao) {
@@ -266,21 +292,47 @@ document.addEventListener('DOMContentLoaded', () => {
                 const isInstalacao = manutencao.tipo_manutencao.toLowerCase() === 'instalação';
 
                 if (isInstalacao) {
-                    const statusBase = manutencao.inst_base == 1 ? 'Instalado' : 'Aguardando Instalação';
-                    const statusLaco = manutencao.inst_laco == 1 ? 'Instalado' : 'Aguardando Instalação';
-                    const statusInfra = manutencao.inst_infra == 1 ? 'Instalado' : 'Aguardando Instalação';
-                    const statusEnergia = manutencao.inst_energia == 1 ? 'Instalado' : 'Aguardando Instalação';
+                    // 1. Obter o tipo do equipamento para as regras
+                    const tipoEquip = manutencao.tipo_equip || 'Não especificado';
+
+                    // 2. Criar o HTML para exibir o tipo do equipamento, acima da observação
+                    const htmlTipoEquip = `<div class="descricao-problema" style="margin-top: 5px;"><span class="rotulo-info">Tipo de Equipamento:</span> ${tipoEquip}</div>`;
+
+                    // 3. Lógica para definir os passos de instalação que serão mostrados
+                    let statusMap = {
+                        inst_laco: 'Laço',
+                        inst_base: 'Base',
+                        inst_infra: 'Infra',
+                        inst_energia: 'Energia'
+                    };
+
+                    if (tipoEquip.includes('CCO')) {
+                        delete statusMap.inst_laco;
+                        delete statusMap.inst_base;
+                    } else if (tipoEquip.includes('DOME') || tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP')) {
+                        delete statusMap.inst_laco;
+                    }
+
+                    // 4. Gerar o HTML apenas para os passos visíveis
+                    const stepsHTML = Object.keys(statusMap).map(key => {
+                        const statusKey = key; // ex: 'inst_laco'
+                        const label = statusMap[key]; // ex: 'Laço'
+                        const status = manutencao[statusKey] == 1 ? 'Instalado' : 'Aguardando Instalação';
+                        return `<p class="status-item"><span class="rotulo-info">${label}:</span> ${status}</p>`;
+                    }).join('');
+
+                    // 5. Montar o HTML da observação (se existir)
                     let htmlObservacao = '';
                     if (manutencao.observacao_instalacao) {
                         htmlObservacao = `<div class="descricao-problema" style="margin-top: 5px;"><span class="rotulo-info">Observação:</span> ${manutencao.observacao_instalacao}</div>`;
                     }
-                    htmlConteudoPrincipal = `<div class="instalacao-status-container">
-                                <p class="status-item"><span class="rotulo-info">Base:</span> ${statusBase}</p>
-                                <p class="status-item"><span class="rotulo-info">Laço:</span> ${statusLaco}</p>
-                                <p class="status-item"><span class="rotulo-info">Infra:</span> ${statusInfra}</p>
-                                <p class="status-item"><span class="rotulo-info">Energia:</span> ${statusEnergia}</p>
-                            </div>
-                            ${htmlObservacao}`;
+
+                    // 6. Juntar todas as partes para formar o conteúdo principal do card
+                    htmlConteudoPrincipal = `
+                        ${htmlTipoEquip}
+                        <div class="instalacao-status-container">${stepsHTML}</div>
+                        ${htmlObservacao}
+                    `;
                 } else {
                     htmlConteudoPrincipal = `<div class="descricao-problema"><span class="rotulo-info">Descrição do problema:</span> ${manutencao.ocorrencia_reparo || 'Não informada'}</div>`;
                 }
@@ -363,20 +415,85 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function salvarInstalacao() {
-        // --- INÍCIO DA ALTERAÇÃO ---
+    async function executarSalvamentoInstalacao(isFinal) {
+        let novoStatus;
+
+        if (!isFinal) {
+            // 1. Ação: "Salvar Progresso" -> A tarefa continua com o técnico.
+            novoStatus = 'em andamento';
+        } else {
+            // 2. Ação: "Concluir Instalação" -> O status depende se a conclusão é total ou parcial.
+            const tipoEquip = currentManutencao.tipo_equip || '';
+
+            // Determina os passos necessários para este tipo de equipamento
+            let passosNecessarios = ['laco', 'base', 'infra', 'energia'];
+            if (tipoEquip.includes('CCO')) {
+                passosNecessarios = ['infra', 'energia'];
+            } else if (tipoEquip.includes('DOME') || tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP')) {
+                passosNecessarios = ['base', 'infra', 'energia'];
+            }
+
+            // Verifica se todos os passos necessários foram preenchidos
+            const allFilled = passosNecessarios.every(passo => {
+                // Constrói o ID do input de data (ex: 'dataLaco', 'dataBase')
+                const inputId = `data${passo.charAt(0).toUpperCase() + passo.slice(1)}`;
+                const input = document.getElementById(inputId);
+                return input && input.value;
+            });
+
+            if (allFilled) {
+                // 2a. Conclusão TOTAL: Continua 'em andamento' para a próxima fase do processo (sem técnico).
+                novoStatus = 'em andamento';
+            } else {
+                // 2b. Conclusão PARCIAL: Volta para a fila geral como 'pendente'.
+                novoStatus = 'pendente';
+            }
+        }
         const payload = {
             id_manutencao: currentManutencao.id_manutencao,
             is_installation: true,
-            dt_base: !dataBaseInput.disabled ? dataBaseInput.value : null,
-            dt_laco: !dataLacoInput.disabled ? dataLacoInput.value : null,
-            data_infra: !dataInfraInput.disabled ? dataInfraInput.value : null,
-            dt_energia: !dataEnergiaInput.disabled ? dataEnergiaInput.value : null,
+            is_final: isFinal,
+            status_reparo: novoStatus,
+            dt_base: dataBaseInput.value || null,
+            dt_laco: dataLacoInput.value || null,
+            data_infra: dataInfraInput.value || null,
+            dt_energia: dataEnergiaInput.value || null,
             tipo_equip: currentManutencao.tipo_equip,
             id_cidade: currentManutencao.id_cidade
         };
-        // --- FIM DA ALTERAÇÃO ---
-        atualizarStatusManutencao(payload);
+
+        const targetButton = isFinal ? confirmConcluirReparoBtn : btnSalvarProgresso;
+        const targetSpinner = isFinal ? concluirReparoSpinner : salvarProgressoSpinner;
+
+        hideMessage(concluirReparoMessage);
+        toggleSpinner(targetButton, targetSpinner, true);
+
+        try {
+            const response = await fetch('API/update_manutencao_status.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                if (isFinal) {
+                    confirmConcluirReparoBtn.classList.add('oculto');
+                    btnSalvarProgresso.classList.add('oculto');
+                }
+                showMessage(concluirReparoMessage, data.message || 'Operação realizada com sucesso!', 'sucesso');
+                setTimeout(() => {
+                    fecharModalConcluirReparo();
+                    initialLoad();
+                }, 2000);
+            } else {
+                throw new Error(data.message || 'Falha ao salvar.');
+            }
+        } catch (error) {
+            showMessage(concluirReparoMessage, error.message, 'erro');
+        } finally {
+            toggleSpinner(targetButton, targetSpinner, false);
+        }
     }
 
     function handleFiltroClick(tipo) {
@@ -386,7 +503,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderManutencoes();
     }
 
-    async function checkForUpdates() {
+    /*sync function checkForUpdates() {
         try {
             const response = await fetch(`API/get_manutencoes_tecnico.php?user_id=${userId}`);
             const newData = await response.json();
@@ -402,7 +519,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error("Erro ao verificar atualizações:", error);
         }
-    }
+    }*/
+
+    // --- Carregamento Inicial ---
 
     async function initialLoad(isUpdate = false) {
         if (!isUpdate) { // Só mostra o "carregando" na primeira vez
@@ -458,7 +577,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-     if (botaoSimRompimento) {
+    if (botaoSimRompimento) {
         botaoSimRompimento.addEventListener('click', async () => {
             botaoSimRompimento.classList.add('ativo');
             botaoNaoRompimento.classList.remove('ativo');
@@ -527,36 +646,25 @@ document.addEventListener('DOMContentLoaded', () => {
             const isInstalacao = currentManutencao.tipo_manutencao.toLowerCase() === 'instalação';
 
             if (isInstalacao) {
+                // Verifica quais campos estão visíveis
+                const visibleChecklistItems = Array.from(camposInstalacao.querySelectorAll('.item-checklist:not(.oculto)'));
+                const visibleInputs = visibleChecklistItems.map(item => item.querySelector('input[type="date"]'));
 
-                const tipoEquip = currentManutencao.tipo_equip?.toUpperCase();
-                const isLacoRequired = tipoEquip !== 'DOME' && tipoEquip !== 'CCO';
+                // Verifica se todos os campos visíveis estão preenchidos
+                const allFilled = visibleInputs.every(input => input.value);
 
-                const datas = [
-                    { nome: 'Base', valor: dataBaseInput.value, desabilitado: dataBaseInput.disabled },
-                    ...(isLacoRequired ? [{ nome: 'Laço', valor: dataLacoInput.value, desabilitado: dataLacoInput.disabled }] : []),
-                    { nome: 'Infraestrutura', valor: dataInfraInput.value, desabilitado: dataInfraInput.disabled },
-                    { nome: 'Energia', valor: dataEnergiaInput.value, desabilitado: dataEnergiaInput.disabled },
-                ];
-
-
-                const novasDatasPreenchidas = datas.filter(d => d.valor && !d.desabilitado);
-                const totalConcluido = datas.filter(d => d.valor || d.desabilitado).length;
-                const totalEtapas = datas.length;
-
-                if (novasDatasPreenchidas.length === 0) {
-                    showMessage(concluirReparoMessage, 'Selecione a data para pelo menos uma nova etapa.', 'erro');
-                    return;
-                }
-                if (totalConcluido < totalEtapas) {
-                    listaItensConcluidos.innerHTML = '';
-                    novasDatasPreenchidas.forEach(item => {
-                        const li = document.createElement('li');
-                        li.textContent = item.nome;
-                        listaItensConcluidos.appendChild(li);
-                    });
-                    partialConfirmModal.classList.add('ativo');
+                if (allFilled) {
+                    // Se tudo está preenchido, abre o modal de conclusão total
+                    fullConfirmModal.classList.add('ativo');
                 } else {
-                    salvarInstalacao();
+                    // Se algo falta, abre o modal de conclusão parcial
+                    const preenchidos = visibleInputs.filter(input => input.value).map(input => input.closest('.item-checklist').querySelector('label b').textContent);
+                    if (preenchidos.length === 0) {
+                        showMessage(concluirReparoMessage, 'Preencha pelo menos uma data para concluir.', 'erro');
+                        return;
+                    }
+                    listaItensConcluidos.innerHTML = preenchidos.map(item => `<li>${item}</li>`).join('');
+                    partialConfirmModal.classList.add('ativo');
                 }
             } else { // Lógica para Corretiva
                 const reparoRealizado = reparoRealizadoTextarea.value.trim();
@@ -573,7 +681,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 const rompimentoLacre = botaoSimRompimento.classList.contains('ativo');
                 let numeroLacre = null, infoRompimento = null, dataRompimento = null;
-                
+
                 if (rompimentoLacre) {
                     infoRompimento = selectLacreRompido.value; // O local do lacre
                     numeroLacre = inputNumeroLacre.value;     // O número do lacre
@@ -623,9 +731,39 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (btnCancelarParcial) btnCancelarParcial.addEventListener('click', () => partialConfirmModal.classList.remove('ativo'));
-    if (btnConfirmarParcial) btnConfirmarParcial.addEventListener('click', () => {
-        partialConfirmModal.classList.remove('ativo');
-        salvarInstalacao();
+
+    // Adiciona o listener para o novo botão de salvar progresso
+    if (btnSalvarProgresso) {
+        btnSalvarProgresso.addEventListener('click', () => {
+            // Chama a função de salvamento com 'isFinal' como false
+            executarSalvamentoInstalacao(false);
+        });
+    }
+
+    // Listeners para o novo modal de confirmação total
+    if (btnConfirmarTotal) {
+        btnConfirmarTotal.addEventListener('click', () => {
+            fullConfirmModal.classList.remove('ativo');
+            executarSalvamentoInstalacao(true); // Chama a função de salvamento para concluir
+        });
+    }
+    if (btnCancelarTotal) {
+        btnCancelarTotal.addEventListener('click', () => fullConfirmModal.classList.remove('ativo'));
+    }
+
+    // Listener para o modal de confirmação parcial (atualizado)
+    if (btnConfirmarParcial) {
+        btnConfirmarParcial.addEventListener('click', () => {
+            partialConfirmModal.classList.remove('ativo');
+            executarSalvamentoInstalacao(true); // Chama a função para concluir parcialmente
+        });
+    }
+
+    // Listeners para apagar a mensagem de erro ao digitar
+    [reparoRealizadoTextarea, dataBaseInput, dataLacoInput, dataInfraInput, dataEnergiaInput].forEach(input => {
+        if (input) {
+            input.addEventListener('input', () => hideMessage(concluirReparoMessage));
+        }
     });
 
     window.onclick = function (event) {

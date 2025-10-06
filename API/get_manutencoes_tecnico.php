@@ -44,7 +44,27 @@ try {
             JOIN equipamentos e ON m.id_equipamento = e.id_equipamento
             JOIN cidades c ON m.id_cidade = c.id_cidade
             LEFT JOIN endereco a ON e.id_endereco = a.id_endereco
-            WHERE mt.id_tecnico = ? AND m.status_reparo = 'em andamento'
+            WHERE mt.id_tecnico = ? AND (
+                -- Condição 1: Mostra se NÃO for uma instalação E o status for 'em andamento'
+                (m.tipo_manutencao != 'instalação' AND m.status_reparo = 'em andamento')
+                OR
+                -- Condição 2: Mostra se FOR uma instalação 'em andamento' E AINDA TIVER PASSOS PENDENTES
+                (
+                    m.tipo_manutencao = 'instalação' AND m.status_reparo = 'em andamento' AND (
+                        -- Regra para CCO: Mostra se infra OU energia estiverem pendentes
+                        (e.tipo_equip LIKE '%CCO%' AND (m.inst_infra = 0 OR m.inst_energia = 0))
+                        OR
+                        -- Regra para DOME, VÍDEO MONITORAMENTO, LAP: Mostra se base, infra OU energia estiverem pendentes
+                        ((e.tipo_equip LIKE '%DOME%' OR e.tipo_equip LIKE '%VÍDEO MONITORAMENTO%' OR e.tipo_equip LIKE '%LAP%') AND (m.inst_base = 0 OR m.inst_infra = 0 OR m.inst_energia = 0))
+                        OR
+                        -- Regra para todos os outros tipos: Mostra se QUALQUER um dos 4 passos estiver pendente
+                        (
+                            (e.tipo_equip NOT LIKE '%CCO%' AND e.tipo_equip NOT LIKE '%DOME%' AND e.tipo_equip NOT LIKE '%VÍDEO MONITORAMENTO%' AND e.tipo_equip NOT LIKE '%LAP%')
+                            AND (m.inst_laco = 0 OR m.inst_base = 0 OR m.inst_infra = 0 OR m.inst_energia = 0)
+                        )
+                    )
+                )
+            )
             ORDER BY c.nome DESC";
 
     $stmt = $conn->prepare($sql);

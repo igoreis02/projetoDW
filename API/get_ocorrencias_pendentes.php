@@ -47,6 +47,7 @@ try {
                 e.nome_equip,
                 e.referencia_equip,
                 e.tipo_equip,
+                e.qtd_faixa,
                 c.nome AS cidade,
                 CONCAT(en.logradouro, ', ', en.bairro) AS local_completo,
                 SUBSTRING_INDEX(u.nome, ' ', 2) AS atribuido_por
