@@ -13,6 +13,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const reparoRealizadoError = document.getElementById('reparoRealizadoError');
     const pageLoader = document.getElementById('pageLoader');
 
+    const etiquetaModal = document.getElementById('etiquetaModal');
+    const etiquetaSimBtn = document.getElementById('etiquetaSimBtn');
+    const etiquetaNaoBtn = document.getElementById('etiquetaNaoBtn');
+    const etiquetaDataGroup = document.getElementById('etiquetaDataGroup');
+    const etiquetaDataInput = document.getElementById('etiquetaDataInput');
+    const saveEtiquetaBtn = document.getElementById('saveEtiquetaBtn');
+
     const btnVoltarAoTopo = document.getElementById("btnVoltarAoTopo");
 
 
@@ -420,7 +427,29 @@ document.addEventListener('DOMContentLoaded', function () {
         await executeApiUpdate(payload, 'Ocorrência retornada para pendente com sucesso!', 'retornarModal', 'btnConfirmarRetorno', 'retornarMessage', 'retornarButtons');
     }
 
-    window.openConcluirModal = (id, origem) => { currentItem = findOcorrenciaById(id, origem); if (!currentItem) return; reparoRealizadoTextarea.value = ''; reparoRealizadoError.style.display = 'none'; document.getElementById('concluirModalEquipName').textContent = `${currentItem.nome_equip} - ${currentItem.referencia_equip}`; document.getElementById('concluirOcorrenciaText').textContent = currentItem.ocorrencia_reparo; openModal('concluirModal'); };
+    window.openConcluirModal = (id, origem) => {
+        
+        // 1. Primeiro, busca os dados da ocorrência clicada e define o 'currentItem'
+        currentItem = findOcorrenciaById(id, origem);
+        if (!currentItem) {
+            console.error("Ocorrência não encontrada com ID:", id, "e Origem:", origem);
+            return;
+        }
+
+        // 2. AGORA, com o 'currentItem' correto, verifica o tipo da ocorrência
+        if (currentItem.tipo_ocorrencia === 'Aguardando etiqueta') {
+            openEtiquetaModal(); // Chama o modal correto
+            return; // Interrompe para não abrir o modal padrão
+        }
+
+        // Comportamento padrão para outras ocorrências 
+        reparoRealizadoTextarea.value = '';
+        reparoRealizadoError.style.display = 'none';
+        document.getElementById('concluirModalEquipName').textContent = `${currentItem.nome_equip} - ${currentItem.referencia_equip}`;
+        document.getElementById('concluirOcorrenciaText').textContent = currentItem.ocorrencia_reparo;
+        openModal('concluirModal');
+    };
+
     function validateConclusionForm() { if (reparoRealizadoTextarea.value.trim() === '') { reparoRealizadoError.textContent = 'A descrição da solução é obrigatória.'; reparoRealizadoError.style.display = 'block'; return false; } reparoRealizadoError.style.display = 'none'; return true; }
     window.handleConclusion = () => { if (validateConclusionForm()) { openConfirmationModal('concluir'); } };
     async function saveConclusion() { const reparoFinalizado = reparoRealizadoTextarea.value.trim(); const payload = { action: 'concluir_ocorrencia_processamento', id: currentItem.id, reparo_finalizado: reparoFinalizado }; await executeApiUpdate(payload, 'Concluído com sucesso!', 'concluirModal'); }
@@ -498,6 +527,119 @@ document.addEventListener('DOMContentLoaded', function () {
         const spinner = modal.querySelector('.spinner.is-active');
         if (spinner) { spinner.classList.remove('is-active'); }
     };
+
+    // Função para abrir e configurar o modal da etiqueta
+    function openEtiquetaModal() {
+        if (!currentItem) return;
+
+        // Reseta o estado do modal
+        document.getElementById('etiquetaModalEquipName').textContent = `${currentItem.nome_equip} - ${currentItem.referencia_equip}`;
+        etiquetaSimBtn.classList.remove('selected');
+        etiquetaNaoBtn.classList.remove('selected');
+        etiquetaDataGroup.classList.add('hidden');
+        etiquetaDataInput.value = '';
+        saveEtiquetaBtn.classList.add('hidden');
+        document.getElementById('etiquetaDataError').classList.add('hidden');
+        document.getElementById('etiquetaMessage').classList.add('hidden');
+        document.getElementById('etiquetaButtons').style.display = 'flex';
+
+        openModal('etiquetaModal');
+    }
+
+    // Ação do botão "Sim"
+    etiquetaSimBtn.addEventListener('click', () => {
+        // Estilo visual da seleção
+        etiquetaSimBtn.classList.add('btn-primary');
+        etiquetaSimBtn.classList.remove('btn-secondary');
+        etiquetaNaoBtn.classList.remove('btn-primary');
+        etiquetaNaoBtn.classList.add('btn-secondary');
+        
+        // Mostra os campos de data e o botão de confirmar
+        etiquetaDataGroup.classList.remove('hidden');
+        saveEtiquetaBtn.classList.remove('hidden');
+    });
+
+    // Ação do botão "Não"
+    etiquetaNaoBtn.addEventListener('click', () => {
+        // Estilo visual da seleção
+        etiquetaNaoBtn.classList.add('btn-primary');
+        etiquetaNaoBtn.classList.remove('btn-secondary');
+        etiquetaSimBtn.classList.remove('btn-primary');
+        etiquetaSimBtn.classList.add('btn-secondary');
+
+        // Esconde os campos de data e o botão de confirmar
+        etiquetaDataGroup.classList.add('hidden');
+        saveEtiquetaBtn.classList.add('hidden');
+        document.getElementById('etiquetaDataError').classList.add('hidden'); // Esconde erro se houver
+    });
+
+    // Ação do botão "Confirmar" do modal de etiqueta
+    saveEtiquetaBtn.addEventListener('click', async () => {
+         const dataFabricacao = etiquetaDataInput.value;
+    const errorEl = document.getElementById('etiquetaDataError');
+
+    if (!dataFabricacao) {
+        errorEl.textContent = 'Data de fabricação obrigatoria para concluir';
+        errorEl.classList.remove('hidden'); 
+        return;
+    }
+    errorEl.classList.add('hidden'); 
+
+        const payload = {
+            action: 'concluir_etiqueta',
+            id_ocorrencia_processamento: currentItem.id,
+            id_equipamento: currentItem.id_equipamento,
+            id_manutencao: currentItem.id_manutencao, 
+            dt_fabricacao: dataFabricacao
+        };
+        
+        // Controla os elementos corretos do modal de etiqueta
+        const button = saveEtiquetaBtn;
+        const spinner = button.querySelector('.spinner');
+        const messageEl = document.getElementById('etiquetaMessage');
+        const buttonsDiv = document.getElementById('etiquetaButtons');
+
+        button.disabled = true;
+        if (spinner) spinner.classList.add('is-active');
+        if (messageEl) messageEl.classList.add('hidden');
+
+        try {
+            const response = await fetch('API/update_ocorrencia.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || 'Erro na comunicação com o servidor.');
+            }
+
+            if (buttonsDiv) buttonsDiv.style.display = 'none';
+            if (messageEl) {
+                messageEl.textContent = 'Etiqueta concluída com sucesso!';
+                messageEl.className = 'message success';
+                messageEl.classList.remove('hidden');
+            }
+
+            setTimeout(() => {
+                closeModal('etiquetaModal');
+                initialLoad(); // Recarrega a página para refletir as mudanças
+            }, 2000);
+
+        } catch (error) {
+            if (messageEl) {
+                messageEl.textContent = `Erro: ${error.message}`;
+                messageEl.className = 'message error';
+                messageEl.classList.remove('hidden');
+            }
+            if (button) button.disabled = false;
+            if (spinner) spinner.classList.remove('is-active');
+        }
+    });
+
+    etiquetaDataInput.addEventListener('input', () => {
+    document.getElementById('etiquetaDataError').classList.add('hidden');
+});
 
     window.onscroll = function () {
         controlarVisibilidadeBotao();

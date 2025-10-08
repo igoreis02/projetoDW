@@ -27,51 +27,60 @@ try {
 
     // Query 1: Ocorrências da tabela 'ocorrencia_processamento'
     $sql_processamento = "
-        SELECT
-            op.id_ocorrencia_processamento AS id,
-            'ocorrencia_processamento' AS origem,
-            op.descricao AS ocorrencia_reparo,
-            op.reparo AS reparo_finalizado,
-            op.status,
-            op.dt_ocorrencia AS inicio_reparo,
-            op.dt_resolucao AS fim_reparo,
-            e.nome_equip,
-            e.referencia_equip,
-            c.nome AS nome_cidade,
-            CONCAT(en.logradouro, ', ', en.bairro) AS local_completo,
-            SUBSTRING_INDEX(u_reg.nome, ' ', 2) AS atribuido_por,
-            SUBSTRING_INDEX(u_conc.nome, ' ', 2) AS concluido_por
-        FROM ocorrencia_processamento op
-        JOIN equipamentos e ON op.id_equipamento = e.id_equipamento
-        LEFT JOIN cidades c ON op.id_cidade = c.id_cidade
-        LEFT JOIN endereco en ON e.id_endereco = en.id_endereco
-        LEFT JOIN usuario u_reg ON op.id_usuario_registro = u_reg.id_usuario
-        LEFT JOIN usuario u_conc ON op.id_usuario_concluiu = u_conc.id_usuario
-    ";
+    SELECT
+        op.id_ocorrencia_processamento AS id,
+         e.id_equipamento,
+        'ocorrencia_processamento' AS origem,
+        op.descricao AS ocorrencia_reparo,
+        op.reparo AS reparo_finalizado,
+        op.status,
+        op.dt_ocorrencia AS inicio_reparo,
+        op.dt_resolucao AS fim_reparo,
+        op.tipo_ocorrencia,
+        e.nome_equip,
+        e.referencia_equip,
+        c.nome AS nome_cidade,
+        CONCAT(en.logradouro, ', ', en.bairro) AS local_completo,
+        SUBSTRING_INDEX(u_reg.nome, ' ', 2) AS atribuido_por,
+        SUBSTRING_INDEX(u_conc.nome, ' ', 2) AS concluido_por,
+        m.id_manutencao -- <<< ADICIONE ESTA LINHA PARA BUSCAR O ID CORRETO
+    FROM ocorrencia_processamento op
+    JOIN equipamentos e ON op.id_equipamento = e.id_equipamento
+    LEFT JOIN cidades c ON op.id_cidade = c.id_cidade
+    LEFT JOIN endereco en ON e.id_endereco = en.id_endereco
+    LEFT JOIN usuario u_reg ON op.id_usuario_registro = u_reg.id_usuario
+    LEFT JOIN usuario u_conc ON op.id_usuario_concluiu = u_conc.id_usuario
+    -- V ADICIONE ESTE JOIN PARA ENCONTRAR A MANUTENÇÃO ORIGINAL V
+    LEFT JOIN manutencoes m ON op.id_equipamento = m.id_equipamento AND m.status_reparo = 'Aguardando etiqueta' AND op.tipo_ocorrencia = 'Aguardando etiqueta'
+";
+
 
     // Query 2: Ocorrências da tabela 'manutencoes' que estão em validação
     $sql_validacao = "
-        SELECT 
-            m.id_manutencao as id,
-            'manutencao' as origem,
-            m.ocorrencia_reparo,
-            m.reparo_finalizado,
-            m.status_reparo as status,
-            m.inicio_reparo,
-            m.fim_reparo,
-            e.nome_equip,
-            e.referencia_equip,
-            c.nome as nome_cidade,
-            CONCAT(en.logradouro, ', ', en.bairro) AS local_completo,
-            SUBSTRING_INDEX(u.nome, ' ', 2) AS atribuido_por,
-            NULL AS concluido_por
-        FROM manutencoes m
-        JOIN equipamentos e ON m.id_equipamento = e.id_equipamento
-        LEFT JOIN cidades c ON e.id_cidade = c.id_cidade
-        LEFT JOIN endereco en ON e.id_endereco = en.id_endereco
-        LEFT JOIN usuario u ON m.id_usuario = u.id_usuario
-        WHERE m.status_reparo = 'validacao'
-    ";
+    SELECT 
+        m.id_manutencao as id,
+        m.id_equipamento,
+        'manutencao' as origem,
+        m.ocorrencia_reparo,
+        m.reparo_finalizado,
+        m.status_reparo as status,
+        m.inicio_reparo,
+        m.fim_reparo,
+        m.tipo_manutencao as tipo_ocorrencia,
+        e.nome_equip,
+        e.referencia_equip,
+        c.nome as nome_cidade,
+        CONCAT(en.logradouro, ', ', en.bairro) AS local_completo,
+        SUBSTRING_INDEX(u.nome, ' ', 2) AS atribuido_por,
+        NULL AS concluido_por,
+        NULL AS id_manutencao -- <<< ADICIONE ESTA LINHA
+    FROM manutencoes m
+    JOIN equipamentos e ON m.id_equipamento = e.id_equipamento
+    LEFT JOIN cidades c ON e.id_cidade = c.id_cidade
+    LEFT JOIN endereco en ON e.id_endereco = en.id_endereco
+    LEFT JOIN usuario u ON m.id_usuario = u.id_usuario
+    WHERE m.status_reparo = 'validacao'
+";
 
     // Combina as queries com base no filtro de status 
     $final_sql = "";

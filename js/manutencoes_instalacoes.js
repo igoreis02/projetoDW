@@ -392,10 +392,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 3. Verifica o fluxo atual para exibir a tela correta
         if (currentFlow === 'installation') {
-            // Limpa todos os campos do formulário de instalação para um novo cadastro
-            installEquipmentAndAddressSection.querySelectorAll('input, select, textarea').forEach(el => el.value = '');
-            quantitySection.classList.add('hidden');
-            document.getElementById('newEquipmentType').value = '';
+             // Limpa todos os campos do formulário de instalação
+            installEquipmentAndAddressSection.querySelectorAll('input, select, textarea').forEach(el => {
+                if (el.type === 'checkbox') el.checked = false;
+                else el.value = '';
+            });
+            
+            firstSelectedType = null;
+            toggleInstallConditionalFields(); //função para resetar a visibilidade dos campos
 
             // Garante que a tela de instalação continue visível
             installEquipmentAndAddressSection.style.display = 'flex';
@@ -713,6 +717,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const providerSelect = document.getElementById('installProvider');
         const providerName = providerSelect.selectedIndex > 0 ? providerSelect.options[providerSelect.selectedIndex].text : 'N/A';
 
+        // 1. Defina 'selectedTypesArray' PRIMEIRO
+        const selectedTypesArray = Array.from(document.querySelectorAll('input[name="new_tipo_equip[]"]:checked')).map(cb => cb.value);
+        
+        // 2. A lógica de status agora funciona, pois a variável existe
+        const tiposParaEtiqueta = ['LOMBADA ELETRÔNICA', 'RADAR FIXO', 'MONITOR DE SEMÁFORO'];
+        let statusFinal = 'pendente'; 
+        if (selectedTypesArray.some(tipo => tiposParaEtiqueta.includes(tipo))) {
+            statusFinal = 'Aguardando etiqueta';    
+        }
+        currentRepairStatus = statusFinal; // Atualiza o status atual para a confirmação
+
         // Preenche o modal de confirmação
         maintenanceConfirmationDetails.classList.add('hidden');
         installConfirmationDetails.classList.remove('hidden');
@@ -727,7 +742,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('confirmProvider').textContent = providerName;
         document.getElementById('confirmInstallationNotes').textContent = installationNotes || 'Nenhuma.';
         document.getElementById('confirmMaintenanceType').textContent = 'Instalação';
-        document.getElementById('confirmRepairStatus').textContent = 'Pendente';
+        document.getElementById('confirmRepairStatus').textContent = currentRepairStatus.charAt(0).toUpperCase() + currentRepairStatus.slice(1);
 
         // Lógica para campos específicos na confirmação
         const confirmSpecificsContainer = document.getElementById('confirm-specific-fields-container');
@@ -845,8 +860,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     equipment_id: equipmentData.id_equipamento,
                     problem_description: "Instalação de novo equipamento",
                     tipo_manutencao: 'instalação',
-                    status_reparo: 'pendente',
-                    observacao_instalacao: document.getElementById('installationNotes').value.trim()
+                    status_reparo: currentRepairStatus,
+                    observacao_instalacao: document.getElementById('installationNotes').value.trim(),
+                    equipment_name: document.getElementById('newEquipmentName').value.trim(),
+                    equipment_ref: document.getElementById('newEquipmentReference').value.trim()
                 };
 
                 const maintenanceResponse = await fetch('API/save_manutencao.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(maintenancePayload) });

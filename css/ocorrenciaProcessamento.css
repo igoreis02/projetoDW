@@ -579,7 +579,7 @@ body {
 .error-message {
     color: var(--cor-botao-erro);
     font-size: 0.875em;
-    display: none;
+    /*display: none;*/
 }
 
 .modal-footer {

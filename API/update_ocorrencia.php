@@ -13,8 +13,8 @@ if (!$input) {
 }
 
 $action = $input['action'] ?? null;
-// Alterado para um nome genérico 'id', pois a nova tabela tem um nome de coluna diferente
-$id = $input['id'] ?? $input['id_manutencao'] ?? null;
+
+$id = $input['id'] ?? $input['id_manutencao'] ?? $input['id_ocorrencia_processamento'] ?? null;
 
 
 
@@ -104,6 +104,45 @@ try {
         }
 
         echo json_encode(['success' => true, 'message' => 'Ocorrência concluída e registrada com sucesso!']);
+        throw new Exception('Falha ao criar a nova manutenção para o técnico DW.');
+    } elseif ($action === 'concluir_etiqueta') {
+        $id_ocorrencia_proc = $input['id_ocorrencia_processamento'] ?? null;
+        $id_equipamento = $input['id_equipamento'] ?? null;
+        $dt_fabricacao = $input['dt_fabricacao'] ?? null;
+        $id_manutencao_original = $input['id_manutencao'] ?? null;
+
+        if (empty($id_ocorrencia_proc) || empty($id_equipamento) || empty($dt_fabricacao)) {
+            throw new Exception('Dados insuficientes para concluir a fabricação da etiqueta.');
+        }
+
+        // 1. Atualiza a ocorrência de processamento para 'concluído'
+        $stmt_proc = $conn->prepare("UPDATE ocorrencia_processamento SET status = 'concluido', dt_resolucao = NOW(), reparo = 'Etiqueta fabricada' WHERE id_ocorrencia_processamento = ?");
+        $stmt_proc->bind_param('i', $id_ocorrencia_proc);
+        if (!$stmt_proc->execute()) {
+            throw new Exception('Falha ao concluir a ocorrência de processamento.');
+        }
+        $stmt_proc->close();
+
+        // 2. Atualiza a data de fabricação na tabela de equipamentos
+        $stmt_equip = $conn->prepare("UPDATE equipamentos SET dt_fabricacao = ? WHERE id_equipamento = ?");
+        $stmt_equip->bind_param('si', $dt_fabricacao, $id_equipamento);
+        if (!$stmt_equip->execute()) {
+            throw new Exception('Falha ao salvar a data de fabricação no equipamento.');
+        }
+        $stmt_equip->close();
+
+        // 3. Se um id_manutencao original foi passado, atualiza-o
+        if ($id_manutencao_original) {
+            // Encontra a manutenção principal associada e a retorna para 'pendente'
+            $stmt_manut = $conn->prepare("UPDATE manutencoes SET status_reparo = 'pendente' WHERE id_manutencao = ? AND status_reparo = 'Aguardando etiqueta'");
+            $stmt_manut->bind_param('i', $id_manutencao_original);
+            if (!$stmt_manut->execute()) {
+                throw new Exception('Falha ao retornar a manutenção principal para pendente.');
+            }
+            $stmt_manut->close();
+        }
+
+        echo json_encode(['success' => true, 'message' => 'Etiqueta concluída e manutenção liberada.']);
     } elseif ($action === 'validar_reparo') {
         // Busca o tipo da manutenção e os IDs dos lacres distribuídos
         $stmt_info = $conn->prepare("SELECT tipo_manutencao, id_controle_lacres_dist FROM manutencoes WHERE id_manutencao = ?");
@@ -371,7 +410,7 @@ try {
         // 2. Se for do tipo "afixar" e tiver lacres vinculados, atualiza a tabela de lacres
         if ($manutencao_info['tipo_manutencao'] === 'afixar' && !empty($manutencao_info['id_controle_lacres_dist'])) {
 
-            $id_usuario_afixou = $tecnicos[0]; 
+            $id_usuario_afixou = $tecnicos[0];
 
             $sql_update_lacres = "UPDATE controle_lacres SET
                                 num_lacre = num_lacre_distribuido,
@@ -582,8 +621,7 @@ try {
         }
 
         echo json_encode(['success' => true, 'message' => 'Ocorrência atribuída com sucesso.']);
-        
-    }elseif ($action === 'concluir_instalacao') {
+    } elseif ($action === 'concluir_instalacao') {
         $id_manutencao = $id; // $id já contém o id_manutencao
         $is_final = $input['is_final'] ?? false;
         $status_reparo = $input['status_reparo'] ?? 'em andamento';
@@ -600,11 +638,41 @@ try {
         $params = [$status_reparo];
         $types = "s";
 
-        if ($dt_base !== null) { $updates[] = "inst_base = ?"; $updates[] = "dt_base = ?"; $params[] = empty($dt_base) ? 0 : 1; $params[] = $dt_base; $types .= "is"; }
-        if ($dt_laco !== null) { $updates[] = "inst_laco = ?"; $updates[] = "dt_laco = ?"; $params[] = empty($dt_laco) ? 0 : 1; $params[] = $dt_laco; $types .= "is"; }
-        if ($data_infra !== null) { $updates[] = "inst_infra = ?"; $updates[] = "data_infra = ?"; $params[] = empty($data_infra) ? 0 : 1; $params[] = $data_infra; $types .= "is"; }
-        if ($dt_energia !== null) { $updates[] = "inst_energia = ?"; $updates[] = "dt_energia = ?"; $params[] = empty($dt_energia) ? 0 : 1; $params[] = $dt_energia; $types .= "is"; }
-        if ($data_provedor !== null) { $updates[] = "inst_prov = ?"; $updates[] = "data_provedor = ?"; $params[] = empty($data_provedor) ? 0 : 1; $params[] = $data_provedor; $types .= "is"; }
+        if ($dt_base !== null) {
+            $updates[] = "inst_base = ?";
+            $updates[] = "dt_base = ?";
+            $params[] = empty($dt_base) ? 0 : 1;
+            $params[] = $dt_base;
+            $types .= "is";
+        }
+        if ($dt_laco !== null) {
+            $updates[] = "inst_laco = ?";
+            $updates[] = "dt_laco = ?";
+            $params[] = empty($dt_laco) ? 0 : 1;
+            $params[] = $dt_laco;
+            $types .= "is";
+        }
+        if ($data_infra !== null) {
+            $updates[] = "inst_infra = ?";
+            $updates[] = "data_infra = ?";
+            $params[] = empty($data_infra) ? 0 : 1;
+            $params[] = $data_infra;
+            $types .= "is";
+        }
+        if ($dt_energia !== null) {
+            $updates[] = "inst_energia = ?";
+            $updates[] = "dt_energia = ?";
+            $params[] = empty($dt_energia) ? 0 : 1;
+            $params[] = $dt_energia;
+            $types .= "is";
+        }
+        if ($data_provedor !== null) {
+            $updates[] = "inst_prov = ?";
+            $updates[] = "data_provedor = ?";
+            $params[] = empty($data_provedor) ? 0 : 1;
+            $params[] = $data_provedor;
+            $types .= "is";
+        }
 
         // Se a conclusão for final e a data de infraestrutura estiver presente, atualiza o equipamento
         if ($is_final && !empty($data_infra)) {
@@ -634,11 +702,9 @@ try {
             throw new Exception('Falha ao atualizar a instalação.');
         }
         $stmt->close();
-        
-        echo json_encode(['success' => true, 'message' => 'Instalação atualizada com sucesso.']);
 
-    }
-     else {
+        echo json_encode(['success' => true, 'message' => 'Instalação atualizada com sucesso.']);
+    } else {
         throw new Exception('Ação desconhecida.');
     }
 

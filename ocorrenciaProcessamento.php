@@ -217,6 +217,40 @@ if (!isset($_SESSION['user_id'])) {
     </div>
 </div>
 
+<div id="etiquetaModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Concluir Fabricação de Etiqueta</h3>
+            <button class="modal-close" onclick="closeModal('etiquetaModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <h4 id="etiquetaModalEquipName" style="font-size: 1.2em; text-align: center;"></h4>
+            <div class="form-group">
+                <label>Etiquetas finalizadas?</label>
+                <div class="choice-buttons">
+                    <button id="etiquetaSimBtn" class="modal-btn btn-secondary">Sim</button>
+                    <button id="etiquetaNaoBtn" class="modal-btn btn-secondary">Não</button>
+                </div>
+            </div>
+            <div id="etiquetaDataGroup" class="form-group hidden">
+                <label for="etiquetaDataInput">Data de Fabricação:</label>
+                <input type="date" id="etiquetaDataInput" style="padding: 0.75rem; border: 1px solid var(--cor-borda-principal); border-radius: 0.5rem;">
+                <p class="error-message" id="etiquetaDataError"></p>
+            </div>
+        </div>
+        <div class="modal-footer">
+             <p id="etiquetaMessage" class="message hidden"></p>
+            <div id="etiquetaButtons" class="modal-footer-buttons">
+                <button class="modal-btn btn-secondary" onclick="closeModal('etiquetaModal')">Cancelar</button>
+                <button id="saveEtiquetaBtn" class="modal-btn btn-primary hidden">
+                    <span>Confirmar</span>
+                    <span class="spinner"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
     <script src="js/ocorrenciaProcessamento.js"></script>
 </body>
 
