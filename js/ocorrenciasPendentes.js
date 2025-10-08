@@ -574,9 +574,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 detailsHTML += `<div class="detail-item"><strong>Qtd. Faixa(s):</strong> <span>${firstOcorrencia.qtd_faixa}</span></div>`;
             }
 
-            
 
-            // Lógica para definir quais passos de instalação mostrar (continua a mesma)
+
+            // 1. Inicia com todos os passos como padrão
             let statusMap = {
                 inst_laco: 'Laço',
                 inst_base: 'Base',
@@ -584,17 +584,22 @@ document.addEventListener('DOMContentLoaded', function () {
                 inst_energia: 'Energia'
             };
 
-            // Se a etiqueta NÃO estiver pronta, remove as etapas de Infra e Energia do mapa
-            if (firstOcorrencia.etiqueta_feita != 1) {
+            // 2. Lógica da Etiqueta: Apenas alguns tipos precisam de etiqueta
+            const tiposComEtiqueta = ['LOMBADA ELETRÔNICA', 'RADAR FIXO', 'MONITOR DE SEMÁFORO'];
+            const precisaEtiqueta = tiposComEtiqueta.some(tipo => tipoEquip.includes(tipo));
+
+            // Se o equipamento PRECISA de etiqueta E ela NÃO está pronta, esconde os últimos passos.
+            // Se não precisa de etiqueta, esta condição é ignorada e todas as etapas pertinentes são mostradas.
+            if (precisaEtiqueta && firstOcorrencia.etiqueta_feita != 1) {
                 delete statusMap.inst_infra;
                 delete statusMap.inst_energia;
             }
 
-            // Aplicamos as regras para remover passos conforme o tipo (continua a mesma)
-            if (tipoEquip.includes('CCO')) {
+            // 3. Lógica específica por tipo de equipamento (remove passos que não se aplicam)
+            if (tipoEquip.includes('CCO') || tipoEquip.includes('DOME')) {
                 delete statusMap.inst_laco;
                 delete statusMap.inst_base;
-            } else if (tipoEquip.includes('DOME') || tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP')) {
+            } else if (tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP')) {
                 delete statusMap.inst_laco;
             }
 
@@ -611,8 +616,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     `<span class="status-value aguardando">Aguardando instalação</span>`;
                 return `<div class="detail-item"><strong>${label}</strong> <span>${status}</span></div>`;
             }).join('');
-            
-            if (firstOcorrencia.etiqueta_feita == 0) {
+
+            if (precisaEtiqueta && firstOcorrencia.etiqueta_feita == 0) {
                 detailsHTML += `<div class="detail-item etiqueta-obs"><strong>Obs:</strong> <span>Produzindo etiqueta</span></div>`;
             }
 

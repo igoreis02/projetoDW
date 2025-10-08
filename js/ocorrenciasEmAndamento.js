@@ -318,9 +318,14 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             // Lógica para Passos de Instalação
-            let statusMap = { inst_laco: 'Laço', inst_base: 'Base', inst_infra: 'Infra', inst_energia: 'Energia', inst_prov: 'Provedor' }; // Provedor adicionado
-            if (tipoEquip.includes('CCO')) { delete statusMap.inst_laco; delete statusMap.inst_base; } 
-            else if (tipoEquip.includes('DOME') || tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP')) { delete statusMap.inst_laco; }
+             let statusMap = { inst_laco: 'Laço', inst_base: 'Base', inst_infra: 'Infra', inst_energia: 'Energia', inst_prov: 'Provedor' };
+            
+            if (tipoEquip.includes('CCO') || tipoEquip.includes('DOME')) {
+                delete statusMap.inst_laco;
+                delete statusMap.inst_base;
+            } else if (tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP')) {
+                delete statusMap.inst_laco;
+            }
             
             const dateMap = { inst_laco: 'dt_laco', inst_base: 'dt_base', inst_infra: 'data_infra', inst_energia: 'dt_energia', inst_prov: 'data_provedor' }; // Provedor adicionado
             
@@ -719,10 +724,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 provedor: dataProvedorInput.closest('.item-checklist'),
             };
 
-            Object.values(checklist).forEach(el => el.classList.remove('hidden')); // Reseta a visibilidade
+            Object.values(checklist).forEach(el => el.classList.remove('hidden')); 
 
-            if (tipoEquip.includes('CCO')) { checklist.laco.classList.add('hidden'); checklist.base.classList.add('hidden'); }
-            else if (tipoEquip.includes('DOME') || tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP')) { checklist.laco.classList.add('hidden'); }
+            if (tipoEquip.includes('CCO') || tipoEquip.includes('DOME')) {
+                checklist.laco.classList.add('hidden');
+                checklist.base.classList.add('hidden');
+            } else if (tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP')) {
+                checklist.laco.classList.add('hidden');
+            }
 
             dataLacoInput.value = item.dt_laco || '';
             dataBaseInput.value = item.dt_base || '';

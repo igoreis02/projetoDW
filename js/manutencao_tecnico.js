@@ -181,29 +181,24 @@ document.addEventListener('DOMContentLoaded', () => {
             // 3. Esconde todos os itens para começar do zero
             Object.values(checklistItems).forEach(item => item.classList.add('oculto'));
 
-            let passosVisiveis = []; // Armazenará os nomes das etapas que devem ser mostradas
+            let passosParaMostrar = { laco: true, base: true, infra: true, energia: true };
 
-            // 4. Aplica as regras de prioridade para definir as etapas visíveis
-            if (!etiquetaFeita) {
-                // Cenário 1: Etiqueta não pronta -> mostra apenas Laço e Base
-                passosVisiveis = ['laco', 'base'];
-            } else { // Etiqueta pronta
-                if (lacoFeito && baseFeita) {
-                    // Cenário 2: Laço e Base prontos -> mostra Infra e Energia
-                    passosVisiveis = ['infra', 'energia'];
-                } else {
-                    // Cenário 3: Laço ou Base pendentes -> mostra todas as etapas
-                    passosVisiveis = ['laco', 'base', 'infra', 'energia'];
-                }
+            const tiposComEtiqueta = ['LOMBADA ELETRÔNICA', 'RADAR FIXO', 'MONITOR DE SEMÁFORO'];
+            const precisaEtiqueta = tiposComEtiqueta.some(tipo => tipoEquip.includes(tipo));
+
+            if (precisaEtiqueta && manutencao.etiqueta_feita != 1) {
+                delete passosParaMostrar.infra;
+                delete passosParaMostrar.energia;
             }
 
-            // 5. Aplica as regras específicas de cada tipo de equipamento
-            if (tipoEquip.includes('CCO')) {
-                passosVisiveis = passosVisiveis.filter(p => p !== 'laco' && p !== 'base');
-            } else if (tipoEquip.includes('DOME') || tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP')) {
-                passosVisiveis = passosVisiveis.filter(p => p !== 'laco');
+            if (tipoEquip.includes('CCO') || tipoEquip.includes('DOME')) {
+                delete passosParaMostrar.laco;
+                delete passosParaMostrar.base;
+            } else if (tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP')) {
+                delete passosParaMostrar.laco;
             }
 
+            const passosVisiveis = Object.keys(passosParaMostrar);
             // 6. Torna visíveis apenas as etapas que passaram por todas as regras
             passosVisiveis.forEach(passo => {
                 if (checklistItems[passo]) {
@@ -322,32 +317,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (isInstalacao) {
                     // 1. Captura as informações de estado da manutenção
                     const tipoEquip = manutencao.tipo_equip || '';
-                    const etiquetaFeita = manutencao.etiqueta_feita == 1;
-                    const lacoFeito = manutencao.inst_laco == 1;
-                    const baseFeita = manutencao.inst_base == 1;
 
-                    // 2. Inicia um mapa de etapas vazio
-                    let statusMap = {};
+                    let statusMap = { inst_laco: 'Laço', inst_base: 'Base', inst_infra: 'Infra', inst_energia: 'Energia' };
 
-                    // 3. Aplica a lógica de exibição de etapas que você solicitou
-                    if (!etiquetaFeita) {
-                        // Cenário 1: Etiqueta não pronta -> mostra apenas Laço e Base
-                        statusMap = { inst_laco: 'Laço', inst_base: 'Base' };
-                    } else { // Etiqueta está pronta
-                        if (lacoFeito && baseFeita) {
-                            // Cenário 2: Laço e Base prontos -> mostra Infra e Energia
-                            statusMap = { inst_infra: 'Infra', inst_energia: 'Energia' };
-                        } else {
-                            // Cenário 3 (ATUALIZADO): Laço ou Base pendentes -> mostra TODAS as etapas
-                            statusMap = { inst_laco: 'Laço', inst_base: 'Base', inst_infra: 'Infra', inst_energia: 'Energia' };
-                        }
+                    const tiposComEtiqueta = ['LOMBADA ELETRÔNICA', 'RADAR FIXO', 'MONITOR DE SEMÁFORO'];
+                    const precisaEtiqueta = tiposComEtiqueta.some(tipo => tipoEquip.includes(tipo));
+
+                    if (precisaEtiqueta && manutencao.etiqueta_feita != 1) {
+                        delete statusMap.inst_infra;
+                        delete statusMap.inst_energia;
                     }
 
-                    // 4. Aplica as regras específicas do tipo de equipamento (remove etapas que não se aplicam)
-                    if (tipoEquip.includes('CCO')) {
+                    if (tipoEquip.includes('CCO') || tipoEquip.includes('DOME')) {
                         delete statusMap.inst_laco;
                         delete statusMap.inst_base;
-                    } else if (tipoEquip.includes('DOME') || tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP')) {
+                    } else if (tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP')) {
                         delete statusMap.inst_laco;
                     }
 
@@ -453,70 +437,70 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function executarSalvamentoInstalacao(isFinal) {
-    // A validação para o "Salvar Progresso" continua a mesma
-    if (!isFinal) {
-        const allDateInputs = [dataBaseInput, dataLacoInput, dataInfraInput, dataEnergiaInput];
-        const hasAnyDate = allDateInputs.some(input => input && input.value);
-        if (!hasAnyDate) {
-            showMessage(concluirReparoMessage, 'Preencha pelo menos uma data para salvar.', 'erro');
-            return;
+        // A validação para o "Salvar Progresso" continua a mesma
+        if (!isFinal) {
+            const allDateInputs = [dataBaseInput, dataLacoInput, dataInfraInput, dataEnergiaInput];
+            const hasAnyDate = allDateInputs.some(input => input && input.value);
+            if (!hasAnyDate) {
+                showMessage(concluirReparoMessage, 'Preencha pelo menos uma data para salvar.', 'erro');
+                return;
+            }
+        }
+
+        const payload = {
+            id_manutencao: currentManutencao.id_manutencao,
+            is_installation: true,
+            is_final: isFinal,
+            status_reparo: 'em andamento',
+            dt_base: dataBaseInput.value || null,
+            dt_laco: dataLacoInput.value || null,
+            data_infra: dataInfraInput.value || null,
+            dt_energia: dataEnergiaInput.value || null,
+            tipo_equip: currentManutencao.tipo_equip,
+            id_cidade: currentManutencao.id_cidade
+        };
+
+        const allButtons = [confirmConcluirReparoBtn, btnSalvarProgresso];
+        const targetSpinner = isFinal ? concluirReparoSpinner : salvarProgressoSpinner;
+
+        hideMessage(concluirReparoMessage);
+        allButtons.forEach(btn => btn.disabled = true); // Desativa os botões
+        targetSpinner.classList.remove('oculto');
+
+        try {
+            const response = await fetch('API/update_manutencao_status.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            if (!data.success) {
+                throw new Error(data.message || 'Falha ao salvar.');
+            }
+            // Este código agora roda tanto para 'Salvar Progresso' quanto para 'Concluir'.
+
+            // 1. Esconde os botões
+            allButtons.forEach(btn => btn.classList.add('oculto'));
+
+            // 2. Mostra a mensagem de sucesso
+            showMessage(concluirReparoMessage, data.message || 'Operação realizada com sucesso!', 'sucesso');
+
+            // 3. Fecha o modal e atualiza a lista após 2 segundos
+            setTimeout(() => {
+                fecharModalConcluirReparo();
+                initialLoad();
+            }, 2000);
+
+        } catch (error) {
+            // --- LÓGICA DE ERRO (JÁ ESTAVA CORRETA) ---
+            // Mostra a mensagem de erro e reativa os botões para nova tentativa.
+            showMessage(concluirReparoMessage, error.message, 'erro');
+            allButtons.forEach(btn => btn.disabled = false); // Reativa os botões
+
+        } finally {
+            targetSpinner.classList.add('oculto');
         }
     }
-
-    const payload = {
-        id_manutencao: currentManutencao.id_manutencao,
-        is_installation: true,
-        is_final: isFinal,
-        status_reparo: 'em andamento',
-        dt_base: dataBaseInput.value || null,
-        dt_laco: dataLacoInput.value || null,
-        data_infra: dataInfraInput.value || null,
-        dt_energia: dataEnergiaInput.value || null,
-        tipo_equip: currentManutencao.tipo_equip,
-        id_cidade: currentManutencao.id_cidade
-    };
-
-    const allButtons = [confirmConcluirReparoBtn, btnSalvarProgresso];
-    const targetSpinner = isFinal ? concluirReparoSpinner : salvarProgressoSpinner;
-
-    hideMessage(concluirReparoMessage);
-    allButtons.forEach(btn => btn.disabled = true); // Desativa os botões
-    targetSpinner.classList.remove('oculto');
-
-    try {
-        const response = await fetch('API/update_manutencao_status.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        const data = await response.json();
-        if (!data.success) {
-            throw new Error(data.message || 'Falha ao salvar.');
-        }
-        // Este código agora roda tanto para 'Salvar Progresso' quanto para 'Concluir'.
-
-        // 1. Esconde os botões
-        allButtons.forEach(btn => btn.classList.add('oculto'));
-
-        // 2. Mostra a mensagem de sucesso
-        showMessage(concluirReparoMessage, data.message || 'Operação realizada com sucesso!', 'sucesso');
-
-        // 3. Fecha o modal e atualiza a lista após 2 segundos
-        setTimeout(() => {
-            fecharModalConcluirReparo();
-            initialLoad();
-        }, 2000);
-
-    } catch (error) {
-        // --- LÓGICA DE ERRO (JÁ ESTAVA CORRETA) ---
-        // Mostra a mensagem de erro e reativa os botões para nova tentativa.
-        showMessage(concluirReparoMessage, error.message, 'erro');
-        allButtons.forEach(btn => btn.disabled = false); // Reativa os botões
-
-    } finally {
-        targetSpinner.classList.add('oculto');
-    }
-}
 
 
     function handleFiltroClick(tipo) {
