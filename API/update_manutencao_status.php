@@ -113,7 +113,7 @@ try {
                 
                 $sql_insert_proc = "INSERT INTO ocorrencia_processamento 
                                     (id_equipamento, id_usuario_registro, dt_ocorrencia, tipo_ocorrencia, descricao, status, id_cidade) 
-                                    VALUES (?, ?, ?, 'instalação', ?, 'pendente', ?)";
+                                    VALUES (?, ?, ?, 'instalação', ?, 'pendente', ?)";  
                 
                 $stmt_proc = $conn->prepare($sql_insert_proc);
                 $stmt_proc->bind_param("isssi", $id_equipamento, $id_usuario_logado, $dt_ocorrencia, $descricao, $id_cidade);

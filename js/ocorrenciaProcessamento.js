@@ -66,36 +66,52 @@ document.addEventListener('DOMContentLoaded', function () {
     async function initialLoad() {
         pageLoader.style.display = 'flex';
 
-        // Busca inicial para verificar a existência de manutenções em validação
-        const paramsCheck = new URLSearchParams({ status: 'validacao' });
+        // 1. Busca TODAS as ocorrências na carga inicial para análise.
+        const paramsCheck = new URLSearchParams({ status: 'todos' });
         try {
             const response = await fetch(`API/get_ocorrencias_processamento.php?${paramsCheck.toString()}`);
             const result = await response.json();
 
-            let hasValidacao = false;
-            if (result.success && result.data.ocorrencias && Object.keys(result.data.ocorrencias).length > 0) {
-                const allItems = Object.values(result.data.ocorrencias).flat();
-                if (allItems.length > 0) {
-                    hasValidacao = true;
-                }
+            if (!result.success) {
+                throw new Error(result.message || 'Falha ao carregar dados iniciais.');
             }
 
+            // Armazena os dados e o checksum para futuras atualizações
+            currentChecksum = result.checksum;
+            allData = result.data;
+
+            // 2. Analisa os dados recebidos para tomar decisões
+            const allItems = Object.values(allData.ocorrencias || {}).flat();
+            const hasValidacao = allItems.some(item => item.status === 'validacao');
+            const hasPendentes = allItems.some(item => item.status === 'pendente');
+
+            // 3. LÓGICA CORRIGIDA: Decide o filtro padrão com a prioridade correta
+            if (hasValidacao) {
+                filters.status = 'validacao'; // Prioridade 1: Validação
+            } else if (hasPendentes) {
+                filters.status = 'pendente';  // Prioridade 2: Pendente
+            } else {
+                filters.status = 'todos';     // Prioridade 3 (Fallback): Todos
+            }
+
+            // 4. Controla a visibilidade do botão 'Validação'
             const btnValidacao = document.getElementById('btnValidacao');
             if (hasValidacao) {
-                btnValidacao.style.display = ''; // Mostra o botão
-                filters.status = 'validacao'; // Define como filtro padrão
+                btnValidacao.style.display = '';
             } else {
-                btnValidacao.style.display = 'none'; // Garante que o botão está escondido
-                filters.status = 'todos'; // Mantém o padrão 'todos'
+                btnValidacao.style.display = 'none';
             }
 
-            // Atualiza a aparência dos botões de filtro de status
+            // 5. Atualiza a classe 'active' nos botões de filtro de status
             document.querySelectorAll('#statusFilterContainer .filter-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.status === filters.status);
             });
 
-            // busca os dados novamente com o filtro correto definido
-            await fetchData();
+            // 6. Renderiza os dados que já foram buscados
+            renderAllOcorrencias(allData);
+            //updateCityFilters();
+            updateDisplay();
+            adjustSearchSpacer();
 
         } catch (error) {
             console.error('Erro na carga inicial:', error);
@@ -263,55 +279,43 @@ document.addEventListener('DOMContentLoaded', function () {
     function updateDisplay() {
         const searchTerm = searchInput.value.toLowerCase().trim();
         const currentCity = filters.city;
+        const currentStatus = filters.status;
+
+        const visibleCities = new Set(); // Usa um Set para evitar cidades duplicadas
 
         document.querySelectorAll('.city-group').forEach(group => {
-            const groupCity = group.dataset.city;
-            const isCityVisible = currentCity === 'todos' || currentCity === groupCity;
             let hasVisibleItemsInGroup = false;
+            
+            group.querySelectorAll('.ocorrencia-item').forEach(item => {
+                const isSearchMatch = /* ... (toda a sua lógica de busca continua a mesma) ... */
+                (item.querySelector('.ocorrencia-header h3')?.textContent || '').toLowerCase().includes(searchTerm) ||
+                Array.from(item.querySelectorAll('.searchable')).some(span => (span.textContent || span.innerText).toLowerCase().includes(searchTerm));
 
-            if (isCityVisible) {
-                group.querySelectorAll('.ocorrencia-item').forEach(item => {
-                    const searchableSpans = item.querySelectorAll('.searchable');
-                    let searchableText = '';
-                    searchableSpans.forEach(span => {
-                        searchableText += (span.textContent || span.innerText) + ' ';
-                    });
-                    const headerText = item.querySelector('.ocorrencia-header h3')?.textContent || '';
-                    searchableText += headerText;
+                const isStatusMatch = currentStatus === 'todos' || item.classList.contains('status-' + currentStatus);
 
-                    const internalItems = item.querySelectorAll('.ocorrencia-list-container li');
-                    internalItems.forEach(li => { searchableText += li.textContent + ' '; });
-
-                    searchableText = searchableText.toLowerCase();
-                    const isSearchMatch = searchTerm === '' || searchableText.includes(searchTerm);
-
-                    if (isSearchMatch) {
+                if (isSearchMatch && isStatusMatch) {
+                    // Se o filtro de cidade for 'todos' ou corresponder à cidade do grupo, o item é um candidato a ser visível
+                    if (currentCity === 'todos' || group.dataset.city === currentCity) {
                         item.style.display = '';
                         hasVisibleItemsInGroup = true;
-
-                        // Expande ou recolhe a lista interna com base na busca
-                        const listContainer = item.querySelector('.ocorrencia-list-container');
-                        const btn = item.querySelector('.toggle-ocorrencias-btn');
-
-                        // Se há um termo de busca e uma lista, expande para mostrar o resultado
-                        if (searchTerm !== '' && listContainer) {
-                            listContainer.classList.remove('collapsed');
-                            if (btn) btn.textContent = 'Ocultar ocorrências';
-                        }
-                        // Se a busca for limpa (termo vazio) e houver uma lista, garante que ela volte ao estado recolhido
-                        else if (listContainer) {
-                            listContainer.classList.add('collapsed');
-                            if (btn) btn.textContent = 'Todas ocorrências';
-                        }
-
                     } else {
                         item.style.display = 'none';
                     }
-                });
-            }
+                } else {
+                    item.style.display = 'none';
+                }
+            });
 
-            group.style.display = isCityVisible && hasVisibleItemsInGroup ? 'block' : 'none';
+            if (hasVisibleItemsInGroup) {
+                group.style.display = 'block';
+                visibleCities.add(group.dataset.city); // Adiciona a cidade à lista de visíveis
+            } else {
+                group.style.display = 'none';
+            }
         });
+        
+        // Ao final, recria os botões de filtro de cidade apenas com as cidades visíveis
+        updateCityFilters(Array.from(visibleCities));
     }
 
     function adjustSearchSpacer() {
@@ -428,7 +432,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     window.openConcluirModal = (id, origem) => {
-        
+
         // 1. Primeiro, busca os dados da ocorrência clicada e define o 'currentItem'
         currentItem = findOcorrenciaById(id, origem);
         if (!currentItem) {
@@ -507,8 +511,30 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    function updateCityFilters() { cityFilterContainer.innerHTML = ''; const cities = allData.cidades || []; if (cities.length > 0) { const allButton = document.createElement('button'); allButton.className = 'filter-btn active todos'; allButton.dataset.city = 'todos'; allButton.textContent = 'Todas'; cityFilterContainer.appendChild(allButton); cities.sort().forEach(cidade => { const button = document.createElement('button'); button.className = 'filter-btn city'; button.dataset.city = cidade; button.textContent = cidade; cityFilterContainer.appendChild(button); }); } }
+    function updateCityFilters(citiesToShow) {
+        cityFilterContainer.innerHTML = '';
 
+        // Usa a lista de cidades fornecida ou a lista completa como fallback
+        const cities = citiesToShow || (allData ? allData.cidades : []) || [];
+
+        if (cities.length > 0) {
+            const allButton = document.createElement('button');
+            // Mantém o botão 'Todas' ativo se essa for a seleção atual
+            allButton.className = `filter-btn todos ${filters.city === 'todos' ? 'active' : ''}`;
+            allButton.dataset.city = 'todos';
+            allButton.textContent = 'Todas';
+            cityFilterContainer.appendChild(allButton);
+
+            cities.sort().forEach(cidade => {
+                const button = document.createElement('button');
+                // Mantém o botão da cidade ativo se essa for a seleção atual
+                button.className = `filter-btn city ${filters.city === cidade ? 'active' : ''}`;
+                button.dataset.city = cidade;
+                button.textContent = cidade;
+                cityFilterContainer.appendChild(button);
+            });
+        }
+    }
     window.openModal = (modalId) => document.getElementById(modalId).classList.add('is-active');
 
     window.closeModal = (modalId) => {
@@ -532,16 +558,29 @@ document.addEventListener('DOMContentLoaded', function () {
     function openEtiquetaModal() {
         if (!currentItem) return;
 
-        // Reseta o estado do modal
+        // 1. Reseta o estado do modal para um novo uso
         document.getElementById('etiquetaModalEquipName').textContent = `${currentItem.nome_equip} - ${currentItem.referencia_equip}`;
-        etiquetaSimBtn.classList.remove('selected');
-        etiquetaNaoBtn.classList.remove('selected');
+        
+        // Remove a seleção dos botões 'Sim' e 'Não'
+        etiquetaSimBtn.classList.remove('btn-primary');
+        etiquetaSimBtn.classList.add('btn-secondary');
+        etiquetaNaoBtn.classList.remove('btn-primary');
+        etiquetaNaoBtn.classList.add('btn-secondary');
+
+        // Esconde os campos que dependem da seleção
         etiquetaDataGroup.classList.add('hidden');
-        etiquetaDataInput.value = '';
         saveEtiquetaBtn.classList.add('hidden');
+        
+        // Limpa os campos e mensagens
+        etiquetaDataInput.value = '';
         document.getElementById('etiquetaDataError').classList.add('hidden');
         document.getElementById('etiquetaMessage').classList.add('hidden');
         document.getElementById('etiquetaButtons').style.display = 'flex';
+        
+        // 2. Define a data máxima como hoje para o input de data
+        const hoje = new Date().toISOString().split('T')[0];
+        etiquetaDataInput.max = hoje;
+
 
         openModal('etiquetaModal');
     }
@@ -553,7 +592,7 @@ document.addEventListener('DOMContentLoaded', function () {
         etiquetaSimBtn.classList.remove('btn-secondary');
         etiquetaNaoBtn.classList.remove('btn-primary');
         etiquetaNaoBtn.classList.add('btn-secondary');
-        
+
         // Mostra os campos de data e o botão de confirmar
         etiquetaDataGroup.classList.remove('hidden');
         saveEtiquetaBtn.classList.remove('hidden');
@@ -575,24 +614,24 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Ação do botão "Confirmar" do modal de etiqueta
     saveEtiquetaBtn.addEventListener('click', async () => {
-         const dataFabricacao = etiquetaDataInput.value;
-    const errorEl = document.getElementById('etiquetaDataError');
+        const dataFabricacao = etiquetaDataInput.value;
+        const errorEl = document.getElementById('etiquetaDataError');
 
-    if (!dataFabricacao) {
-        errorEl.textContent = 'Data de fabricação obrigatoria para concluir';
-        errorEl.classList.remove('hidden'); 
-        return;
-    }
-    errorEl.classList.add('hidden'); 
+        if (!dataFabricacao) {
+            errorEl.textContent = 'Data de fabricação obrigatoria para concluir';
+            errorEl.classList.remove('hidden');
+            return;
+        }
+        errorEl.classList.add('hidden');
 
         const payload = {
             action: 'concluir_etiqueta',
             id_ocorrencia_processamento: currentItem.id,
             id_equipamento: currentItem.id_equipamento,
-            id_manutencao: currentItem.id_manutencao, 
+            id_manutencao: currentItem.id_manutencao,
             dt_fabricacao: dataFabricacao
         };
-        
+
         // Controla os elementos corretos do modal de etiqueta
         const button = saveEtiquetaBtn;
         const spinner = button.querySelector('.spinner');
@@ -638,8 +677,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     etiquetaDataInput.addEventListener('input', () => {
-    document.getElementById('etiquetaDataError').classList.add('hidden');
-});
+        document.getElementById('etiquetaDataError').classList.add('hidden');
+    });
 
     window.onscroll = function () {
         controlarVisibilidadeBotao();

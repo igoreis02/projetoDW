@@ -130,19 +130,19 @@ try {
             throw new Exception('Falha ao salvar a data de fabricação no equipamento.');
         }
         $stmt_equip->close();
-
-        // 3. Se um id_manutencao original foi passado, atualiza-o
+        
+        // 3. Atualiza a manutenção original, marcando a etiqueta como feita
         if ($id_manutencao_original) {
-            // Encontra a manutenção principal associada e a retorna para 'pendente'
-            $stmt_manut = $conn->prepare("UPDATE manutencoes SET status_reparo = 'pendente' WHERE id_manutencao = ? AND status_reparo = 'Aguardando etiqueta'");
+            // Comando SQL simplificado para atualizar APENAS a coluna da etiqueta
+            $stmt_manut = $conn->prepare("UPDATE manutencoes SET etiqueta_feita = 1 WHERE id_manutencao = ?");
             $stmt_manut->bind_param('i', $id_manutencao_original);
             if (!$stmt_manut->execute()) {
-                throw new Exception('Falha ao retornar a manutenção principal para pendente.');
+                throw new Exception('Falha ao atualizar a manutenção principal com o status da etiqueta.');
             }
             $stmt_manut->close();
         }
 
-        echo json_encode(['success' => true, 'message' => 'Etiqueta concluída e manutenção liberada.']);
+        echo json_encode(['success' => true, 'message' => 'Etiqueta concluída com sucesso.']);
     } elseif ($action === 'validar_reparo') {
         // Busca o tipo da manutenção e os IDs dos lacres distribuídos
         $stmt_info = $conn->prepare("SELECT tipo_manutencao, id_controle_lacres_dist FROM manutencoes WHERE id_manutencao = ?");

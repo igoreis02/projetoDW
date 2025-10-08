@@ -896,6 +896,12 @@
      min-height: auto;
  }
 
+ .detail-item.etiqueta-obs span {
+     color: var(--cor-status-instalacao);
+     font-weight: 600;
+     font-style: italic;
+ }
+
  /* Regras de @media não possuem cores para alterar, então são mantidas como estão */
  @media (max-width: 1200px) {
      .city-ocorrencias-grid {

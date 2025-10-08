@@ -1,5 +1,5 @@
 <?php
-// /API/get_ocorrencias_processamento.php - VERSÃO CORRIGIDA
+// /API/get_ocorrencias_processamento.php - 
 
 header('Content-Type: application/json');
 require_once 'conexao_bd.php';
@@ -51,7 +51,8 @@ try {
     LEFT JOIN usuario u_reg ON op.id_usuario_registro = u_reg.id_usuario
     LEFT JOIN usuario u_conc ON op.id_usuario_concluiu = u_conc.id_usuario
     -- V ADICIONE ESTE JOIN PARA ENCONTRAR A MANUTENÇÃO ORIGINAL V
-    LEFT JOIN manutencoes m ON op.id_equipamento = m.id_equipamento AND m.status_reparo = 'Aguardando etiqueta' AND op.tipo_ocorrencia = 'Aguardando etiqueta'
+    LEFT JOIN manutencoes m ON op.id_equipamento = m.id_equipamento AND m.status_reparo = 'pendente' AND op.tipo_ocorrencia = 'Aguardando etiqueta'
+
 ";
 
 

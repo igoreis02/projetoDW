@@ -165,6 +165,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isInstalacao) {
             const tipoEquip = manutencao.tipo_equip || '';
 
+            // 1. Captura as informações de estado da manutenção
+            const etiquetaFeita = manutencao.etiqueta_feita == 1;
+            const lacoFeito = manutencao.inst_laco == 1;
+            const baseFeita = manutencao.inst_base == 1;
+
+            // 2. Referências aos itens do checklist no modal
             const checklistItems = {
                 laco: document.querySelector('#dataLaco').closest('.item-checklist'),
                 base: document.querySelector('#dataBase').closest('.item-checklist'),
@@ -172,34 +178,56 @@ document.addEventListener('DOMContentLoaded', () => {
                 energia: document.querySelector('#dataEnergia').closest('.item-checklist')
             };
 
-            // Reseta a visibilidade e preenche os dados
-            Object.values(checklistItems).forEach(item => item.classList.remove('oculto'));
+            // 3. Esconde todos os itens para começar do zero
+            Object.values(checklistItems).forEach(item => item.classList.add('oculto'));
+
+            let passosVisiveis = []; // Armazenará os nomes das etapas que devem ser mostradas
+
+            // 4. Aplica as regras de prioridade para definir as etapas visíveis
+            if (!etiquetaFeita) {
+                // Cenário 1: Etiqueta não pronta -> mostra apenas Laço e Base
+                passosVisiveis = ['laco', 'base'];
+            } else { // Etiqueta pronta
+                if (lacoFeito && baseFeita) {
+                    // Cenário 2: Laço e Base prontos -> mostra Infra e Energia
+                    passosVisiveis = ['infra', 'energia'];
+                } else {
+                    // Cenário 3: Laço ou Base pendentes -> mostra todas as etapas
+                    passosVisiveis = ['laco', 'base', 'infra', 'energia'];
+                }
+            }
+
+            // 5. Aplica as regras específicas de cada tipo de equipamento
+            if (tipoEquip.includes('CCO')) {
+                passosVisiveis = passosVisiveis.filter(p => p !== 'laco' && p !== 'base');
+            } else if (tipoEquip.includes('DOME') || tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP')) {
+                passosVisiveis = passosVisiveis.filter(p => p !== 'laco');
+            }
+
+            // 6. Torna visíveis apenas as etapas que passaram por todas as regras
+            passosVisiveis.forEach(passo => {
+                if (checklistItems[passo]) {
+                    checklistItems[passo].classList.remove('oculto');
+                }
+            });
+
+            // 7. Preenche os valores dos inputs com os dados existentes
             dataLacoInput.value = manutencao.dt_laco || '';
             dataBaseInput.value = manutencao.dt_base || '';
             dataInfraInput.value = manutencao.data_infra || '';
             dataEnergiaInput.value = manutencao.dt_energia || '';
 
-            // Define os passos necessários
-            let passosNecessarios = ['base', 'infra', 'energia', 'laco'];
-            if (tipoEquip.includes('CCO')) {
-                passosNecessarios = ['infra', 'energia'];
-                checklistItems.laco.classList.add('oculto');
-                checklistItems.base.classList.add('oculto');
-            } else if (tipoEquip.includes('DOME') || tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP')) {
-                passosNecessarios = ['base', 'infra', 'energia'];
-                checklistItems.laco.classList.add('oculto');
-            }
-
-            // Verifica quantos passos faltam
+            // 8. A lógica para o botão "Salvar Progresso" agora usa os passos que estão visíveis
+            const passosNecessarios = passosVisiveis;
             let passosFaltantes = 0;
             passosNecessarios.forEach(passo => {
-                const input = document.getElementById(`data${passo.charAt(0).toUpperCase() + passo.slice(1)}`);
-                if (!input.value) {
+                const inputId = `data${passo.charAt(0).toUpperCase() + passo.slice(1)}`;
+                const input = document.getElementById(inputId);
+                if (input && !input.value) {
                     passosFaltantes++;
                 }
             });
 
-            // Mostra ou esconde o botão "Salvar Progresso"
             btnSalvarProgresso.classList.toggle('oculto', passosFaltantes <= 1);
 
         } else { // Lógica para Corretiva
@@ -292,20 +320,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 const isInstalacao = manutencao.tipo_manutencao.toLowerCase() === 'instalação';
 
                 if (isInstalacao) {
-                    // 1. Obter o tipo do equipamento para as regras
-                    const tipoEquip = manutencao.tipo_equip || 'Não especificado';
+                    // 1. Captura as informações de estado da manutenção
+                    const tipoEquip = manutencao.tipo_equip || '';
+                    const etiquetaFeita = manutencao.etiqueta_feita == 1;
+                    const lacoFeito = manutencao.inst_laco == 1;
+                    const baseFeita = manutencao.inst_base == 1;
 
-                    // 2. Criar o HTML para exibir o tipo do equipamento, acima da observação
-                    const htmlTipoEquip = `<div class="descricao-problema" style="margin-top: 5px;"><span class="rotulo-info">Tipo de Equipamento:</span> ${tipoEquip}</div>`;
+                    // 2. Inicia um mapa de etapas vazio
+                    let statusMap = {};
 
-                    // 3. Lógica para definir os passos de instalação que serão mostrados
-                    let statusMap = {
-                        inst_laco: 'Laço',
-                        inst_base: 'Base',
-                        inst_infra: 'Infra',
-                        inst_energia: 'Energia'
-                    };
+                    // 3. Aplica a lógica de exibição de etapas que você solicitou
+                    if (!etiquetaFeita) {
+                        // Cenário 1: Etiqueta não pronta -> mostra apenas Laço e Base
+                        statusMap = { inst_laco: 'Laço', inst_base: 'Base' };
+                    } else { // Etiqueta está pronta
+                        if (lacoFeito && baseFeita) {
+                            // Cenário 2: Laço e Base prontos -> mostra Infra e Energia
+                            statusMap = { inst_infra: 'Infra', inst_energia: 'Energia' };
+                        } else {
+                            // Cenário 3 (ATUALIZADO): Laço ou Base pendentes -> mostra TODAS as etapas
+                            statusMap = { inst_laco: 'Laço', inst_base: 'Base', inst_infra: 'Infra', inst_energia: 'Energia' };
+                        }
+                    }
 
+                    // 4. Aplica as regras específicas do tipo de equipamento (remove etapas que não se aplicam)
                     if (tipoEquip.includes('CCO')) {
                         delete statusMap.inst_laco;
                         delete statusMap.inst_base;
@@ -313,21 +351,20 @@ document.addEventListener('DOMContentLoaded', () => {
                         delete statusMap.inst_laco;
                     }
 
-                    // 4. Gerar o HTML apenas para os passos visíveis
+                    // 5. Gera o HTML apenas para as etapas que devem ser exibidas
                     const stepsHTML = Object.keys(statusMap).map(key => {
-                        const statusKey = key; // ex: 'inst_laco'
-                        const label = statusMap[key]; // ex: 'Laço'
+                        const statusKey = key;
+                        const label = statusMap[key];
                         const status = manutencao[statusKey] == 1 ? 'Instalado' : 'Aguardando Instalação';
                         return `<p class="status-item"><span class="rotulo-info">${label}:</span> ${status}</p>`;
                     }).join('');
 
-                    // 5. Montar o HTML da observação (se existir)
+                    const htmlTipoEquip = `<div class="descricao-problema" style="margin-top: 5px;"><span class="rotulo-info">Tipo de Equipamento:</span> ${tipoEquip}</div>`;
                     let htmlObservacao = '';
                     if (manutencao.observacao_instalacao) {
                         htmlObservacao = `<div class="descricao-problema" style="margin-top: 5px;"><span class="rotulo-info">Observação:</span> ${manutencao.observacao_instalacao}</div>`;
                     }
 
-                    // 6. Juntar todas as partes para formar o conteúdo principal do card
                     htmlConteudoPrincipal = `
                         ${htmlTipoEquip}
                         <div class="instalacao-status-container">${stepsHTML}</div>
@@ -416,85 +453,71 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function executarSalvamentoInstalacao(isFinal) {
-        let novoStatus;
-
-        if (!isFinal) {
-            // 1. Ação: "Salvar Progresso" -> A tarefa continua com o técnico.
-            novoStatus = 'em andamento';
-        } else {
-            // 2. Ação: "Concluir Instalação" -> O status depende se a conclusão é total ou parcial.
-            const tipoEquip = currentManutencao.tipo_equip || '';
-
-            // Determina os passos necessários para este tipo de equipamento
-            let passosNecessarios = ['laco', 'base', 'infra', 'energia'];
-            if (tipoEquip.includes('CCO')) {
-                passosNecessarios = ['infra', 'energia'];
-            } else if (tipoEquip.includes('DOME') || tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP')) {
-                passosNecessarios = ['base', 'infra', 'energia'];
-            }
-
-            // Verifica se todos os passos necessários foram preenchidos
-            const allFilled = passosNecessarios.every(passo => {
-                // Constrói o ID do input de data (ex: 'dataLaco', 'dataBase')
-                const inputId = `data${passo.charAt(0).toUpperCase() + passo.slice(1)}`;
-                const input = document.getElementById(inputId);
-                return input && input.value;
-            });
-
-            if (allFilled) {
-                // 2a. Conclusão TOTAL: Continua 'em andamento' para a próxima fase do processo (sem técnico).
-                novoStatus = 'em andamento';
-            } else {
-                // 2b. Conclusão PARCIAL: Volta para a fila geral como 'pendente'.
-                novoStatus = 'pendente';
-            }
-        }
-        const payload = {
-            id_manutencao: currentManutencao.id_manutencao,
-            is_installation: true,
-            is_final: isFinal,
-            status_reparo: novoStatus,
-            dt_base: dataBaseInput.value || null,
-            dt_laco: dataLacoInput.value || null,
-            data_infra: dataInfraInput.value || null,
-            dt_energia: dataEnergiaInput.value || null,
-            tipo_equip: currentManutencao.tipo_equip,
-            id_cidade: currentManutencao.id_cidade
-        };
-
-        const targetButton = isFinal ? confirmConcluirReparoBtn : btnSalvarProgresso;
-        const targetSpinner = isFinal ? concluirReparoSpinner : salvarProgressoSpinner;
-
-        hideMessage(concluirReparoMessage);
-        toggleSpinner(targetButton, targetSpinner, true);
-
-        try {
-            const response = await fetch('API/update_manutencao_status.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            const data = await response.json();
-
-            if (data.success) {
-                if (isFinal) {
-                    confirmConcluirReparoBtn.classList.add('oculto');
-                    btnSalvarProgresso.classList.add('oculto');
-                }
-                showMessage(concluirReparoMessage, data.message || 'Operação realizada com sucesso!', 'sucesso');
-                setTimeout(() => {
-                    fecharModalConcluirReparo();
-                    initialLoad();
-                }, 2000);
-            } else {
-                throw new Error(data.message || 'Falha ao salvar.');
-            }
-        } catch (error) {
-            showMessage(concluirReparoMessage, error.message, 'erro');
-        } finally {
-            toggleSpinner(targetButton, targetSpinner, false);
+    // A validação para o "Salvar Progresso" continua a mesma
+    if (!isFinal) {
+        const allDateInputs = [dataBaseInput, dataLacoInput, dataInfraInput, dataEnergiaInput];
+        const hasAnyDate = allDateInputs.some(input => input && input.value);
+        if (!hasAnyDate) {
+            showMessage(concluirReparoMessage, 'Preencha pelo menos uma data para salvar.', 'erro');
+            return;
         }
     }
+
+    const payload = {
+        id_manutencao: currentManutencao.id_manutencao,
+        is_installation: true,
+        is_final: isFinal,
+        status_reparo: 'em andamento',
+        dt_base: dataBaseInput.value || null,
+        dt_laco: dataLacoInput.value || null,
+        data_infra: dataInfraInput.value || null,
+        dt_energia: dataEnergiaInput.value || null,
+        tipo_equip: currentManutencao.tipo_equip,
+        id_cidade: currentManutencao.id_cidade
+    };
+
+    const allButtons = [confirmConcluirReparoBtn, btnSalvarProgresso];
+    const targetSpinner = isFinal ? concluirReparoSpinner : salvarProgressoSpinner;
+
+    hideMessage(concluirReparoMessage);
+    allButtons.forEach(btn => btn.disabled = true); // Desativa os botões
+    targetSpinner.classList.remove('oculto');
+
+    try {
+        const response = await fetch('API/update_manutencao_status.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (!data.success) {
+            throw new Error(data.message || 'Falha ao salvar.');
+        }
+        // Este código agora roda tanto para 'Salvar Progresso' quanto para 'Concluir'.
+
+        // 1. Esconde os botões
+        allButtons.forEach(btn => btn.classList.add('oculto'));
+
+        // 2. Mostra a mensagem de sucesso
+        showMessage(concluirReparoMessage, data.message || 'Operação realizada com sucesso!', 'sucesso');
+
+        // 3. Fecha o modal e atualiza a lista após 2 segundos
+        setTimeout(() => {
+            fecharModalConcluirReparo();
+            initialLoad();
+        }, 2000);
+
+    } catch (error) {
+        // --- LÓGICA DE ERRO (JÁ ESTAVA CORRETA) ---
+        // Mostra a mensagem de erro e reativa os botões para nova tentativa.
+        showMessage(concluirReparoMessage, error.message, 'erro');
+        allButtons.forEach(btn => btn.disabled = false); // Reativa os botões
+
+    } finally {
+        targetSpinner.classList.add('oculto');
+    }
+}
+
 
     function handleFiltroClick(tipo) {
         filtroAtual = tipo;

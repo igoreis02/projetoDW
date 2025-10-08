@@ -574,6 +574,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 detailsHTML += `<div class="detail-item"><strong>Qtd. Faixa(s):</strong> <span>${firstOcorrencia.qtd_faixa}</span></div>`;
             }
 
+            
+
             // Lógica para definir quais passos de instalação mostrar (continua a mesma)
             let statusMap = {
                 inst_laco: 'Laço',
@@ -581,6 +583,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 inst_infra: 'Infra',
                 inst_energia: 'Energia'
             };
+
+            // Se a etiqueta NÃO estiver pronta, remove as etapas de Infra e Energia do mapa
+            if (firstOcorrencia.etiqueta_feita != 1) {
+                delete statusMap.inst_infra;
+                delete statusMap.inst_energia;
+            }
 
             // Aplicamos as regras para remover passos conforme o tipo (continua a mesma)
             if (tipoEquip.includes('CCO')) {
@@ -603,6 +611,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     `<span class="status-value aguardando">Aguardando instalação</span>`;
                 return `<div class="detail-item"><strong>${label}</strong> <span>${status}</span></div>`;
             }).join('');
+            
+            if (firstOcorrencia.etiqueta_feita == 0) {
+                detailsHTML += `<div class="detail-item etiqueta-obs"><strong>Obs:</strong> <span>Produzindo etiqueta</span></div>`;
+            }
 
         } else if (item.tipo_manutencao === 'semaforica') {
             const dataInicioFormatada = new Date(firstOcorrencia.inicio_reparo).toLocaleDateString('pt-BR');
