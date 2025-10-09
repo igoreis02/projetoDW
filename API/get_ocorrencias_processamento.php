@@ -43,15 +43,16 @@ try {
         CONCAT(en.logradouro, ', ', en.bairro) AS local_completo,
         SUBSTRING_INDEX(u_reg.nome, ' ', 2) AS atribuido_por,
         SUBSTRING_INDEX(u_conc.nome, ' ', 2) AS concluido_por,
-        m.id_manutencao -- <<< ADICIONE ESTA LINHA PARA BUSCAR O ID CORRETO
+        m.id_manutencao 
     FROM ocorrencia_processamento op
     JOIN equipamentos e ON op.id_equipamento = e.id_equipamento
     LEFT JOIN cidades c ON op.id_cidade = c.id_cidade
     LEFT JOIN endereco en ON e.id_endereco = en.id_endereco
     LEFT JOIN usuario u_reg ON op.id_usuario_registro = u_reg.id_usuario
     LEFT JOIN usuario u_conc ON op.id_usuario_concluiu = u_conc.id_usuario
-    -- V ADICIONE ESTE JOIN PARA ENCONTRAR A MANUTENÇÃO ORIGINAL V
-    LEFT JOIN manutencoes m ON op.id_equipamento = m.id_equipamento AND m.status_reparo = 'pendente' AND op.tipo_ocorrencia = 'Aguardando etiqueta'
+    LEFT JOIN manutencoes m ON op.id_equipamento = m.id_equipamento 
+    AND (m.status_reparo = 'pendente' OR m.status_reparo = 'em andamento')
+    AND op.tipo_ocorrencia = 'Aguardando etiqueta'
 
 ";
 

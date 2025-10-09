@@ -318,13 +318,29 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             // Lógica para Passos de Instalação
-             let statusMap = { inst_laco: 'Laço', inst_base: 'Base', inst_infra: 'Infra', inst_energia: 'Energia', inst_prov: 'Provedor' };
-            
-            if (tipoEquip.includes('CCO') || tipoEquip.includes('DOME')) {
+             let statusMap = { inst_laco: 'Laço', inst_base: 'Base', inst_infra: 'Infra', inst_energia: 'Energia' };
+
+            // Regra 1: Equipamentos específicos
+            if (tipoEquip.includes('CCO') ) {
                 delete statusMap.inst_laco;
                 delete statusMap.inst_base;
-            } else if (tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP')) {
+            } else if (tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP') || tipoEquip.includes('DOME')) {
                 delete statusMap.inst_laco;
+            }
+
+            // Regra 2: Etiqueta
+            const tiposComEtiqueta = ['LOMBADA ELETRÔNICA', 'RADAR FIXO', 'MONITOR DE SEMÁFORO'];
+            const precisaEtiqueta = tiposComEtiqueta.some(tipo => tipoEquip.includes(tipo));
+            if (precisaEtiqueta && item.etiqueta_feita != 1) {
+                delete statusMap.inst_infra;
+                delete statusMap.inst_energia;
+            }
+
+            // Regra 3: Provedor
+            const prerequisitos = Object.keys(statusMap);
+            const todosPrerequisitosOK = prerequisitos.every(passo => item[passo] == 1);
+            if (todosPrerequisitosOK) {
+                statusMap.inst_prov = 'Provedor';
             }
             
             const dateMap = { inst_laco: 'dt_laco', inst_base: 'dt_base', inst_infra: 'data_infra', inst_energia: 'dt_energia', inst_prov: 'data_provedor' }; // Provedor adicionado
@@ -724,14 +740,37 @@ document.addEventListener('DOMContentLoaded', function () {
                 provedor: dataProvedorInput.closest('.item-checklist'),
             };
 
-            Object.values(checklist).forEach(el => el.classList.remove('hidden')); 
+            Object.values(checklist).forEach(el => el.classList.add('hidden')); // Esconde tudo para começar
 
-            if (tipoEquip.includes('CCO') || tipoEquip.includes('DOME')) {
-                checklist.laco.classList.add('hidden');
-                checklist.base.classList.add('hidden');
-            } else if (tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP')) {
-                checklist.laco.classList.add('hidden');
+            let passosParaMostrar = { laco: true, base: true, infra: true, energia: true };
+
+            // Regra 1: Equipamentos
+            if (tipoEquip.includes('CCO') ) {
+                delete passosParaMostrar.laco;
+                delete passosParaMostrar.base;
+            } else if (tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP') || tipoEquip.includes('DOME')) {
+                delete passosParaMostrar.laco;
             }
+
+            // Regra 2: Etiqueta
+            const tiposComEtiqueta = ['LOMBADA ELETRÔNICA', 'RADAR FIXO', 'MONITOR DE SEMÁFORO'];
+            const precisaEtiqueta = tiposComEtiqueta.some(tipo => tipoEquip.includes(tipo));
+            if (precisaEtiqueta && item.etiqueta_feita != 1) {
+                delete passosParaMostrar.infra;
+                delete passosParaMostrar.energia;
+            }
+
+            // Regra 3: Provedor
+            const prerequisitos = Object.keys(passosParaMostrar);
+            const todosPrerequisitosOK = prerequisitos.every(passo => item[`inst_${passo}`] == 1);
+            if (todosPrerequisitosOK) {
+                passosParaMostrar.provedor = true;
+            }
+
+            // Mostra os campos corretos
+            Object.keys(passosParaMostrar).forEach(passo => {
+                if(checklist[passo]) checklist[passo].classList.remove('hidden');
+            });
 
             dataLacoInput.value = item.dt_laco || '';
             dataBaseInput.value = item.dt_base || '';

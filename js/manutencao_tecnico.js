@@ -152,80 +152,63 @@ document.addEventListener('DOMContentLoaded', () => {
         currentManutencao = manutencao;
         const isInstalacao = manutencao.tipo_manutencao.toLowerCase() === 'instalação';
 
+        if (isInstalacao) {
+            const hoje = new Date().toISOString().split('T')[0];
+            [dataBaseInput, dataLacoInput, dataInfraInput, dataEnergiaInput].forEach(input => {
+                if (input) input.max = hoje;
+            });
+        }
+
         modalConcluirTitulo.textContent = isInstalacao ? 'Registrar Progresso da Instalação' : 'Concluir Reparo';
         confirmConcluirReparoBtn.querySelector('span').textContent = isInstalacao ? 'Concluir Instalação' : 'Confirmar Reparo';
         confirmConcluirReparoBtn.classList.remove('oculto');
-
         camposReparo.classList.toggle('oculto', isInstalacao);
         camposInstalacao.classList.toggle('oculto', !isInstalacao);
-
         nomeEquipamentoModal.textContent = manutencao.nome_equip;
         referenciaEquipamentoModal.textContent = manutencao.referencia_equip;
 
         if (isInstalacao) {
             const tipoEquip = manutencao.tipo_equip || '';
-
-            // 1. Captura as informações de estado da manutenção
-            const etiquetaFeita = manutencao.etiqueta_feita == 1;
-            const lacoFeito = manutencao.inst_laco == 1;
-            const baseFeita = manutencao.inst_base == 1;
-
-            // 2. Referências aos itens do checklist no modal
             const checklistItems = {
                 laco: document.querySelector('#dataLaco').closest('.item-checklist'),
                 base: document.querySelector('#dataBase').closest('.item-checklist'),
                 infra: document.querySelector('#dataInfra').closest('.item-checklist'),
                 energia: document.querySelector('#dataEnergia').closest('.item-checklist')
             };
-
-            // 3. Esconde todos os itens para começar do zero
             Object.values(checklistItems).forEach(item => item.classList.add('oculto'));
 
             let passosParaMostrar = { laco: true, base: true, infra: true, energia: true };
+            const precisaEtiqueta = ['LOMBADA ELETRÔNICA', 'RADAR FIXO', 'MONITOR DE SEMÁFORO'].some(tipo => tipoEquip.includes(tipo));
 
-            const tiposComEtiqueta = ['LOMBADA ELETRÔNICA', 'RADAR FIXO', 'MONITOR DE SEMÁFORO'];
-            const precisaEtiqueta = tiposComEtiqueta.some(tipo => tipoEquip.includes(tipo));
-
-            if (precisaEtiqueta && manutencao.etiqueta_feita != 1) {
-                delete passosParaMostrar.infra;
-                delete passosParaMostrar.energia;
+            // --- LÓGICA CORRIGIDA E FINAL ---
+            if (precisaEtiqueta) {
+                if (manutencao.etiqueta_feita == 0) {
+                    delete passosParaMostrar.infra;
+                    delete passosParaMostrar.energia;
+                } else if (manutencao.inst_laco == 1 && manutencao.inst_base == 1) {
+                    delete passosParaMostrar.laco;
+                    delete passosParaMostrar.base;
+                }
             }
 
-            if (tipoEquip.includes('CCO') || tipoEquip.includes('DOME')) {
+            if (tipoEquip.includes('CCO')) {
                 delete passosParaMostrar.laco;
                 delete passosParaMostrar.base;
-            } else if (tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP')) {
+            } else if (tipoEquip.includes('DOME') || tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP')) {
                 delete passosParaMostrar.laco;
             }
 
-            const passosVisiveis = Object.keys(passosParaMostrar);
-            // 6. Torna visíveis apenas as etapas que passaram por todas as regras
-            passosVisiveis.forEach(passo => {
-                if (checklistItems[passo]) {
-                    checklistItems[passo].classList.remove('oculto');
-                }
+            Object.keys(passosParaMostrar).forEach(passo => {
+                if (checklistItems[passo]) checklistItems[passo].classList.remove('oculto');
             });
 
-            // 7. Preenche os valores dos inputs com os dados existentes
             dataLacoInput.value = manutencao.dt_laco || '';
             dataBaseInput.value = manutencao.dt_base || '';
             dataInfraInput.value = manutencao.data_infra || '';
             dataEnergiaInput.value = manutencao.dt_energia || '';
+            atualizarVisibilidadeBotaoProgresso();
 
-            // 8. A lógica para o botão "Salvar Progresso" agora usa os passos que estão visíveis
-            const passosNecessarios = passosVisiveis;
-            let passosFaltantes = 0;
-            passosNecessarios.forEach(passo => {
-                const inputId = `data${passo.charAt(0).toUpperCase() + passo.slice(1)}`;
-                const input = document.getElementById(inputId);
-                if (input && !input.value) {
-                    passosFaltantes++;
-                }
-            });
-
-            btnSalvarProgresso.classList.toggle('oculto', passosFaltantes <= 1);
-
-        } else { // Lógica para Corretiva
+        } else {
             btnSalvarProgresso.classList.add('oculto');
             ocorrenciaReparoModal.textContent = manutencao.ocorrencia_reparo || 'N/A';
             reparoRealizadoTextarea.value = '';
@@ -260,9 +243,24 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleSpinner(botaoConfirmarDevolucao, spinnerDevolucao, false);
     }
 
+    function atualizarVisibilidadeBotaoProgresso() {
+        // Pega apenas os itens do checklist que estão visíveis no momento
+        const passosVisiveisItems = Array.from(document.querySelectorAll('#camposInstalacao .item-checklist:not(.oculto)'));
+
+        let passosFaltantes = 0;
+        passosVisiveisItems.forEach(item => {
+            const input = item.querySelector('input[type="date"]');
+            if (input && !input.value) {
+                passosFaltantes++;
+            }
+        });
+
+        // Oculta o botão "Salvar Progresso" apenas se não houver mais passos a serem preenchidos.
+        btnSalvarProgresso.classList.toggle('oculto', passosFaltantes < 1);
+    }
+
     function renderManutencoes() {
         if (!listaManutencoes) return;
-
         listaManutencoes.innerHTML = '';
         hideMessage(mensagemErro);
 
@@ -273,15 +271,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const manutencoesFiltradas = todasAsManutencoes.filter(m => {
             const tipo = m.tipo_manutencao.toLowerCase();
-            if (filtroAtual === 'instalação') {
-                return tipo === 'instalação';
-            } else {
-                return tipo !== 'instalação';
-            }
+            return filtroAtual === 'instalação' ? tipo === 'instalação' : tipo !== 'instalação';
         });
 
         if (manutencoesFiltradas.length > 0) {
             manutencoesFiltradas.forEach(manutencao => {
+                // ... (código inicial da função para criar o card, datas, veículos, etc. permanece o mesmo) ...
                 const itemDiv = document.createElement('div');
                 itemDiv.classList.add('item-manutencao');
 
@@ -315,57 +310,54 @@ document.addEventListener('DOMContentLoaded', () => {
                 const isInstalacao = manutencao.tipo_manutencao.toLowerCase() === 'instalação';
 
                 if (isInstalacao) {
-                    // 1. Captura as informações de estado da manutenção
                     const tipoEquip = manutencao.tipo_equip || '';
+                    const precisaEtiqueta = ['LOMBADA ELETRÔNICA', 'RADAR FIXO', 'MONITOR DE SEMÁFORO'].some(tipo => tipoEquip.includes(tipo));
 
                     let statusMap = { inst_laco: 'Laço', inst_base: 'Base', inst_infra: 'Infra', inst_energia: 'Energia' };
 
-                    const tiposComEtiqueta = ['LOMBADA ELETRÔNICA', 'RADAR FIXO', 'MONITOR DE SEMÁFORO'];
-                    const precisaEtiqueta = tiposComEtiqueta.some(tipo => tipoEquip.includes(tipo));
-
-                    if (precisaEtiqueta && manutencao.etiqueta_feita != 1) {
-                        delete statusMap.inst_infra;
-                        delete statusMap.inst_energia;
+                    if (precisaEtiqueta) {
+                        // Se a etiqueta NÃO está pronta, estamos na Fase 1. Esconda as etapas finais.
+                        if (manutencao.etiqueta_feita == 0) {
+                            delete statusMap.inst_infra;
+                            delete statusMap.inst_energia;
+                        }
+                        // Se a etiqueta ESTÁ pronta, mas as etapas iniciais JÁ foram feitas, estamos na Fase 2. Esconda as etapas iniciais.
+                        else if (manutencao.inst_laco == 1 && manutencao.inst_base == 1) {
+                            delete statusMap.inst_laco;
+                            delete statusMap.inst_base;
+                        }
+                        // Se a etiqueta ESTÁ pronta e as etapas iniciais NÃO foram feitas, é a Fase Completa (Cenário 3). Mostra tudo.
                     }
 
-                    if (tipoEquip.includes('CCO') || tipoEquip.includes('DOME')) {
+                    if (tipoEquip.includes('CCO')) {
                         delete statusMap.inst_laco;
                         delete statusMap.inst_base;
-                    } else if (tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP')) {
+                    } else if (tipoEquip.includes('DOME') || tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP')) {
                         delete statusMap.inst_laco;
                     }
 
-                    // 5. Gera o HTML apenas para as etapas que devem ser exibidas
                     const stepsHTML = Object.keys(statusMap).map(key => {
-                        const statusKey = key;
-                        const label = statusMap[key];
-                        const status = manutencao[statusKey] == 1 ? 'Instalado' : 'Aguardando Instalação';
-                        return `<p class="status-item"><span class="rotulo-info">${label}:</span> ${status}</p>`;
+                        const status = manutencao[key] == 1 ? 'Instalado' : 'Aguardando Instalação';
+                        return `<p class="status-item"><span class="rotulo-info">${statusMap[key]}:</span> ${status}</p>`;
                     }).join('');
 
                     const htmlTipoEquip = `<div class="descricao-problema" style="margin-top: 5px;"><span class="rotulo-info">Tipo de Equipamento:</span> ${tipoEquip}</div>`;
-                    let htmlObservacao = '';
-                    if (manutencao.observacao_instalacao) {
-                        htmlObservacao = `<div class="descricao-problema" style="margin-top: 5px;"><span class="rotulo-info">Observação:</span> ${manutencao.observacao_instalacao}</div>`;
-                    }
+                    let htmlObservacao = manutencao.observacao_instalacao ? `<div class="descricao-problema" style="margin-top: 5px;"><span class="rotulo-info">Observação:</span> ${manutencao.observacao_instalacao}</div>` : '';
 
-                    htmlConteudoPrincipal = `
-                        ${htmlTipoEquip}
-                        <div class="instalacao-status-container">${stepsHTML}</div>
-                        ${htmlObservacao}
-                    `;
+                    htmlConteudoPrincipal = `${htmlTipoEquip}<div class="instalacao-status-container">${stepsHTML}</div>${htmlObservacao}`;
                 } else {
                     htmlConteudoPrincipal = `<div class="descricao-problema"><span class="rotulo-info">Descrição do problema:</span> ${manutencao.ocorrencia_reparo || 'Não informada'}</div>`;
                 }
 
+                // ... (Restante da função para criar os botões e adicionar ao HTML, permanece o mesmo) ...
                 itemDiv.innerHTML = `<div>
-                    <h3 class="titulo-equipamento">${manutencao.nome_equip} - ${manutencao.referencia_equip}</h3>
-                    <p class="linha-info">${manutencao.cidade_nome}</p>
-                    ${htmlConteudoPrincipal} 
-                    <p class="linha-data-execucao">${textoDataExecucao} <span class="total-dias">(${textoDias})</span></p>
-                    <p class="linha-info"><span class="rotulo-info">Endereço:</span> ${manutencao.logradouro || 'Não informado'}</p>
-                    <div class="lista-veiculos"><span class="rotulo-info">Veículo(s):</span> ${htmlVeiculos}</div>
-                </div>`;
+                <h3 class="titulo-equipamento">${manutencao.nome_equip} - ${manutencao.referencia_equip}</h3>
+                <p class="linha-info">${manutencao.cidade_nome}</p>
+                ${htmlConteudoPrincipal} 
+                <p class="linha-data-execucao">${textoDataExecucao} <span class="total-dias">(${textoDias})</span></p>
+                <p class="linha-info"><span class="rotulo-info">Endereço:</span> ${manutencao.logradouro || 'Não informado'}</p>
+                <div class="lista-veiculos"><span class="rotulo-info">Veículo(s):</span> ${htmlVeiculos}</div>
+            </div>`;
 
                 const divBotoes = document.createElement('div');
                 divBotoes.classList.add('botoes-item');
@@ -437,13 +429,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function executarSalvamentoInstalacao(isFinal) {
-        // A validação para o "Salvar Progresso" continua a mesma
         if (!isFinal) {
             const allDateInputs = [dataBaseInput, dataLacoInput, dataInfraInput, dataEnergiaInput];
-            const hasAnyDate = allDateInputs.some(input => input && input.value);
-            if (!hasAnyDate) {
-                showMessage(concluirReparoMessage, 'Preencha pelo menos uma data para salvar.', 'erro');
+            if (!allDateInputs.some(input => input && input.value)) {
+                showMessage(concluirReparoMessage, 'Preencha pelo menos uma data para salvar o progresso.', 'erro');
                 return;
+            }
+        }
+
+        let novoStatus;
+        if (!isFinal) {
+            novoStatus = 'em andamento';
+        } else {
+            const precisaEtiqueta = ['LOMBADA ELETRÔNICA', 'RADAR FIXO', 'MONITOR DE SEMÁFORO'].some(tipo => currentManutencao.tipo_equip.includes(tipo));
+
+            const visibleInputs = Array.from(camposInstalacao.querySelectorAll('.item-checklist:not(.oculto) input[type="date"]'));
+            const allVisibleFilled = visibleInputs.every(input => input.value);
+
+            // Voltará para 'pendente' APENAS SE precisar de etiqueta, a etiqueta NÃO estava pronta no momento da conclusão, E o técnico preencheu tudo que podia.
+            if (precisaEtiqueta && currentManutencao.etiqueta_feita == 0 && allVisibleFilled) {
+                novoStatus = 'pendente';
+            } else {
+                novoStatus = 'em andamento';
             }
         }
 
@@ -451,20 +458,18 @@ document.addEventListener('DOMContentLoaded', () => {
             id_manutencao: currentManutencao.id_manutencao,
             is_installation: true,
             is_final: isFinal,
-            status_reparo: 'em andamento',
+            status_reparo: novoStatus,
             dt_base: dataBaseInput.value || null,
             dt_laco: dataLacoInput.value || null,
             data_infra: dataInfraInput.value || null,
-            dt_energia: dataEnergiaInput.value || null,
-            tipo_equip: currentManutencao.tipo_equip,
-            id_cidade: currentManutencao.id_cidade
+            dt_energia: dataEnergiaInput.value || null
         };
 
         const allButtons = [confirmConcluirReparoBtn, btnSalvarProgresso];
         const targetSpinner = isFinal ? concluirReparoSpinner : salvarProgressoSpinner;
 
         hideMessage(concluirReparoMessage);
-        allButtons.forEach(btn => btn.disabled = true); // Desativa os botões
+        allButtons.forEach(btn => btn.disabled = true);
         targetSpinner.classList.remove('oculto');
 
         try {
@@ -474,29 +479,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify(payload)
             });
             const data = await response.json();
-            if (!data.success) {
-                throw new Error(data.message || 'Falha ao salvar.');
-            }
-            // Este código agora roda tanto para 'Salvar Progresso' quanto para 'Concluir'.
+            if (!data.success) throw new Error(data.message || 'Falha ao salvar.');
 
-            // 1. Esconde os botões
             allButtons.forEach(btn => btn.classList.add('oculto'));
-
-            // 2. Mostra a mensagem de sucesso
             showMessage(concluirReparoMessage, data.message || 'Operação realizada com sucesso!', 'sucesso');
-
-            // 3. Fecha o modal e atualiza a lista após 2 segundos
             setTimeout(() => {
                 fecharModalConcluirReparo();
                 initialLoad();
             }, 2000);
-
         } catch (error) {
-            // --- LÓGICA DE ERRO (JÁ ESTAVA CORRETA) ---
-            // Mostra a mensagem de erro e reativa os botões para nova tentativa.
             showMessage(concluirReparoMessage, error.message, 'erro');
-            allButtons.forEach(btn => btn.disabled = false); // Reativa os botões
-
+            allButtons.forEach(btn => btn.disabled = false);
         } finally {
             targetSpinner.classList.add('oculto');
         }
@@ -529,6 +522,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }*/
 
     // --- Carregamento Inicial ---
+
+    [dataBaseInput, dataLacoInput, dataInfraInput, dataEnergiaInput].forEach(input => {
+        if (input) {
+            input.addEventListener('input', atualizarVisibilidadeBotaoProgresso);
+        }
+    });
 
     async function initialLoad(isUpdate = false) {
         if (!isUpdate) { // Só mostra o "carregando" na primeira vez
@@ -773,11 +772,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    window.onclick = function (event) {
+    /*window.onclick = function (event) {
         if (event.target === concluirReparoModal) fecharModalConcluirReparo();
         if (event.target === devolucaoModal) fecharModalDevolucao();
         if (event.target === partialConfirmModal) partialConfirmModal.classList.remove('ativo');
-    }
+    }*/
 
     // --- Carga Inicial ---
     initialLoad().then(() => {

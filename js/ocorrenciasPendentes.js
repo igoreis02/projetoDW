@@ -588,7 +588,6 @@ document.addEventListener('DOMContentLoaded', function () {
             const tiposComEtiqueta = ['LOMBADA ELETRÔNICA', 'RADAR FIXO', 'MONITOR DE SEMÁFORO'];
             const precisaEtiqueta = tiposComEtiqueta.some(tipo => tipoEquip.includes(tipo));
 
-            // Se o equipamento PRECISA de etiqueta E ela NÃO está pronta, esconde os últimos passos.
             // Se não precisa de etiqueta, esta condição é ignorada e todas as etapas pertinentes são mostradas.
             if (precisaEtiqueta && firstOcorrencia.etiqueta_feita != 1) {
                 delete statusMap.inst_infra;
@@ -596,10 +595,10 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             // 3. Lógica específica por tipo de equipamento (remove passos que não se aplicam)
-            if (tipoEquip.includes('CCO') || tipoEquip.includes('DOME')) {
+            if (tipoEquip.includes('CCO') ) {
                 delete statusMap.inst_laco;
                 delete statusMap.inst_base;
-            } else if (tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP')) {
+            } else if (tipoEquip.includes('VÍDEO MONITORAMENTO') || tipoEquip.includes('LAP') || tipoEquip.includes('DOME')) {
                 delete statusMap.inst_laco;
             }
 

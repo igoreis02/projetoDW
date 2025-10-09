@@ -62,7 +62,9 @@ try {
         m.inst_laco, m.dt_laco,
         m.inst_base, m.dt_base,
         m.inst_infra, m.data_infra,
-        m.inst_energia, m.dt_energia
+        m.inst_energia, m.dt_energia,
+        m.inst_prov, m.data_provedor,
+        m.etiqueta_feita
     FROM manutencoes AS m
     JOIN equipamentos AS e ON m.id_equipamento = e.id_equipamento
     JOIN cidades AS c ON m.id_cidade = c.id_cidade
@@ -100,7 +102,9 @@ try {
         NULL as inst_laco, NULL as dt_laco,
         NULL as inst_base, NULL as dt_base,
         NULL as inst_infra, NULL as data_infra,
-        NULL as inst_energia, NULL as dt_energia
+        NULL as inst_energia, NULL as dt_energia,
+        NULL as inst_prov, NULL as data_provedor,
+        NULL as etiqueta_feita
     FROM manutencoes AS m
     JOIN ocorrencia_semaforica AS os ON m.id_ocorrencia_semaforica = os.id
     JOIN cidades AS c ON os.id_cidade = c.id_cidade
