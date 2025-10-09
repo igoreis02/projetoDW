@@ -130,7 +130,7 @@ try {
             throw new Exception('Falha ao salvar a data de fabricação no equipamento.');
         }
         $stmt_equip->close();
-        
+
         // 3. Atualiza a manutenção original, marcando a etiqueta como feita
         if ($id_manutencao_original) {
             // Comando SQL simplificado para atualizar APENAS a coluna da etiqueta
@@ -143,6 +143,128 @@ try {
         }
 
         echo json_encode(['success' => true, 'message' => 'Etiqueta concluída com sucesso.']);
+    } elseif ($action === 'concluir_contato_provedor') {
+        $id_ocorrencia_proc = $id;
+        $contrato_assinado = $input['contrato_assinado'] ?? false;
+        $abrir_ocorrencia_instalacao = $input['abrir_ocorrencia_instalacao'] ?? false;
+        $contrato_flag = $contrato_assinado ? 1 : 0;
+
+        if ($abrir_ocorrencia_instalacao) {
+            // --- CAMINHO 1: USUÁRIO ESCOLHEU "SIM" PARA ABRIR OCORRÊNCIA ---
+
+            $sql_update_original = "UPDATE ocorrencia_processamento SET 
+                                status = 'concluido', 
+                                dt_resolucao = NOW(), 
+                                id_usuario_concluiu = ?, 
+                                reparo = 'Pedido de instalação aberto.', 
+                                contrato_instalacao_ass = ? 
+                              WHERE id_ocorrencia_processamento = ?";
+
+            $stmt_update_original = $conn->prepare($sql_update_original);
+            $stmt_update_original->bind_param("iii", $id_usuario_concluiu, $contrato_flag, $id_ocorrencia_proc);
+            if (!$stmt_update_original->execute()) {
+                throw new Exception("Falha ao concluir a ocorrência original do provedor.");
+            }
+            $stmt_update_original->close();
+
+            $stmt_get_data = $conn->prepare("
+            SELECT op.id_equipamento, op.id_cidade, e.id_provedor, e.nome_equip, e.referencia_equip 
+            FROM ocorrencia_processamento op
+            JOIN equipamentos e ON op.id_equipamento = e.id_equipamento
+            WHERE op.id_ocorrencia_processamento = ?
+        ");
+            $stmt_get_data->bind_param("i", $id_ocorrencia_proc);
+            $stmt_get_data->execute();
+            $data_equip = $stmt_get_data->get_result()->fetch_assoc();
+            $stmt_get_data->close();
+
+            if (!$data_equip) {
+                throw new Exception("Não foi possível encontrar os dados do equipamento para criar as novas ocorrências.");
+            }
+
+            $desc_prov = "Fazer instalação da internet no equipamento {$data_equip['nome_equip']} - {$data_equip['referencia_equip']}";
+            $sql_prov = "INSERT INTO ocorrencia_provedor (id_equipamento, id_usuario_iniciou, id_provedor, id_cidade, des_ocorrencia, tipo_ocorrencia, status) VALUES (?, ?, ?, ?, ?, 'instalacao', 'pendente')";
+            $stmt_prov = $conn->prepare($sql_prov);
+            $stmt_prov->bind_param("iiiis", $data_equip['id_equipamento'], $id_usuario_concluiu, $data_equip['id_provedor'], $data_equip['id_cidade'], $desc_prov);
+            if (!$stmt_prov->execute()) {
+                throw new Exception("Falha ao criar nova ocorrência para o provedor.");
+            }
+            $stmt_prov->close();
+
+            $desc_proc = "Adicionar câmeras no VMS, Atualizar lista terminal Login, Atualizar lista Coleta";
+            $obs_instalacao = "1. VERIFICAR ESPAÇO NO DIRETORIO( não usar disco C)\n2. Conferir licenças Digfort( câmeras e LPR)\n3. Cadastrar corretamento endereço e IP";
+            $sql_proc = "INSERT INTO ocorrencia_processamento (id_equipamento, id_usuario_registro, id_cidade, tipo_ocorrencia, descricao, obs_instalacao, status) VALUES (?, ?, ?, 'instalacao', ?, ?, 'pendente')";
+            $stmt_proc = $conn->prepare($sql_proc);
+
+            // --- LINHA CORRIGIDA ---
+            // A string de tipos agora tem 5 caracteres ("iiiss") para corresponder às 5 variáveis.
+            $stmt_proc->bind_param("iiiss", $data_equip['id_equipamento'], $id_usuario_concluiu, $data_equip['id_cidade'], $desc_proc, $obs_instalacao);
+
+            if (!$stmt_proc->execute()) {
+                throw new Exception("Falha ao criar nova ocorrência de instalação interna.");
+            }
+            $stmt_proc->close();
+
+            echo json_encode(['success' => true, 'message' => 'Novas ocorrências de instalação abertas com sucesso!']);
+        } else {
+            // --- CAMINHO 2: USUÁRIO ESCOLHEU "NÃO" PARA ABRIR OCORRÊNCIA ---
+
+            $sql_update_contrato = "UPDATE ocorrencia_processamento SET 
+                                    contrato_instalacao_ass = ? 
+                                  WHERE id_ocorrencia_processamento = ?";
+
+            $stmt_update_contrato = $conn->prepare($sql_update_contrato);
+            $stmt_update_contrato->bind_param("ii", $contrato_flag, $id_ocorrencia_proc);
+            if (!$stmt_update_contrato->execute()) {
+                throw new Exception("Falha ao atualizar o status do contrato.");
+            }
+            $stmt_update_contrato->close();
+
+            echo json_encode(['success' => true, 'message' => 'Status do contrato atualizado. A ocorrência continua pendente.']);
+        }
+    } elseif ($action === 'salvar_checklist_instalacao') {
+        $id_ocorrencia_proc = $id;
+        $check_vms = $input['check_vms'] ?? 0;
+        $check_lista_terminal = $input['check_lista_terminal'] ?? 0;
+        $check_lista_coleta = $input['check_lista_coleta'] ?? 0;
+
+        // Verifica se todos os checklists estão marcados como 1 para concluir
+        $isFinalizado = ($check_vms == 1 && $check_lista_terminal == 1 && $check_lista_coleta == 1);
+
+        $sql = "UPDATE ocorrencia_processamento SET 
+                check_vms = ?,
+                check_lista_terminal = ?,
+                check_lista_coleta = ?";
+
+        $params = [$check_vms, $check_lista_terminal, $check_lista_coleta];
+        $types = "iii";
+
+        $message = 'Progresso do checklist salvo com sucesso!';
+
+        // Se todos os itens foram concluídos, atualiza o status da ocorrência
+        if ($isFinalizado) {
+            $sql .= ", status = 'concluido',
+                   dt_resolucao = NOW(),
+                   id_usuario_concluiu = ?,
+                   reparo = 'Checklist de instalação finalizado.'";
+            $params[] = $id_usuario_concluiu;
+            $types .= "i";
+            $message = 'Instalação concluída com sucesso!';
+        }
+
+        $sql .= " WHERE id_ocorrencia_processamento = ?";
+        $params[] = $id_ocorrencia_proc;
+        $types .= "i";
+
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param($types, ...$params);
+
+        if (!$stmt->execute()) {
+            throw new Exception("Falha ao salvar o progresso do checklist.");
+        }
+        $stmt->close();
+
+        echo json_encode(['success' => true, 'message' => $message]);
     } elseif ($action === 'validar_reparo') {
         // Busca o tipo da manutenção e os IDs dos lacres distribuídos
         $stmt_info = $conn->prepare("SELECT tipo_manutencao, id_controle_lacres_dist FROM manutencoes WHERE id_manutencao = ?");

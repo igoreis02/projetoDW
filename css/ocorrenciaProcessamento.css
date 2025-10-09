@@ -759,6 +759,30 @@ body {
     border-color: var(--cor-texto-placeholder);
 }
 
+.instalacao-task-list {
+    padding-left: 20px; /* Adiciona um recuo para a lista numerada */
+    margin-top: 8px;
+    margin-bottom: 0;
+    color: var(--cor-texto-secundario);
+}
+
+.instalacao-task-list li {
+    margin-bottom: 5px; /* Espaçamento entre os itens da lista */
+}
+
+.instalacao-obs {
+    margin-top: 1rem;
+    padding-top: 0.8rem;
+    border-top: 1px dashed var(--cor-borda-principal);
+    font-size: 0.9em;
+    color: var(--cor-texto-terciario);
+    line-height: 1.6;
+}
+
+.instalacao-obs strong {
+    color: var(--cor-texto-secundario);
+}
+
 /* ######### LÓGICA PARA TELAS MENORES (RESPONSIVIDADE) ######### */
 @media (max-width: 1024px) {
     .main-controls-container {

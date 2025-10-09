@@ -14,11 +14,11 @@ try {
     $checksum_result_proc = $conn->query("CHECKSUM TABLE `ocorrencia_processamento`");
     $checksum_result_manut = $conn->query("CHECKSUM TABLE `manutencoes`");
     $totalChecksum = 0;
-    if($checksum_result_proc) {
+    if ($checksum_result_proc) {
         $row = $checksum_result_proc->fetch_assoc();
         $totalChecksum += (int)$row['Checksum'];
     }
-    if($checksum_result_manut) {
+    if ($checksum_result_manut) {
         $row = $checksum_result_manut->fetch_assoc();
         $totalChecksum += (int)$row['Checksum'];
     }
@@ -27,33 +27,37 @@ try {
 
     // Query 1: Ocorrências da tabela 'ocorrencia_processamento'
     $sql_processamento = "
-    SELECT
-        op.id_ocorrencia_processamento AS id,
-         e.id_equipamento,
-        'ocorrencia_processamento' AS origem,
-        op.descricao AS ocorrencia_reparo,
-        op.reparo AS reparo_finalizado,
-        op.status,
-        op.dt_ocorrencia AS inicio_reparo,
-        op.dt_resolucao AS fim_reparo,
-        op.tipo_ocorrencia,
-        e.nome_equip,
-        e.referencia_equip,
-        c.nome AS nome_cidade,
-        CONCAT(en.logradouro, ', ', en.bairro) AS local_completo,
-        SUBSTRING_INDEX(u_reg.nome, ' ', 2) AS atribuido_por,
-        SUBSTRING_INDEX(u_conc.nome, ' ', 2) AS concluido_por,
-        m.id_manutencao 
-    FROM ocorrencia_processamento op
-    JOIN equipamentos e ON op.id_equipamento = e.id_equipamento
-    LEFT JOIN cidades c ON op.id_cidade = c.id_cidade
-    LEFT JOIN endereco en ON e.id_endereco = en.id_endereco
-    LEFT JOIN usuario u_reg ON op.id_usuario_registro = u_reg.id_usuario
-    LEFT JOIN usuario u_conc ON op.id_usuario_concluiu = u_conc.id_usuario
-    LEFT JOIN manutencoes m ON op.id_equipamento = m.id_equipamento 
-    AND (m.status_reparo = 'pendente' OR m.status_reparo = 'em andamento')
-    AND op.tipo_ocorrencia = 'Aguardando etiqueta'
-
+SELECT
+    op.id_ocorrencia_processamento AS id,
+    e.id_equipamento,
+    e.id_provedor, 
+    'ocorrencia_processamento' AS origem,
+    op.descricao AS ocorrencia_reparo,
+    op.obs_instalacao,
+    op.reparo AS reparo_finalizado,
+    op.status,
+    op.dt_ocorrencia AS inicio_reparo,
+    op.dt_resolucao AS fim_reparo,
+    op.tipo_ocorrencia,
+    e.nome_equip,
+    e.referencia_equip,
+    c.nome AS nome_cidade,
+    CONCAT(en.logradouro, ', ', en.bairro) AS local_completo,
+    SUBSTRING_INDEX(u_reg.nome, ' ', 2) AS atribuido_por,
+    SUBSTRING_INDEX(u_conc.nome, ' ', 2) AS concluido_por,
+    m.id_manutencao,
+    op.check_vms,
+    op.check_lista_terminal,
+    op.check_lista_coleta
+FROM ocorrencia_processamento op
+JOIN equipamentos e ON op.id_equipamento = e.id_equipamento
+LEFT JOIN cidades c ON op.id_cidade = c.id_cidade
+LEFT JOIN endereco en ON e.id_endereco = en.id_endereco
+LEFT JOIN usuario u_reg ON op.id_usuario_registro = u_reg.id_usuario
+LEFT JOIN usuario u_conc ON op.id_usuario_concluiu = u_conc.id_usuario
+LEFT JOIN manutencoes m ON op.id_equipamento = m.id_equipamento 
+AND (m.status_reparo = 'pendente' OR m.status_reparo = 'em andamento')
+AND op.tipo_ocorrencia = 'Aguardando etiqueta'
 ";
 
 
@@ -62,8 +66,10 @@ try {
     SELECT 
         m.id_manutencao as id,
         m.id_equipamento,
+        e.id_provedor,
         'manutencao' as origem,
         m.ocorrencia_reparo,
+        null AS obs_instalacao,
         m.reparo_finalizado,
         m.status_reparo as status,
         m.inicio_reparo,
@@ -75,7 +81,10 @@ try {
         CONCAT(en.logradouro, ', ', en.bairro) AS local_completo,
         SUBSTRING_INDEX(u.nome, ' ', 2) AS atribuido_por,
         NULL AS concluido_por,
-        NULL AS id_manutencao -- <<< ADICIONE ESTA LINHA
+        NULL AS id_manutencao,
+        NULL AS check_vms,
+        NULL AS check_lista_terminal,
+        NULL AS check_lista_coleta
     FROM manutencoes m
     JOIN equipamentos e ON m.id_equipamento = e.id_equipamento
     LEFT JOIN cidades c ON e.id_cidade = c.id_cidade
@@ -149,17 +158,15 @@ try {
         }
     }
     sort($cities);
-    
+
     echo json_encode([
-        'success' => true, 
+        'success' => true,
         'checksum' => $totalChecksum,
         'data' => ['ocorrencias' => $grouped_ocorrencias, 'cidades' => $cities]
     ]);
-
 } catch (Exception $e) {
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'Erro no servidor: ' . $e->getMessage()]);
 }
 
 $conn->close();
-?>

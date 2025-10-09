@@ -20,6 +20,18 @@ document.addEventListener('DOMContentLoaded', function () {
     const etiquetaDataInput = document.getElementById('etiquetaDataInput');
     const saveEtiquetaBtn = document.getElementById('saveEtiquetaBtn');
 
+    const provedorModal = document.getElementById('provedorModal');
+    const contratoChoice = document.getElementById('contratoChoice');
+    const abrirOcChoice = document.getElementById('abrirOcChoice');
+    const saveProvedorBtn = document.getElementById('saveProvedorBtn');
+    const abrirOcGroup = document.getElementById('abrirOcGroup');
+
+    const instalacaoModal = document.getElementById('instalacaoModal');
+    const vmsChoice = document.getElementById('vmsChoice');
+    const terminalChoice = document.getElementById('terminalChoice');
+    const coletaChoice = document.getElementById('coletaChoice');
+    const saveInstalacaoBtn = document.getElementById('saveInstalacaoBtn');
+
     const btnVoltarAoTopo = document.getElementById("btnVoltarAoTopo");
 
 
@@ -198,57 +210,73 @@ document.addEventListener('DOMContentLoaded', function () {
         let actionsContent = '';
 
         if (item.isGrouped) {
+            // O código para itens agrupados continua o mesmo, não precisa de alteração.
             const uniqueId = `list-${firstItem.id}-${Math.random().toString(36).substr(2, 9)}`;
-            const groupId = `group-${firstItem.id_equipamento || firstItem.id}`; // Cria uma chave única para o grupo
-
-            // Armazena os dados detalhados na variável global
+            const groupId = `group-${firstItem.id_equipamento || firstItem.id}`;
             groupedDataForEditing[groupId] = item.ocorrencias_detalhadas;
 
             let ocorrenciasListHTML = item.ocorrencias_detalhadas.map((ocor, index) => {
                 const dataOcorrencia = ocor.inicio_reparo ? new Date(ocor.inicio_reparo).toLocaleDateString('pt-BR') : 'N/A';
                 const dataConclusao = ocor.fim_reparo ? new Date(ocor.fim_reparo).toLocaleDateString('pt-BR') : 'N/A';
-
                 return `
-                <li style="padding-bottom: 15px; margin-bottom: 15px; border-bottom: 1px solid #f0f0f0; list-style: none;">
-                    <div class="detail-item"><strong>${index + 1}. Ocorrência:</strong> <span class="status-tag concluido">${ocor.ocorrencia_reparo}</span></div>
-                    <div style="margin-left: 25px;">
-                        <div class="detail-item"><small><strong>Data Ocorrência:</strong> ${dataOcorrencia}</small></div>
-                        <div class="detail-item"><small><strong>Solicitado por:</strong> ${ocor.atribuido_por || 'N/A'}</small></div>
-                    </div>
-                    <div class="detail-item reparo-info"><strong>Reparo Realizado:</strong> <span class="status-tag concluido">${ocor.reparo_finalizado || 'N/A'}</span></div>
-                    <div style="margin-left: 25px;">
-                        <div class="detail-item"><small><strong>Data Conclusão:</strong> ${dataConclusao}</small></div>
-                        <div class="detail-item"><small><strong>Concluído por:</strong> ${ocor.concluido_por || 'N/A'}</small></div>
-                    </div>
-                </li>
-            `;
+            <li style="padding-bottom: 15px; margin-bottom: 15px; border-bottom: 1px solid #f0f0f0; list-style: none;">
+                <div class="detail-item"><strong>${index + 1}. Ocorrência:</strong> <span class="status-tag concluido">${ocor.ocorrencia_reparo}</span></div>
+                <div style="margin-left: 25px;">
+                    <div class="detail-item"><small><strong>Data Ocorrência:</strong> ${dataOcorrencia}</small></div>
+                    <div class="detail-item"><small><strong>Solicitado por:</strong> ${ocor.atribuido_por || 'N/A'}</small></div>
+                </div>
+                <div class="detail-item reparo-info"><strong>Reparo Realizado:</strong> <span class="status-tag concluido">${ocor.reparo_finalizado || 'N/A'}</span></div>
+                <div style="margin-left: 25px;">
+                    <div class="detail-item"><small><strong>Data Conclusão:</strong> ${dataConclusao}</small></div>
+                    <div class="detail-item"><small><strong>Concluído por:</strong> ${ocor.concluido_por || 'N/A'}</small></div>
+                </div>
+            </li>`;
             }).join('');
-
-            let toggleButtonHTML = '';
-            if (item.ocorrencias_detalhadas.length > 2) {
-                toggleButtonHTML = `<button class="toggle-ocorrencias-btn" onclick="toggleOcorrencias('${uniqueId}', this)">Todas ocorrências</button>`;
-            }
+            let toggleButtonHTML = item.ocorrencias_detalhadas.length > 2 ? `<button class="toggle-ocorrencias-btn" onclick="toggleOcorrencias('${uniqueId}', this)">Todas ocorrências</button>` : '';
 
             detailsHTML = `
-            <div id="${uniqueId}" class="ocorrencia-list-container collapsed">
-                <ol style="color: black; padding-left: 0;">${ocorrenciasListHTML}</ol>
-            </div>
+            <div id="${uniqueId}" class="ocorrencia-list-container collapsed"><ol style="color: black; padding-left: 0;">${ocorrenciasListHTML}</ol></div>
             ${toggleButtonHTML}
             <div class="detail-item" style="margin-top: 1rem;"><strong>Status</strong> <span class="status-tag ${statusClass}">${firstItem.status}</span></div>
             <div class="detail-item"><strong>Local</strong> <span class="searchable">${firstItem.local_completo || 'N/A'}</span></div>
         `;
-
             actionsContent = `<button class="item-btn edit-btn" onclick="openGroupedEditModal('${groupId}')">Editar</button>`;
 
         } else {
-            // Lógica para cards individuais 
+            // --- LÓGICA PARA CARDS INDIVIDUAIS ---
+            let ocorrenciaContentHTML = ''; // Variável para o conteúdo principal
+
+            // ▼▼▼ INÍCIO DA NOVA LÓGICA ▼▼▼
+            if (firstItem.tipo_ocorrencia === 'instalacao') {
+                // Se for do tipo 'instalação', formata como lista
+                const tasks = firstItem.ocorrencia_reparo.split(',').map(task => task.trim());
+                const tasksListHTML = tasks.map((task, index) => `<li>${task}</li>`).join('');
+                const obsHTML = firstItem.obs_instalacao ? `<div class="instalacao-obs"><strong>Checklist:</strong><br>${firstItem.obs_instalacao.replace(/\n/g, '<br>')}</div>` : '';
+
+                ocorrenciaContentHTML = `
+                <div class="detail-item">
+                    <strong>Tarefas de Instalação:</strong>
+                    <ol class="instalacao-task-list">${tasksListHTML}</ol>
+                    ${obsHTML}
+                </div>
+            `;
+            } else {
+                // Para todos os outros tipos, mantém o formato original
+                ocorrenciaContentHTML = `
+                <div class="detail-item">
+                    <strong>Ocorrência:</strong> <span class="searchable status-tag concluido">${firstItem.ocorrencia_reparo || 'N/A'}</span>
+                </div>`;
+            }
+            // ▲▲▲ FIM DA NOVA LÓGICA ▲▲▲
+
             const inicioReparoFormatted = firstItem.inicio_reparo ? new Date(firstItem.inicio_reparo).toLocaleString('pt-BR') : 'N/A';
             const fimReparoFormatted = firstItem.fim_reparo ? new Date(firstItem.fim_reparo).toLocaleString('pt-BR') : 'N/A';
             let atribuidoPorHTML = firstItem.atribuido_por ? `<div class="detail-item"><strong>Reportado por</strong> <span>${firstItem.atribuido_por}</span></div>` : '';
             let reparoFinalizadoHTML = (statusClass === 'concluido' || statusClass === 'validacao') && firstItem.reparo_finalizado ? `<div class="detail-item reparo-info "><strong>Reparo realizado</strong> <span class="status-tag concluido">${firstItem.reparo_finalizado}</span></div>` : '';
 
+            // Monta o HTML final juntando o conteúdo da ocorrência com os outros detalhes
             detailsHTML = `
-            <div class="detail-item"><strong>Ocorrência</strong> <span class="searchable  status-tag concluido">${firstItem.ocorrencia_reparo || 'N/A'}</span></div>
+            ${ocorrenciaContentHTML}
             <div class="detail-item"><strong>Início Ocorrência</strong> <span>${inicioReparoFormatted}</span></div>
             ${atribuidoPorHTML}
             ${reparoFinalizadoHTML}
@@ -270,10 +298,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const actionsHTML = actionsContent ? `<div class="item-actions">${actionsContent}</div>` : `<div class="item-actions" style="min-height: 40px;"></div>`;
 
         return `<div class="ocorrencia-item status-${statusClass}" data-id="${firstItem.id}" data-origem="${firstItem.origem}">
-                <div class="ocorrencia-header"><h3><span class="searchable">${firstItem.nome_equip}</span> - <span class="searchable">${firstItem.referencia_equip}</span></h3></div>
-                <div class="ocorrencia-details">${detailsHTML}</div>
-                ${actionsHTML}
-            </div>`;
+            <div class="ocorrencia-header"><h3><span class="searchable">${firstItem.nome_equip}</span> - <span class="searchable">${firstItem.referencia_equip}</span></h3></div>
+            <div class="ocorrencia-details">${detailsHTML}</div>
+            ${actionsHTML}
+        </div>`;
     }
 
     function updateDisplay() {
@@ -285,11 +313,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
         document.querySelectorAll('.city-group').forEach(group => {
             let hasVisibleItemsInGroup = false;
-            
+
             group.querySelectorAll('.ocorrencia-item').forEach(item => {
                 const isSearchMatch = /* ... (toda a sua lógica de busca continua a mesma) ... */
-                (item.querySelector('.ocorrencia-header h3')?.textContent || '').toLowerCase().includes(searchTerm) ||
-                Array.from(item.querySelectorAll('.searchable')).some(span => (span.textContent || span.innerText).toLowerCase().includes(searchTerm));
+                    (item.querySelector('.ocorrencia-header h3')?.textContent || '').toLowerCase().includes(searchTerm) ||
+                    Array.from(item.querySelectorAll('.searchable')).some(span => (span.textContent || span.innerText).toLowerCase().includes(searchTerm));
 
                 const isStatusMatch = currentStatus === 'todos' || item.classList.contains('status-' + currentStatus);
 
@@ -313,7 +341,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 group.style.display = 'none';
             }
         });
-        
+
         // Ao final, recria os botões de filtro de cidade apenas com as cidades visíveis
         updateCityFilters(Array.from(visibleCities));
     }
@@ -431,20 +459,31 @@ document.addEventListener('DOMContentLoaded', function () {
         await executeApiUpdate(payload, 'Ocorrência retornada para pendente com sucesso!', 'retornarModal', 'btnConfirmarRetorno', 'retornarMessage', 'retornarButtons');
     }
 
+    // Funções para abrir os modais específicos
     window.openConcluirModal = (id, origem) => {
-
-        // 1. Primeiro, busca os dados da ocorrência clicada e define o 'currentItem'
         currentItem = findOcorrenciaById(id, origem);
         if (!currentItem) {
             console.error("Ocorrência não encontrada com ID:", id, "e Origem:", origem);
             return;
         }
 
-        // 2. AGORA, com o 'currentItem' correto, verifica o tipo da ocorrência
-        if (currentItem.tipo_ocorrencia === 'Aguardando etiqueta') {
-            openEtiquetaModal(); // Chama o modal correto
-            return; // Interrompe para não abrir o modal padrão
+        // --- LÓGICA MODIFICADA ---
+        if (currentItem.tipo_ocorrencia === 'provedor') {
+            openProvedorModal();
+            return;
         }
+
+        if (currentItem.tipo_ocorrencia === 'Aguardando etiqueta') {
+            openEtiquetaModal();
+            return;
+        }
+
+        // Se for do tipo 'instalacao', abre o novo modal de checklist
+        if (currentItem.tipo_ocorrencia === 'instalacao') {
+            openInstalacaoModal();
+            return;
+        }
+        // --- FIM DA LÓGICA MODIFICADA ---
 
         // Comportamento padrão para outras ocorrências 
         reparoRealizadoTextarea.value = '';
@@ -560,7 +599,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // 1. Reseta o estado do modal para um novo uso
         document.getElementById('etiquetaModalEquipName').textContent = `${currentItem.nome_equip} - ${currentItem.referencia_equip}`;
-        
+
         // Remove a seleção dos botões 'Sim' e 'Não'
         etiquetaSimBtn.classList.remove('btn-primary');
         etiquetaSimBtn.classList.add('btn-secondary');
@@ -570,13 +609,13 @@ document.addEventListener('DOMContentLoaded', function () {
         // Esconde os campos que dependem da seleção
         etiquetaDataGroup.classList.add('hidden');
         saveEtiquetaBtn.classList.add('hidden');
-        
+
         // Limpa os campos e mensagens
         etiquetaDataInput.value = '';
         document.getElementById('etiquetaDataError').classList.add('hidden');
         document.getElementById('etiquetaMessage').classList.add('hidden');
         document.getElementById('etiquetaButtons').style.display = 'flex';
-        
+
         // 2. Define a data máxima como hoje para o input de data
         const hoje = new Date().toISOString().split('T')[0];
         etiquetaDataInput.max = hoje;
@@ -584,6 +623,119 @@ document.addEventListener('DOMContentLoaded', function () {
 
         openModal('etiquetaModal');
     }
+
+    function openProvedorModal() {
+        if (!currentItem) return;
+
+        // Reseta o estado do modal
+        document.getElementById('provedorModalEquipName').textContent = `${currentItem.nome_equip} - ${currentItem.referencia_equip}`;
+
+        // Limpa seleções anteriores dos botões
+        contratoChoice.querySelectorAll('button').forEach(btn => {
+            btn.classList.remove('active', 'btn-primary');
+            btn.classList.add('btn-secondary');
+        });
+        abrirOcChoice.querySelectorAll('button').forEach(btn => {
+            btn.classList.remove('active', 'btn-primary');
+            btn.classList.add('btn-secondary');
+        });
+
+        // Esconde mensagens de erro
+        document.getElementById('contratoError').classList.add('hidden');
+        document.getElementById('abrirOcError').classList.add('hidden');
+        document.getElementById('provedorMessage').classList.add('hidden');
+
+        // Garante que os botões do rodapé estejam visíveis
+        document.getElementById('provedorButtons').style.display = 'flex';
+
+        // Garante que o grupo da segunda pergunta e o botão de confirmar estejam escondidos no início
+        abrirOcGroup.classList.add('hidden');
+        saveProvedorBtn.classList.add('hidden');
+
+        openModal('provedorModal');
+    }
+
+    // Adiciona os eventos de clique para os botões Sim/Não do novo modal
+    contratoChoice.addEventListener('click', (e) => {
+        if (e.target.tagName === 'BUTTON') {
+            // Estiliza o botão clicado
+            contratoChoice.querySelectorAll('button').forEach(btn => {
+                btn.classList.remove('active', 'btn-primary');
+                btn.classList.add('btn-secondary');
+            });
+            e.target.classList.add('active', 'btn-primary');
+            e.target.classList.remove('btn-secondary');
+            document.getElementById('contratoError').classList.add('hidden');
+
+            const contratoAssinado = e.target.dataset.value === 'true';
+
+            if (contratoAssinado) {
+                // Se o contrato foi assinado, mostra a pergunta sobre abrir ocorrência E o botão de confirmar
+                abrirOcGroup.classList.remove('hidden');
+                saveProvedorBtn.classList.remove('hidden');
+            } else {
+                // Se não foi assinado, esconde a pergunta, reseta a seleção E esconde o botão de confirmar
+                abrirOcGroup.classList.add('hidden');
+                saveProvedorBtn.classList.add('hidden');
+                abrirOcChoice.querySelectorAll('button').forEach(btn => {
+                    btn.classList.remove('active', 'btn-primary');
+                    btn.classList.add('btn-secondary');
+                });
+            }
+        }
+    });
+
+    abrirOcChoice.addEventListener('click', (e) => {
+        if (e.target.tagName === 'BUTTON') {
+            // Primeiro, reseta todos os botões do grupo para o estilo padrão (secundário)
+            abrirOcChoice.querySelectorAll('button').forEach(btn => {
+                btn.classList.remove('active', 'btn-primary');
+                btn.classList.add('btn-secondary');
+            });
+            // Em seguida, aplica o estilo ativo (primário) apenas no botão clicado
+            e.target.classList.add('active', 'btn-primary');
+            e.target.classList.remove('btn-secondary');
+            document.getElementById('abrirOcError').classList.add('hidden');
+        }
+    });
+
+    // Adiciona o evento de clique para o botão principal de confirmação
+    saveProvedorBtn.addEventListener('click', async () => {
+        const contratoBtn = contratoChoice.querySelector('button.active');
+        let abrirOcBtn = null;
+
+        // Validação
+        let isValid = true;
+        if (!contratoBtn) {
+            document.getElementById('contratoError').textContent = 'Seleção obrigatória.';
+            document.getElementById('contratoError').classList.remove('hidden');
+            isValid = false;
+        }
+
+        // A validação da segunda pergunta só acontece se ela estiver visível
+        if (!abrirOcGroup.classList.contains('hidden')) {
+            abrirOcBtn = abrirOcChoice.querySelector('button.active');
+            if (!abrirOcBtn) {
+                document.getElementById('abrirOcError').textContent = 'Seleção obrigatória.';
+                document.getElementById('abrirOcError').classList.remove('hidden');
+                isValid = false;
+            }
+        }
+
+        if (!isValid) return;
+
+        // Monta o payload para enviar para a API
+        const payload = {
+            action: 'concluir_contato_provedor',
+            id: currentItem.id, // ID da ocorrência_processamento
+            contrato_assinado: contratoBtn.dataset.value === 'true',
+            // Se a segunda pergunta estiver escondida, 'abrir_ocorrencia_instalacao' será 'false'
+            abrir_ocorrencia_instalacao: abrirOcBtn ? abrirOcBtn.dataset.value === 'true' : false
+        };
+
+        // Usa a função genérica para fazer a chamada da API
+        await executeApiUpdate(payload, 'Operação registrada com sucesso!', 'provedorModal', 'saveProvedorBtn', 'provedorMessage', 'provedorButtons');
+    });
 
     // Ação do botão "Sim"
     etiquetaSimBtn.addEventListener('click', () => {
@@ -675,6 +827,130 @@ document.addEventListener('DOMContentLoaded', function () {
             if (spinner) spinner.classList.remove('is-active');
         }
     });
+
+    function openInstalacaoModal() {
+        if (!currentItem) return;
+
+        document.getElementById('instalacaoModalEquipName').textContent = `${currentItem.nome_equip} - ${currentItem.referencia_equip}`;
+
+        // Função auxiliar para configurar cada grupo de botões
+        const setupChoiceGroup = (groupElement, isChecked) => {
+            const simBtn = groupElement.querySelector('button[data-value="true"]');
+            const naoBtn = groupElement.querySelector('button[data-value="false"]');
+
+            // Reseta os botões
+            simBtn.classList.remove('active', 'btn-primary');
+            naoBtn.classList.remove('active', 'btn-primary');
+            simBtn.classList.add('btn-secondary');
+            naoBtn.classList.add('btn-secondary');
+            simBtn.disabled = false;
+            naoBtn.disabled = false;
+
+            // Se o item já foi checado no banco de dados (valor = 1)
+            if (isChecked) {
+                simBtn.classList.add('active', 'btn-primary');
+                simBtn.classList.remove('btn-secondary');
+                // Desabilita ambos os botões para não poderem ser alterados
+                simBtn.disabled = true;
+                naoBtn.disabled = true;
+            }
+        };
+
+        // Configura cada item do checklist com base nos dados do banco
+        setupChoiceGroup(vmsChoice, currentItem.check_vms == 1);
+        setupChoiceGroup(terminalChoice, currentItem.check_lista_terminal == 1);
+        setupChoiceGroup(coletaChoice, currentItem.check_lista_coleta == 1);
+
+        document.getElementById('instalacaoMessage').classList.add('hidden');
+        document.getElementById('instalacaoButtons').style.display = 'flex';
+        saveInstalacaoBtn.disabled = false;
+        saveInstalacaoBtn.querySelector('.spinner').classList.remove('is-active');
+
+        openModal('instalacaoModal');
+    }
+
+    // Listeners para os botões do novo modal de instalação
+    vmsChoice.addEventListener('click', (e) => {
+        if (e.target.tagName === 'BUTTON') {
+            // Primeiro, reseta todos os botões do grupo para o estilo padrão
+            vmsChoice.querySelectorAll('button').forEach(btn => {
+                btn.classList.remove('active', 'btn-primary');
+                btn.classList.add('btn-secondary');
+            });
+            // Depois, aplica o estilo ativo apenas no botão que foi clicado
+            e.target.classList.add('active', 'btn-primary');
+            e.target.classList.remove('btn-secondary');
+        }
+    });
+
+    terminalChoice.addEventListener('click', (e) => {
+        if (e.target.tagName === 'BUTTON') {
+            terminalChoice.querySelectorAll('button').forEach(btn => {
+                btn.classList.remove('active', 'btn-primary');
+                btn.classList.add('btn-secondary');
+            });
+            e.target.classList.add('active', 'btn-primary');
+            e.target.classList.remove('btn-secondary'); // 
+        }
+    });
+
+    coletaChoice.addEventListener('click', (e) => {
+        if (e.target.tagName === 'BUTTON') {
+            coletaChoice.querySelectorAll('button').forEach(btn => {
+                btn.classList.remove('active', 'btn-primary');
+                btn.classList.add('btn-secondary');
+            });
+            e.target.classList.add('active', 'btn-primary');
+            e.target.classList.remove('btn-secondary');
+        }
+    });
+
+    // Listener para o botão de confirmação do checklist
+    saveInstalacaoBtn.addEventListener('click', async () => {
+        const messageEl = document.getElementById('instalacaoMessage');
+
+        // Pega o estado atual da seleção nos botões
+        const vmsSim = vmsChoice.querySelector('button[data-value="true"].active');
+        const terminalSim = terminalChoice.querySelector('button[data-value="true"].active');
+        const coletaSim = coletaChoice.querySelector('button[data-value="true"].active');
+
+        // Validação: Pelo menos um item deve ser selecionado (e não pode ser um que já estava salvo)
+        const vmsNewlySelected = vmsSim && !vmsSim.disabled;
+        const terminalNewlySelected = terminalSim && !terminalSim.disabled;
+        const coletaNewlySelected = coletaSim && !coletaSim.disabled;
+
+        if (!vmsNewlySelected && !terminalNewlySelected && !coletaNewlySelected) {
+            showMessage(messageEl, 'Selecione "Sim" para pelo menos um item pendente para salvar o progresso.', 'error');
+            return;
+        }
+
+        const payload = {
+            action: 'salvar_checklist_instalacao', // Nova ação
+            id: currentItem.id,
+            // Envia true se o botão 'Sim' estiver ativo, caso contrário envia o valor que já estava no banco
+            check_vms: vmsSim ? 1 : currentItem.check_vms,
+            check_lista_terminal: terminalSim ? 1 : currentItem.check_lista_terminal,
+            check_lista_coleta: coletaSim ? 1 : currentItem.check_lista_coleta,
+        };
+
+        await executeApiUpdate(payload, 'Progresso do checklist salvo com sucesso!', 'instalacaoModal', 'saveInstalacaoBtn', 'instalacaoMessage', 'instalacaoButtons');
+    });
+
+    function showMessage(element, msg, type) {
+        if (element) {
+            element.textContent = msg;
+            // Garante que a classe base 'message' ou 'error-message' seja usada
+            element.className = `message ${type}`;
+            element.classList.remove('hidden');
+        }
+    }
+
+    function hideMessage(element) {
+        if (element) {
+            element.classList.add('hidden');
+            element.textContent = '';
+        }
+    }
 
     etiquetaDataInput.addEventListener('input', () => {
         document.getElementById('etiquetaDataError').classList.add('hidden');
